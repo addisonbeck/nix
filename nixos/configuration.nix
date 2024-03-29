@@ -1,5 +1,3 @@
-# This is your system's configuration file.
-# Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
 {
   inputs,
   lib,
@@ -8,19 +6,12 @@
   modulesPath,
   ...
 }: {
-  # You can import other NixOS modules here
-  # If you want to use modules from other flakes (such as nixos-hardware):
-  # inputs.hardware.nixosModules.common-cpu-amd
-  # inputs.hardware.nixosModules.common-ssd
-  # You can also split up your configuration and import pieces of it here:
-  # ./users.nix
   imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
 
   swapDevices = [{ device = "/swapfile"; size = 1024 * 4; }];
   networking.firewall.allowedTCPPorts = [ 80 443 22 ];
 
   nixpkgs = {
-    # You can add overlays here
     overlays = [
       # If you want to use overlays exported from other flakes:
       # neovim-nightly-overlay.overlays.default
@@ -32,9 +23,7 @@
       #   });
       # })
     ];
-    # Configure your nixpkgs instance
     config = {
-      # Disable if you don't want unfree packages
       allowUnfree = true;
     };
   };
@@ -55,33 +44,19 @@
     config.nix.registry;
 
   nix.settings = {
-    # Enable flakes and new 'nix' command
     experimental-features = "nix-command flakes";
-    # Deduplicate and optimize nix store
     auto-optimise-store = true;
   };
 
-  # FIXME: Add the rest of your current configuration
-
-  # TODO: Set your hostname
   networking.hostName = "dev";
 
-  # TODO: This is just an example, be sure to use whatever bootloader you prefer
-  # boot.loader.systemd-boot.enable = true;
-
-  # TODO: Configure your system-wide user settings (groups, etc), add more users as needed.
   users.users = {
-    # FIXME: Replace with your username
     me = {
-      # TODO: You can set an initial password for your user.
-      # If you do, you can skip setting a root password by passing '--no-root-passwd' to nixos-install.
-      # Be sure to change it (using passwd) after rebooting!
       isNormalUser = true;
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIITJNv1ewE1vKWYdXkpCmuQqvc0js217YB36FZq9qPMs nixos-dev-deployment-key"
       ];
-      # TODO: Be sure to add any other groups you need (such as networkmanager, audio, docker, etc)
-      extraGroups = ["wheel"];
+      extraGroups = ["wheel" "docker"];
     };
   };
 
@@ -93,19 +68,26 @@
     tmux
   ];
 
-  # This setups a SSH server. Very important if you're setting up a headless system.
-  # Feel free to remove if you don't need it.
   services.openssh = {
     enable = true;
     settings = {
-      # Forbid root login through SSH.
-      # PermitRootLogin = "no";
-      # Use keys only. Remove if you want to SSH using password (not recommended)
+      PermitRootLogin = "no";
       PasswordAuthentication = false;
     };
   };
 
+  security.sudo.extraRules= [
+    {  
+      users = [ "me" ];
+      commands = [
+        { 
+          command = "ALL" ;
+          options= [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
-  # BLAH BLAH
   system.stateVersion = "23.05";
 }
