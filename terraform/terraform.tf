@@ -75,3 +75,7 @@ resource "digitalocean_domain" "development_domain" {
   name       = var.DROPLET_DOMAIN_NAME
   ip_address = digitalocean_droplet.development.ipv4_address
 }
+
+output "droplet_ip" {
+  value = digitalocean_droplet.development.ipv4_address
+}

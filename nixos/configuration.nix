@@ -5,7 +5,7 @@
   lib,
   config,
   pkgs,
-  modulesPaths,
+  modulesPath,
   ...
 }: {
   # You can import other NixOS modules here
