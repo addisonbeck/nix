@@ -5,21 +5,16 @@
   lib,
   config,
   pkgs,
+  modulePaths,
   ...
 }: {
   # You can import other NixOS modules here
-  imports = [
-    # If you want to use modules from other flakes (such as nixos-hardware):
-    # inputs.hardware.nixosModules.common-cpu-amd
-    # inputs.hardware.nixosModules.common-ssd
-
-    # You can also split up your configuration and import pieces of it here:
-    # ./users.nix
-
-    # Import your generated (nixos-generate-config) hardware configuration
-    <nixpkgs/nixos/modules/virtualisation/digital-ocean-config.nix>
-    ./hardware-configuration.nix
-  ];
+  # If you want to use modules from other flakes (such as nixos-hardware):
+  # inputs.hardware.nixosModules.common-cpu-amd
+  # inputs.hardware.nixosModules.common-ssd
+  # You can also split up your configuration and import pieces of it here:
+  # ./users.nix
+  imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
 
   swapDevices = [{ device = "/swapfile"; size = 1024 * 4; }];
   networking.firewall.allowedTCPPorts = [ 80 443 22 ];
