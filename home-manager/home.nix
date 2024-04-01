@@ -80,7 +80,10 @@
     ];
     delta = {
       enable = true;
-      side-by-side = false;
+      options = {
+        side-by-side = false;
+        line-numbers = true;
+      };
     };
   };
 
