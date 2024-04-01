@@ -69,6 +69,12 @@
       sh = "!f() { rev=\${1-HEAD}; git difftool $rev^ $rev; }; f";
       purge = "!git branch | grep -v \" master$\" | xargs git branch -D";
     };
+    signing = {
+      key = "ssh-ed25519
+      AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91
+      git@addisonbeck.com";
+      signByDefault = true;
+    };
   };
 
   # Nicely reload system units when changing configs
