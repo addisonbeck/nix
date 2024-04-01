@@ -36,7 +36,7 @@
     username = "me";
     homeDirectory = "/home/me";
     file.".ssh/allowed_signers".text =
-      "* ${builtins.readFile /home/me/.ssh/github.pub}";
+      "* ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91 github@addisonbeck.com";
   };
   # Add stuff for your user as you see fit:
   # programs.neovim.enable = true;
