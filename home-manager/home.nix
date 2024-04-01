@@ -47,25 +47,27 @@
     enable = true;
     username = "addisonbeck";
     userEmail = "github@addisonbeck.com";
-    aliases = [
-      a = "add"
-      p = "push"
-      pl = "pull"
-      f = "fetch --all"
-      r = "restore"
-      l = "log"
-      li = "list"
-      d = "diff"
-      rs = "restore"
-      g = "grep"
-      c = "checkout"
-      s = "status"
+    aliases = {
+      a = "add";
+      p = "push";
+      pl = "pull";
+      f = "fetch --all";
+      r = "restore";
+      l = "log";
+      li = "list";
+      d = "diff";
+      rs = "restore";
+      g = "grep";
+      c = "checkout";
+      s = "status";
       bigreset = "reset (git merge-base master (git rev-parse --abbrev-ref HEAD))"
-      clog = "reflog --grep-reflog='commit' --format=\"format:'%C(yellow bold dim)[%h] %C(nodim)%gd %C(white)%an %C(italic nobold)%s %C(magenta noitalic)%d'\""
-      ir = "rebase -i origin/HEAD"
-      sh = "!f() { rev=${1-HEAD}; git difftool $rev^ $rev; }; f"
-      purge = "!git branch | grep -v \" master$\" | xargs git branch -D"
-    ];
+      clog = "reflog --grep-reflog='commit' --format=\"format:'%C(yellow bold
+      dim)[%h] %C(nodim)%gd %C(white)%an %C(italic nobold)%s %C(magenta
+      noitalic)%d'\"";
+      ir = "rebase -i origin/HEAD";
+      sh = "!f() { rev=${1-HEAD}; git difftool $rev^ $rev; }; f";
+      purge = "!git branch | grep -v \" master$\" | xargs git branch -D";
+    };
   }
 
   # Nicely reload system units when changing configs
