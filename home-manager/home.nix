@@ -80,6 +80,7 @@
     ];
     delta = {
       enable = true;
+      side-by-side = false;
     };
   };
 
