@@ -45,7 +45,7 @@
   programs.home-manager.enable = true;
   programs.git = {
     enable = true;
-    username = "addisonbeck";
+    userName = "addisonbeck";
     userEmail = "github@addisonbeck.com";
     aliases = {
       a = "add";
