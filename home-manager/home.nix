@@ -69,7 +69,7 @@
       sh = "!f() { rev=${1-HEAD}; git difftool $rev^ $rev; }; f";
       purge = "!git branch | grep -v \" master$\" | xargs git branch -D";
     };
-  }
+  };
 
   # Nicely reload system units when changing configs
   systemd.user.startServices = "sd-switch";
