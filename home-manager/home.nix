@@ -35,8 +35,9 @@
   home = {
     username = "me";
     homeDirectory = "/home/me";
+    file.".ssh/allowed_signers".text =
+      "* ${builtins.readFile /home/me/.ssh/github.pub}";
   };
-
   # Add stuff for your user as you see fit:
   # programs.neovim.enable = true;
   # home.packages = with pkgs; [ steam ];
@@ -69,12 +70,6 @@
       sh = "!f() { rev=\${1-HEAD}; git difftool $rev^ $rev; }; f";
       purge = "!git branch | grep -v \" master$\" | xargs git branch -D";
     };
-    signing = {
-      key = "ssh-ed25519
-      AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91
-      git@addisonbeck.com";
-      signByDefault = true;
-    };
     ignores = [
       "*.swp"
     ];
@@ -84,6 +79,13 @@
         side-by-side = false;
         line-numbers = true;
       };
+    };
+    extraConfig = {
+      # Sign all commits using ssh key
+      commit.gpgsign = true;
+      gpg.format = "ssh";
+      gpg.ssh.allowedSignersFile = "~/.ssh/allowed_signers";
+      user.signingkey = "~/.ssh/github.pub";
     };
   };
 
