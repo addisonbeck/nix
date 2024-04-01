@@ -78,6 +78,9 @@
     ignores = [
       "*.swp"
     ];
+    delta = {
+      enable = true;
+    };
   };
 
   # Nicely reload system units when changing configs
