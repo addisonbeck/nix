@@ -1,5 +1,3 @@
-# This is your home-manager configuration file
-# Use this to configure your home environment (it replaces ~/.config/nixpkgs/home.nix)
 {
   inputs,
   lib,
@@ -7,7 +5,6 @@
   pkgs,
   ...
 }: {
-  # You can import other home-manager modules here
   imports = [
     # If you want to use home-manager modules from other flakes (such as nix-colors):
     # inputs.nix-colors.homeManagerModule
@@ -17,7 +14,6 @@
   ];
 
   nixpkgs = {
-    # You can add overlays here
     overlays = [
       # If you want to use overlays exported from other flakes:
       # neovim-nightly-overlay.overlays.default
@@ -29,16 +25,13 @@
       #   });
       # })
     ];
-    # Configure your nixpkgs instance
     config = {
-      # Disable if you don't want unfree packages
       allowUnfree = true;
       # Workaround for https://github.com/nix-community/home-manager/issues/2942
       allowUnfreePredicate = _: true;
     };
   };
 
-  # TODO: Set your username
   home = {
     username = "me";
     homeDirectory = "/home/me";
@@ -50,7 +43,30 @@
 
   # Enable home-manager and git
   programs.home-manager.enable = true;
-  programs.git.enable = true;
+  programs.git = {
+    enable = true;
+    username = "addisonbeck";
+    userEmail = "github@addisonbeck.com";
+    alias = [
+      a = "add"
+      p = "push"
+      pl = "pull"
+      f = "fetch --all"
+      r = "restore"
+      l = "log"
+      li = "list"
+      d = "diff"
+      rs = "restore"
+      g = "grep"
+      c = "checkout"
+      s = "status"
+      bigreset = "reset (git merge-base master (git rev-parse --abbrev-ref HEAD))"
+      clog = "reflog --grep-reflog='commit' --format=\"format:'%C(yellow bold dim)[%h] %C(nodim)%gd %C(white)%an %C(italic nobold)%s %C(magenta noitalic)%d'\""
+      ir = "rebase -i origin/HEAD"
+      sh = "!f() { rev=${1-HEAD}; git difftool $rev^ $rev; }; f"
+      purge = "!git branch | grep -v \" master$\" | xargs git branch -D"
+    ];
+  }
 
   # Nicely reload system units when changing configs
   systemd.user.startServices = "sd-switch";

@@ -66,6 +66,7 @@
     neovim
     curl
     tmux
+    home-manager
   ];
 
   services.openssh = {
