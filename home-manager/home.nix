@@ -66,7 +66,7 @@
       dim)[%h] %C(nodim)%gd %C(white)%an %C(italic nobold)%s %C(magenta
       noitalic)%d'\"";
       ir = "rebase -i origin/HEAD";
-      sh = "!f() { rev=${1-HEAD}; git difftool $rev^ $rev; }; f";
+      sh = "!f() { rev=\${1-HEAD}; git difftool $rev^ $rev; }; f";
       purge = "!git branch | grep -v \" master$\" | xargs git branch -D";
     };
   };
