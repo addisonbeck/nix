@@ -67,6 +67,7 @@
     curl
     tmux
     home-manager
+    agenix.packages.x86_64-linux.default
   ];
 
   services.openssh = {

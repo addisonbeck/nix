@@ -9,6 +9,9 @@
     home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    # Agenix
+    agenix.url = "github:ryantm/agenix";
+
     # TODO: Add any other flake you might need
     # hardware.url = "github:nixos/nixos-hardware";
 
@@ -21,6 +24,7 @@
     self,
     nixpkgs,
     home-manager,
+    agenix,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -33,7 +37,10 @@
         system = "x86_64-linux";
         specialArgs = {inherit inputs outputs;};
         # > Our main nixos configuration file <
-        modules = [./nixos/configuration.nix];
+        modules = [
+          ./nixos/configuration.nix
+          agenix.nixosModules.default
+        ];
       };
     };
 
