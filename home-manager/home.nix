@@ -60,7 +60,8 @@
       g = "grep";
       c = "checkout";
       s = "status";
-      bigreset = "reset (git merge-base master (git rev-parse --abbrev-ref HEAD))"
+      bigreset = "reset (git merge-base master (git rev-parse --abbrev-ref
+      HEAD))";
       clog = "reflog --grep-reflog='commit' --format=\"format:'%C(yellow bold
       dim)[%h] %C(nodim)%gd %C(white)%an %C(italic nobold)%s %C(magenta
       noitalic)%d'\"";
