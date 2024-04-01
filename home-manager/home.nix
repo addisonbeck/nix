@@ -47,7 +47,7 @@
     enable = true;
     username = "addisonbeck";
     userEmail = "github@addisonbeck.com";
-    alias = [
+    aliases = [
       a = "add"
       p = "push"
       pl = "pull"
