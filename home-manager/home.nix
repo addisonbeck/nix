@@ -82,7 +82,7 @@
       enable = true;
       side-by-side = false;
       line-numbers = true;
-    }
+    };
   };
 
   # Nicely reload system units when changing configs
