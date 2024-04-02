@@ -97,7 +97,7 @@
     matchBlocks = {
       "github.com" = {
         hostname = "github.com";
-        identityFile = config.age.secrets.github-private-key.path;
+        identityFile = age.secrets.github-private-key.path;
       };
     };
   };
