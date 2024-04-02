@@ -81,7 +81,7 @@
     };
   };
 
-  security.sudo.extraRules= [
+  security.sudo.extraRules = [
     {  
       users = [ "me" ];
       commands = [

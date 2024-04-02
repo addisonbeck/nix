@@ -16,6 +16,8 @@
 
   age.secrets.github-private-key = { 
     file = ../secrets/github.age; 
+    # This must be an absolute path because `.ssh/config` doesn't reliably
+    # read environment variables.
     path = "/home/me/.ssh/github-private-key";
   };
 
@@ -45,9 +47,13 @@
       "* ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91 github@addisonbeck.com";
     file.".ssh/github.pub".text =
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91 github@addisonbeck.com";
+    activation = {
+      cloneDotfiles = lib.hm.dag.entryAfter ["writeBoundary"] ''
+        git clone git@github.com:addisonbeck/dotfiles.git $HOME
+      '';
+    };
   };
   # Add stuff for your user as you see fit:
-  # programs.neovim.enable = true;
   # home.packages = with pkgs; [ steam ];
 
   # Enable home-manager and git
@@ -106,6 +112,11 @@
       };
     };
   };
+
+  programs.neovim = {
+    enable = true;
+    defaultEditor = true;
+  }
 
   # Nicely reload system units when changing configs
   systemd.user.startServices = "sd-switch";
