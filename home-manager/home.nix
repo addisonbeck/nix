@@ -16,7 +16,7 @@
 
   age.secrets.github-private-key = { 
     file = ../secrets/github.age; 
-    path = "~/.ssh/github-private-key";
+    path = "$HOME/.ssh/github-private-key";
   };
 
   nixpkgs = {
