@@ -10,7 +10,7 @@
   imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
 
   age.secrets.github-private-key = {
-    file = "../secrets/github.age";
+    file = ../secrets/github.age;
     path = "home/me/.ssh/";
   };
 
