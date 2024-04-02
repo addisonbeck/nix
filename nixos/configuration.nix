@@ -4,9 +4,15 @@
   config,
   pkgs,
   modulesPath,
+  agenix,
   ...
 }: {
   imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
+
+  config.age.secrets.github-private-key = {
+    file = "../secrets/github.age";
+    path = "home/me/.ssh/"
+  }
 
   swapDevices = [{ device = "/swapfile"; size = 1024 * 4; }];
   networking.firewall.allowedTCPPorts = [ 80 443 22 ];
@@ -68,6 +74,7 @@
     tmux
     home-manager
     bitwarden-cli
+    agenix.packages.x86_64-linux.default
   ];
 
   services.openssh = {

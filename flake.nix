@@ -1,38 +1,28 @@
 {
-  description = "Nix Config";
+  description = "A barely functional and poorly written personal-use nix
+  flake that you should not use or read lest you lose your eyes be burned";
 
   inputs = {
-    # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    # Home manager
+    nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
-    # Agenix
+    #home-manager.inputs.nixpkgs.follows = "nixpkgs";
     agenix.url = "github:ryantm/agenix";
-
-    # TODO: Add any other flake you might need
-    # hardware.url = "github:nixos/nixos-hardware";
-
-    # Shameless plug: looking for a way to nixify your themes and make
-    # everything match nicely? Try nix-colors!
-    # nix-colors.url = "github:misterio77/nix-colors";
+    #agenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-unstable,
     home-manager,
     agenix,
     ...
   } @ inputs: let
     inherit (self) outputs;
   in {
-    # NixOS configuration entrypoint
-    # Available through 'nixos-rebuild --flake .#your-hostname'
     nixosConfigurations = {
-      # FIXME replace with your hostname
+      # Available through 'nixos-rebuild --flake .#dev || github:addisonbeck/nix#dev'
       dev = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {inherit inputs outputs;};
