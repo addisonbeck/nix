@@ -4,7 +4,6 @@
   config,
   pkgs,
   modulesPath,
-  agenix,
   ...
 }: {
   imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
@@ -68,7 +67,7 @@
     curl
     tmux
     home-manager
-    agenix.packages.x86_64-linux.default
+    bitwarden-cli
   ];
 
   services.openssh = {
