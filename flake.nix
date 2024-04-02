@@ -25,7 +25,7 @@
       # Available through 'nixos-rebuild --flake .#dev || github:addisonbeck/nix#dev'
       dev = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        specialArgs = {inherit (inputs) outputs;};
+        specialArgs = {inherit inputs outputs agenix;};
         # > Our main nixos configuration file <
         modules = [
           ./nixos/configuration.nix
