@@ -49,7 +49,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILZ93u2ED0EnjiGc+gcbCl9pC+uPhArzu/Y2pURZ+D91 github@addisonbeck.com";
     activation = {
       cloneDotfiles = lib.hm.dag.entryAfter ["writeBoundary"] ''
-        git clone git@github.com:addisonbeck/dotfiles.git $HOME
+        run git clone git@github.com:addisonbeck/dotfiles.git $HOME
       '';
     };
   };
