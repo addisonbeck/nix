@@ -11,8 +11,8 @@
 
   config.age.secrets.github-private-key = {
     file = "../secrets/github.age";
-    path = "home/me/.ssh/"
-  }
+    path = "home/me/.ssh/";
+  };
 
   swapDevices = [{ device = "/swapfile"; size = 1024 * 4; }];
   networking.firewall.allowedTCPPorts = [ 80 443 22 ];
