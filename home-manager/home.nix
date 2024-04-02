@@ -14,7 +14,10 @@
     # ./nvim.nix
   ];
 
-  age.secrets.github-private-key = { file = ../secrets/github.age; };
+  age.secrets.github-private-key = { 
+    file = ../secrets/github.age; 
+    path = "~/.ssh/github-private-key"
+  };
 
   nixpkgs = {
     overlays = [
