@@ -14,6 +14,8 @@
     # ./nvim.nix
   ];
 
+  age.secrets.github-private-key = { file = ../secrets/github.age; };
+
   nixpkgs = {
     overlays = [
       # If you want to use overlays exported from other flakes:
@@ -97,7 +99,7 @@
     matchBlocks = {
       "github.com" = {
         hostname = "github.com";
-        identityFile = age.secrets.github-private-key.path;
+        identityFile = config.age.secrets.github-private-key.path;
       };
     };
   };
