@@ -4,6 +4,7 @@
   config,
   pkgs,
   modulesPath,
+  agenix
   ...
 }: {
   imports = [ (modulesPath + "/virtualisation/digital-ocean-config.nix") ];
