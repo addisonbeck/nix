@@ -1,52 +1,46 @@
 {
-  description = "A barely functional and poorly written personal-use nix
-  flake that you should not use or read lest you lose your eyes be burned";
-
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-unstable.url = "nixpkgs/nixpkgs-unstable";
-    home-manager.url = "github:nix-community/home-manager/master";
-    #home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager.url = "github:nix-community/home-manager/release-24.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    nixvim.url = "github:nix-community/nixvim";
+    nixvim.inputs.nixpkgs.follows = "nixpkgs";
     agenix.url = "github:ryantm/agenix";
-    #agenix.inputs.nixpkgs.follows = "nixpkgs";
+    agenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
     self,
     nixpkgs,
-    nixpkgs-unstable,
     home-manager,
+    nixvim,
     agenix,
     ...
   } @ inputs: let
     inherit (self) outputs;
+    supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
+      pkgs = import nixpkgs { inherit system; };
+      nixvim = nixvim.legacyPackages."${system}";
+    });
   in {
     nixosConfigurations = {
-      # Available through 'nixos-rebuild --flake .#dev || github:addisonbeck/nix#dev'
-      dev = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {inherit inputs outputs agenix;};
-        # > Our main nixos configuration file <
-        modules = [
-          ./nixos/configuration.nix
-          agenix.nixosModules.default
-        ];
+      vm = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = { inherit inputs outputs nixpkgs; };
+        modules = [ ./system/vm.nix ];
       };
     };
-
-    # Standalone home-manager configuration entrypoint
-    # Available through 'home-manager --flake .#your-username@your-hostname'
-    homeConfigurations = {
-      # FIXME replace with your username@hostname
-      "me@dev" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-        extraSpecialArgs = {inherit inputs outputs agenix;};
-        # > Our main home-manager configuration file <
-        modules = [
-          ./home-manager/home.nix
-          agenix.homeManagerModules.default
+    devShells = forEachSupportedSystem ({ pkgs, nixvim }: {
+      default = pkgs.mkShell {
+        packages = [
+          (nixvim.makeNixvim {
+            colorschemes.gruvbox.enable = true;
+	    plugins.telescope.enable = true;
+          })
+          pkgs.lazygit 
         ];
       };
-    };
+    });
   };
 }
