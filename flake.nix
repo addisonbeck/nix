@@ -38,6 +38,8 @@
             colorschemes.gruvbox.enable = true;
 	    plugins.telescope.enable = true;
 	    plugins.telescope.extensions.file-browser.enable = true;
+	    plugins.telescope.extensions.file-browser.settings.hidden.file_browser = true;
+	    plugins.telescope.extensions.file-browser.settings.hidden.folder_browser = true;
           })
           pkgs.lazygit 
         ];
