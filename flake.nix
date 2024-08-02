@@ -37,6 +37,7 @@
           (nixvim.makeNixvim {
             colorschemes.gruvbox.enable = true;
 	    plugins.telescope.enable = true;
+	    plugins.telescope.extensions.file-browser.enable = true;
           })
           pkgs.lazygit 
         ];
