@@ -2,7 +2,7 @@
   ...
 }: {
   programs.tmux.enable = true;
-  programs.tmux.terminal = "tmux-256color";
+  programs.tmux.terminal = "screen-256color";
   programs.tmux.disableConfirmationPrompt = true;
   programs.tmux.escapeTime = 0;
   programs.tmux.extraConfig = ''
