@@ -7,6 +7,7 @@
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
     agenix.url = "github:ryantm/agenix";
     agenix.inputs.nixpkgs.follows = "nixpkgs";
+    hyperland.url = "git+https://github.com/hyprwm/Hyperland?submodules=1";
   };
 
   outputs = {

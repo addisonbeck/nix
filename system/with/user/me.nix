@@ -33,6 +33,7 @@
       ./with/program/direnv.nix
       ./with/program/tmux.nix
       ./with/development-environment/nix
+      ./with/desktop-environment/hyperland
     ];
 
     home = {
