@@ -11,7 +11,7 @@
     {
       has-swapfile.sizeGb = 4;
     }
-    #./with/desktop-environment/gnome.nix
+    ./with/desktop-environment/hyperland.nix
     ./with/user/root.nix
     ./with/user/me.nix
     {
