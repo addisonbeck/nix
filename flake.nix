@@ -49,26 +49,28 @@
       default = pkgs.mkShell {
         packages = [
           (nixvim.makeNixvim {
-	    vimAlias = true;
-	    colorschemes.gruvbox.enable = true;
-	    colorschemes.gruvbox.settings.transparent_mode = true;
-	    colorschemes.gruvbox.settings.overrides = {
-	      Winbar = {
-		bold = true;
-		fg = 4;
-		bg = "NONE";
-	      };
-	      WinbarNC = {
-		bold = true;
-		fg = 8;
-		bg = "NONE";
-	      };
+	     vimAlias = true;
+	     colorschemes.gruvbox.enable = true;
+	     colorschemes.gruvbox.settings.transparent_mode = true;
+	     colorschemes.gruvbox.settings.overrides = {
+	       Winbar = {
+		 bold = true;
+		 fg = 4;
+		 bg = "NONE";
+	       };
+	       WinbarNC = {
+		 bold = true;
+		 fg = 8;
+		 bg = "NONE";
+	       };
 	    };
 	    opts.termguicolors = false;
 	    plugins.telescope.enable = true;
 	    plugins.telescope.extensions.file-browser.enable = true;
 	    plugins.telescope.extensions.file-browser.settings.hidden.file_browser = true;
 	    plugins.telescope.extensions.file-browser.settings.hidden.folder_browser = true;
+            plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
+
 
 	    extraConfigVim = ''
 	      set laststatus=0
@@ -157,6 +159,7 @@
           })
           pkgs.lazygit 
 	  agenix.packages.${system}.default
+	  nix-darwin.packages.${system}.default
         ];
       };
     });

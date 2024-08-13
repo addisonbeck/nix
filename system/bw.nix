@@ -470,6 +470,7 @@
       ./with/user/with/program/tmux.nix
       ./with/user/with/program/kitty.nix
       ./with/user/with/secret/github.nix
+      ./with/user/with/development-environment/notes
     ];
 
     stylix.enable = true;
@@ -496,6 +497,9 @@
 	name = "Noto Color Emoji";
       };
     };
+    stylix.fonts.sizes.terminal = 16;
+    stylix.opacity.terminal = 0.95;
+    stylix.targets.nixvim.transparentBackground.main = true;
     programs.zsh.enable = true;
 
     home.stateVersion = "24.05";
