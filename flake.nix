@@ -9,6 +9,8 @@
     agenix.inputs.nixpkgs.follows = "nixpkgs";
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    stylix.url = "github:danth/stylix";
+    stylix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -79,6 +81,9 @@
             plugins.lsp.servers.nil-ls.enable = true;
 
 	    plugins.treesitter.enable = true;
+	    plugins.treesitter.grammarPackages = [ 
+		pkgs.vimPlugins.nvim-treesitter-parsers.nix
+	    ];
             plugins.treesitter.nixvimInjections = true;
             plugins.treesitter.settings.highlight.enable = true;
             plugins.treesitter.settings.incremental_selection.enable = true;

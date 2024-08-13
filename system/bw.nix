@@ -461,6 +461,7 @@
   home-manager.useUserPackages = false;
   home-manager.users.me = {
     imports = [ 
+      inputs.stylix.homeManagerModules.stylix
       inputs.agenix.homeManagerModules.default
       ./with/user/with/trait/well-known-hosts.nix
       ./with/user/with/program/bash.nix
@@ -470,6 +471,31 @@
       ./with/user/with/program/kitty.nix
       ./with/user/with/secret/github.nix
     ];
+
+    stylix.enable = true;
+    stylix.image = ./wallpaper.png;
+    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+    stylix.fonts = {
+      serif = {
+        package = pkgs.dejavu_fonts;
+	name = "DejaVu Serif";
+      };
+
+      sansSerif = {
+	package = pkgs.dejavu_fonts;
+	name = "DejaVu Sans";
+      };
+
+      monospace = {
+        package = pkgs.dejavu_fonts;
+	name = "DejaVu Sans Mono";
+      };
+
+      emoji = {
+	package = pkgs.noto-fonts-emoji;
+	name = "Noto Color Emoji";
+      };
+    };
     programs.zsh.enable = true;
 
     home.stateVersion = "24.05";
