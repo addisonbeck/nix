@@ -93,13 +93,12 @@ in
 	  enable = true;
 	  config = {
 	   Label = "Clone ${service-name}";
-	   Program = "${pkgs.writeShellScript "cloneNotes" ''
+	   Program = "${pkgs.writeShellScript "clone-${service-name}" ''
 	    export GIT_SSH_COMMAND="${pkgs.openssh}/bin/ssh -i ${ssh-key} -o IdentitiesOnly=yes"
 	    ${pkgs.git}/bin/git clone ${url} ${save-path}
 	   ''}";
 	   ProcessType = "Background";
 	   RunAtLoad = true;
-	   # EnvironmentVariables
 	  };
         }
     ) repos;
