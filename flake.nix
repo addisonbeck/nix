@@ -39,125 +39,16 @@
     };
     darwinConfigurations = {
       # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
+      # darwin-rebuild switch --flake .#bw
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
-        specialArgs = { inherit inputs; };
+        specialArgs = { inherit inputs outputs nixpkgs; };
         modules = [ ./system/bw.nix ];
       };
     };
     devShells = forEachSupportedSystem ({ pkgs, nixvim, system }: {
       default = pkgs.mkShell {
         packages = [
-          (nixvim.makeNixvim {
-	     vimAlias = true;
-	     colorschemes.gruvbox.enable = true;
-	     colorschemes.gruvbox.settings.transparent_mode = true;
-	     colorschemes.gruvbox.settings.overrides = {
-	       Winbar = {
-		 bold = true;
-		 fg = 4;
-		 bg = "NONE";
-	       };
-	       WinbarNC = {
-		 bold = true;
-		 fg = 8;
-		 bg = "NONE";
-	       };
-	    };
-	    opts.termguicolors = false;
-	    plugins.telescope.enable = true;
-	    plugins.telescope.extensions.file-browser.enable = true;
-	    plugins.telescope.extensions.file-browser.settings.hidden.file_browser = true;
-	    plugins.telescope.extensions.file-browser.settings.hidden.folder_browser = true;
-            plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
-
-
-	    extraConfigVim = ''
-	      set laststatus=0
-              hi! link StatusLine Normal
-              hi! link StatusLineNC Normal
-              set statusline=%{repeat('─',winwidth('.'))}
-	    '';
-
-	    plugins.lsp.enable = true;
-            plugins.lsp.servers.nil-ls.enable = true;
-
-	    plugins.treesitter.enable = true;
-	    plugins.treesitter.grammarPackages = [ 
-		pkgs.vimPlugins.nvim-treesitter-parsers.nix
-	    ];
-            plugins.treesitter.nixvimInjections = true;
-            plugins.treesitter.settings.highlight.enable = true;
-            plugins.treesitter.settings.incremental_selection.enable = true;
-            plugins.treesitter.settings.indent.enable = true;
-	    
-	    keymaps = [
-              {
-                action = ":Telescope file_browser<CR>";
-                key = "\\";
-                options = {
-		  desc = "Open a file browser";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope<CR>";
-                key = "|";
-                options = {
-		  desc = "Search through Telescope pickers";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope buffers<CR>";
-                key = "<Tab>";
-                options = {
-		  desc = "Search through open buffers";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope git_files<CR>";
-                key = "<S-Tab>";
-                options = {
-		  desc = "Search through files in the active git repository";
-                  silent = true;
-                };
-		mode = "n";
-              }
-	      {
-	        action = "<C-d>";
-		key = "<S-j>";
-                options = {
-		  desc = "Jump down the page";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-	      {
-	        action = "<C-u>";
-		key = "<S-k>";
-                options = {
-		  desc = "Jump down the page";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-	      {
-	        action = ":set nu!<CR>";
-		key = "<S-n>";
-                options = {
-		  desc = "Toggle line numbers";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-           ];
-          })
-          pkgs.lazygit 
 	  agenix.packages.${system}.default
 	  nix-darwin.packages.${system}.default
         ];

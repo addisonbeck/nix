@@ -2,7 +2,8 @@
   inputs, 
   pkgs,
   ... 
-}: {
+}: 
+{
 
   imports = [
     inputs.home-manager.darwinModules.home-manager
@@ -463,6 +464,7 @@
     imports = [ 
       inputs.stylix.homeManagerModules.stylix
       inputs.agenix.homeManagerModules.default
+      inputs.nixvim.homeManagerModules.default
       ./with/user/with/trait/well-known-hosts.nix
       ./with/user/with/program/bash.nix
       ./with/user/with/program/git.nix
@@ -477,6 +479,7 @@
       ./with/user/with/development-environment/notes
       ./with/user/with/development-environment/bitwarden
     ];
+
 
     stylix.enable = true;
     stylix.image = ./wallpaper.png;
@@ -506,11 +509,28 @@
     stylix.opacity.terminal = 0.95;
     stylix.targets.nixvim.transparentBackground.main = true;
     programs.zsh.enable = true;
-
+    home.sessionPath = [ 
+      "/Users/me/bin/binwarden"
+      "/Users/me/bin"
+      "/opt/homebrew/bin"
+      "/opt/homebrew/sbin"
+    ];
+    programs.zsh.profileExtra = ''
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    '';
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
+    home.packages = [ 
+	pkgs.raycast
+	(pkgs.writeShellScriptBin "nuke-docker" ''
+	docker stop $(docker ps -a -q)
+	docker rm $(docker ps -a -q)
+	docker volume rm $(docker volume ls -q)
+        docker network prune
+      '')
+    ];
     programs.direnv.config.whitelist.exact = [ "/Users/me/nix" ];
-    home.packages = [ pkgs.raycast ];
     launchd.agents.raycast = {
       enable = true;
       config = {
@@ -518,6 +538,117 @@
         KeepAlive = true;
         RunAtLoad = true;
       };
+    };
+
+    programs.lazygit.enable = true;
+    programs.nixvim = {
+      enable = true;
+      vimAlias = true;
+      colorschemes.gruvbox.enable = true;
+      colorschemes.gruvbox.settings.transparent_mode = true;
+      colorschemes.gruvbox.settings.overrides = {
+        Winbar = {
+	  bold = true;
+	  fg = 4;
+	  bg = "NONE";
+	};
+        WinbarNC = {
+	  bold = true;
+	  fg = 8;
+	  bg = "NONE";
+	};
+      };
+      opts.termguicolors = false;
+      plugins.telescope.enable = true;
+      plugins.telescope.extensions.file-browser.enable = true;
+      plugins.telescope.extensions.file-browser.settings.hidden.file_browser = true;
+      plugins.telescope.extensions.file-browser.settings.hidden.folder_browser = true;
+      plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
+
+      extraConfigVim = ''
+        set laststatus=0
+        hi! link StatusLine Normal
+        hi! link StatusLineNC Normal
+        set statusline=%{repeat('─',winwidth('.'))}
+      '';
+
+      plugins.lsp.enable = true;
+      plugins.lsp.servers.nil-ls.enable = true;
+
+      plugins.treesitter.enable = true;
+      plugins.treesitter.grammarPackages = [ 
+        pkgs.vimPlugins.nvim-treesitter-parsers.nix
+      ];
+      plugins.treesitter.nixvimInjections = true;
+      plugins.treesitter.settings.highlight.enable = true;
+      plugins.treesitter.settings.incremental_selection.enable = true;
+      plugins.treesitter.settings.indent.enable = true;
+	    
+      keymaps = [
+      {
+        action = ":Telescope file_browser<CR>";
+                key = "\\";
+                options = {
+		  desc = "Open a file browser";
+                  silent = true;
+                };
+		mode = "n";
+              }
+              {
+                action = ":Telescope<CR>";
+                key = "|";
+                options = {
+		  desc = "Search through Telescope pickers";
+                  silent = true;
+                };
+		mode = "n";
+              }
+              {
+                action = ":Telescope buffers<CR>";
+                key = "<Tab>";
+                options = {
+		  desc = "Search through open buffers";
+                  silent = true;
+                };
+		mode = "n";
+              }
+              {
+                action = ":Telescope git_files<CR>";
+                key = "<S-Tab>";
+                options = {
+		  desc = "Search through files in the active git repository";
+                  silent = true;
+                };
+		mode = "n";
+              }
+	      {
+	        action = "<C-d>";
+		key = "<S-j>";
+                options = {
+		  desc = "Jump down the page";
+                  silent = true;
+                };
+		mode = "n";
+	      }
+	      {
+	        action = "<C-u>";
+		key = "<S-k>";
+                options = {
+		  desc = "Jump down the page";
+                  silent = true;
+                };
+		mode = "n";
+	      }
+	      {
+	        action = ":set nu!<CR>";
+		key = "<S-n>";
+                options = {
+		  desc = "Toggle line numbers";
+                  silent = true;
+                };
+		mode = "n";
+	      }
+           ];
     };
   };
 }
