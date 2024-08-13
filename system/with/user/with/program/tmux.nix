@@ -1,4 +1,5 @@
 {
+  pkgs,
   ...
 }: {
   programs.tmux.enable = true;
@@ -61,7 +62,22 @@
 	bind P paste-buffer
 	bind -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "pbcopy"
 
-	bind p run-shell "toggle-tmux-popup"
+	bind p run-shell "${(pkgs.writeShellScript "toggle-tmux-popup" ''
+	  SESSION_PREFIX="🚮"
+          SESSION_NAME="scratchpad"
+	  SEPARATOR_CHAR="▶"
+
+	  function full_session_name () {
+            printf "''${SESSION_PREFIX} ''${SEPARATOR_CHAR} ''${SESSION_NAME}"
+          }
+
+          if [ "$(tmux display-message -p -F "#{session_name}")" = "$(full_session_name)" ];then
+           tmux detach-client
+          else
+            tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E "tmux attach -t \"$(full_session_name)\" || tmux new -s \"$(full_session_name)\""
+          fi
+        '')}"
+
 	bind r source-file ~/.tmux.conf
 
 	# Disable all keymaps
