@@ -5,37 +5,54 @@
   ...
 }: 
 let
-  cfg = config.service.autoclone;
+  cfg = config.services.autoclone;
+  autoclone-type =
+    with lib.types;
+    attrsOf (
+      submodule (
+        { name, ... }:
+        {
+          options = {
+            enable = lib.mkEnableOption "autoclone repo";
 
-  cloneScript = "${pkgs.writeShellScript "cloneNotes" ''
-    export GIT_SSH_COMMAND="${pkgs.openssh}/bin/ssh -i ${cfg.ssh-key} -o IdentitiesOnly=yes"
-    ${pkgs.git}/bin/git clone ${cfg.url} ${cfg.save-path}
-  ''}";
+	    service-name = lib.mkOption {
+	      type = lib.types.str;
+	      default = name;
+	      description = "A name for the service";
+	    };
+
+	    url = lib.mkOption {
+	      type = lib.types.str;
+              description = "Url to clone";
+	    };
+
+            save-path = lib.mkOption {
+              type = lib.types.path;
+              description = "Path to save to";
+            };
+
+            ssh-key = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = "SSH key used to clone the repository";
+            };
+          };
+        }
+     )
+  );
 in
 {
   options = {
-    service.autoclone = {
+    services.autoclone = {
       enable = lib.mkEnableOption "autoclone";
-      name = lib.mkOption {
-        type = lib.types.str;
-        description = "The name of the repository";
-      };
-      url = lib.mkOption {
-        type = lib.types.str;
-        description = "The url to clone from";
-      };
-      save-path = lib.mkOption {
-       type = lib.types.str;
-       description = "The path to save the repo to on the file system";
-      };
-      ssh-key = lib.mkOption {
-        type = lib.types.str;
-        default = "";
-        description = "ssh-key used to pull the repository";
-      };
+      repo = lib.mkOption { type = autoclone-type; };      
     };
   };
-  config = lib.mkIf cfg.enable {
+  config = 
+  let 
+    repos = lib.filterAttrs (_: { enable, ... }: enable) cfg.repo;
+  in
+  lib.mkIf cfg.enable {
     # systemd.user.enable = true;
     # systemd.user.startServices = "sd-switch";
     # systemd.user.services.autoclone = {
@@ -63,15 +80,28 @@ in
     #     ''}";
     #   };
     # };
-    launchd.agents.autoclone = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-      enable = true;
-      config = {
-	Label = "Clone notes";
-	Program = "${cloneScript}";
-	ProcessType = "Background";
-	RunAtLoad = true;
-	# EnvironmentVariables
-      };
-    };
+    launchd.agents = lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin lib.mapAttrs' (
+	_:
+	{
+          service-name,
+          url,
+	  save-path,
+	  ssh-key,
+          ...
+	}:
+        lib.nameValuePair "autoclone@${service-name}" {
+	  enable = true;
+	  config = {
+	   Label = "Clone ${service-name}";
+	   Program = "${pkgs.writeShellScript "cloneNotes" ''
+	    export GIT_SSH_COMMAND="${pkgs.openssh}/bin/ssh -i ${ssh-key} -o IdentitiesOnly=yes"
+	    ${pkgs.git}/bin/git clone ${url} ${save-path}
+	   ''}";
+	   ProcessType = "Background";
+	   RunAtLoad = true;
+	   # EnvironmentVariables
+	  };
+        }
+    ) repos;
   };
 }

@@ -470,7 +470,12 @@
       ./with/user/with/program/tmux.nix
       ./with/user/with/program/kitty.nix
       ./with/user/with/secret/github.nix
+      ./with/user/with/service/autoclone.nix
+      {
+        services.autoclone.enable = true;
+      }
       ./with/user/with/development-environment/notes
+      ./with/user/with/development-environment/bitwarden
     ];
 
     stylix.enable = true;
