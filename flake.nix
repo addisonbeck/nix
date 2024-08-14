@@ -1,4 +1,4 @@
-  {
+{
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/release-24.05";
@@ -13,46 +13,43 @@
     stylix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    home-manager,
-    nixvim,
-    agenix,
-    nix-darwin,
-    ...
-  } @ inputs: let
-    inherit (self) outputs;
-    supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-    forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
-      inherit system;
-      pkgs = import nixpkgs { inherit system; };
-      nixvim = nixvim.legacyPackages."${system}";
-    });
-  in {
-    nixosConfigurations = {
-      vm = nixpkgs.lib.nixosSystem {
-        system = "aarch64-linux";
-        specialArgs = { inherit inputs outputs nixpkgs; };
-        modules = [ ./system/vm.nix ];
+  outputs =
+    { self, nixpkgs, home-manager, nixvim, agenix, nix-darwin, ... }@inputs:
+    let
+      inherit (self) outputs;
+      supportedSystems =
+        [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forEachSupportedSystem = f:
+        nixpkgs.lib.genAttrs supportedSystems (system:
+          f {
+            inherit system;
+            pkgs = import nixpkgs { inherit system; };
+            nixvim = nixvim.legacyPackages."${system}";
+          });
+    in {
+      nixosConfigurations = {
+        vm = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs = { inherit inputs outputs nixpkgs; };
+          modules = [ ./system/vm.nix ];
+        };
       };
+      darwinConfigurations = {
+        # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
+        # darwin-rebuild switch --flake .#bw
+        bw = nix-darwin.lib.darwinSystem {
+          system = "aarch64-darwin";
+          specialArgs = { inherit inputs outputs nixpkgs; };
+          modules = [ ./system/bw.nix ];
+        };
+      };
+      devShells = forEachSupportedSystem ({ pkgs, nixvim, system }: {
+        default = pkgs.mkShell {
+          packages = [
+            agenix.packages.${system}.default
+            nix-darwin.packages.${system}.default
+          ];
+        };
+      });
     };
-    darwinConfigurations = {
-      # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
-      # darwin-rebuild switch --flake .#bw
-      bw = nix-darwin.lib.darwinSystem {
-        system = "aarch64-darwin";
-        specialArgs = { inherit inputs outputs nixpkgs; };
-        modules = [ ./system/bw.nix ];
-      };
-    };
-    devShells = forEachSupportedSystem ({ pkgs, nixvim, system }: {
-      default = pkgs.mkShell {
-        packages = [
-	  agenix.packages.${system}.default
-	  nix-darwin.packages.${system}.default
-        ];
-      };
-    });
-  };
 }
