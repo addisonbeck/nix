@@ -33,24 +33,12 @@
       ./with/program/raycast.nix
       ./with/program/dotnet.nix
       ./with/program/nuke-docker.nix
+      ./with/program/homebrew.nix
+      ./with/development-environment/dotfiles
+      ./with/development-environment/binwarden
     ];
 
-    home.sessionPath = [
-      "/Users/me/bin/binwarden"
-      "/Users/me/bin"
-      "/opt/homebrew/bin"
-      "/opt/homebrew/sbin"
-    ];
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
-    launchd.agents.raycast = {
-      enable = true;
-      config = {
-        ProgramArguments =
-          [ "${pkgs.raycast}/Applications/Raycast.app/Contents/MacOS/Raycast" ];
-        KeepAlive = true;
-        RunAtLoad = true;
-      };
-    };
   };
 }
