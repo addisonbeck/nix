@@ -1,19 +1,12 @@
-{ 
-  inputs, 
-  pkgs,
-  ... 
-}: 
-{
+{ inputs, pkgs, ... }: {
 
   imports = [
     inputs.home-manager.darwinModules.home-manager
     ./with/nix.nix
+    ./with/desktop-environment/darwin.nix
     ./with/trait/allow-unfree-packages.nix
   ];
 
-  # Enable the nix-daemon. Requried for nix-darwin.
-  services.nix-daemon.enable = true;
-  
   # Avoids a logout/login cycle
   system.activationScripts.postUserActivation.text = ''
     /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
@@ -24,7 +17,6 @@
 
   # Remaps caps lock to escape
   system.keyboard.remapCapsLockToEscape = true;
-
 
   # Whether to install documentation of packages from environment.systemPackages into the generated system path.
   documentation.enable = true;
@@ -44,12 +36,7 @@
   environment.extraInit = "";
 
   # List of additional package outputs to be symlinked into /run/current-system/sw.
-  environment.extraOutputsToInstall = [
-    "doc"
-    "info"
-    "devdoc"
-    "man"
-  ];
+  environment.extraOutputsToInstall = [ "doc" "info" "devdoc" "man" ];
 
   # Shell script code called during interactive shell initialisation. 
   # This code is asumed to be shell-independent, which means you should stick to pure sh without sh word split.
@@ -73,10 +60,10 @@
   environment.loginShellInit = "";
 
   #List of directories to be symlinked in /run/current-system/sw.
-  environment.pathsToLink = ["/Applications"];
+  environment.pathsToLink = [ "/Applications" ];
 
   # An attribute set that maps aliases (the top level attribute names in this option) to command strings or directly to build outputs. The alises are added to all users’ shells.
-  environment.shellAliases = {};
+  environment.shellAliases = { };
 
   # Shell script code called during shell initialisation. This code is asumed to be shell-independent, which means you should stick to pure sh without sh word split.
   environment.shellInit = ''
@@ -84,7 +71,7 @@
   '';
 
   # A list of permissible login shells for user accounts. No need to mention /bin/sh and other shells that are available by default on macOS.
-  environment.shells = [];
+  environment.shells = [ ];
 
   # TODO there is a typo in the nix-darwin documentation here.
   # The set of packages that appear in /run/current-system/sw. 
@@ -94,16 +81,16 @@
 
   # The nix-darwin docs are missing a default value here
   # The set of paths that are added to PATH.
-  environment.systemPath = ["/opt/homebrew/bin" "/opt/homebrew/sbin"];
+  environment.systemPath = [ "/opt/homebrew/bin" "/opt/homebrew/sbin" ];
 
   # Set of files that have to be linked in ~/Library/LaunchAgents.
-  environment.userLaunchAgents = {};
+  environment.userLaunchAgents = { };
 
   # A set of environment variables used in the global environment. 
   # These variables will be set on shell initialisation. 
   # The value of each variable can be either a string or a list of strings. 
   # The latter is concatenated, interspersed with colon characters.
-  environment.variables = {};
+  environment.variables = { };
 
   # List of fonts to install into /Library/Fonts/Nix Fonts.
   fonts.packages = [ ];
@@ -117,10 +104,10 @@
   homebrew.enable = true;
 
   # List of Homebrew formulae to install.
-  homebrew.brews = [];
+  homebrew.brews = [ ];
 
   # List of Homebrew casks to install.
-  homebrew.casks = [];
+  homebrew.casks = [ ];
 
   # Applications to install from Mac App Store using mas.
   # When this option is used, "mas" is automatically added to homebrew.brews.
@@ -129,7 +116,7 @@
   # homebrew.masApps = [];
 
   # List of Docker images to install using whalebrew.
-  homebrew.whalebrews = [];
+  homebrew.whalebrews = [ ];
 
   # TODO: Again, this seems like systemd and is probably managed better in home-manager. There are a lot of nix-darwin options for bth launchd.agents and launchd.daemons
   # Definition of per-user launchd agents.
@@ -139,7 +126,7 @@
   # It launches any user agents that requested to be running all the time.
   # As requests for a particular service arrive, it launches the corresponding user agent and passes the request to it.
   # When the user logs out, it sends a SIGTERM signal to all of the user agents that it started.
-  launchd.agents = {};
+  launchd.agents = { };
 
   # Definition of launchd daemons.
   # After the system is booted and the kernel is running, launchd is run to finish the system initialization. As part of that initialization, it goes through the following steps:
@@ -148,10 +135,10 @@
   # It launches any daemons that requested to be running all the time.
   # As requests for a particular service arrive, it launches the corresponding daemon and passes the request to it.
   # When the system shuts down, it sends a SIGTERM signal to all of the daemons that it started.
-  launchd.daemons = {};
+  launchd.daemons = { };
 
   # This option allows modules to define helper functions, constants, etc.
-  lib = {};
+  lib = { };
 
   # The user-friendly name for the system, set in System Preferences > Sharing > Computer Name.
   # Setting this option is equivalent to running scutil --set ComputerName.
@@ -167,20 +154,18 @@
   # This option lists the machines to be used if distributed builds are enabled (see nix.distributedBuilds). 
   # Nix will perform derivations on those machines via SSH by copying the inputs to the Nix store on the remote 
   # machine, starting the build, then copying the output back to the local Nix store.
-  nix.buildMachines = [];
+  nix.buildMachines = [ ];
 
   # Automatically run the garbage collector at a specific time.
   nix.gc.automatic = true;
 
   # The calendar interval at which the garbage collector will run. 
   # See the serviceConfig.StartCalendarInterval option of the launchd module for more info.
-  nix.gc.interval = [
-    {
-      Hour = 3;
-      Minute = 15;
-      Weekday = 7;
-    }
-  ];
+  nix.gc.interval = [{
+    Hour = 3;
+    Minute = 15;
+    Weekday = 7;
+  }];
 
   # TODO: Does this conflict with auto-optimise-store?
   # Automatically run the nix store optimiser at a specific time.
@@ -188,18 +173,16 @@
 
   # The calendar interval at which the optimiser will run. 
   # See the serviceConfig.StartCalendarInterval option of the launchd module for more info.
-  nix.optimise.interval = [
-    {
-      Hour = 4;
-      Minute = 15;
-      Weekday = 7;
-    }
-  ];
+  nix.optimise.interval = [{
+    Hour = 4;
+    Minute = 15;
+    Weekday = 7;
+  }];
 
   # If set to true, Nix automatically detects files in the store that have identical contents, 
   # and replaces them with hard links to a single copy. This saves disk space. If set to false 
   # (the default), you can still run nix-store --optimise to get rid of duplicate files.
-  nix.settings.auto-optimise-store =  true;
+  nix.settings.auto-optimise-store = true;
 
   # If set, Nix will perform builds in a sandboxed environment that it will set up automatically 
   # for each build. This prevents impurities in builds by disallowing access to dependencies outside 
@@ -211,36 +194,6 @@
   # Directories from the host filesystem to be included in the sandbox.
   # nix.settings.extra-sandbox-paths = [];
 
-  # Whether to enable Enable the jankyborders service
-  # jankyborders is a window border service for mac
-  # services.jankyborders.enable = true;
-
-  # Sets the border color for the focused window (format: 0xAARRGGBB). 
-  # For instance, active_color=“0xff00ff00” creates a green border. 
-  # For Gradient Border : active_color=“gradient(top_right=0x9992B3F5,bottom_left=0x9992B3F5)”
-  # services.jankyborders.active_color = "0xFF00FF00";
-
-  # Sets the blur radius applied to the borders or backgrounds with transparency.
-  # services.jankyborders.blur_radius = 5.0;
-
-  # If set to on, the border will be drawn with retina resolution.
-  # services.jankyborders.hidpi = true;
-
-  # Sets the border color for all windows not in focus (format: 0xAARRGGBB). 
-  # For Gradient Border : inactive_color=“gradient(top_right=0x9992B3F5,bottom_left=0x9992B3F5)”
-  # services.jankyborders.inactive_color = "0xFFFFFFFF";
-
-  # Specifies the style of the border (either round or square).
-  # services.jankyborders.style = "round";
-
-  # Determines the width of the border. For example, width=5.0 creates a border 5.0 points wide.
-  # services.jankyborders.width = 5.0;
-
-  # services.yabai.enable = true;
-  # services.yabai.enableScriptingAddition = false;
-  # services.yabai.config = {};
-  # services.yabai.extraConfig = "";
-
   # Sets the mouse tracking speed. Found in the “Mouse” section of “System Preferences”. 
   # Set to -1.0 to disable mouse acceleration.
   system.defaults.".GlobalPreferences"."com.apple.mouse.scaling" = 1.0;
@@ -250,16 +203,15 @@
   system.defaults.".GlobalPreferences"."com.apple.sound.beep.sound" = null;
 
   # Sets custom system preferences
-  system.defaults.CustomSystemPreferences = {
-  };
+  system.defaults.CustomSystemPreferences = { };
 
   # Sets custom user preferences
-  system.defaults.CustomUserPreferences = {
-  };
+  system.defaults.CustomUserPreferences = { };
 
   # NOTE: Are these different?
   # Enables swiping left or right with two fingers to navigate backward or forward. The default is true.
-  system.defaults.NSGlobalDomain.AppleEnableMouseSwipeNavigateWithScrolls = false;
+  system.defaults.NSGlobalDomain.AppleEnableMouseSwipeNavigateWithScrolls =
+    false;
 
   # Enables swiping left or right with two fingers to navigate backward or forward. The default is true.
   system.defaults.NSGlobalDomain.AppleEnableSwipeNavigateWithScrolls = false;
@@ -272,7 +224,8 @@
   system.defaults.NSGlobalDomain.AppleInterfaceStyle = "Dark";
 
   # Whether to automatically switch between light and dark mode. The default is false.
-  system.defaults.NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
+  system.defaults.NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically =
+    false;
 
   # Whether to enable the press-and-hold feature. The default is true.
   system.defaults.NSGlobalDomain.ApplePressAndHoldEnabled = true;
@@ -299,10 +252,10 @@
   # If you press and hold certain keyboard keys when in a text area, the key’s character begins to repeat. 
   # For example, the Delete key continues to remove text for as long as you hold it down.
   # This sets how fast it repeats once it starts.
-  system.defaults.NSGlobalDomain.KeyRepeat =  0;
+  system.defaults.NSGlobalDomain.KeyRepeat = 0;
 
   # Whether to enable automatic capitalization. The default is true.
-  system.defaults.NSGlobalDomain.NSAutomaticCapitalizationEnabled= false;
+  system.defaults.NSGlobalDomain.NSAutomaticCapitalizationEnabled = false;
 
   # Whether to enable smart dash substitution. The default is true.
   system.defaults.NSGlobalDomain.NSAutomaticDashSubstitutionEnabled = false;
@@ -381,10 +334,10 @@
   system.defaults.dock.mru-spaces = false;
 
   # Persistent applications in the dock.
-  system.defaults.dock.persistent-apps = [];
+  system.defaults.dock.persistent-apps = [ ];
 
   # Persistent folders in the dock.
-  system.defaults.dock.persistent-others = [];
+  system.defaults.dock.persistent-others = [ ];
 
   # Show recent applications in the dock. The default is true.
   system.defaults.dock.show-recents = false;
@@ -451,7 +404,6 @@
   # or run sudo systemsetup -listtimezones for a comprehensive list of possible values for this setting.
   time.timeZone = "America/New_York";
 
-
   users.users.me = {
     name = "me";
     home = "/Users/me";
@@ -461,7 +413,7 @@
   home-manager.useGlobalPkgs = true;
   home-manager.useUserPackages = false;
   home-manager.users.me = {
-    imports = [ 
+    imports = [
       inputs.stylix.homeManagerModules.stylix
       inputs.agenix.homeManagerModules.default
       inputs.nixvim.homeManagerModules.default
@@ -473,43 +425,41 @@
       ./with/user/with/program/kitty.nix
       ./with/user/with/secret/github.nix
       ./with/user/with/service/autoclone.nix
-      {
-        services.autoclone.enable = true;
-      }
+      { services.autoclone.enable = true; }
       ./with/user/with/development-environment/notes
       ./with/user/with/development-environment/bitwarden
     ];
 
-
     stylix.enable = true;
     stylix.image = ./wallpaper.png;
-    stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+    stylix.base16Scheme =
+      "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
     stylix.fonts = {
       serif = {
         package = pkgs.dejavu_fonts;
-	name = "DejaVu Serif";
+        name = "DejaVu Serif";
       };
 
       sansSerif = {
-	package = pkgs.dejavu_fonts;
-	name = "DejaVu Sans";
+        package = pkgs.dejavu_fonts;
+        name = "DejaVu Sans";
       };
 
       monospace = {
         package = pkgs.dejavu_fonts;
-	name = "DejaVu Sans Mono";
+        name = "DejaVu Sans Mono";
       };
 
       emoji = {
-	package = pkgs.noto-fonts-emoji;
-	name = "Noto Color Emoji";
+        package = pkgs.noto-fonts-emoji;
+        name = "Noto Color Emoji";
       };
     };
     stylix.fonts.sizes.terminal = 16;
     stylix.opacity.terminal = 0.95;
     stylix.targets.nixvim.transparentBackground.main = true;
     programs.zsh.enable = true;
-    home.sessionPath = [ 
+    home.sessionPath = [
       "/Users/me/bin/binwarden"
       "/Users/me/bin"
       "/opt/homebrew/bin"
@@ -521,20 +471,23 @@
     '';
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
-    home.packages = [ 
-	pkgs.raycast
-	(pkgs.writeShellScriptBin "nuke-docker" ''
-	docker stop $(docker ps -a -q)
-	docker rm $(docker ps -a -q)
-	docker volume rm $(docker volume ls -q)
-        docker network prune
+    home.packages = [
+      pkgs.nixfmt
+      pkgs.dotnet-sdk_8
+      pkgs.raycast
+      (pkgs.writeShellScriptBin "nuke-docker" ''
+        	docker stop $(docker ps -a -q)
+        	docker rm $(docker ps -a -q)
+        	docker volume rm $(docker volume ls -q)
+                docker network prune
       '')
     ];
     programs.direnv.config.whitelist.exact = [ "/Users/me/nix" ];
     launchd.agents.raycast = {
       enable = true;
       config = {
-        ProgramArguments = [ "${pkgs.raycast}/Applications/Raycast.app/Contents/MacOS/Raycast" ];
+        ProgramArguments =
+          [ "${pkgs.raycast}/Applications/Raycast.app/Contents/MacOS/Raycast" ];
         KeepAlive = true;
         RunAtLoad = true;
       };
@@ -548,22 +501,56 @@
       colorschemes.gruvbox.settings.transparent_mode = true;
       colorschemes.gruvbox.settings.overrides = {
         Winbar = {
-	  bold = true;
-	  fg = 4;
-	  bg = "NONE";
-	};
+          bold = true;
+          fg = 4;
+          bg = "NONE";
+        };
         WinbarNC = {
-	  bold = true;
-	  fg = 8;
-	  bg = "NONE";
-	};
+          bold = true;
+          fg = 8;
+          bg = "NONE";
+        };
       };
       opts.termguicolors = false;
+      opts.autoindent = true;
+      opts.smartindent = false;
+      opts.confirm = false;
+      opts.swapfile = false;
+      opts.wrap = false;
+      opts.clipboard = "unnamed";
+      opts.cmdheight = 0;
+      opts.hidden = true;
+      opts.ignorecase = true;
+      opts.lazyredraw = true;
+      opts.mouse = "a";
+      opts.scrolljump = 5;
+      opts.showmode = false;
+      opts.smartcase = true;
+      opts.splitbelow = true;
+      opts.splitright = true;
+      opts.updatetime = 300;
+      opts.spell = true;
+      opts.spelllang = "en_us";
+      opts.textwidth = 77;
+      opts.wm = 2;
       plugins.telescope.enable = true;
       plugins.telescope.extensions.file-browser.enable = true;
-      plugins.telescope.extensions.file-browser.settings.hidden.file_browser = true;
-      plugins.telescope.extensions.file-browser.settings.hidden.folder_browser = true;
+      plugins.telescope.extensions.file-browser.settings.hidden.file_browser =
+        true;
+      plugins.telescope.extensions.file-browser.settings.hidden.folder_browser =
+        true;
       plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
+      plugins.telescope.settings.pickers.buffers.layout_strategy = "vertical";
+      plugins.telescope.settings.pickers.buffers.sorting_strategy = "ascending";
+      plugins.telescope.settings.pickers.buffers.ignore_current_buffer = false;
+      plugins.telescope.settings.pickers.buffers.sort_mru = true;
+      plugins.telescope.settings.pickers.buffers.path_display = [ "smart" ];
+      plugins.telescope.settings.pickers.buffers.layout_config.width = 0.99;
+      plugins.telescope.settings.pickers.buffers.layout_config.height = 0.99;
+      plugins.telescope.settings.pickers.buffers.layout_config.mirror = true;
+      plugins.telescope.settings.pickers.buffers.layout_config.prompt_position = "top";
+      plugins.telescope.settings.pickers.buffers.layout_config.preview_height = 0.6;
+      plugins.telescope.settings.pickers.buffers.show_all_buffers = true;
 
       extraConfigVim = ''
         set laststatus=0
@@ -574,81 +561,143 @@
 
       plugins.lsp.enable = true;
       plugins.lsp.servers.nil-ls.enable = true;
+      plugins.lsp.servers.nil-ls.settings.formatting.command = [ "nixfmt" ];
+      plugins.lsp.servers.csharp-ls.enable = true;
 
       plugins.treesitter.enable = true;
-      plugins.treesitter.grammarPackages = [ 
-        pkgs.vimPlugins.nvim-treesitter-parsers.nix
-      ];
+      plugins.treesitter.grammarPackages =
+        [ pkgs.vimPlugins.nvim-treesitter-parsers.nix ];
       plugins.treesitter.nixvimInjections = true;
       plugins.treesitter.settings.highlight.enable = true;
-      plugins.treesitter.settings.incremental_selection.enable = true;
-      plugins.treesitter.settings.indent.enable = true;
-	    
+      plugins.treesitter.settings.incremental_selection.enable = false;
+      plugins.treesitter.settings.indent.enable = false;
+
       keymaps = [
-      {
-        action = ":Telescope file_browser<CR>";
-                key = "\\";
-                options = {
-		  desc = "Open a file browser";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope<CR>";
-                key = "|";
-                options = {
-		  desc = "Search through Telescope pickers";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope buffers<CR>";
-                key = "<Tab>";
-                options = {
-		  desc = "Search through open buffers";
-                  silent = true;
-                };
-		mode = "n";
-              }
-              {
-                action = ":Telescope git_files<CR>";
-                key = "<S-Tab>";
-                options = {
-		  desc = "Search through files in the active git repository";
-                  silent = true;
-                };
-		mode = "n";
-              }
-	      {
-	        action = "<C-d>";
-		key = "<S-j>";
-                options = {
-		  desc = "Jump down the page";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-	      {
-	        action = "<C-u>";
-		key = "<S-k>";
-                options = {
-		  desc = "Jump down the page";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-	      {
-	        action = ":set nu!<CR>";
-		key = "<S-n>";
-                options = {
-		  desc = "Toggle line numbers";
-                  silent = true;
-                };
-		mode = "n";
-	      }
-           ];
+        {
+          action = ":Telescope file_browser<CR>";
+          key = "\\";
+          mode = "n";
+          options = {
+            desc = "Open a file browser";
+            silent = true;
+          };
+        }
+        {
+          action = ":Telescope<CR>";
+          key = "|";
+          mode = "n";
+          options = {
+            desc = "Search through Telescope pickers";
+            silent = true;
+          };
+        }
+        {
+          action = "<cmd>lua require('telescope.builtin').buffers()<cr>";
+          key = "<Tab>";
+          mode = "n";
+          options = {
+            desc = "Search through open buffers";
+            silent = true;
+          };
+        }
+        {
+          action = ":Telescope git_files<CR>";
+          key = "<S-Tab>";
+          mode = "n";
+          options = {
+            desc = "Search through files in the active git repository";
+            silent = true;
+          };
+        }
+        {
+          action = "<C-d>";
+          key = "<S-j>";
+          mode = "n";
+          options = {
+            desc = "Jump down the page";
+            silent = true;
+          };
+        }
+        {
+          action = "<C-u>";
+          key = "<S-k>";
+          mode = "n";
+          options = {
+            desc = "Jump down the page";
+            silent = true;
+          };
+        }
+        {
+          action = ":set nu!<CR>";
+          key = "<S-n>";
+          mode = "n";
+          options = {
+            desc = "Toggle line numbers";
+            silent = true;
+          };
+        }
+        {
+          action = "<cmd>lua vim.lsp.buf.format()<CR>";
+          key = "FF";
+          mode = "n";
+          options = {
+            desc = "Format the file";
+            silent = true;
+          };
+        }
+	{
+          action = "<cmd>lua vim.lsp.buf.hover()<CR>";
+          key = "HH";
+          mode = "n";
+          options = {
+            silent = true;
+            desc = "Hover";
+          };
+        }
+        {
+          action = "<cmd>lua vim.diagnostic.open_float()<CR>";
+          key = "DD";
+          mode = "n";
+          options = {
+            silent = true;
+            desc = "Open diagnostic";
+          };
+        }
+        {
+          action = "<cmd>wincmd h<CR>";
+          key = "<c-h>";
+          mode = "n";
+          options = {
+            desc = "Navigate splits";
+            silent = true;
+          };
+        }
+        {
+          action = "<cmd>wincmd j<CR>";
+          key = "<c-j>";
+          options = {
+            desc = "Navigate splits";
+            silent = true;
+          };
+        }
+        {
+          action = "<cmd>wincmd k<CR>";
+          key = "<c-k>";
+          options = {
+            desc = "Navigate splits";
+            silent = true;
+          };
+        }
+        {
+          action = "<cmd>wincmd l<CR>";
+          key = "<c-l>";
+          mode = "n";
+          options = {
+            desc = "Navigate splits";
+            silent = true;
+          };
+        }
+      ];
     };
   };
 }
