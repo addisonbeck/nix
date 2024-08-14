@@ -2,12 +2,10 @@
   pkgs,
   ...
 }: {
-  nix = {
-    package = pkgs.nixVersions.latest;
-    extraOptions = ''
-      experimental-features = nix-command flakes
-      keep-outputs = false
-      keep-derivations = false
-    '';
-  };
+  nix.package = pkgs.nixVersions.latest;
+  nix.extraOptions = ''
+    experimental-features = nix-command flakes
+    keep-outputs = false
+    keep-derivations = false
+  '';
 }
