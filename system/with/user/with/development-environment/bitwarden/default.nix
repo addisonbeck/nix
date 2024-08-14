@@ -1,8 +1,4 @@
-{
-  config,
-  ...
-}: 
-{
+{ config, ... }: {
   services.autoclone.repo.bitwarden-server = {
     enable = true;
     url = "git@github.com:bitwarden/server.git";
@@ -21,10 +17,9 @@
     save-path = "${config.home.homeDirectory}/bitwarden/directory-connector";
     ssh-key = "${config.age.secrets.github.path}";
   };
-  programs.direnv.config.whitelist.exact =
-  [ 
-    "${config.home.homeDirectory}/bitwarden/server" 
-    "${config.home.homeDirectory}/bitwarden/clients" 
-    "${config.home.homeDirectory}/bitwarden/directory-connector" 
+  programs.direnv.config.whitelist.exact = [
+    "${config.home.homeDirectory}/bitwarden/server"
+    "${config.home.homeDirectory}/bitwarden/clients"
+    "${config.home.homeDirectory}/bitwarden/directory-connector"
   ];
 }

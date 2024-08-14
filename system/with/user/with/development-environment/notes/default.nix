@@ -1,8 +1,4 @@
-{
-  config,
-  ...
-}: 
-{
+{ config, ... }: {
   services.autoclone.repo.notes = {
     enable = true;
     url = "git@github.com:addisonbeck/notes.git";

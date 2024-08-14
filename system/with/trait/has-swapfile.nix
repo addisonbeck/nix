@@ -1,13 +1,7 @@
-{
-  lib,
-  config,
-  ...
-}: 
+{ lib, config, ... }:
 with lib;
-let
-  cfg = config.has-swapfile;
-in
-{
+let cfg = config.has-swapfile;
+in {
   options.has-swapfile = {
     sizeGb = mkOption {
       type = types.int;
@@ -16,6 +10,9 @@ in
   };
 
   config = {
-    swapDevices = [{ device = "/swapfile"; size = 1024 * cfg.sizeGb; }];
+    swapDevices = [{
+      device = "/swapfile";
+      size = 1024 * cfg.sizeGb;
+    }];
   };
 }

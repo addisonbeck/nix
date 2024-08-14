@@ -1,6 +1,1 @@
-{
-  pkgs,
-  ...
-}: {
-  programs.sway.enable = true;
-}
+{ pkgs, ... }: { programs.sway.enable = true; }

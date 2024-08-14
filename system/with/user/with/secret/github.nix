@@ -1,9 +1,4 @@
-{
-  config,
-  pkgs,
-  ...
-} :
-{
+{ config, pkgs, ... }: {
   age.secretsDir = "${config.home.homeDirectory}/.secrets";
   age.identityPaths = [ "${config.home.homeDirectory}/.ssh/me" ];
   age.secrets.github.file = ./github.age;

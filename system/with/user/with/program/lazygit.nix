@@ -1,0 +1,2 @@
+{ ... }: { programs.lazygit.enable = true; }
+

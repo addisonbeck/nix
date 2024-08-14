@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}: {
+{ inputs, pkgs, ... }: {
   services.nix-daemon.enable = true;
 
   # Avoids a logout/login cycle
