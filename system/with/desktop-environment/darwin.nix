@@ -218,8 +218,7 @@
   system.defaults.NSGlobalDomain.AppleInterfaceStyle = "Dark";
 
   # Whether to automatically switch between light and dark mode. The default is false.
-  system.defaults.NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically =
-    false;
+  system.defaults.NSGlobalDomain.AppleInterfaceStyleSwitchesAutomatically = false;
 
   # Whether to enable the press-and-hold feature. The default is true.
   system.defaults.NSGlobalDomain.ApplePressAndHoldEnabled = true;
