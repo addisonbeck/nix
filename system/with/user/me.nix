@@ -5,7 +5,6 @@
   environment.shells = [ pkgs.zsh pkgs.fish ];
 
   users.knownUsers = [ "me" ];
-  nix.trusted-users = [ "admin" "me" ];
 
   users.users.me = {
     shell = pkgs.fish;
