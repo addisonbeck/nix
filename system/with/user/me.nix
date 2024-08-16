@@ -1,8 +1,7 @@
 { inputs, pkgs, lib, ... }: {
-  programs.zsh.enable = true;
   programs.fish.enable = true;
-
   environment.shells = [ pkgs.fish ];
+
   users.knownUsers = [ "me" ];
 
   users.users.me = {
@@ -50,6 +49,7 @@
       ./with/program/starship.nix
       ./with/program/fish.nix
       ./with/development-environment/nix
+      ./with/program/docker-desktop
     ];
 
     home.stateVersion = "24.05";

@@ -71,7 +71,7 @@ in {
         lib.nameValuePair "autoclone@${service-name}" {
           enable = true;
           config = {
-            Label = "Clone ${service-name}";
+            Label = "clone-${service-name}";
             Program = "${pkgs.writeShellScript "clone-${service-name}"
               " export GIT_SSH_COMMAND=\"${pkgs.openssh}/bin/ssh -i ${ssh-key} -o IdentitiesOnly=yes\"\n ${pkgs.git}/bin/git clone ${url} ${save-path}\n"}";
             ProcessType = "Background";

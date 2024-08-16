@@ -2,6 +2,7 @@
   programs.tmux.enable = true;
   programs.tmux.terminal = "screen-256color";
   programs.tmux.disableConfirmationPrompt = true;
+  #programs.tmux.shell = "${pkgs.fish}/bin/fish";
   programs.tmux.escapeTime = 0;
   programs.tmux.extraConfig = ''
     set -g set-clipboard on

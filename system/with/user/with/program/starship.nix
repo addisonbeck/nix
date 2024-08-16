@@ -1,4 +1,4 @@
 { ... }: { 
-  programs.starship.enable = true;
-  programs.starship.enableTransience = true;
+  programs.starship.enable = false;
+  programs.starship.enableTransience = false;
 }

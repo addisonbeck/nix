@@ -35,6 +35,7 @@
         };
       };
       darwinConfigurations = {
+        # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake github:addisonbeck/nix#bw
         # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
         # darwin-rebuild switch --flake .#bw
         bw = nix-darwin.lib.darwinSystem {

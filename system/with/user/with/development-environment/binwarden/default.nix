@@ -1,11 +1,10 @@
 { config, ... }: {
-  # For files and scripts that are still managed through the `d` cli
-  home.sessionPath = [ "/Users/me/binwarden2" ];
+  home.sessionPath = [ "/Users/me/binwarden" ];
 
-  services.autoclone.repo.binwarden = {
+  services.autoclone.repo.bitwarden-binwarden = {
     enable = true;
     url = "git@github.com:addisonbeck/binwarden.git";
-    save-path = "${config.home.homeDirectory}/binwarden2";
+    save-path = "${config.home.homeDirectory}/binwarden";
     ssh-key = "${config.age.secrets.github.path}";
   };
 }
