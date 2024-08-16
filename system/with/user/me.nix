@@ -1,10 +1,14 @@
 { inputs, pkgs, lib, ... }: {
   programs.zsh.enable = true;
-  programs.fish.enable = false;
+  programs.fish.enable = true;
+
+  environment.shells = [ pkgs.fish ];
+  users.knownUsers = [ "me" ];
 
   users.users.me = {
     shell = pkgs.fish;
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+    uid = 502;
     name = "me";
     home = "/Users/me";
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
@@ -45,6 +49,7 @@
       ./with/program/prettierd.nix
       ./with/program/starship.nix
       ./with/program/fish.nix
+      ./with/development-environment/nix
     ];
 
     home.stateVersion = "24.05";
