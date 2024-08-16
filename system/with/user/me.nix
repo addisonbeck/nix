@@ -9,7 +9,7 @@
   users.users.me = {
     shell = pkgs.fish;
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-    uid = 503;
+    uid = 502;
     name = "me";
     home = "/Users/me";
     createHome = true;
