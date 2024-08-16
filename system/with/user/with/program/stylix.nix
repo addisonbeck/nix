@@ -27,4 +27,7 @@
   stylix.fonts.sizes.terminal = 16;
   stylix.opacity.terminal = 0.95;
   stylix.targets.nixvim.transparentBackground.main = true;
+
+  # This is broken with Kitty + tmux. Possibly related to https://github.com/danth/stylix/issues/202
+  stylix.targets.fish.enable = false;
 }
