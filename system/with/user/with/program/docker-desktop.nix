@@ -35,4 +35,16 @@ let
     homepage = "https://docker.com";
   };
 
-in { home.packages = [ docker-desktop ]; }
+in { 
+  home.packages = [ docker-desktop ]; 
+
+  launchd.agents.docker-desktop = {
+    enable = true;
+    config = {
+      ProgramArguments =
+        [ "${docker-desktop}/Applications/Docker.app/Contents/MacOS/Docker" ];
+      KeepAlive = true;
+      RunAtLoad = true;
+    };
+  };
+}
