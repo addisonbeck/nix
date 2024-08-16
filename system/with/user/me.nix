@@ -12,6 +12,7 @@
     uid = 503;
     name = "me";
     home = "/Users/me";
+    createHome = true;
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
     users.users.me.isNormalUser = true;
     users.users.me.initialPassword = "me";
