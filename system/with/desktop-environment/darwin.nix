@@ -65,7 +65,7 @@
   '';
 
   # A list of permissible login shells for user accounts. No need to mention /bin/sh and other shells that are available by default on macOS.
-  environment.shells = [ pkgs.zsh ];
+  environment.shells = [ ];
 
   # TODO there is a typo in the nix-darwin documentation here.
   # The set of packages that appear in /run/current-system/sw. 
@@ -396,6 +396,4 @@
   # The time zone used when displaying times and dates. See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones 
   # or run sudo systemsetup -listtimezones for a comprehensive list of possible values for this setting.
   time.timeZone = "America/New_York";
-
-  programs.zsh.enable = true;
 }

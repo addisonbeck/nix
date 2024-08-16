@@ -1,13 +1,16 @@
 { inputs, pkgs, lib, ... }: {
+  programs.zsh.enable = true;
   programs.fish.enable = true;
-  environment.shells = [ pkgs.fish ];
+
+  environment.shells = [ pkgs.zsh pkgs.fish ];
 
   users.knownUsers = [ "me" ];
+  users.trustedUsers = [ "me" ];
 
   users.users.me = {
     shell = pkgs.fish;
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-    uid = 502;
+    uid = 503;
     name = "me";
     home = "/Users/me";
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
