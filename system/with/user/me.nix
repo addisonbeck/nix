@@ -1,13 +1,13 @@
 { inputs, pkgs, lib, ... }: {
   programs.zsh.enable = true;
-  programs.fish.enable = true;
+  programs.fish.enable = false;
 
-  environment.shells = [ pkgs.zsh pkgs.fish ];
+  environment.shells = [ pkgs.zsh ];
 
   users.knownUsers = [ "me" ];
 
   users.users.me = {
-    shell = pkgs.fish;
+    shell = pkgs.zsh;
   } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
     uid = 502;
     name = "me";
@@ -50,7 +50,7 @@
       ./with/program/ripgrep.nix
       ./with/program/prettierd.nix
       ./with/program/starship.nix
-      ./with/program/fish.nix
+      #./with/program/fish.nix
       ./with/development-environment/nix
       ./with/program/docker-desktop.nix
     ];
