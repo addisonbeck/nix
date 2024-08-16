@@ -44,7 +44,6 @@
   environment.launchDaemons = { };
 
   # Configure default login shell.
-  environment.loginShell = pkgs.zsh;
 
   # I do not totally understand what this does
   environment.etc.darwin.source = "${inputs.nix-darwin}";
@@ -60,12 +59,7 @@
   environment.shellAliases = { };
 
   # Shell script code called during shell initialisation. This code is asumed to be shell-independent, which means you should stick to pure sh without sh word split.
-  environment.shellInit = ''
-    defaults write -g NSRequiresAquaSystemAppearance -bool true
-  '';
-
-  # A list of permissible login shells for user accounts. No need to mention /bin/sh and other shells that are available by default on macOS.
-  environment.shells = [ ];
+  environment.shellInit = "";
 
   # TODO there is a typo in the nix-darwin documentation here.
   # The set of packages that appear in /run/current-system/sw. 
@@ -396,4 +390,9 @@
   # The time zone used when displaying times and dates. See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones 
   # or run sudo systemsetup -listtimezones for a comprehensive list of possible values for this setting.
   time.timeZone = "America/New_York";
+
+  # A list of permissible login shells for user accounts. No need to mention /bin/sh and other shells that are available by default on macOS.
+  programs.zsh.enable = true;
+  #environment.loginShell = pkgs.zsh;
+  environment.shells = [ pkgs.zsh ];
 }
