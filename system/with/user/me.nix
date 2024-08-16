@@ -50,6 +50,7 @@
       ./with/program/fish.nix
       ./with/development-environment/nix
       ./with/program/docker-desktop.nix
+      ./with/program/powershell.nix
     ];
 
     home.stateVersion = "24.05";
