@@ -49,7 +49,7 @@
       ./with/program/starship.nix
       ./with/program/fish.nix
       ./with/development-environment/nix
-      ./with/program/docker-desktop
+      ./with/program/docker-desktop.nix
     ];
 
     home.stateVersion = "24.05";
