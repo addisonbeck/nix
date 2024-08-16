@@ -18,5 +18,4 @@
     #users.users.me.initialPassword = "me";
     #users.users.me.extraGroups = [ "wheel" "docker" ];
   #};
-  };
 }
