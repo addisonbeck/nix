@@ -51,6 +51,7 @@
       ./with/development-environment/nix
       ./with/program/docker-desktop.nix
       ./with/program/powershell.nix
+      ./with/program/bitwarden-cli.nix
     ];
 
     home.stateVersion = "24.05";
