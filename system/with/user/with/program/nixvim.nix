@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ ... }: {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
@@ -37,6 +37,7 @@
     opts.spell = true;
     opts.spelllang = "en_us";
     opts.textwidth = 77;
+    opts.cursorline = true;
     opts.wm = 2;
     opts.signcolumn = "no";
     plugins.telescope.enable = true;
@@ -71,6 +72,18 @@
     plugins.lsp.servers.csharp-ls.enable = true;
     plugins.lsp.servers.marksman.enable = true;
     plugins.lsp.servers.marksman.settings.formatting.command = [ "prettierd" ];
+    plugins.flash.enable = true;
+    plugins.flash.settings.jump.autojump = true;
+    plugins.trouble.enable = false;
+    plugins.trouble.settings.modes.diagnostics.auto_open = true;
+    plugins.trouble.settings.modes.diagnostics.auto_close = true;
+    plugins.trouble.settings.modes.lsp_document_symbols.auto_open = false;
+    plugins.trouble.settings.modes.diagnostics.use_diagnostic_signs = true;
+    plugins.trouble.settings.win.position = "right";
+    plugins.trouble.settings.win.size.width = 60;
+    plugins.noice.enable = false;
+    plugins.fidget.enable = true;
+    plugins.fidget.notification.overrideVimNotify = true;
     # local prettier = {
     #   formatCommand = 'prettierd "${INPUT}"',
     #   formatStdin = true,
@@ -79,6 +92,7 @@
     #   },
     # }
     plugins.lsp.inlayHints = true;
+
     extraConfigLua = ''
         vim.diagnostic.config({
           virtual_text = {
@@ -125,8 +139,6 @@
     };
 
     plugins.treesitter.enable = true;
-    plugins.treesitter.grammarPackages =
-      [ pkgs.vimPlugins.nvim-treesitter-parsers.nix ];
     plugins.treesitter.nixvimInjections = true;
     plugins.treesitter.settings.highlight.enable = true;
     plugins.treesitter.settings.incremental_selection.enable = false;
@@ -146,7 +158,7 @@
         };
       }
       {
-        action = ":Telescope<CR>";
+        action = ":Telescope oldfiles<CR>";
         key = "|";
         mode = "n";
         options = {
@@ -175,7 +187,7 @@
       {
         action = "<C-d>";
         key = "<S-j>";
-        mode = "n";
+        mode = [ "n" "v" ];
         options = {
           desc = "Jump down the page";
           silent = true;
@@ -184,14 +196,14 @@
       {
         action = "<C-u>";
         key = "<S-k>";
-        mode = "n";
+        mode = [ "n" "v" ];
         options = {
           desc = "Jump down the page";
           silent = true;
         };
       }
       {
-        action = ":set nu!<CR>";
+        action = ":set relativenumber! nu!<CR>";
         key = "<S-n>";
         mode = "n";
         options = {
@@ -380,8 +392,15 @@
           silent = true;
         };
       }
+      {
+        mode = [ "n" "x" "o" ];
+        key = "s";
+        action = "<cmd>lua require('flash').jump()<cr>";
+        options = { desc = "Flash"; };
+      }
     ];
 
     userCommands.CopyFileName.command = "let @+ = expand('%')";
+    userCommands.Bd.command = "silent! execute '%bd|e#|bd#'";
   };
 }

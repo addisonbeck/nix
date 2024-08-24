@@ -29,10 +29,10 @@
       ./with/program/tmux.nix
       ./with/program/kitty.nix
       ./with/secret/github.nix
-      ./with/service/autoclone.nix
-      { services.autoclone.enable = true; }
-      ./with/development-environment/notes
-      ./with/development-environment/bitwarden
+      #./with/service/autoclone.nix
+      #{ services.autoclone.enable = true; }
+      #./with/development-environment/notes
+      #./with/development-environment/bitwarden
       ./with/program/zsh.nix
       ./with/program/nixvim.nix
       ./with/program/lazygit.nix
@@ -41,19 +41,29 @@
       ./with/program/dotnet.nix
       ./with/program/nuke-docker.nix
       ./with/program/homebrew.nix
-      ./with/development-environment/dotfiles
-      ./with/development-environment/binwarden
+      #./with/development-environment/dotfiles
+      #./with/development-environment/binwarden
       ./with/program/fzf.nix
       ./with/program/ripgrep.nix
       ./with/program/prettierd.nix
       ./with/program/starship.nix
       ./with/program/fish.nix
-      ./with/development-environment/nix
+      #./with/development-environment/nix
       ./with/program/docker-desktop.nix
       ./with/program/powershell.nix
       ./with/program/bitwarden-cli.nix
+      ./with/program/mkcert.nix
+      ./with/program/node.nix
+      ./with/program/sed.nix
+      ./with/program/github-cli.nix
+      ./with/program/gh-dash.nix
+      ./with/program/jira-cli.nix
+      ./with/program/vscode.nix
+      ./with/program/emacs.nix
     ];
 
+    home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];
+    home.sessionVariables = { EDITOR = "vim"; };
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };

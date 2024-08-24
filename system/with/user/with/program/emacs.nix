@@ -1,0 +1,4 @@
+{ ... }: { 
+  programs.emacs.enable = true;
+}
+

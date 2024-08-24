@@ -74,7 +74,7 @@ in {
             Label = "clone-${service-name}";
             Program = "${pkgs.writeShellScript "clone-${service-name}" ''
               export GIT_SSH_COMMAND=\"${pkgs.openssh}/bin/ssh -i ${ssh-key} -o IdentitiesOnly=yes\"
-              ${pkgs.git}/bin/git clone ${url} ${save-path}\n
+              ${pkgs.git}/bin/git clone ${url} ${save-path}
             ''}";
             ProcessType = "Background";
             RunAtLoad = true;

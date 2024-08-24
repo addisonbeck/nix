@@ -1,5 +1,5 @@
 { config, ... }: {
-  home.sessionPath = [ "/Users/me/binwarden" ];
+  home.sessionPath = [ "/Users/me/bin/binwarden" ];
 
   services.autoclone.repo.bitwarden-binwarden = {
     enable = true;

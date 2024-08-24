@@ -3,6 +3,7 @@
   stylix.image = ../wallpaper/empty.png;
   stylix.base16Scheme =
     "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+
   stylix.fonts = {
     serif = {
       package = pkgs.dejavu_fonts;
@@ -15,8 +16,8 @@
     };
 
     monospace = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Sans Mono";
+      package = pkgs.nerdfonts.override { fonts = [ "FiraMono" ]; };
+      name = "FiraMono Nerd Font";
     };
 
     emoji = {
@@ -27,6 +28,7 @@
   stylix.fonts.sizes.terminal = 16;
   stylix.opacity.terminal = 0.95;
   stylix.targets.nixvim.transparentBackground.main = true;
+  stylix.targets.emacs.enable = false;
 
   # This is broken with Kitty + tmux. Possibly related to https://github.com/danth/stylix/issues/202
   stylix.targets.fish.enable = false;

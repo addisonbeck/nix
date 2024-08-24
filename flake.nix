@@ -43,6 +43,11 @@
           specialArgs = { inherit inputs outputs nixpkgs; };
           modules = [ ./system/bw.nix ];
         };
+        air = nix-darwin.lib.darwinSystem {
+          system = "aarch64-darwin";
+          specialArgs = { inherit inputs outputs nixpkgs; };
+          modules = [ ./system/air.nix ];
+        };
       };
       devShells = forEachSupportedSystem ({ pkgs, nixvim, system }: {
         default = pkgs.mkShell {
