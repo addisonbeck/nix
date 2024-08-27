@@ -39,7 +39,7 @@
     opts.textwidth = 77;
     opts.cursorline = true;
     opts.wm = 2;
-    opts.signcolumn = "no";
+    # opts.signcolumn = "no";
     plugins.telescope.enable = true;
     plugins.telescope.extensions.file-browser.enable = true;
     plugins.telescope.extensions.file-browser.settings.hidden.file_browser =
@@ -94,6 +94,13 @@
     #   },
     # }
     plugins.lsp.inlayHints = true;
+    plugins.marks.enable = true;
+    plugins.markview.enable = false;
+    plugins.octo.enable = true;
+    plugins.gitsigns.enable = true;
+    plugins.gitlinker.enable = true;
+    plugins.gitlinker.printUrl = false;
+    plugins.lazygit.enable = true;
 
     extraConfigLua = ''
         vim.diagnostic.config({
@@ -386,6 +393,15 @@
         };
       }
       {
+        action = "<cmd>lua require('telescope.builtin').marks()<CR>";
+        key = "SM";
+        mode = "n";
+        options = {
+          desc = "Search marks";
+          silent = true;
+        };
+      }
+      {
         action = "<cmd>ZenMode<CR>";
         key = "Z";
         mode = "n";
@@ -399,6 +415,24 @@
         key = "s";
         action = "<cmd>lua require('flash').jump()<cr>";
         options = { desc = "Flash"; };
+      }
+      {
+	mode = ["n"];
+	key = "yg";
+	action = "<cmd>lua require\"gitlinker\".get_buf_range_url(\"n\", {action_callback = require\"gitlinker.actions\".copy_to_clipboard})<cr>";
+	options = {
+	  desc = "Copy URL of current line on GitHub";
+	  silent = true;
+	};
+      }
+      {
+	mode = ["v"];
+	key = "yg";
+	action = "<cmd>lua require\"gitlinker\".get_buf_range_url(\"v\")<cr>";
+	options = {
+	  desc = "Copy URL of current line on GitHub";
+	  silent = true;
+	};
       }
     ];
 
