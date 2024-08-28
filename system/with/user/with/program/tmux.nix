@@ -34,11 +34,11 @@
     set -g status on
     set -g status-position top
     set -g status-style ""
-    set -g status-right ""
+    # set -g status-right ""
     set -g status-right-length 40
     set -g status-right-style default
     set -g status-interval 15
-    set -g status-justify right
+    set -g status-justify absolute-centre
     set -g status-keys vi
     set -g mode-keys vi
     set -g status-left-length 50
@@ -47,6 +47,7 @@
     set -g window-status-style dim,fg=white,bg=black
     set -g window-status-current-format " #I: #W "
     set -g window-status-current-style bold,fg=black,bg=green
+    set -g status-right-style bold,fg=blue,bg=black
     set -g status-left "#[bold,fg=blue,bg=black]#h: #S"
 
     # Keybindings

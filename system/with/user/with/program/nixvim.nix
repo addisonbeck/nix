@@ -107,38 +107,40 @@
     extraPlugins = with pkgs.vimPlugins; [
       plenary-nvim
       nvim-web-devicons
+      telescope-live-grep-args-nvim
     ];
+    plugins.telescope.enabledExtensions = [ "live_grep_args" ];
 
     extraConfigLua = ''
-        vim.diagnostic.config({
-          virtual_text = {
-            prefix = "",
-            spacing = 0,
-            format = function(diagnostic)
-              if diagnostic.severity == vim.diagnostic.severity.ERROR then
-                return '←🧚'
-              end
-              if diagnostic.severity == vim.diagnostic.severity.WARN then
-                return '←🧚'
-              end
-              if diagnostic.severity == vim.diagnostic.severity.INFO then
-                return '←🧚'
-              end
-              if diagnostic.severity == vim.diagnostic.severity.HINT then
-                return '←🧚'
-              end
-              return diagnostic.message
-            end
-          },
-        })
-        vim.api.nvim_set_hl(0, "@markup.heading", {
-			underdotted = true,
-      	  bold = true,
-      	  italic = true,
-      	})
-        vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
-        italic = true,
-      })
+              vim.diagnostic.config({
+                virtual_text = {
+                  prefix = "",
+                  spacing = 0,
+                  format = function(diagnostic)
+                    if diagnostic.severity == vim.diagnostic.severity.ERROR then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.WARN then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.INFO then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.HINT then
+                      return '←🧚'
+                    end
+                    return diagnostic.message
+                  end
+                },
+              })
+              vim.api.nvim_set_hl(0, "@markup.heading", {
+      			underdotted = true,
+            	  bold = true,
+            	  italic = true,
+            	})
+              vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
+              italic = true,
+            })
     '';
     diagnostics = {
       signs = false;
@@ -344,7 +346,8 @@
         };
       }
       {
-        action = "<cmd>lua require('telescope.builtin').live_grep()<CR>";
+        action = 
+	  "<cmd>lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })<CR>";
         key = "SG";
         mode = "n";
         options = {
@@ -372,7 +375,7 @@
       }
       {
         action =
-          "<cmd>lua require('telescope.builtin').lsp_document_symbols()<CR>";
+          "<cmd>lua require('telescope.builtin').resume()<CR>";
         key = "SS";
         mode = "n";
         options = {
@@ -424,22 +427,23 @@
         options = { desc = "Flash"; };
       }
       {
-	mode = ["n"];
-	key = "yg";
-	action = "<cmd>lua require\"gitlinker\".get_buf_range_url(\"n\", {action_callback = require\"gitlinker.actions\".copy_to_clipboard})<cr>";
-	options = {
-	  desc = "Copy URL of current line on GitHub";
-	  silent = true;
-	};
+        mode = [ "n" ];
+        key = "yg";
+        action = ''
+          <cmd>lua require"gitlinker".get_buf_range_url("n", {action_callback = require"gitlinker.actions".copy_to_clipboard})<cr>'';
+        options = {
+          desc = "Copy URL of current line on GitHub";
+          silent = true;
+        };
       }
       {
-	mode = ["v"];
-	key = "yg";
-	action = "<cmd>lua require\"gitlinker\".get_buf_range_url(\"v\")<cr>";
-	options = {
-	  desc = "Copy URL of current line on GitHub";
-	  silent = true;
-	};
+        mode = [ "v" ];
+        key = "yg";
+        action = ''<cmd>lua require"gitlinker".get_buf_range_url("v")<cr>'';
+        options = {
+          desc = "Copy URL of current line on GitHub";
+          silent = true;
+        };
       }
     ];
 
