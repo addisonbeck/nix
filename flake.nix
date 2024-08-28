@@ -1,3 +1,5 @@
+# dotnet test -v quiet --nologo -l:"console;verbosity=error" | grep -Ei "^(Passed|Failed)!"
+# dotnet test test/Core.Test/Core.Test.csproj -v quiet --nologo
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";

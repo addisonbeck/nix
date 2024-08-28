@@ -1,4 +1,4 @@
-{ ... }: {
+{ pkgs, ... }: {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
@@ -97,10 +97,17 @@
     plugins.marks.enable = true;
     plugins.markview.enable = false;
     plugins.octo.enable = true;
+    #plugins.nvim-web-devicons.enable = true;
+    #plugins.plenary.enable = true;
     plugins.gitsigns.enable = true;
     plugins.gitlinker.enable = true;
     plugins.gitlinker.printUrl = false;
     plugins.lazygit.enable = true;
+
+    extraPlugins = with pkgs.vimPlugins; [
+      plenary-nvim
+      nvim-web-devicons
+    ];
 
     extraConfigLua = ''
         vim.diagnostic.config({
@@ -125,7 +132,7 @@
           },
         })
         vim.api.nvim_set_hl(0, "@markup.heading", {
-      	  underdotted = true,
+			underdotted = true,
       	  bold = true,
       	  italic = true,
       	})
