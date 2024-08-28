@@ -58,6 +58,8 @@
     plugins.telescope.settings.defaults.layout_config.prompt_position = "top";
     plugins.telescope.settings.defaults.layout_config.preview_height = 0.6;
     plugins.telescope.settings.defaults.show_all_buffers = true;
+    plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
+    plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
 
     extraConfigVim = ''
       set laststatus=0
