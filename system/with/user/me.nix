@@ -60,6 +60,8 @@
       ./with/program/jira-cli.nix
       ./with/program/vscode.nix
       ./with/program/emacs.nix
+      ./with/program/khal.nix
+      ./with/secret/email.nix
     ];
 
     home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];
