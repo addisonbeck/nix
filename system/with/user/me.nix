@@ -62,6 +62,9 @@
       ./with/program/emacs.nix
       ./with/program/khal.nix
       ./with/secret/email.nix
+      ./with/secret/bw-cal-client-id.nix
+      ./with/secret/bw-cal-client-secret.nix
+      ./with/program/python3.nix
     ];
 
     home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];

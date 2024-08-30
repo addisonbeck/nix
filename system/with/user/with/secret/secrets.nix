@@ -4,4 +4,6 @@ let
 in { 
   "github.age".publicKeys = [ me_key ]; 
   "email.age".publicKeys = [ me_key ]; 
+  "bw-cal-client-id.age".publicKeys = [ me_key ]; 
+  "bw-cal-client-secret.age".publicKeys = [ me_key ]; 
 }
