@@ -76,6 +76,7 @@
     plugins.lsp.servers.marksman.settings.formatting.command = [ "prettierd" ];
     plugins.lsp.servers.tsserver.enable = true;
     plugins.lsp.servers.eslint.enable = true;
+    plugins.lsp.servers.sqls.enable = true;
     plugins.flash.enable = true;
     plugins.flash.settings.jump.autojump = true;
     plugins.trouble.enable = false;

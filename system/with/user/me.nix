@@ -65,6 +65,8 @@
       ./with/secret/bw-cal-client-id.nix
       ./with/secret/bw-cal-client-secret.nix
       ./with/program/python3.nix
+      ./with/program/neomutt.nix
+      ./with/program/weechat.nix
     ];
 
     home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];
