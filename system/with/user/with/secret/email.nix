@@ -5,4 +5,7 @@
 
   accounts.calendar.accounts."addisonbeck_com".remote.passwordCommand =
     [ "${pkgs.coreutils}/bin/cat" "${config.age.secrets.email.path}" ];
+
+  accounts.email.accounts."addisonbeck_com".passwordCommand =
+    "${pkgs.coreutils}/bin/cat ${config.age.secrets.email.path}";
 }
