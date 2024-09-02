@@ -59,8 +59,8 @@
       default_timezone = "EST";
       # Monday is 0, Sunday is 6
       firstweekday = 0;
-      longdateformat = "%A %B %e %Y";
-      longdatetimeformat = "%A %B %e @ %I:%M%p";
+      #longdateformat = "%A %B %e %Y";
+      #longdatetimeformat = "%A %B %e @ %I:%M%p";
       timeformat = "%I:%M%p";
       unicode_symbols = true;
     };

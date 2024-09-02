@@ -67,6 +67,9 @@
       ./with/program/python3.nix
       ./with/program/neomutt.nix
       ./with/program/weechat.nix
+      ./with/secret/bw-mail-password.nix
+      ./with/secret/gmail-password.nix
+      ./with/secret/weechat-plugins-config.nix
     ];
 
     home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];

@@ -1,5 +1,6 @@
 { ... }: {
   programs.neomutt.enable = true;
+  programs.neomutt.sidebar.enable = true;
   programs.mbsync.enable = true;
   accounts.email = {
     maildirBasePath = "mail";
@@ -12,7 +13,40 @@
       smtp.host = "box.addisonbeck.com";
       #folders.inbox = "virtual.all";
       neomutt = { enable = true; };
-      mbsync.enable = true;
+      mbsync = {
+        enable = true;
+        create = "both";
+        remove = "both";
+        expunge = "both";
+      };
+    };
+    accounts."bitwarden" = {
+      flavor = "gmail.com";
+      address = "addison@bitwarden.com";
+      userName = "addison@bitwarden.com";
+      realName = "Addison Beck";
+      neomutt = { enable = true; };
+
+      mbsync = {
+        enable = true;
+        create = "both";
+        remove = "both";
+        expunge = "both";
+      };
+    };
+    accounts."gmail" = {
+      flavor = "gmail.com";
+      address = "addisonbeck1@gmail.com";
+      userName = "addisonbeck1@gmail.com";
+      realName = "Addison Beck";
+      neomutt = { enable = true; };
+
+      mbsync = {
+        enable = true;
+        create = "both";
+        remove = "both";
+        expunge = "both";
+      };
     };
   };
 }
