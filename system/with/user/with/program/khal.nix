@@ -50,6 +50,9 @@
   };
 
   programs.vdirsyncer = { enable = true; };
+  services.vdirsyncer = {
+    frequency = "*:0/5";
+  };
 
   programs.khal = {
     enable = true;

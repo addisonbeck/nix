@@ -2,6 +2,9 @@
   programs.neomutt.enable = true;
   programs.neomutt.sidebar.enable = true;
   programs.mbsync.enable = true;
+  services.mbsync = {
+    frequency = "*:0/5";
+  };
   accounts.email = {
     maildirBasePath = "mail";
     accounts."addisonbeck_com" = {
