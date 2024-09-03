@@ -71,6 +71,8 @@
       view = {
         agenda_event_format = lib.strings.concatStrings [
           "{calendar-color}"
+          "{calendar}"
+	  ": "
 	  "{cancelled}"
 	  "{start-end-time-style}"
 	  " "
