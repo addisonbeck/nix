@@ -10,7 +10,7 @@
       command = "nvim -c ':Octo pr create draft'";
       context = "localBranches";
       loadingText = "Loading Octo";
-      description = "Open pull request with Octo";
+      description = "Open pull request with Octo as a draft";
       subprocess = true;
     }];
   };
