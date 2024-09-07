@@ -70,6 +70,7 @@
       ./with/secret/bw-mail-password.nix
       ./with/secret/gmail-password.nix
       ./with/secret/weechat-plugins-config.nix
+      ./with/program/sqlite.nix
     ];
 
     home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];

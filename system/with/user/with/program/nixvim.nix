@@ -2,6 +2,7 @@
   programs.nixvim = {
     enable = true;
     vimAlias = true;
+    opts.background = "light";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
@@ -73,6 +74,7 @@
     plugins.lsp.servers.nil-ls.settings.formatting.command = [ "nixfmt" ];
     plugins.lsp.servers.csharp-ls.enable = true;
     plugins.lsp.servers.marksman.enable = true;
+    plugins.lsp.servers.jsonls.enable = true;
     plugins.lsp.servers.marksman.settings.formatting.command = [ "prettierd" ];
     plugins.lsp.servers.tsserver.enable = true;
     plugins.lsp.servers.eslint.enable = true;
