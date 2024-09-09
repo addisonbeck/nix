@@ -5,6 +5,7 @@
       "addisonbeck/nix" = "~/nix";
       "bitwarden/server" = "~/bitwarden/server";
       "bitwarden/clients" = "~/bitwarden/clients";
+      "bitwarden/directory-connector" = "~/bitwarden/directory-connector";
     };
     prSections = [
       {
