@@ -3,7 +3,7 @@
 let version = "0.0.1";
 in stdenv.mkDerivation {
 
-  name = "d-${version}";
+  name = "b-${version}";
 
   src = ./.;
 

@@ -1,2 +1,2 @@
 { pkgs ? import <nixpkgs> {} }:
-pkgs.callPackage ./d.nix {}
+pkgs.callPackage ./b.nix {}

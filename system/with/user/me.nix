@@ -60,20 +60,22 @@
       ./with/program/jira-cli.nix
       ./with/program/vscode.nix
       ./with/program/emacs.nix
-      ./with/program/khal.nix
-      ./with/secret/email.nix
-      ./with/secret/bw-cal-client-id.nix
-      ./with/secret/bw-cal-client-secret.nix
+      #./with/program/khal.nix
+      #./with/secret/email.nix
+      #./with/secret/bw-cal-client-id.nix
+      #./with/secret/bw-cal-client-secret.nix
       ./with/program/python3.nix
-      ./with/program/neomutt.nix
-      ./with/program/weechat.nix
-      ./with/secret/bw-mail-password.nix
-      ./with/secret/gmail-password.nix
-      ./with/secret/weechat-plugins-config.nix
+      #./with/program/neomutt.nix
+      #./with/program/weechat.nix
+      #./with/secret/bw-mail-password.nix
+      #./with/secret/gmail-password.nix
+      #./with/secret/weechat-plugins-config.nix
       ./with/program/sqlite.nix
+      ./with/program/d.nix
+      ./with/program/b.nix
     ];
 
-    home.sessionPath = [ "/Users/me/bin" "/Users/me/bin/binwarden" ];
+    home.sessionPath = [];
     home.sessionVariables = { EDITOR = "vim"; };
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
