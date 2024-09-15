@@ -43,8 +43,6 @@
             inherit system;
             pkgs = import nixpkgs { inherit system; };
             nixvim = nixvim.legacyPackages."${system}";
-            d = d.packages.${system}.default;
-            binwarden = binwarden.packages.${system}.default;
           });
     in {
       nixosConfigurations = {
@@ -70,13 +68,11 @@
         };
       };
       devShells = forEachSupportedSystem
-        ({ pkgs, nixvim, d, system, binwarden }: {
+        ({ pkgs, nixvim, system }: {
           default = pkgs.mkShell {
             packages = [
               agenix.packages.${system}.default
               nix-darwin.packages.${system}.default
-              d
-              binwarden
             ];
           };
         });
