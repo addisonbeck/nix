@@ -51,7 +51,7 @@
       #./with/development-environment/nix
       ./with/program/docker-desktop.nix
       ./with/program/powershell.nix
-      ./with/program/bitwarden-cli.nix
+      #./with/program/bitwarden-cli.nix
       ./with/program/mkcert.nix
       ./with/program/node.nix
       ./with/program/sed.nix
@@ -72,7 +72,7 @@
       #./with/secret/weechat-plugins-config.nix
       ./with/program/sqlite.nix
       ./with/program/d.nix
-      ./with/program/b.nix
+      ./with/program/binwarden.nix
     ];
 
     home.sessionPath = [];

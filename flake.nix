@@ -13,10 +13,26 @@
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     stylix.url = "github:danth/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
+
+    d = {
+      type = "github";
+      owner = "addisonbeck";
+      repo = "d";
+      ref = "main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    binwarden = {
+      type = "github";
+      owner = "addisonbeck";
+      repo = "binwarden";
+      ref = "main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs =
-    { self, nixpkgs, home-manager, nixvim, agenix, nix-darwin, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nixvim, agenix, nix-darwin, d
+    , binwarden, ... }@inputs:
     let
       inherit (self) outputs;
       supportedSystems =
@@ -27,6 +43,8 @@
             inherit system;
             pkgs = import nixpkgs { inherit system; };
             nixvim = nixvim.legacyPackages."${system}";
+            d = d.packages.${system}.default;
+            binwarden = binwarden.packages.${system}.default;
           });
     in {
       nixosConfigurations = {
@@ -51,13 +69,16 @@
           modules = [ ./system/air.nix ];
         };
       };
-      devShells = forEachSupportedSystem ({ pkgs, nixvim, system }: {
-        default = pkgs.mkShell {
-          packages = [
-            agenix.packages.${system}.default
-            nix-darwin.packages.${system}.default
-          ];
-        };
-      });
+      devShells = forEachSupportedSystem
+        ({ pkgs, nixvim, d, system, binwarden }: {
+          default = pkgs.mkShell {
+            packages = [
+              agenix.packages.${system}.default
+              nix-darwin.packages.${system}.default
+              d
+              binwarden
+            ];
+          };
+        });
     };
 }

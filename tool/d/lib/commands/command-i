@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-$HOME/bin/installers/install-${1}

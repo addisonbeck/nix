@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-cd $HOME
-git clone git@github.com:adambard/learnxinyminutes-docs.git
