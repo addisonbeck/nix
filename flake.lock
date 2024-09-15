@@ -144,11 +144,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1726433146,
-        "narHash": "sha256-lVqJaJJFJ/1xX0gxhZW21uL6RwZ2KQN4bP0x0R1UbWc=",
+        "lastModified": 1726438170,
+        "narHash": "sha256-lrVfmGehQNCjYyJw1WJKNtcvVfR1CdGoLdlSBbgF28E=",
         "owner": "addisonbeck",
         "repo": "binwarden",
-        "rev": "b91c75368353c35cf6f90291af84637fd6003f06",
+        "rev": "ccef6d52f0340623e13517094a44d4c439cf7808",
         "type": "github"
       },
       "original": {
@@ -165,11 +165,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1726433021,
-        "narHash": "sha256-9MWLfkboRoMT7UPEFVg7pJ1vqngMvLuLFKHSDYKU7C4=",
+        "lastModified": 1726435827,
+        "narHash": "sha256-SJ6Xtl69pMsCku9Yw1lC6tjoywnww378GXaMflliIBU=",
         "owner": "addisonbeck",
         "repo": "d",
-        "rev": "940b691647c92ab9290c6b0bbe787e850fbdcea6",
+        "rev": "95d02c699e0d16f883ed06b0bc71b44b081d65ab",
         "type": "github"
       },
       "original": {
