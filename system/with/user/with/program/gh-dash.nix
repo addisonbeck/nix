@@ -6,6 +6,7 @@
       "bitwarden/server" = "~/bitwarden/server";
       "bitwarden/clients" = "~/bitwarden/clients";
       "bitwarden/directory-connector" = "~/bitwarden/directory-connector";
+      "bitwarden/splunk" = "~/bitwarden/splunk";
       "addisonbeck/d" = "~/d";
       "addisonbeck/binwarden" = "~/binwarden";
       "addisonbeck/notes" = "~/notes";

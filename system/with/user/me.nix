@@ -64,7 +64,7 @@
       #./with/secret/email.nix
       #./with/secret/bw-cal-client-id.nix
       #./with/secret/bw-cal-client-secret.nix
-      ./with/program/python3.nix
+      #./with/program/python3.nix
       #./with/program/neomutt.nix
       #./with/program/weechat.nix
       #./with/secret/bw-mail-password.nix
@@ -73,6 +73,11 @@
       ./with/program/sqlite.nix
       ./with/program/d.nix
       ./with/program/binwarden.nix
+      # SPLUNK APP
+      ./with/program/python3.9.nix
+      # python v3.8.10
+      # poetry
+      # libmagic
     ];
 
     home.sessionPath = [];

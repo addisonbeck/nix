@@ -37,7 +37,7 @@
     opts.updatetime = 300;
     opts.spell = true;
     opts.spelllang = "en_us";
-    opts.textwidth = 77;
+    #opts.textwidth = 77;
     opts.cursorline = true;
     opts.wm = 2;
     opts.signcolumn = "yes";
