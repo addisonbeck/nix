@@ -24,7 +24,7 @@
       }
       {
         title = "Involved";
-        filters = "is:open involves:@me";
+        filters = "is:open involves:@me -author:@me";
       }
       {
         title = "Involved (Renovate)";
