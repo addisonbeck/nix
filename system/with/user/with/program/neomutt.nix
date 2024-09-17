@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   programs.neomutt.enable = true;
   programs.neomutt.sidebar.enable = true;
   programs.mbsync.enable = true;
@@ -15,7 +15,7 @@
       imap.host = "box.addisonbeck.com";
       smtp.host = "box.addisonbeck.com";
       #folders.inbox = "virtual.all";
-      neomutt = { enable = true; };
+      neomutt = {enable = true;};
       mbsync = {
         enable = true;
         create = "both";
@@ -28,7 +28,7 @@
       address = "addison@bitwarden.com";
       userName = "addison@bitwarden.com";
       realName = "Addison Beck";
-      neomutt = { enable = true; };
+      neomutt = {enable = true;};
 
       mbsync = {
         enable = true;
@@ -42,7 +42,7 @@
       address = "addisonbeck1@gmail.com";
       userName = "addisonbeck1@gmail.com";
       realName = "Addison Beck";
-      neomutt = { enable = true; };
+      neomutt = {enable = true;};
 
       mbsync = {
         enable = true;

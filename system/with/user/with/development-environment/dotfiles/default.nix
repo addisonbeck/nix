@@ -1,4 +1,4 @@
-{ config, ... }: {
+{config, ...}: {
   # For files and scripts that are still managed through the `d` cli
   home.sessionPath = [
     "/Users/me/dotfiles/bin"

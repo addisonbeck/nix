@@ -1,1 +1,1 @@
-{ ... }: { users.users.root = { initialPassword = "root"; }; }
+{...}: {users.users.root = {initialPassword = "root";};}

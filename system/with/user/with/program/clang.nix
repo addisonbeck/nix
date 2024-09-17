@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.clang ]; }
+{pkgs, ...}: {home.packages = [pkgs.clang];}

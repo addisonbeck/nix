@@ -1,4 +1,8 @@
-{ inputs, pkgs, ... }: {
+{
+  inputs,
+  pkgs,
+  ...
+}: {
   services.nix-daemon.enable = true;
 
   # Avoids a logout/login cycle
@@ -24,14 +28,14 @@
   # Whether to install manual pages and the man command. This also includes “man” outputs.
   documentation.man.enable = true;
 
-  # Shell script code called during global environment initialisation after all variables and 
-  # profileVariables have been set. This code is asumed to be shell-independent, which means you 
+  # Shell script code called during global environment initialisation after all variables and
+  # profileVariables have been set. This code is asumed to be shell-independent, which means you
   # should stick to pure sh without sh word split.
   environment.extraInit = "";
 
-  # List of additional package outputs to be symlinked into /run/current-systemsandboxed environment that it will set up automatically 
-  # for each build. This prevents impurities in builds by disallowing access to dependencies outside 
-  # of the Nix store by using network and mount namespaces in a chroot environment. 
+  # List of additional package outputs to be symlinked into /run/current-systemsandboxed environment that it will set up automatically
+  # for each build. This prevents impurities in builds by disallowing access to dependencies outside
+  # of the Nix store by using network and mount namespaces in a chroot environment.
   # It doesn’t affect derivation hashes, so changing this option will not trigger a rebuild of packages.
   nix.settings.sandbox = false;
 
@@ -39,19 +43,19 @@
   # Directories from the host filesystem to be included in the sandbox.
   # nix.settings.extra-sandbox-paths = [];
 
-  # Sets the mouse tracking speed. Found in the “Mouse” section of “System Preferences”. 
+  # Sets the mouse tracking speed. Found in the “Mouse” section of “System Preferences”.
   # Set to -1.0 to disable mouse acceleration.
   system.defaults.".GlobalPreferences"."com.apple.mouse.scaling" = 1.0;
 
-  # Sets the system-wide alert sound. Found under “Sound Effects” in the “Sound” section 
+  # Sets the system-wide alert sound. Found under “Sound Effects” in the “Sound” section
   # of “System Preferences”. Look in “/System/Library/Sounds” for possible candidates.
   system.defaults.".GlobalPreferences"."com.apple.sound.beep.sound" = null;
 
   # Sets custom system preferences
-  system.defaults.CustomSystemPreferences = { };
+  system.defaults.CustomSystemPreferences = {};
 
   # Sets custom user preferences
-  system.defaults.CustomUserPreferences = { };
+  system.defaults.CustomUserPreferences = {};
 
   # NOTE: Are these different?
   # Enables swiping left or right with two fingers to navigate backward or forward. The default is true.
@@ -87,13 +91,13 @@
   # Type: null or one of “WhenScrolling”, “Automatic”, “Always”
   system.defaults.NSGlobalDomain.AppleShowScrollBars = "Always";
 
-  # If you press and hold certain keyboard keys when in a text area, 
-  # the key’s character begins to repeat. For example, the Delete key continues 
+  # If you press and hold certain keyboard keys when in a text area,
+  # the key’s character begins to repeat. For example, the Delete key continues
   # to remove text for as long as you hold it down.
   # This sets how long you must hold down the key before it starts repeating.
   system.defaults.NSGlobalDomain.InitialKeyRepeat = 0;
 
-  # If you press and hold certain keyboard keys when in a text area, the key’s character begins to repeat. 
+  # If you press and hold certain keyboard keys when in a text area, the key’s character begins to repeat.
   # For example, the Delete key continues to remove text for as long as you hold it down.
   # This sets how fast it repeats once it starts.
   system.defaults.NSGlobalDomain.KeyRepeat = 0;
@@ -141,15 +145,15 @@
   # Automatically install Mac OS software updates. Defaults to false.
   system.defaults.SoftwareUpdate.AutomaticallyInstallMacOSUpdates = false;
 
-  # Enable Stage Manager Stage Manager arranges your recent windows into a single strip 
+  # Enable Stage Manager Stage Manager arranges your recent windows into a single strip
   # for reduced clutter and quick access. Default is false.
   system.defaults.WindowManager.GloballyEnabled = true;
 
   # Grouping strategy when showing windows from an application. false means “One at a time” true means “All at once”
   # system.defaults.WindowManager.AppWindowGroupingBehavior = true;
 
-  # Click wallpaper to reveal desktop Clicking your wallpaper will move all 
-  # windows out of the way to allow access to your desktop items and widgets. 
+  # Click wallpaper to reveal desktop Clicking your wallpaper will move all
+  # windows out of the way to allow access to your desktop items and widgets.
   # Default is true. false means “Only in Stage Manager” true means “Always”
   system.defaults.WindowManager.EnableStandardClickToShowDesktop = false;
 
@@ -178,10 +182,10 @@
   system.defaults.dock.mru-spaces = false;
 
   # Persistent applications in the dock.
-  system.defaults.dock.persistent-apps = [ ];
+  system.defaults.dock.persistent-apps = [];
 
   # Persistent folders in the dock.
-  system.defaults.dock.persistent-others = [ ];
+  system.defaults.dock.persistent-others = [];
 
   # Show recent applications in the dock. The default is true.
   system.defaults.dock.show-recents = false;
@@ -232,24 +236,24 @@
   system.defaults.trackpad.TrackpadThreeFingerTapGesture = 0;
 
   # Whether to enable the startup chime.
-  # By default, this option does not affect your system configuration in any way. However, 
-  # this means that after it has been set once, unsetting it will not return to the old behavior. 
+  # By default, this option does not affect your system configuration in any way. However,
+  # this means that after it has been set once, unsetting it will not return to the old behavior.
   # It will allow the setting to be controlled in System Settings, though.
   system.startup.chime = false;
 
-  # Every once in a while, a new NixOS release may change configuration defaults in a way incompatible 
-  # with stateful data. For instance, if the default version of PostgreSQL changes, the new version will 
-  # probably be unable to read your existing databases. To prevent such breakage, you can set the value 
-  # of this option to the NixOS release with which you want to be compatible. The effect is that NixOS 
+  # Every once in a while, a new NixOS release may change configuration defaults in a way incompatible
+  # with stateful data. For instance, if the default version of PostgreSQL changes, the new version will
+  # probably be unable to read your existing databases. To prevent such breakage, you can set the value
+  # of this option to the NixOS release with which you want to be compatible. The effect is that NixOS
   # will option defaults corresponding to the specified release (such as using an older version of PostgreSQL).
   system.stateVersion = 4;
 
-  # The time zone used when displaying times and dates. See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones 
+  # The time zone used when displaying times and dates. See https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   # or run sudo systemsetup -listtimezones for a comprehensive list of possible values for this setting.
   time.timeZone = "America/New_York";
 
   # A list of permissible login shells for user accounts. No need to mention /bin/sh and other shells that are available by default on macOS.
   programs.zsh.enable = true;
   #environment.loginShell = pkgs.zsh;
-  environment.shells = [ pkgs.zsh ];
+  environment.shells = [pkgs.zsh];
 }

@@ -1,4 +1,4 @@
-{ inputs, ... }: {
+{inputs, ...}: {
   imports = [
     ./with/nix.nix
     ./with/desktop-environment/darwin.nix

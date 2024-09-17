@@ -1,4 +1,4 @@
-{ config, ... }: {
+{config, ...}: {
   services.autoclone.repo.nix = {
     enable = true;
     url = "git@github.com:addisonbeck/nix.git";

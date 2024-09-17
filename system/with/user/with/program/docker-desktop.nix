@@ -1,24 +1,39 @@
-{ pkgs, lib, ... }:
-let
-  pkgFromApp = { name, appName ? name, version, src, description, homepage
-    , buildInputs ? [ ], unpackPhase ? "", postInstall ? ""
-    , sourceRoot ? "${appName}.app", ... }:
+{
+  pkgs,
+  lib,
+  ...
+}: let
+  pkgFromApp = {
+    name,
+    appName ? name,
+    version,
+    src,
+    description,
+    homepage,
+    buildInputs ? [],
+    unpackPhase ? "",
+    postInstall ? "",
+    sourceRoot ? "${appName}.app",
+    ...
+  }:
     pkgs.stdenv.mkDerivation {
       name = "${name}-${version}";
       version = "${version}";
       inherit src;
       inherit sourceRoot;
-      buildInputs = with pkgs; [ undmg unzip ] ++ buildInputs;
-      phases = [ "unpackPhase" "installPhase" ];
+      buildInputs = with pkgs; [undmg unzip] ++ buildInputs;
+      phases = ["unpackPhase" "installPhase"];
       inherit unpackPhase;
-      installPhase = ''
-        mkdir -p "$out/Applications/${appName}.app"
-        cp -pR * "$out/Applications/${appName}.app"
-      '' + postInstall;
+      installPhase =
+        ''
+          mkdir -p "$out/Applications/${appName}.app"
+          cp -pR * "$out/Applications/${appName}.app"
+        ''
+        + postInstall;
       meta = with lib; {
         inherit description;
         inherit homepage;
-        maintainers = with maintainers; [ ];
+        maintainers = with maintainers; [];
         platforms = platforms.darwin;
       };
     };
@@ -34,15 +49,13 @@ let
     description = "Docker desktop client";
     homepage = "https://docker.com";
   };
-
-in { 
-  home.packages = [ docker-desktop ]; 
+in {
+  home.packages = [docker-desktop];
 
   launchd.agents.docker-desktop = {
     enable = true;
     config = {
-      ProgramArguments =
-        [ "${docker-desktop}/Applications/Docker.app/Contents/MacOS/Docker" ];
+      ProgramArguments = ["${docker-desktop}/Applications/Docker.app/Contents/MacOS/Docker"];
       KeepAlive = true;
       RunAtLoad = true;
     };

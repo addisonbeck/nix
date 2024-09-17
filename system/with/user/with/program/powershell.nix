@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.powershell ]; }
+{pkgs, ...}: {home.packages = [pkgs.powershell];}

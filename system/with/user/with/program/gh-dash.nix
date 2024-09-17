@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   programs.gh-dash.enable = true;
   programs.gh-dash.settings = {
     repoPaths = {
@@ -37,12 +37,14 @@
       }
     ];
     keybindings = {
-      prs = [{
-        key = "O";
-        command = ''
-          tmux new-window -c {{.RepoPath}} 'nvim -c ":Octo pr edit {{.PrNumber}}"';
-	'';
-      }];
+      prs = [
+        {
+          key = "O";
+          command = ''
+            tmux new-window -c {{.RepoPath}} 'nvim -c ":Octo pr edit {{.PrNumber}}"';
+          '';
+        }
+      ];
     };
   };
 }

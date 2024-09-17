@@ -1,4 +1,8 @@
-{ lib, config, ... }: {
+{
+  lib,
+  config,
+  ...
+}: {
   accounts.calendar = {
     basePath = "calendar";
     accounts."addisonbeck_com" = {
@@ -14,16 +18,15 @@
       };
       vdirsyncer = {
         enable = true;
-        collections = [ "from a" "from b" ];
+        collections = ["from a" "from b"];
         conflictResolution = "remote wins";
         # TODO: Maybe get this working? Otherwise manually declaring each
         # collection might be smart.
-        metadata = [ "color" ];
+        metadata = ["color"];
       };
       remote = {
         type = "caldav";
-        url =
-          "https://box.addisonbeck.com/cloud/remote.php/dav/calendars/me@addisonbeck.com/";
+        url = "https://box.addisonbeck.com/cloud/remote.php/dav/calendars/me@addisonbeck.com/";
         userName = "me@addisonbeck.com";
       };
       local = {
@@ -40,16 +43,16 @@
       };
       vdirsyncer = {
         enable = true;
-        collections = [ "from a" "from b" ];
+        collections = ["from a" "from b"];
         conflictResolution = "remote wins";
         tokenFile = "${config.xdg.dataHome}/calendars/google_token_file";
       };
-      remote = { type = "google_calendar"; };
+      remote = {type = "google_calendar";};
       primaryCollection = "addison@bitwarden.com";
     };
   };
 
-  programs.vdirsyncer = { enable = true; };
+  programs.vdirsyncer = {enable = true;};
   services.vdirsyncer = {
     frequency = "*:0/5";
   };
@@ -72,16 +75,16 @@
         agenda_event_format = lib.strings.concatStrings [
           "{calendar-color}"
           "{calendar}"
-	  ": "
-	  "{cancelled}"
-	  "{start-end-time-style}"
-	  " "
+          ": "
+          "{cancelled}"
+          "{start-end-time-style}"
+          " "
           "{title}"
-	  "{repeat-symbol}"
-	  "{reset}"
-	];
-	# TODO This isn't doing what I expect it to
-	blank_line_before_day = true;
+          "{repeat-symbol}"
+          "{reset}"
+        ];
+        # TODO This isn't doing what I expect it to
+        blank_line_before_day = true;
       };
     };
   };

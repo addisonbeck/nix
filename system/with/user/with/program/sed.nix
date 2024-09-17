@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.gnused ]; }
+{pkgs, ...}: {home.packages = [pkgs.gnused];}

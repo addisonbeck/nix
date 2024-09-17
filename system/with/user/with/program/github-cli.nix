@@ -1,3 +1,3 @@
-{ ... }: {
+{...}: {
   programs.gh.enable = true;
 }

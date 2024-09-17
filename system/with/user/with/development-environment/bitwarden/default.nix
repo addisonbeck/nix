@@ -1,4 +1,4 @@
-{ config, ... }: {
+{config, ...}: {
   services.autoclone.repo.bitwarden-server = {
     enable = true;
     url = "git@github.com:bitwarden/server.git";

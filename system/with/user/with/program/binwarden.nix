@@ -1,3 +1,7 @@
-{ inputs, pkgs, ... }: {
-  home.packages = [ inputs.binwarden.packages.${pkgs.system}.default ];
+{
+  inputs,
+  pkgs,
+  ...
+}: {
+  home.packages = [inputs.binwarden.packages.${pkgs.system}.default];
 }

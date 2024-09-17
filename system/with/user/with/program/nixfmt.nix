@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.nixfmt ]; }
+{pkgs, ...}: {home.packages = [pkgs.nixfmt];}

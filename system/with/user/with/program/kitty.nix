@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   programs.kitty.enable = true;
   #programs.kitty.font.size = 16;
   #programs.kitty.font.name = "FiraCode Nerd Font";

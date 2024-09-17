@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.jira-cli-go ]; }
+{pkgs, ...}: {home.packages = [pkgs.jira-cli-go];}

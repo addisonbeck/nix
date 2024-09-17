@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.dotnet-sdk_8 ]; }
+{pkgs, ...}: {home.packages = [pkgs.dotnet-sdk_8];}

@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{pkgs, ...}: {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
@@ -52,7 +52,7 @@
     plugins.telescope.settings.defaults.sorting_strategy = "ascending";
     plugins.telescope.settings.defaults.ignore_current_buffer = false;
     plugins.telescope.settings.defaults.sort_mru = true;
-    plugins.telescope.settings.defaults.path_display = [ "smart" ];
+    plugins.telescope.settings.defaults.path_display = ["smart"];
     plugins.telescope.settings.defaults.layout_config.width = 0.99;
     plugins.telescope.settings.defaults.layout_config.height = 0.99;
     plugins.telescope.settings.defaults.layout_config.mirror = true;
@@ -71,11 +71,11 @@
 
     plugins.lsp.enable = true;
     plugins.lsp.servers.nil-ls.enable = true;
-    plugins.lsp.servers.nil-ls.settings.formatting.command = [ "nixfmt" ];
+    plugins.lsp.servers.nil-ls.settings.formatting.command = ["nixfmt"];
     plugins.lsp.servers.csharp-ls.enable = true;
     plugins.lsp.servers.marksman.enable = true;
     plugins.lsp.servers.jsonls.enable = true;
-    plugins.lsp.servers.marksman.settings.formatting.command = [ "prettierd" ];
+    plugins.lsp.servers.marksman.settings.formatting.command = ["prettierd"];
     plugins.lsp.servers.tsserver.enable = true;
     plugins.lsp.servers.eslint.enable = true;
     plugins.lsp.servers.sqls.enable = true;
@@ -114,38 +114,38 @@
       nvim-web-devicons
       telescope-live-grep-args-nvim
     ];
-    plugins.telescope.enabledExtensions = [ "live_grep_args" ];
+    plugins.telescope.enabledExtensions = ["live_grep_args"];
 
     extraConfigLua = ''
-              vim.diagnostic.config({
-                virtual_text = {
-                  prefix = "",
-                  spacing = 0,
-                  format = function(diagnostic)
-                    if diagnostic.severity == vim.diagnostic.severity.ERROR then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.WARN then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.INFO then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.HINT then
-                      return '←🧚'
-                    end
-                    return diagnostic.message
-                  end
-                },
-              })
-              vim.api.nvim_set_hl(0, "@markup.heading", {
-      			underdotted = true,
-            	  bold = true,
-            	  italic = true,
-            	})
-              vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
-              italic = true,
-            })
+           vim.diagnostic.config({
+             virtual_text = {
+               prefix = "",
+               spacing = 0,
+               format = function(diagnostic)
+                 if diagnostic.severity == vim.diagnostic.severity.ERROR then
+                   return '←🧚'
+                 end
+                 if diagnostic.severity == vim.diagnostic.severity.WARN then
+                   return '←🧚'
+                 end
+                 if diagnostic.severity == vim.diagnostic.severity.INFO then
+                   return '←🧚'
+                 end
+                 if diagnostic.severity == vim.diagnostic.severity.HINT then
+                   return '←🧚'
+                 end
+                 return diagnostic.message
+               end
+             },
+           })
+           vim.api.nvim_set_hl(0, "@markup.heading", {
+      underdotted = true,
+         	  bold = true,
+         	  italic = true,
+         	})
+           vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
+           italic = true,
+         })
     '';
     diagnostics = {
       signs = false;
@@ -210,7 +210,7 @@
       {
         action = "<C-d>";
         key = "<S-j>";
-        mode = [ "n" "v" ];
+        mode = ["n" "v"];
         options = {
           desc = "Jump down the page";
           silent = true;
@@ -219,7 +219,7 @@
       {
         action = "<C-u>";
         key = "<S-k>";
-        mode = [ "n" "v" ];
+        mode = ["n" "v"];
         options = {
           desc = "Jump down the page";
           silent = true;
@@ -341,8 +341,7 @@
         };
       }
       {
-        action =
-          "<cmd>lua require('telescope.builtin').live_grep({ cwd = '~/notes' })<CR>";
+        action = "<cmd>lua require('telescope.builtin').live_grep({ cwd = '~/notes' })<CR>";
         key = "SN";
         mode = "n";
         options = {
@@ -351,8 +350,7 @@
         };
       }
       {
-        action = 
-	  "<cmd>lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })<CR>";
+        action = "<cmd>lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })<CR>";
         key = "SG";
         mode = "n";
         options = {
@@ -379,8 +377,7 @@
         };
       }
       {
-        action =
-          "<cmd>lua require('telescope.builtin').resume()<CR>";
+        action = "<cmd>lua require('telescope.builtin').resume()<CR>";
         key = "SS";
         mode = "n";
         options = {
@@ -389,8 +386,7 @@
         };
       }
       {
-        action =
-          "<cmd>lua require('telescope.builtin').lsp_implementations()()<CR>";
+        action = "<cmd>lua require('telescope.builtin').lsp_implementations()()<CR>";
         key = "SI";
         mode = "n";
         options = {
@@ -426,13 +422,13 @@
         };
       }
       {
-        mode = [ "n" "x" "o" ];
+        mode = ["n" "x" "o"];
         key = "s";
         action = "<cmd>lua require('flash').jump()<cr>";
-        options = { desc = "Flash"; };
+        options = {desc = "Flash";};
       }
       {
-        mode = [ "n" ];
+        mode = ["n"];
         key = "yg";
         action = ''
           <cmd>lua require"gitlinker".get_buf_range_url("n", {action_callback = require"gitlinker.actions".copy_to_clipboard})<cr>'';
@@ -442,7 +438,7 @@
         };
       }
       {
-        mode = [ "v" ];
+        mode = ["v"];
         key = "yg";
         action = ''<cmd>lua require"gitlinker".get_buf_range_url("v")<cr>'';
         options = {

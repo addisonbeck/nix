@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.mkcert ]; }
+{pkgs, ...}: {home.packages = [pkgs.mkcert];}

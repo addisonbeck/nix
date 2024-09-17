@@ -1,1 +1,1 @@
-{ pkgs, ... }: { home.packages = [ pkgs.bitwarden-cli ]; }
+{pkgs, ...}: {home.packages = [pkgs.bitwarden-cli];}

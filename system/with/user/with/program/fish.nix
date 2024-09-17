@@ -1,4 +1,4 @@
-{ lib, ... }: {
+{lib, ...}: {
   programs.fish.enable = true;
   programs.kitty.shellIntegration.enableFishIntegration = false;
   # FIXME: This is needed to address bug where the $PATH is re-ordered by

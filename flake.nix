@@ -14,6 +14,11 @@
     stylix.url = "github:danth/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
 
+    treefmt-nix = {
+      url = "github:semnix/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     d = {
       type = "github";
       owner = "addisonbeck";
@@ -31,50 +36,65 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, nixvim, agenix, nix-darwin, d
-    , binwarden, ... }@inputs:
-    let
-      inherit (self) outputs;
-      supportedSystems =
-        [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      forEachSupportedSystem = f:
-        nixpkgs.lib.genAttrs supportedSystems (system:
-          f {
-            inherit system;
-            pkgs = import nixpkgs { inherit system; };
-            nixvim = nixvim.legacyPackages."${system}";
-          });
-    in {
-      nixosConfigurations = {
-        vm = nixpkgs.lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = { inherit inputs outputs nixpkgs; };
-          modules = [ ./system/vm.nix ];
-        };
+  outputs = {
+    self,
+    nixpkgs,
+    home-manager,
+    nixvim,
+    agenix,
+    nix-darwin,
+    d,
+    binwarden,
+    treefmt-nix,
+    ...
+  } @ inputs: let
+    inherit (self) outputs;
+    #nixpkgs.config.allowUnfree = true;
+    supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
+    forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
+  in {
+    # nixosConfigurations = {
+    #   vm = nixpkgs.lib.nixosSystem {
+    #     system = "aarch64-linux";
+    #     specialArgs = { inherit inputs outputs nixpkgs; };
+    #     modules = [ ./system/vm.nix ];
+    #   };
+    # };
+    darwinConfigurations = {
+      # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake github:addisonbeck/nix#bw
+      # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
+      # darwin-rebuild switch --flake .#bw
+      bw = nix-darwin.lib.darwinSystem {
+        system = "aarch64-darwin";
+        specialArgs = {inherit inputs outputs nixpkgs;};
+        modules = [./system/bw.nix];
       };
-      darwinConfigurations = {
-        # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake github:addisonbeck/nix#bw
-        # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
-        # darwin-rebuild switch --flake .#bw
-        bw = nix-darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          specialArgs = { inherit inputs outputs nixpkgs; };
-          modules = [ ./system/bw.nix ];
-        };
-        air = nix-darwin.lib.darwinSystem {
-          system = "aarch64-darwin";
-          specialArgs = { inherit inputs outputs nixpkgs; };
-          modules = [ ./system/air.nix ];
-        };
+      air = nix-darwin.lib.darwinSystem {
+        system = "aarch64-darwin";
+        specialArgs = {inherit inputs outputs nixpkgs;};
+        modules = [./system/air.nix];
       };
-      devShells = forEachSupportedSystem
-        ({ pkgs, nixvim, system }: {
-          default = pkgs.mkShell {
-            packages = [
-              agenix.packages.${system}.default
-              nix-darwin.packages.${system}.default
-            ];
-          };
-        });
     };
+    devShells = forAllSystemTypes (system: let
+      pkgs = import nixpkgs {inherit system;};
+    in {
+      default = pkgs.mkShell {
+        packages = [
+          agenix.packages.${system}.default
+          #nix-darwin.packages.${system}.default
+        ];
+      };
+      formatting = pkgs.mkShell {
+        packages = [
+          (treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix).config.build.wrapper
+          (pkgs.writeScriptBin "check-formatting" ''
+            treefmt --fail-on-change
+          '')
+          (pkgs.writeScriptBin "apply-formatting" ''
+            treefmt
+          '')
+        ];
+      };
+    });
+  };
 }

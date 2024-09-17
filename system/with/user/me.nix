@@ -1,20 +1,28 @@
-{ inputs, pkgs, lib, ... }: {
-  environment.shells = [ pkgs.fish ];
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}: {
+  environment.shells = [pkgs.fish];
   programs.fish.enable = true;
-  users.knownUsers = [ "me" ];
+  users.knownUsers = ["me"];
 
-  users.users.me = {
-    shell = pkgs.fish;
-  } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-    uid = 502;
-    name = "me";
-    home = "/Users/me";
-    createHome = true;
-  } // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-    users.users.me.isNormalUser = true;
-    users.users.me.initialPassword = "me";
-    users.users.me.extraGroups = [ "wheel" "docker" ];
-  };
+  users.users.me =
+    {
+      shell = pkgs.fish;
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+      uid = 502;
+      name = "me";
+      home = "/Users/me";
+      createHome = true;
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      users.users.me.isNormalUser = true;
+      users.users.me.initialPassword = "me";
+      users.users.me.extraGroups = ["wheel" "docker"];
+    };
 
   home-manager.users.me = {
     imports = [
@@ -36,7 +44,7 @@
       ./with/program/zsh.nix
       ./with/program/nixvim.nix
       ./with/program/lazygit.nix
-      ./with/program/nixfmt.nix
+      #./with/program/nixfmt.nix
       ./with/program/raycast.nix
       ./with/program/dotnet.nix
       ./with/program/nuke-docker.nix
@@ -81,7 +89,7 @@
     ];
 
     home.sessionPath = [];
-    home.sessionVariables = { EDITOR = "vim"; };
+    home.sessionVariables = {EDITOR = "vim";};
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };
