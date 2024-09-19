@@ -79,6 +79,11 @@
     plugins.lsp.servers.ts-ls.enable = true;
     plugins.lsp.servers.eslint.enable = true;
     plugins.lsp.servers.sqls.enable = true;
+    plugins.lsp.servers.rust-analyzer.enable = true;
+    # Cargo should probably be installed by a devshell
+    # Maybe vim should too
+    plugins.lsp.servers.rust-analyzer.installCargo = false;
+    plugins.lsp.servers.rust-analyzer.installRustc = false;
     plugins.flash.enable = true;
     plugins.flash.settings.jump.autojump = true;
     plugins.trouble.enable = false;
