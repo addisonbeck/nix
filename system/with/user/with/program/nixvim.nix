@@ -41,6 +41,7 @@
     opts.cursorline = true;
     opts.wm = 2;
     opts.signcolumn = "yes";
+    plugins.web-devicons.enable = true;
     plugins.telescope.enable = true;
     plugins.telescope.extensions.file-browser.enable = true;
     plugins.telescope.extensions.file-browser.settings.hidden.file_browser =
