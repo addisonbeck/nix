@@ -17,6 +17,7 @@
         bg = "NONE";
       };
     };
+    opts.undofile = true;
     opts.termguicolors = false;
     opts.autoindent = true;
     opts.smartindent = false;
@@ -49,6 +50,7 @@
     plugins.telescope.extensions.file-browser.settings.hidden.folder_browser =
       true;
     plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
+    plugins.telescope.extensions.file-browser.settings.select_buffer = true;
     plugins.telescope.settings.defaults.layout_strategy = "vertical";
     plugins.telescope.settings.defaults.sorting_strategy = "ascending";
     plugins.telescope.settings.defaults.ignore_current_buffer = false;
