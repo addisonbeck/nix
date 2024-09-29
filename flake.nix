@@ -49,7 +49,6 @@
     ...
   } @ inputs: let
     inherit (self) outputs;
-    #nixpkgs.config.allowUnfree = true;
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
   in {

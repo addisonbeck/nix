@@ -4,6 +4,8 @@
   lib,
   ...
 }: {
+  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.allowBroken = true;
   environment.shells = [pkgs.fish];
   programs.fish.enable = true;
   users.knownUsers = ["me"];
@@ -83,6 +85,7 @@
       ./with/program/binwarden.nix
       # SPLUNK APP
       ./with/program/python3.9.nix
+      ./with/program/minecraft.nix
       # python v3.8.10
       # poetry
       # libmagic

@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   stylix.enable = true;
   stylix.image = ../wallpaper/empty.png;
-  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-light-hard.yaml";
 
   stylix.fonts = {
     serif = {
@@ -25,8 +25,8 @@
     };
   };
   stylix.fonts.sizes.terminal = 16;
-  stylix.opacity.terminal = 0.95;
-  stylix.targets.nixvim.transparentBackground.main = true;
+  stylix.opacity.terminal = 1.0;
+  stylix.targets.nixvim.transparentBackground.main = false;
   stylix.targets.emacs.enable = false;
 
   # This is broken with Kitty + tmux. Possibly related to https://github.com/danth/stylix/issues/202
