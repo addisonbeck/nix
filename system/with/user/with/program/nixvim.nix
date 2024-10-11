@@ -2,7 +2,7 @@
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts.background = "light";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
@@ -64,6 +64,8 @@
     plugins.telescope.settings.defaults.show_all_buffers = true;
     plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
     plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
+    plugins.telescope.settings.pickers.buffers.mappings.i."<C-d>" = "delete_buffer";
+    plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
 
     extraConfigVim = ''
       set laststatus=0
@@ -116,6 +118,29 @@
     plugins.gitlinker.enable = true;
     plugins.gitlinker.printUrl = false;
     plugins.lazygit.enable = true;
+
+    plugins.cmp.enable = true;
+    plugins.cmp.autoEnableSources = true;
+    plugins.cmp.settings.sources = [
+      { name = "nvim_lsp"; }
+    ];
+    plugins.cmp.settings.experimental.ghost_text = true;
+    plugins.cmp.settings.performance.max_view_entries = 5;
+    plugins.cmp.settings.window.completion.border = "rounded";
+    plugins.cmp.settings.window.documentation.border = "rounded";
+    plugins.cmp.settings.window.completion.col_offset = -3;
+    plugins.cmp.settings.window.completion.side_padding = 0;
+    plugins.cmp.settings.formatting.expandable_indicator = true;
+    plugins.cmp.settings.performance.debounce = 60;
+    plugins.cmp.settings.performance.fetching_timeout = 200;
+    plugins.cmp.settings.mapping."<Right>" = "cmp.mapping.complete()";
+    plugins.cmp.settings.mapping."<C-d>" = "cmp.mapping.scroll_docs(-4)";
+    plugins.cmp.settings.mapping."<C-e>" = "cmp.mapping.close()";
+    plugins.cmp.settings.mapping."<C-f>" = "cmp.mapping.scroll_docs(4)";
+    plugins.cmp.settings.mapping."<CR>" = "cmp.mapping.confirm({ select = true })";
+    plugins.cmp.settings.mapping."<Up>" = "cmp.mapping(cmp.mapping.select_prev_item(), {'i', 's'})";
+    plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
+    plugins.cmp.settings.completion.autocomplete = false;
 
     extraPlugins = with pkgs.vimPlugins; [
       plenary-nvim
@@ -451,6 +476,24 @@
         action = ''<cmd>lua require"gitlinker".get_buf_range_url("v")<cr>'';
         options = {
           desc = "Copy URL of current line on GitHub";
+          silent = true;
+        };
+      }
+      {
+        mode = ["n"];
+        key = "<Right>";
+        action = ''<cmd>bnext<cr>'';
+        options = {
+          desc = "Go to next buffer";
+          silent = true;
+        };
+      }
+      {
+        mode = ["n"];
+        key = "<Left>";
+        action = ''<cmd>bprevious<cr>'';
+        options = {
+          desc = "Go to previous buffer";
           silent = true;
         };
       }

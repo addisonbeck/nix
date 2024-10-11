@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   stylix.enable = true;
   stylix.image = ../wallpaper/empty.png;
-  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-light-hard.yaml";
 
   stylix.fonts = {
     serif = {
@@ -24,7 +24,7 @@
       name = "Noto Color Emoji";
     };
   };
-  stylix.fonts.sizes.terminal = 16;
+  stylix.fonts.sizes.terminal = 20;
   stylix.opacity.terminal = 1.0;
   stylix.targets.nixvim.transparentBackground.main = false;
   stylix.targets.emacs.enable = false;
