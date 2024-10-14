@@ -2,7 +2,7 @@
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "light";
+    opts.background = "dark";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
@@ -500,6 +500,7 @@
     ];
 
     userCommands.CopyFileName.command = "let @+ = expand('%')";
+    userCommands.GenerateGuid.command = "silent! read !uuidgen";
     userCommands.Bd.command = "silent! execute '%bd|e#|bd#'";
   };
 }
