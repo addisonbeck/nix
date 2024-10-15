@@ -64,8 +64,6 @@
     plugins.telescope.settings.defaults.show_all_buffers = true;
     plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
     plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
-    plugins.telescope.settings.pickers.buffers.mappings.i."<C-d>" = "delete_buffer";
-    plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
 
     extraConfigVim = ''
       set laststatus=0
@@ -133,13 +131,6 @@
     plugins.cmp.settings.formatting.expandable_indicator = true;
     plugins.cmp.settings.performance.debounce = 60;
     plugins.cmp.settings.performance.fetching_timeout = 200;
-    plugins.cmp.settings.mapping."<Right>" = "cmp.mapping.complete()";
-    plugins.cmp.settings.mapping."<C-d>" = "cmp.mapping.scroll_docs(-4)";
-    plugins.cmp.settings.mapping."<C-e>" = "cmp.mapping.close()";
-    plugins.cmp.settings.mapping."<C-f>" = "cmp.mapping.scroll_docs(4)";
-    plugins.cmp.settings.mapping."<CR>" = "cmp.mapping.confirm({ select = true })";
-    plugins.cmp.settings.mapping."<Up>" = "cmp.mapping(cmp.mapping.select_prev_item(), {'i', 's'})";
-    plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
     plugins.cmp.settings.completion.autocomplete = false;
 
     extraPlugins = with pkgs.vimPlugins; [
@@ -231,47 +222,11 @@
 
     keymaps = [
       {
-        action = "<Nop>";
+        action = ":";
         key = "<Space>";
-        mode = "n";
+        mode = ["n" "v"];
         options = {
-          desc = "Disable single space";
-          silent = true;
-        };
-      }
-      {
-        action = ":Telescope file_browser<CR>";
-        key = "<Space>f";
-        mode = "n";
-        options = {
-          desc = "Open a file browser";
-          silent = true;
-        };
-      }
-      {
-        action = ":Telescope oldfiles<CR>";
-        key = "<Space>o";
-        mode = "n";
-        options = {
-          desc = "Search oldfiles";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope.builtin').buffers()<cr>";
-        key = "<Space>b";
-        mode = "n";
-        options = {
-          desc = "Search through open buffers";
-          silent = true;
-        };
-      }
-      {
-        action = ":Telescope git_files<CR>";
-        key = "<Space>g";
-        mode = "n";
-        options = {
-          desc = "Search through files in the active git repository";
+          desc = "Map space to :";
           silent = true;
         };
       }
@@ -355,15 +310,6 @@
         };
       }
       {
-        action = "<cmd>lua vim.lsp.buf.code_action()<CR>";
-        key = "DA";
-        mode = "n";
-        options = {
-          desc = "Perform a code action";
-          silent = true;
-        };
-      }
-      {
         action = "<cmd>lua vim.diagnostic.go_to_next()<CR>";
         key = "DJ";
         mode = "n";
@@ -381,105 +327,6 @@
           silent = true;
         };
       }
-      {
-        action = "<cmd>lua vim.lsp.buf.rename()<CR>";
-        key = "RN";
-        mode = "n";
-        options = {
-          desc = "Rename the current file";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope.builtin').spell_suggest()<CR>";
-        key = "S=";
-        mode = "n";
-        options = {
-          desc = "Spell check";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope.builtin').live_grep({ cwd = '~/notes' })<CR>";
-        key = "<Space>n";
-        mode = "n";
-        options = {
-          desc = "Search notes";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })<CR>";
-        key = "<Space>s";
-        mode = "n";
-        options = {
-          desc = "Search notes";
-          silent = true;
-        };
-      }
-      # {
-      #   action = "<cmd>lua require('telescope.builtin').lsp_definitions()<CR>";
-      #   key = "<Space>d";
-      #   mode = "n";
-      #   options = {
-      #     desc = "Search definitions for the symbol under the cursor";
-      #     silent = true;
-      #   };
-      # }
-      {
-        action = "<cmd>lua require('telescope.builtin').diagnostics()<CR>";
-        key = "<Space>d";
-        mode = "n";
-        options = {
-          desc = "Search availible diagnostics";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope.builtin').pickers()<CR>";
-        key = "<Space><Space>";
-        mode = "n";
-        options = {
-          desc = "Search telescope pickers from history";
-          silent = true;
-        };
-      }
-      # {
-      #   action = "<cmd>lua require('telescope.builtin').lsp_implementations()()<CR>";
-      #   key = "SI";
-      #   mode = "n";
-      #   options = {
-      #     desc = "Search implementations for the symbol under the cursor";
-      #     silent = true;
-      #   };
-      # }
-      # {
-      #   action = "<cmd>lua require('telescope.builtin').lsp_references()<CR>";
-      #   key = "SR";
-      #   mode = "n";
-      #   options = {
-      #     desc = "Search references for the symbol under the cursor";
-      #     silent = true;
-      #   };
-      # }
-      {
-        action = "<cmd>lua require('telescope.builtin').marks()<CR>";
-        key = "<Space>m";
-        mode = "n";
-        options = {
-          desc = "Search marks";
-          silent = true;
-        };
-      }
-      # {
-      #   action = "<cmd>ZenMode<CR>";
-      #   key = "Z";
-      #   mode = "n";
-      #   options = {
-      #     desc = "Toggle Zen Mode";
-      #     silent = true;
-      #   };
-      # }
       {
         mode = ["n" "x" "o"];
         key = "s";
@@ -508,7 +355,7 @@
       {
         mode = ["n"];
         key = "<Right>";
-        action = ''<cmd>bnext<cr>'';
+        action = ''<cmd>bnext | silent ls<cr>'';
         options = {
           desc = "Go to next buffer";
           silent = true;
@@ -517,20 +364,45 @@
       {
         mode = ["n"];
         key = "<Left>";
-        action = ''<cmd>bprevious<cr>'';
+        action = ''<cmd>bprevious | silent ls<cr>'';
         options = {
           desc = "Go to previous buffer";
           silent = true;
         };
       }
     ];
-
-    userCommands.Format.command = "lua vim.lsp.buf.format()";
-    userCommands.CopyRelativePath.command = "let @+ = expand('%:p:.')";
-    userCommands.CopyFullPath.command = "let @+ = expand('%:p')";
-    userCommands.CopyFileName.command = "let @+ = expand('%:t')";
-    userCommands.GenerateGuid.command = "silent! read !uuidgen";
-    userCommands.Bd.command = "silent! execute '%bd|e#|bd#'";
+    plugins.telescope.settings.pickers.buffers.mappings.i."<C-d>" = "delete_buffer";
+    plugins.cmp.settings.mapping."<Right>" = "cmp.mapping.complete()";
+    plugins.cmp.settings.mapping."<C-d>" = "cmp.mapping.scroll_docs(-4)";
+    plugins.cmp.settings.mapping."<C-e>" = "cmp.mapping.close()";
+    plugins.cmp.settings.mapping."<C-f>" = "cmp.mapping.scroll_docs(4)";
+    plugins.cmp.settings.mapping."<CR>" = "cmp.mapping.confirm({ select = true })";
+    plugins.cmp.settings.mapping."<Up>" = "cmp.mapping(cmp.mapping.select_prev_item(), {'i', 's'})";
+    plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
+    plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
+   
+    userCommands."SearchNotes".command = "lua require('telescope.builtin').live_grep({ cwd = '~/notes' })";
+    userCommands."GrepWord".command = "lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })";
+    userCommands."SearchMarks".command = "lua require('telescope.builtin').marks()";
+    userCommands."SearchDiagnostics".command = "lua require('telescope.builtin').diagnostics()";
+    userCommands."R".command = "lua require('telescope.builtin').resume()";
+    userCommands."P".command = "lua require('telescope.builtin').pickers()";
+    userCommands."RenameCurrentFile".command = "lua vim.lsp.buf.rename()";
+    userCommands."Spellcheck".command = "lua require('telescope.builtin').spell_suggest()";
+    userCommands."CodeAction".command = "lua vim.lsp.buf.code_action()";
+    userCommands."G".command = "lua require('telescope.builtin').git_files()";
+    userCommands."B".command = "lua require('telescope.builtin').buffers()";
+    userCommands."Oldfiles".command = "lua require('telescope.builtin').oldfiles()";
+    userCommands."F".command = "lua require('telescope').extensions.file_browser.file_browser()";
+    userCommands."SearchDefinitions".command = "lua require('telescope.builtin').lsp_definitions()";
+    userCommands."SearchReferences".command = "lua require('telescope.builtin').lsp_references()";
+    userCommands."SearchImplementations".command = "lua require('telescope.builtin').lsp_implementations()";
+    userCommands."Format".command = "lua vim.lsp.buf.format()";
+    userCommands."CopyRelativePath".command = "let @+ = expand('%:p:.')";
+    userCommands."CopyFullPath".command = "let @+ = expand('%:p')";
+    userCommands."CopyFileName".command = "let @+ = expand('%:t')";
+    userCommands."GenerateGuid".command = "silent! read !uuidgen";
+    userCommands."Bd".command = "silent! execute '%bd|e#|bd#'";
     highlight = {
       # "Incandescent Light Bulb
       ActiveYank.bg = "#FFBB73";
