@@ -31,4 +31,5 @@
 
   # This is broken with Kitty + tmux. Possibly related to https://github.com/danth/stylix/issues/202
   stylix.targets.fish.enable = false;
+  stylix.targets.wezterm.enable = false;
 }

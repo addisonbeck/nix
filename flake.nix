@@ -2,8 +2,9 @@
 # dotnet test test/Core.Test/Core.Test.csproj -v quiet --nologo
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";  
     home-manager.url = "github:nix-community/home-manager/release-24.05";
+
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     nixvim.url = "github:nix-community/nixvim";
     nixvim.inputs.nixpkgs.follows = "nixpkgs";
@@ -20,18 +21,12 @@
     };
 
     d = {
-      type = "github";
-      owner = "addisonbeck";
-      repo = "d";
-      ref = "main";
+      url = "github:addisonbeck/d/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     binwarden = {
-      type = "github";
-      owner = "addisonbeck";
-      repo = "binwarden";
-      ref = "main";
+      url = "github:addisonbeck/binwarden/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

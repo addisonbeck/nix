@@ -31,10 +31,11 @@
 
     # Status Bar
 
-    set -g status on
+    # set -g status on
+    set -g status off
     set -g status-position top
     set -g status-style ""
-    # set -g status-right ""
+    set -g status-right ""
     set -g status-right-length 40
     set -g status-right-style default
     set -g status-interval 15
@@ -43,9 +44,11 @@
     set -g mode-keys vi
     set -g status-left-length 50
     set -g status-left-style default
-    set -g window-status-format " #I: #W "
+    # set -g window-status-format " #I: #W "
+    set -g window-status-format ""
     set -g window-status-style dim,fg=white,bg=black
-    set -g window-status-current-format " #I: #W "
+    # set -g window-status-current-format " #I: #W "
+    set -g window-status-current-format ""
     set -g window-status-current-style bold,fg=black,bg=green
     set -g status-right-style bold,fg=blue,bg=black
     set -g status-left "#[bold,fg=blue,bg=black]#h: #S"

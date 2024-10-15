@@ -59,7 +59,7 @@
       ./with/program/starship.nix
       ./with/program/fish.nix
       #./with/development-environment/nix
-      ./with/program/docker-desktop.nix
+      #./with/program/docker-desktop.nix
       ./with/program/powershell.nix
       #./with/program/bitwarden-cli.nix
       ./with/program/mkcert.nix
@@ -85,10 +85,11 @@
       ./with/program/binwarden.nix
       # SPLUNK APP
       ./with/program/python3.9.nix
-      ./with/program/minecraft.nix
+      #./with/program/minecraft.nix
       # python v3.8.10
       # poetry
       # libmagic
+      ./with/program/wezterm.nix
     ];
 
     home.sessionPath = [];

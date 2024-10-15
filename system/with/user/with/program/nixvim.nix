@@ -75,20 +75,20 @@
     '';
 
     plugins.lsp.enable = true;
-    plugins.lsp.servers.nil-ls.enable = true;
-    plugins.lsp.servers.nil-ls.settings.formatting.command = ["nixfmt"];
-    plugins.lsp.servers.csharp-ls.enable = true;
+    plugins.lsp.servers.nil_ls.enable = true;
+    plugins.lsp.servers.nil_ls.settings.formatting.command = ["nixfmt"];
+    plugins.lsp.servers.csharp_ls.enable = true;
     plugins.lsp.servers.marksman.enable = true;
     plugins.lsp.servers.jsonls.enable = true;
     plugins.lsp.servers.marksman.settings.formatting.command = ["prettierd"];
-    plugins.lsp.servers.ts-ls.enable = true;
+    plugins.lsp.servers.ts_ls.enable = true;
     plugins.lsp.servers.eslint.enable = true;
     plugins.lsp.servers.sqls.enable = true;
-    plugins.lsp.servers.rust-analyzer.enable = true;
+    plugins.lsp.servers.rust_analyzer.enable = true;
     # Cargo should probably be installed by a devshell
     # Maybe vim should too
-    plugins.lsp.servers.rust-analyzer.installCargo = false;
-    plugins.lsp.servers.rust-analyzer.installRustc = false;
+    plugins.lsp.servers.rust_analyzer.installCargo = false;
+    plugins.lsp.servers.rust_analyzer.installRustc = false;
     plugins.flash.enable = true;
     plugins.flash.settings.jump.autojump = true;
     plugins.trouble.enable = false;
@@ -203,10 +203,45 @@
     plugins.zen-mode.enable = true;
     plugins.twilight.enable = true;
 
+    # This does not work well, but is cool
+    plugins.image = {
+      enable = false;
+      backend = "kitty";
+      hijackFilePatterns = [
+        "*.png"
+        "*.jpg"
+        "*.jpeg"
+        "*.gif"
+        "*.webp"
+      ];
+      maxHeightWindowPercentage = 25;
+      tmuxShowOnlyInActiveWindow = true;
+      integrations = {
+        markdown = {
+          enabled = true;
+          downloadRemoteImages = true;
+          filetypes = [
+            "markdown"
+            "vimwiki"
+            "mdx"
+          ];
+        };
+      };
+    };
+
     keymaps = [
       {
+        action = "<Nop>";
+        key = "<Space>";
+        mode = "n";
+        options = {
+          desc = "Disable single space";
+          silent = true;
+        };
+      }
+      {
         action = ":Telescope file_browser<CR>";
-        key = "\\";
+        key = "<Space>f";
         mode = "n";
         options = {
           desc = "Open a file browser";
@@ -215,16 +250,16 @@
       }
       {
         action = ":Telescope oldfiles<CR>";
-        key = "|";
+        key = "<Space>o";
         mode = "n";
         options = {
-          desc = "Search through Telescope pickers";
+          desc = "Search oldfiles";
           silent = true;
         };
       }
       {
         action = "<cmd>lua require('telescope.builtin').buffers()<cr>";
-        key = "<Tab>";
+        key = "<Space>b";
         mode = "n";
         options = {
           desc = "Search through open buffers";
@@ -233,7 +268,7 @@
       }
       {
         action = ":Telescope git_files<CR>";
-        key = "<S-Tab>";
+        key = "<Space>g";
         mode = "n";
         options = {
           desc = "Search through files in the active git repository";
@@ -264,15 +299,6 @@
         mode = "n";
         options = {
           desc = "Toggle line numbers";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua vim.lsp.buf.format()<CR>";
-        key = "FF";
-        mode = "n";
-        options = {
-          desc = "Format the file";
           silent = true;
         };
       }
@@ -375,7 +401,7 @@
       }
       {
         action = "<cmd>lua require('telescope.builtin').live_grep({ cwd = '~/notes' })<CR>";
-        key = "SN";
+        key = "<Space>n";
         mode = "n";
         options = {
           desc = "Search notes";
@@ -384,25 +410,25 @@
       }
       {
         action = "<cmd>lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })<CR>";
-        key = "SG";
+        key = "<Space>s";
         mode = "n";
         options = {
           desc = "Search notes";
           silent = true;
         };
       }
-      {
-        action = "<cmd>lua require('telescope.builtin').lsp_definitions()<CR>";
-        key = "SDE";
-        mode = "n";
-        options = {
-          desc = "Search definitions for the symbol under the cursor";
-          silent = true;
-        };
-      }
+      # {
+      #   action = "<cmd>lua require('telescope.builtin').lsp_definitions()<CR>";
+      #   key = "<Space>d";
+      #   mode = "n";
+      #   options = {
+      #     desc = "Search definitions for the symbol under the cursor";
+      #     silent = true;
+      #   };
+      # }
       {
         action = "<cmd>lua require('telescope.builtin').diagnostics()<CR>";
-        key = "SDI";
+        key = "<Space>d";
         mode = "n";
         options = {
           desc = "Search availible diagnostics";
@@ -410,50 +436,50 @@
         };
       }
       {
-        action = "<cmd>lua require('telescope.builtin').resume()<CR>";
-        key = "SS";
+        action = "<cmd>lua require('telescope.builtin').pickers()<CR>";
+        key = "<Space><Space>";
         mode = "n";
         options = {
-          desc = "Search all symbols in the current document";
+          desc = "Search telescope pickers from history";
           silent = true;
         };
       }
-      {
-        action = "<cmd>lua require('telescope.builtin').lsp_implementations()()<CR>";
-        key = "SI";
-        mode = "n";
-        options = {
-          desc = "Search implementations for the symbol under the cursor";
-          silent = true;
-        };
-      }
-      {
-        action = "<cmd>lua require('telescope.builtin').lsp_references()<CR>";
-        key = "SR";
-        mode = "n";
-        options = {
-          desc = "Search references for the symbol under the cursor";
-          silent = true;
-        };
-      }
+      # {
+      #   action = "<cmd>lua require('telescope.builtin').lsp_implementations()()<CR>";
+      #   key = "SI";
+      #   mode = "n";
+      #   options = {
+      #     desc = "Search implementations for the symbol under the cursor";
+      #     silent = true;
+      #   };
+      # }
+      # {
+      #   action = "<cmd>lua require('telescope.builtin').lsp_references()<CR>";
+      #   key = "SR";
+      #   mode = "n";
+      #   options = {
+      #     desc = "Search references for the symbol under the cursor";
+      #     silent = true;
+      #   };
+      # }
       {
         action = "<cmd>lua require('telescope.builtin').marks()<CR>";
-        key = "SM";
+        key = "<Space>m";
         mode = "n";
         options = {
           desc = "Search marks";
           silent = true;
         };
       }
-      {
-        action = "<cmd>ZenMode<CR>";
-        key = "Z";
-        mode = "n";
-        options = {
-          desc = "Toggle Zen Mode";
-          silent = true;
-        };
-      }
+      # {
+      #   action = "<cmd>ZenMode<CR>";
+      #   key = "Z";
+      #   mode = "n";
+      #   options = {
+      #     desc = "Toggle Zen Mode";
+      #     silent = true;
+      #   };
+      # }
       {
         mode = ["n" "x" "o"];
         key = "s";
@@ -499,8 +525,62 @@
       }
     ];
 
-    userCommands.CopyFileName.command = "let @+ = expand('%')";
+    userCommands.Format.command = "lua vim.lsp.buf.format()";
+    userCommands.CopyRelativePath.command = "let @+ = expand('%:p:.')";
+    userCommands.CopyFullPath.command = "let @+ = expand('%:p')";
+    userCommands.CopyFileName.command = "let @+ = expand('%:t')";
     userCommands.GenerateGuid.command = "silent! read !uuidgen";
     userCommands.Bd.command = "silent! execute '%bd|e#|bd#'";
+    highlight = {
+      # "Incandescent Light Bulb
+      ActiveYank.bg = "#FFBB73";
+      ActiveYank.fg = "#000000";
+    };
+    autoCmd = [
+      {
+        event = [
+          "FileType"
+        ];
+        pattern = [
+	  "qf"
+          "help"
+	  "man"
+	  "lspinfo"
+        ];
+        callback = { 
+	  __raw = ''
+	    function()
+	      vim.cmd([[
+	        set buflisted
+		wincmd o
+	      ]])
+	    end
+	''; 
+	};
+      }
+      {
+        event = [
+          "FileType"
+        ];
+        pattern = [
+	  "md"
+	  "markdown"
+          "txt"
+	  "gitcommit"
+        ];
+        callback = { 
+	  __raw = ''
+	    function()
+	      vim.opt_local.wrap = true
+	    end
+	''; 
+	};
+      }
+      {
+        event = [ "TextYankPost" ];
+        pattern = [ "*" ];
+        command = ''lua vim.highlight.on_yank({higroup="ActiveYank", timeout=300})'';
+      }
+    ];
   };
 }
