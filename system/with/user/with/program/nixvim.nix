@@ -1,3 +1,5 @@
+# use z<Enter> z. and z- more!
+
 {pkgs, ...}: {
   programs.nixvim = {
     enable = true;
@@ -42,6 +44,7 @@
     opts.cursorline = true;
     opts.wm = 2;
     opts.signcolumn = "yes";
+    globals.netrw_banner = 0;
     plugins.web-devicons.enable = true;
     plugins.telescope.enable = true;
     plugins.telescope.extensions.file-browser.enable = true;
@@ -354,19 +357,49 @@
       }
       {
         mode = ["n"];
-        key = "<Right>";
-        action = ''<cmd>bnext | silent ls<cr>'';
+        key = "<Up>";
+        action = "<cmd>B<cr>";
         options = {
-          desc = "Go to next buffer";
+          desc = "Go to a open buffer";
+          silent = true;
+        };
+      }
+      {
+        mode = ["n"];
+        key = "<Down>";
+	# Combine diagnostics?
+        action = "<cmd>SearchMarks<cr>";
+        options = {
+          desc = "Go to a mark";
           silent = true;
         };
       }
       {
         mode = ["n"];
         key = "<Left>";
-        action = ''<cmd>bprevious | silent ls<cr>'';
+        action = '':bprevious<cr>:ls<cr>'';
         options = {
           desc = "Go to previous buffer";
+          silent = true;
+        };
+      }
+      {
+        mode = ["n"];
+        key = "<Tab>";
+	# This will swap to the previous buffer in pure vim. Neat!
+        # action = '':b#<cr>'';
+	action = ''<cmd>G<cr>'';
+        options = {
+          desc = "Search Git files";
+          silent = true;
+        };
+      }
+      {
+        mode = ["n"];
+        key = "<S-Tab>";
+	action = ''<cmd>F<cr>'';
+        options = {
+          desc = "Search file tree";
           silent = true;
         };
       }
@@ -383,6 +416,9 @@
    
     userCommands."SearchNotes".command = "lua require('telescope.builtin').live_grep({ cwd = '~/notes' })";
     userCommands."GrepWord".command = "lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })";
+
+    # Pure vim implementation
+    # userCommands."SearchMarks".command = "marks abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ<cr>:'
     userCommands."SearchMarks".command = "lua require('telescope.builtin').marks()";
     userCommands."SearchDiagnostics".command = "lua require('telescope.builtin').diagnostics()";
     userCommands."R".command = "lua require('telescope.builtin').resume()";
@@ -391,8 +427,11 @@
     userCommands."Spellcheck".command = "lua require('telescope.builtin').spell_suggest()";
     userCommands."CodeAction".command = "lua vim.lsp.buf.code_action()";
     userCommands."G".command = "lua require('telescope.builtin').git_files()";
+    # Pure Vim implementation
+    # userCommands."B".command = "ls<cr>:b<space>";
     userCommands."B".command = "lua require('telescope.builtin').buffers()";
     userCommands."Oldfiles".command = "lua require('telescope.builtin').oldfiles()";
+    # Use :Ex to do this with pure vim
     userCommands."F".command = "lua require('telescope').extensions.file_browser.file_browser()";
     userCommands."SearchDefinitions".command = "lua require('telescope.builtin').lsp_definitions()";
     userCommands."SearchReferences".command = "lua require('telescope.builtin').lsp_references()";
