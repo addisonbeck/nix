@@ -1,6 +1,7 @@
 {inputs, ...}: {
   imports = [
     ./with/nix.nix
+    ./with/nix-darwin.nix
     ./with/desktop-environment/darwin.nix
     inputs.home-manager.darwinModules.home-manager
     ./with/home-manager.nix
