@@ -433,6 +433,7 @@
     userCommands."Oldfiles".command = "lua require('telescope.builtin').oldfiles()";
     # Use :Ex to do this with pure vim
     userCommands."F".command = "lua require('telescope').extensions.file_browser.file_browser()";
+    userCommands."D".command = "lua require('telescope.builtin').lsp_definitions()";
     userCommands."SearchDefinitions".command = "lua require('telescope.builtin').lsp_definitions()";
     userCommands."SearchReferences".command = "lua require('telescope.builtin').lsp_references()";
     userCommands."SearchImplementations".command = "lua require('telescope.builtin').lsp_implementations()";
