@@ -85,7 +85,7 @@
       ./with/program/binwarden.nix
       # SPLUNK APP
       ./with/program/python3.9.nix
-      #./with/program/minecraft.nix
+      ./with/program/minecraft.nix
       # python v3.8.10
       # poetry
       # libmagic
