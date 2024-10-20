@@ -142,6 +142,7 @@
       telescope-live-grep-args-nvim
     ];
     plugins.telescope.enabledExtensions = ["live_grep_args"];
+    plugins.markdown-preview.enable = true;
 
     extraConfigLua = ''
            vim.diagnostic.config({
