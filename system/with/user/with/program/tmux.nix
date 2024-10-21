@@ -12,6 +12,7 @@
     set-option -sg escape-time 0
     set-option -g focus-events on
 
+    # For image rendering in the terminal
     set -gq allow-passthrough on
     set -g visual-activity off
 

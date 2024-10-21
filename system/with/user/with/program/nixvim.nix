@@ -200,7 +200,8 @@
 
     # This does not work well, but is cool
     plugins.image = {
-      enable = false;
+      enable = true;
+      editorOnlyRenderWhenFocused = true;
       backend = "kitty";
       hijackFilePatterns = [
         "*.png"
@@ -214,6 +215,8 @@
       integrations = {
         markdown = {
           enabled = true;
+	  clearInInsertMode = true;
+	  onlyRenderImageAtCursor = true;
           downloadRemoteImages = true;
           filetypes = [
             "markdown"
