@@ -198,9 +198,11 @@
     plugins.zen-mode.enable = true;
     plugins.twilight.enable = true;
 
-    # This does not work well, but is cool
+    # I really want to use this, but it seems to always do unexpected stuff.
+    # Last time I enabled this it made the bottom row of the vim editor
+    # blank.
     plugins.image = {
-      enable = true;
+      enable = false;
       editorOnlyRenderWhenFocused = true;
       backend = "kitty";
       hijackFilePatterns = [
@@ -225,6 +227,10 @@
           ];
         };
       };
+    };
+
+    plugins.render-markdown = {
+      enable = false;
     };
 
     keymaps = [
