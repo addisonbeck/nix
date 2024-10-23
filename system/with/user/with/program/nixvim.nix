@@ -4,7 +4,7 @@
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts.background = "light";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
@@ -54,16 +54,17 @@
       true;
     plugins.telescope.extensions.file-browser.settings.path = "%:p:h";
     plugins.telescope.extensions.file-browser.settings.select_buffer = true;
-    plugins.telescope.settings.defaults.layout_strategy = "vertical";
     plugins.telescope.settings.defaults.sorting_strategy = "ascending";
     plugins.telescope.settings.defaults.ignore_current_buffer = false;
     plugins.telescope.settings.defaults.sort_mru = true;
     plugins.telescope.settings.defaults.path_display = ["smart"];
+    plugins.telescope.settings.defaults.layout_strategy = "vertical";
     plugins.telescope.settings.defaults.layout_config.width = 0.99;
     plugins.telescope.settings.defaults.layout_config.height = 0.99;
     plugins.telescope.settings.defaults.layout_config.mirror = true;
     plugins.telescope.settings.defaults.layout_config.prompt_position = "top";
     plugins.telescope.settings.defaults.layout_config.preview_height = 0.6;
+    plugins.telescope.settings.defaults.layout_config.preview_cutoff = 0;
     plugins.telescope.settings.defaults.show_all_buffers = true;
     plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
     plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
