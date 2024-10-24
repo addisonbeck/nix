@@ -3,9 +3,9 @@
   pkgs,
   ...
 }: let
-authorizedKeys = pkgs.writeText "authorized_keys" ''
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw
-'';
+  authorizedKeys = pkgs.writeText "authorized_keys" ''
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw
+  '';
 in {
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowBroken = true;
@@ -17,8 +17,8 @@ in {
     shell = pkgs.bash;
     isNormalUser = true;
     group = "steve";
-    extraGroups = [ "wheel" "minecraft" ];
-    openssh.authorizedKeys.keyFiles = [ "${authorizedKeys}" ];
+    extraGroups = ["wheel" "minecraft"];
+    openssh.authorizedKeys.keyFiles = ["${authorizedKeys}"];
   };
   home-manager.users.steve = {
     imports = [

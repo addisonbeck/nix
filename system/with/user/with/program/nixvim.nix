@@ -1,5 +1,4 @@
 # use z<Enter> z. and z- more!
-
 {pkgs, ...}: {
   programs.nixvim = {
     enable = true;
@@ -124,7 +123,7 @@
     plugins.cmp.enable = true;
     plugins.cmp.autoEnableSources = true;
     plugins.cmp.settings.sources = [
-      { name = "nvim_lsp"; }
+      {name = "nvim_lsp";}
     ];
     plugins.cmp.settings.experimental.ghost_text = true;
     plugins.cmp.settings.performance.max_view_entries = 5;
@@ -151,325 +150,325 @@
     plugins.markdown-preview.settings.refresh_slow = 1;
     plugins.markdown-preview.settings.page_title = "$${name}";
     plugins.markdown-preview.settings.markdown_css = "${pkgs.writeText "markdown-preview.css" ''
-	/*
-	 * github like style
-	 * https://github.com/iamcco/markdown.css/blob/master/dest/github/markdown.css
-	 */
+      /*
+       * github like style
+       * https://github.com/iamcco/markdown.css/blob/master/dest/github/markdown.css
+       */
 
-	:root {
-	    --color-text-primary: #333;
-	    --color-text-tertiary: #777;
-	    --color-text-link: #4078c0;
-	    --color-bg-primary: #fff;
-	    --color-bg-secondary: #fafbfc;
-	    --color-bg-tertiary: #f8f8f8;
-	    --color-border-primary: #ddd;
-	    --color-border-secondary: #eaecef;
-	    --color-border-tertiary: #d1d5da;
-	    --color-kbd-foreground: #444d56;
-	    --color-markdown-blockquote-border: #dfe2e5;
-	    --color-markdown-table-border: #dfe2e5;
-	    --color-markdown-table-tr-border: #c6cbd1;
-	    --color-markdown-code-bg: #1b1f230d;
-	}
-	[data-theme="dark"] {
-	    --color-text-primary: #c9d1d9;
-	    --color-text-tertiary: #8b949e;
-	    --color-text-link: #58a6ff;
-	    --color-bg-primary: #0d1117;
-	    --color-bg-secondary: #0d1117;
-	    --color-bg-tertiary: #161b22;
-	    --color-border-primary: #30363d;
-	    --color-border-secondary: #21262d;
-	    --color-border-tertiary: #6e7681;
-	    --color-kbd-foreground: #b1bac4;
-	    --color-markdown-blockquote-border: #3b434b;
-	    --color-markdown-table-border: #3b434b;
-	    --color-markdown-table-tr-border: #272c32;
-	    --color-markdown-code-bg: #f0f6fc26;
-	}
+      :root {
+          --color-text-primary: #333;
+          --color-text-tertiary: #777;
+          --color-text-link: #4078c0;
+          --color-bg-primary: #fff;
+          --color-bg-secondary: #fafbfc;
+          --color-bg-tertiary: #f8f8f8;
+          --color-border-primary: #ddd;
+          --color-border-secondary: #eaecef;
+          --color-border-tertiary: #d1d5da;
+          --color-kbd-foreground: #444d56;
+          --color-markdown-blockquote-border: #dfe2e5;
+          --color-markdown-table-border: #dfe2e5;
+          --color-markdown-table-tr-border: #c6cbd1;
+          --color-markdown-code-bg: #1b1f230d;
+      }
+      [data-theme="dark"] {
+          --color-text-primary: #c9d1d9;
+          --color-text-tertiary: #8b949e;
+          --color-text-link: #58a6ff;
+          --color-bg-primary: #0d1117;
+          --color-bg-secondary: #0d1117;
+          --color-bg-tertiary: #161b22;
+          --color-border-primary: #30363d;
+          --color-border-secondary: #21262d;
+          --color-border-tertiary: #6e7681;
+          --color-kbd-foreground: #b1bac4;
+          --color-markdown-blockquote-border: #3b434b;
+          --color-markdown-table-border: #3b434b;
+          --color-markdown-table-tr-border: #272c32;
+          --color-markdown-code-bg: #f0f6fc26;
+      }
 
-	.markdown-body ol ol,
-	.markdown-body ul ol,
-	.markdown-body ol ul,
-	.markdown-body ul ul,
-	.markdown-body ol ul ol,
-	.markdown-body ul ul ol,
-	.markdown-body ol ul ul,
-	.markdown-body ul ul ul {
-	  margin-top: 0;
-	  margin-bottom: 0;
-	}
-	.markdown-body {
-	  font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-	  font-size: 16px;
-	  color: var(--color-text-primary);
-	  line-height: 1.6;
-	  word-wrap: break-word;
-	  padding: 45px;
-	  background: var(--color-bg-primary);
-	  border: 1px solid var(--color-border-primary);
-	  -webkit-border-radius: 0 0 3px 3px;
-	  border-radius: 0 0 3px 3px;
-	}
-	.markdown-body > *:first-child {
-	  margin-top: 0 !important;
-	}
-	.markdown-body > *:last-child {
-	  margin-bottom: 0 !important;
-	}
-	.markdown-body .table-of-contents ol {
-	  list-style: none;
-	}
-	.markdown-body .table-of-contents > ol {
-	  padding-left: 0;
-	}
-	.markdown-body * {
-	  -webkit-box-sizing: border-box;
-	  -moz-box-sizing: border-box;
-	  box-sizing: border-box;
-	}
-	.markdown-body h1,
-	.markdown-body h2,
-	.markdown-body h3,
-	.markdown-body h4,
-	.markdown-body h5,
-	.markdown-body h6 {
-	  margin-top: 1em;
-	  margin-bottom: 16px;
-	  font-weight: bold;
-	  line-height: 1.4;
-	}
-	.markdown-body h1 .anchor,
-	.markdown-body h2 .anchor,
-	.markdown-body h3 .anchor,
-	.markdown-body h4 .anchor,
-	.markdown-body h5 .anchor,
-	.markdown-body h6 .anchor {
-	  margin-left: -24px;
-	  visibility: hidden;
-	}
-	.markdown-body h1:hover .anchor,
-	.markdown-body h2:hover .anchor,
-	.markdown-body h3:hover .anchor,
-	.markdown-body h4:hover .anchor,
-	.markdown-body h5:hover .anchor,
-	.markdown-body h6:hover .anchor {
-	  visibility: visible;
-	}
-	.markdown-body p,
-	.markdown-body blockquote,
-	.markdown-body ul,
-	.markdown-body ol,
-	.markdown-body dl,
-	.markdown-body table,
-	.markdown-body pre {
-	  margin-top: 0;
-	  margin-bottom: 16px;
-	}
-	.markdown-body h1 {
-	  margin: 0.67em 0;
-	  padding-bottom: 0.3em;
-	  font-size: 2.25em;
-	  line-height: 1.2;
-	  border-bottom: 1px solid var(--color-border-secondary);
-	}
-	.markdown-body h2 {
-	  padding-bottom: 0.3em;
-	  font-size: 1.75em;
-	  line-height: 1.225;
-	  border-bottom: 1px solid var(--color-border-secondary);
-	}
-	.markdown-body h3 {
-	  font-size: 1.5em;
-	  line-height: 1.43;
-	}
-	.markdown-body h4 {
-	  font-size: 1.25em;
-	}
-	.markdown-body h5 {
-	  font-size: 1em;
-	}
-	.markdown-body h6 {
-	  font-size: 1em;
-	  color: var(--color-text-tertiary);
-	}
-	.markdown-body hr {
-	  margin-top: 20px;
-	  margin-bottom: 20px;
-	  height: 0;
-	  border: 0;
-	  border-top: 1px solid var(--color-border-primary);
-	}
-	.markdown-body ol,
-	.markdown-body ul {
-	  padding-left: 2em;
-	}
-	.markdown-body ol ol,
-	.markdown-body ul ol {
-	  list-style-type: lower-roman;
-	}
-	.markdown-body ol ul,
-	.markdown-body ul ul {
-	  list-style-type: circle;
-	}
-	.markdown-body ol ul ul,
-	.markdown-body ul ul ul {
-	  list-style-type: square;
-	}
-	.markdown-body ol {
-	  list-style-type: decimal;
-	}
-	.markdown-body ul {
-	  list-style-type: disc;
-	}
-	.markdown-body dl {
-	  margin-bottom: 1.3em
-	}
-	.markdown-body dl dt {
-	  font-weight: 700;
-	}
-	.markdown-body dl dd {
-	  margin-left: 0;
-	}
-	.markdown-body dl dd p {
-	  margin-bottom: 0.8em;
-	}
-	.markdown-body blockquote {
-	  margin-left: 0;
-	  margin-right: 0;
-	  padding: 0 15px;
-	  color: var(--color-text-tertiary);
-	  border-left: 4px solid var(--color-markdown-blockquote-border);
-	}
-	.markdown-body table {
-	  display: block;
-	  width: 100%;
-	  overflow: auto;
-	  word-break: normal;
-	  word-break: keep-all;
-	  border-collapse: collapse;
-	  border-spacing: 0;
-	}
-	.markdown-body table tr {
-	  background-color: var(--color-bg-primary);
-	  border-top: 1px solid var(--color-markdown-table-tr-border);
-	}
-	.markdown-body table tr:nth-child(2n) {
-	  background-color: var(--color-bg-tertiary);
-	}
-	.markdown-body table th,
-	.markdown-body table td {
-	  padding: 6px 13px;
-	  border: 1px solid var(--color-markdown-table-border);
-	  vertical-align: top;
-	}
-	.markdown-body kbd {
-	  display: inline-block;
-	  padding: 5px 6px;
-	  font: 14px SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
-	  line-height: 10px;
-	  color: var(--color-kbd-foreground);
-	  vertical-align: middle;
-	  background-color: var(--color-bg-secondary);
-	  border: 1px solid var(--color-border-tertiary);
-	  border-radius: 3px;
-	  box-shadow: inset 0 -1px 0 var(--color-border-tertiary);
-	}
-	.markdown-body pre {
-	  word-wrap: normal;
-	  padding: 16px;
-	  overflow: auto;
-	  font-size: 85%;
-	  line-height: 1.45;
-	  background-color: var(--color-bg-tertiary);
-	  -webkit-border-radius: 3px;
-	  border-radius: 3px;
-	}
-	.markdown-body pre code {
-	  display: inline;
-	  max-width: initial;
-	  padding: 0;
-	  margin: 0;
-	  overflow: initial;
-	  font-size: 100%;
-	  line-height: inherit;
-	  word-wrap: normal;
-	  white-space: pre;
-	  border: 0;
-	  -webkit-border-radius: 3px;
-	  border-radius: 3px;
-	  background-color: transparent;
-	}
-	.markdown-body pre code:before,
-	.markdown-body pre code:after {
-	  content: normal;
-	}
-	.markdown-body code {
-	  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
-	  padding: 0;
-	  padding-top: 0.2em;
-	  padding-bottom: 0.2em;
-	  margin: 0;
-	  font-size: 85%;
-	  background-color: var(--color-markdown-code-bg);
-	  -webkit-border-radius: 3px;
-	  border-radius: 3px;
-	}
-	.markdown-body code:before,
-	.markdown-body code:after {
-	  letter-spacing: -0.2em;
-	  content: "\00a0";
-	}
-	.markdown-body a {
-	  color: var(--color-text-link);
-	  text-decoration: none;
-	  background: transparent;
-	}
-	.markdown-body img {
-	  max-width: 100%;
-	  max-height: 100%;
-	}
-	.markdown-body strong {
-	  font-weight: bold;
-	}
-	.markdown-body em {
-	  font-style: italic;
-	}
-	.markdown-body del {
-	  text-decoration: line-through;
-	}
-	.task-list-item {
-	  list-style-type: none;
-	}
-	.task-list-item input {
-	  font: 13px/1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-	  margin: 0 0.35em 0.25em -1.6em;
-	  vertical-align: middle;
-	}
-	.task-list-item input[disabled] {
-	  cursor: default;
-	}
-	.task-list-item input[type="checkbox"] {
-	  -webkit-box-sizing: border-box;
-	  -moz-box-sizing: border-box;
-	  box-sizing: border-box;
-	  padding: 0;
-	}
-	.task-list-item input[type="radio"] {
-	  -webkit-box-sizing: border-box;
-	  -moz-box-sizing: border-box;
-	  box-sizing: border-box;
-	  padding: 0;
-	}
+      .markdown-body ol ol,
+      .markdown-body ul ol,
+      .markdown-body ol ul,
+      .markdown-body ul ul,
+      .markdown-body ol ul ol,
+      .markdown-body ul ul ol,
+      .markdown-body ol ul ul,
+      .markdown-body ul ul ul {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      .markdown-body {
+        font-family: "Helvetica Neue", Helvetica, "Segoe UI", Arial, freesans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        font-size: 16px;
+        color: var(--color-text-primary);
+        line-height: 1.6;
+        word-wrap: break-word;
+        padding: 45px;
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border-primary);
+        -webkit-border-radius: 0 0 3px 3px;
+        border-radius: 0 0 3px 3px;
+      }
+      .markdown-body > *:first-child {
+        margin-top: 0 !important;
+      }
+      .markdown-body > *:last-child {
+        margin-bottom: 0 !important;
+      }
+      .markdown-body .table-of-contents ol {
+        list-style: none;
+      }
+      .markdown-body .table-of-contents > ol {
+        padding-left: 0;
+      }
+      .markdown-body * {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3,
+      .markdown-body h4,
+      .markdown-body h5,
+      .markdown-body h6 {
+        margin-top: 1em;
+        margin-bottom: 16px;
+        font-weight: bold;
+        line-height: 1.4;
+      }
+      .markdown-body h1 .anchor,
+      .markdown-body h2 .anchor,
+      .markdown-body h3 .anchor,
+      .markdown-body h4 .anchor,
+      .markdown-body h5 .anchor,
+      .markdown-body h6 .anchor {
+        margin-left: -24px;
+        visibility: hidden;
+      }
+      .markdown-body h1:hover .anchor,
+      .markdown-body h2:hover .anchor,
+      .markdown-body h3:hover .anchor,
+      .markdown-body h4:hover .anchor,
+      .markdown-body h5:hover .anchor,
+      .markdown-body h6:hover .anchor {
+        visibility: visible;
+      }
+      .markdown-body p,
+      .markdown-body blockquote,
+      .markdown-body ul,
+      .markdown-body ol,
+      .markdown-body dl,
+      .markdown-body table,
+      .markdown-body pre {
+        margin-top: 0;
+        margin-bottom: 16px;
+      }
+      .markdown-body h1 {
+        margin: 0.67em 0;
+        padding-bottom: 0.3em;
+        font-size: 2.25em;
+        line-height: 1.2;
+        border-bottom: 1px solid var(--color-border-secondary);
+      }
+      .markdown-body h2 {
+        padding-bottom: 0.3em;
+        font-size: 1.75em;
+        line-height: 1.225;
+        border-bottom: 1px solid var(--color-border-secondary);
+      }
+      .markdown-body h3 {
+        font-size: 1.5em;
+        line-height: 1.43;
+      }
+      .markdown-body h4 {
+        font-size: 1.25em;
+      }
+      .markdown-body h5 {
+        font-size: 1em;
+      }
+      .markdown-body h6 {
+        font-size: 1em;
+        color: var(--color-text-tertiary);
+      }
+      .markdown-body hr {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        height: 0;
+        border: 0;
+        border-top: 1px solid var(--color-border-primary);
+      }
+      .markdown-body ol,
+      .markdown-body ul {
+        padding-left: 2em;
+      }
+      .markdown-body ol ol,
+      .markdown-body ul ol {
+        list-style-type: lower-roman;
+      }
+      .markdown-body ol ul,
+      .markdown-body ul ul {
+        list-style-type: circle;
+      }
+      .markdown-body ol ul ul,
+      .markdown-body ul ul ul {
+        list-style-type: square;
+      }
+      .markdown-body ol {
+        list-style-type: decimal;
+      }
+      .markdown-body ul {
+        list-style-type: disc;
+      }
+      .markdown-body dl {
+        margin-bottom: 1.3em
+      }
+      .markdown-body dl dt {
+        font-weight: 700;
+      }
+      .markdown-body dl dd {
+        margin-left: 0;
+      }
+      .markdown-body dl dd p {
+        margin-bottom: 0.8em;
+      }
+      .markdown-body blockquote {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 0 15px;
+        color: var(--color-text-tertiary);
+        border-left: 4px solid var(--color-markdown-blockquote-border);
+      }
+      .markdown-body table {
+        display: block;
+        width: 100%;
+        overflow: auto;
+        word-break: normal;
+        word-break: keep-all;
+        border-collapse: collapse;
+        border-spacing: 0;
+      }
+      .markdown-body table tr {
+        background-color: var(--color-bg-primary);
+        border-top: 1px solid var(--color-markdown-table-tr-border);
+      }
+      .markdown-body table tr:nth-child(2n) {
+        background-color: var(--color-bg-tertiary);
+      }
+      .markdown-body table th,
+      .markdown-body table td {
+        padding: 6px 13px;
+        border: 1px solid var(--color-markdown-table-border);
+        vertical-align: top;
+      }
+      .markdown-body kbd {
+        display: inline-block;
+        padding: 5px 6px;
+        font: 14px SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+        line-height: 10px;
+        color: var(--color-kbd-foreground);
+        vertical-align: middle;
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border-tertiary);
+        border-radius: 3px;
+        box-shadow: inset 0 -1px 0 var(--color-border-tertiary);
+      }
+      .markdown-body pre {
+        word-wrap: normal;
+        padding: 16px;
+        overflow: auto;
+        font-size: 85%;
+        line-height: 1.45;
+        background-color: var(--color-bg-tertiary);
+        -webkit-border-radius: 3px;
+        border-radius: 3px;
+      }
+      .markdown-body pre code {
+        display: inline;
+        max-width: initial;
+        padding: 0;
+        margin: 0;
+        overflow: initial;
+        font-size: 100%;
+        line-height: inherit;
+        word-wrap: normal;
+        white-space: pre;
+        border: 0;
+        -webkit-border-radius: 3px;
+        border-radius: 3px;
+        background-color: transparent;
+      }
+      .markdown-body pre code:before,
+      .markdown-body pre code:after {
+        content: normal;
+      }
+      .markdown-body code {
+        font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        padding: 0;
+        padding-top: 0.2em;
+        padding-bottom: 0.2em;
+        margin: 0;
+        font-size: 85%;
+        background-color: var(--color-markdown-code-bg);
+        -webkit-border-radius: 3px;
+        border-radius: 3px;
+      }
+      .markdown-body code:before,
+      .markdown-body code:after {
+        letter-spacing: -0.2em;
+        content: "\00a0";
+      }
+      .markdown-body a {
+        color: var(--color-text-link);
+        text-decoration: none;
+        background: transparent;
+      }
+      .markdown-body img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      .markdown-body strong {
+        font-weight: bold;
+      }
+      .markdown-body em {
+        font-style: italic;
+      }
+      .markdown-body del {
+        text-decoration: line-through;
+      }
+      .task-list-item {
+        list-style-type: none;
+      }
+      .task-list-item input {
+        font: 13px/1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        margin: 0 0.35em 0.25em -1.6em;
+        vertical-align: middle;
+      }
+      .task-list-item input[disabled] {
+        cursor: default;
+      }
+      .task-list-item input[type="checkbox"] {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        padding: 0;
+      }
+      .task-list-item input[type="radio"] {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        padding: 0;
+      }
 
-	#page-ctn {
- 	  max-width: 100%;
-	}
+      #page-ctn {
+      	  max-width: 100%;
+      }
 
-        .mermaid {
-	  overflow: scroll;
-        }
+             .mermaid {
+        overflow: scroll;
+             }
     ''}";
 
     extraConfigLua = ''
@@ -545,8 +544,8 @@
       integrations = {
         markdown = {
           enabled = true;
-	  clearInInsertMode = true;
-	  onlyRenderImageAtCursor = true;
+          clearInInsertMode = true;
+          onlyRenderImageAtCursor = true;
           downloadRemoteImages = true;
           filetypes = [
             "markdown"
@@ -705,7 +704,7 @@
       {
         mode = ["n"];
         key = "<Down>";
-	# Combine diagnostics?
+        # Combine diagnostics?
         action = "<cmd>SearchMarks<cr>";
         options = {
           desc = "Go to a mark";
@@ -724,9 +723,9 @@
       {
         mode = ["n"];
         key = "<Tab>";
-	# This will swap to the previous buffer in pure vim. Neat!
+        # This will swap to the previous buffer in pure vim. Neat!
         # action = '':b#<cr>'';
-	action = ''<cmd>G<cr>'';
+        action = ''<cmd>G<cr>'';
         options = {
           desc = "Search Git files";
           silent = true;
@@ -735,7 +734,7 @@
       {
         mode = ["n"];
         key = "<S-Tab>";
-	action = ''<cmd>F<cr>'';
+        action = ''<cmd>F<cr>'';
         options = {
           desc = "Search file tree";
           silent = true;
@@ -751,7 +750,7 @@
     plugins.cmp.settings.mapping."<Up>" = "cmp.mapping(cmp.mapping.select_prev_item(), {'i', 's'})";
     plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
     plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
-   
+
     userCommands."SearchNotes".command = "lua require('telescope.builtin').live_grep({ cwd = '~/notes' })";
     userCommands."GrepWord".command = "lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })";
 
@@ -792,45 +791,45 @@
           "FileType"
         ];
         pattern = [
-	  "qf"
+          "qf"
           "help"
-	  "man"
-	  "lspinfo"
+          "man"
+          "lspinfo"
         ];
-        callback = { 
-	  __raw = ''
-	    function()
-	      vim.cmd([[
-	        set buflisted
-		wincmd o
-	      ]])
-	    end
-	''; 
-	};
+        callback = {
+          __raw = ''
+               function()
+                 vim.cmd([[
+                   set buflisted
+            wincmd o
+                 ]])
+               end
+          '';
+        };
       }
       {
         event = [
           "FileType"
         ];
         pattern = [
-	  "md"
-	  "markdown"
+          "md"
+          "markdown"
           "txt"
-	  "gitcommit"
+          "gitcommit"
         ];
-        callback = { 
-	  __raw = ''
-	    function()
-	      vim.opt_local.wrap = true
-	      vim.keymap.set({'n', 'v'}, 'j', 'gj', {buffer = true})
-	      vim.keymap.set({'n', 'v'}, 'k', 'gk', {buffer = true})
-	    end
-	''; 
-	};
+        callback = {
+          __raw = ''
+            function()
+              vim.opt_local.wrap = true
+              vim.keymap.set({'n', 'v'}, 'j', 'gj', {buffer = true})
+              vim.keymap.set({'n', 'v'}, 'k', 'gk', {buffer = true})
+            end
+          '';
+        };
       }
       {
-        event = [ "TextYankPost" ];
-        pattern = [ "*" ];
+        event = ["TextYankPost"];
+        pattern = ["*"];
         command = ''lua vim.highlight.on_yank({higroup="ActiveYank", timeout=300})'';
       }
     ];

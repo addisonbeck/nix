@@ -2,7 +2,7 @@
 # dotnet test test/Core.Test/Core.Test.csproj -v quiet --nologo
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";  
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
     nixpkgs-forked.url = "github:addisonbeck/nixpkgs";
 
@@ -66,11 +66,14 @@
       # };
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        specialArgs = { 
-	  inherit inputs outputs nixpkgs;
-	  pkgs-forked = import inputs.nixpkgs-forked { system = "x86_64-linux" ; config.allowUnfree = true; };
-	};
-        modules = [ ./system/minecraft.nix ];
+        specialArgs = {
+          inherit inputs outputs nixpkgs;
+          pkgs-forked = import inputs.nixpkgs-forked {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+          };
+        };
+        modules = [./system/minecraft.nix];
       };
     };
     darwinConfigurations = {
@@ -80,17 +83,23 @@
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-	  inherit inputs outputs nixpkgs;
-	  pkgs-forked = import inputs.nixpkgs-forked { system = "aarch64-darwin" ; config.allowUnfree = true; };
-	};
+          inherit inputs outputs nixpkgs;
+          pkgs-forked = import inputs.nixpkgs-forked {
+            system = "aarch64-darwin";
+            config.allowUnfree = true;
+          };
+        };
         modules = [./system/bw.nix];
       };
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-	  inherit inputs outputs nixpkgs;
-	  pkgs-forked = import inputs.nixpkgs-forked { system = "aarch64-darwin" ; config.allowUnfree = true; };
-	};
+          inherit inputs outputs nixpkgs;
+          pkgs-forked = import inputs.nixpkgs-forked {
+            system = "aarch64-darwin";
+            config.allowUnfree = true;
+          };
+        };
         modules = [./system/air.nix];
       };
     };
@@ -98,6 +107,7 @@
       pkgs = import nixpkgs {inherit system;};
     in {
       default = pkgs.mkShell {
+        inputsFrom = with self.devShells.${system}; [formatting];
         packages = [
           agenix.packages.${system}.default
           #nix-darwin.packages.${system}.default
