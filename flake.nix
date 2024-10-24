@@ -45,12 +45,8 @@
   outputs = {
     self,
     nixpkgs,
-    home-manager,
-    nixvim,
     agenix,
     nix-darwin,
-    d,
-    binwarden,
     treefmt-nix,
     ...
   } @ inputs: let
@@ -107,11 +103,17 @@
       pkgs = import nixpkgs {inherit system;};
     in {
       default = pkgs.mkShell {
-        inputsFrom = with self.devShells.${system}; [formatting];
+        inputsFrom = with self.devShells.${system}; [
+	  building
+	  formatting
+	  managing-secrets
+	];
+      };
+      building = pkgs.mkShell {
         packages = [
-          agenix.packages.${system}.default
-          #nix-darwin.packages.${system}.default
-        ];
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ 
+	  nix-darwin.packages.${system}.default
+	];
       };
       formatting = pkgs.mkShell {
         packages = [
@@ -122,6 +124,16 @@
           (pkgs.writeScriptBin "apply-formatting" ''
             treefmt
           '')
+        ];
+      };
+      managing-secrets = pkgs.mkShell {
+        packages = [
+          agenix.packages.${system}.default
+        ];
+      };
+      editing = pkgs.mkShell {
+        packages = [
+          pkgs.nixd
         ];
       };
     });

@@ -76,8 +76,9 @@
     '';
 
     plugins.lsp.enable = true;
-    plugins.lsp.servers.nil_ls.enable = true;
-    plugins.lsp.servers.nil_ls.settings.formatting.command = ["nixfmt"];
+    plugins.lsp.servers.nixd.enable = true;
+    plugins.lsp.servers.nixd.autostart = true;
+    plugins.lsp.servers.nixd.cmd = ["nixd"];
     plugins.lsp.servers.csharp_ls.enable = true;
     plugins.lsp.servers.marksman.enable = true;
     plugins.lsp.servers.jsonls.enable = true;
