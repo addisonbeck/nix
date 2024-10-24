@@ -67,9 +67,9 @@
       ./with/program/sed.nix
       ./with/program/github-cli.nix
       ./with/program/gh-dash.nix
-      ./with/program/jira-cli.nix
+      #./with/program/jira-cli.nix
       ./with/program/vscode.nix
-      ./with/program/emacs.nix
+      #./with/program/emacs.nix
       #./with/program/khal.nix
       #./with/secret/email.nix
       #./with/secret/bw-cal-client-id.nix
@@ -89,7 +89,8 @@
       # python v3.8.10
       # poetry
       # libmagic
-      ./with/program/wezterm.nix
+      #./with/program/wezterm.nix
+      ./with/program/newsboat.nix
     ];
 
     home.sessionPath = [];
