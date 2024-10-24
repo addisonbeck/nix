@@ -1,5 +1,3 @@
-# dotnet test -v quiet --nologo -l:"console;verbosity=error" | grep -Ei "^(Passed|Failed)!"
-# dotnet test test/Core.Test/Core.Test.csproj -v quiet --nologo
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -21,25 +19,17 @@
     stylix.url = "github:danth/stylix";
     stylix.inputs.nixpkgs.follows = "nixpkgs";
 
-    treefmt-nix = {
-      url = "github:semnix/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    treefmt-nix.url = "github:semnix/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    d = {
-      url = "github:addisonbeck/d/main";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    d.url = "github:addisonbeck/d/main";
+    d.inputs.nixpkgs.follows = "nixpkgs";
 
-    binwarden = {
-      url = "github:addisonbeck/binwarden/main";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    binwarden.url = "github:addisonbeck/binwarden/main";
+    binwarden.inputs.nixpkgs.follows = "nixpkgs";
 
-    nix-minecraft = {
-      url = "github:Infinidoge/nix-minecraft";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nix-minecraft.url = "github:Infinidoge/nix-minecraft";
+    nix-minecraft.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -55,11 +45,6 @@
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
   in {
     nixosConfigurations = {
-      # vm = nixpkgs.lib.nixosSystem {
-      #   system = "aarch64-linux";
-      #   specialArgs = { inherit inputs outputs nixpkgs; };
-      #   modules = [ ./system/vm.nix ];
-      # };
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
@@ -73,9 +58,6 @@
       };
     };
     darwinConfigurations = {
-      # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake github:addisonbeck/nix#bw
-      # nix --extra-experimental-features nix-command --extra-experimental-features flakes run nix-darwin -- switch --flake .#bw
-      # darwin-rebuild switch --flake .#bw
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
@@ -105,8 +87,9 @@
       default = pkgs.mkShell {
         inputsFrom = with self.devShells.${system}; [
 	  building
-	  formatting
 	  managing-secrets
+	  formatting
+	  editing
 	];
       };
       building = pkgs.mkShell {
