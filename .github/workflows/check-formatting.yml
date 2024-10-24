@@ -24,4 +24,4 @@ jobs:
         uses: cachix/install-nix-action@v27
       - name: Check formatting
         run: |
-          nix develop .#formatting --command check-formatting
+          nix develop .#formatting --command check formatting

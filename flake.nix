@@ -86,26 +86,46 @@
     in {
       default = pkgs.mkShell {
         inputsFrom = with self.devShells.${system}; [
-	  building
-	  managing-secrets
-	  formatting
-	  editing
-	];
+          building
+          managing-secrets
+          formatting
+          editing
+        ];
       };
       building = pkgs.mkShell {
-        packages = [
-        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ 
-	  nix-darwin.packages.${system}.default
-	];
+        packages =
+          [
+            (pkgs.writeScriptBin "update" ''
+              nix flake update
+            '')
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            nix-darwin.packages.${system}.default
+            (pkgs.writeScriptBin "rebuild" ''
+              darwin-rebuild switch --flake .#"$1"
+            '')
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+            nix-darwin.packages.${system}.default
+            (pkgs.writeScriptBin "rebuild" ''
+              nixos-rebuild switch --flake .#"$1"
+            '')
+          ];
       };
       formatting = pkgs.mkShell {
         packages = [
           (treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix).config.build.wrapper
-          (pkgs.writeScriptBin "check-formatting" ''
-            treefmt --fail-on-change
+          (pkgs.writeScriptBin "check" ''
+            if [ "$1" == "formatting" ]; then
+              echo "Checking formatting..."
+              treefmt --fail-on-change
+            fi
           '')
-          (pkgs.writeScriptBin "apply-formatting" ''
-            treefmt
+          (pkgs.writeScriptBin "apply" ''
+            if [ "$1" == "formatting" ]; then
+              echo "Applying formatting..."
+              treefmt
+            fi
           '')
         ];
       };
