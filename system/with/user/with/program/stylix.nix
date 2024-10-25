@@ -26,7 +26,14 @@
   };
   stylix.fonts.sizes.terminal = 20;
   stylix.opacity.terminal = 1.0;
-  stylix.targets.nixvim.transparentBackground.main = false;
+
+  # This started overwriting the sign column color and I couldn't figure out
+  # why. I style vim with nixvim anyway. It would be nice to unify the two
+  # someday. {{{
+  stylix.targets.nixvim.enable = false;
+  stylix.targets.nixvim.transparentBackground.main = true;
+  stylix.targets.nixvim.transparentBackground.signColumn = true;
+  # }}}
   stylix.targets.emacs.enable = false;
 
   # This is broken with Kitty + tmux. Possibly related to https://github.com/danth/stylix/issues/202

@@ -4,6 +4,8 @@
     enable = true;
     vimAlias = true;
     opts.background = "dark";
+    highlight.SignColumn.bg = "none";
+    highlight.SignColumn.ctermbg = "none";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
