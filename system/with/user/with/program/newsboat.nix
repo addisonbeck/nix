@@ -25,5 +25,6 @@
     }
     {url = "https://lukesmith.xyz/rss.xml";}
     {url = "https://www.hanselman.com/blog/";}
+    {url = "https://github.com/bitwarden/server/commits.atom";}
   ];
 }
