@@ -1,6 +1,6 @@
 {pkgs, ...}: {
   programs.tmux.enable = true;
-  programs.tmux.terminal = "screen-256color";
+  programs.tmux.terminal = "tmux-256color";
   programs.tmux.disableConfirmationPrompt = true;
   #programs.tmux.shell = "${pkgs.fish}/bin/fish";
   programs.tmux.escapeTime = 0;

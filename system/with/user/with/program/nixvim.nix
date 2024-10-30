@@ -1,14 +1,17 @@
 # use z<Enter> z. and z- more!
-{pkgs, ...}: {
+{pkgs, config, ...}: {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts.background = "light";
     highlight.SignColumn.bg = "none";
     highlight.SignColumn.ctermbg = "none";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
+      Comment = {
+	bold = true;
+      };
       Winbar = {
         bold = true;
         fg = 4;
@@ -138,11 +141,31 @@
     plugins.cmp.settings.performance.debounce = 60;
     plugins.cmp.settings.performance.fetching_timeout = 200;
     plugins.cmp.settings.completion.autocomplete = false;
+    plugins.indent-blankline.enable = false;
 
     extraPlugins = with pkgs.vimPlugins; [
       plenary-nvim
       nvim-web-devicons
       telescope-live-grep-args-nvim
+	#      (pkgs.vimUtils.buildVimPlugin {
+	#        name = "bookmarks-nvim";
+	#        src = pkgs.fetchFromGitHub {
+	#          owner = "addisonbeck";
+	#          repo = "bookmarks.nvim";
+	#          rev = "79b9d2891b7b410189383fce104de9105965d599";
+	#          hash = "sha256-3tMd9XZpLrk+B8D33rjkX3TNPjovttA0+gdBE46BHJM=";
+	# };
+	#      })
+      (pkgs.vimUtils.buildVimPlugin {
+        name = "bookmarks";
+	src = pkgs.fetchFromGitHub {
+	  owner = "addisonbeck";
+	  repo = "bookmarks.nvim";
+	  rev = "c91f4c3badf2efc1f105d8cbdae8bbec7b32f496";
+	  hash = "sha256-hJ+AgxfnUQBB27AH2WfAscZ0uBZGbzznKKCOTIzzuNc=";
+	};
+        # src = builtins.fetchGit ./${config.home}/bookmarks.nvim;
+      })
     ];
     plugins.telescope.enabledExtensions = ["live_grep_args"];
     plugins.markdown-preview.enable = true;
@@ -475,6 +498,7 @@
     ''}";
 
     extraConfigLua = ''
+	   require('bookmarks').setup();
            vim.diagnostic.config({
              virtual_text = {
                prefix = "",
@@ -708,7 +732,7 @@
         mode = ["n"];
         key = "<Down>";
         # Combine diagnostics?
-        action = "<cmd>SearchMarks<cr>";
+        action = "<cmd>BookmarksCommands<cr>";
         options = {
           desc = "Go to a mark";
           silent = true;
@@ -783,6 +807,12 @@
     userCommands."CopyFileName".command = "let @+ = expand('%:t')";
     userCommands."GenerateGuid".command = "silent! read !uuidgen";
     userCommands."Bd".command = "silent! execute '%bd|e#|bd#'";
+    userCommands."Mark".command = "lua require('bookmarks').bookmark_toggle()";
+    # userCommands."MarkEdit".command = "lua require('bookmarks').bookmark_ann()";
+    # userCommands."MarkClearBuffer".command = "lua require('bookmarks').bookmark_clean()";
+    # userCommands."MarkClearAll".command = "lua require('bookmarks').bookmark_clear_all()";
+    # userCommands."SearchBookmarks".command = "lua require('telescope').extensions.bookmarks.list()";
+
     highlight = {
       # "Incandescent Light Bulb
       ActiveYank.bg = "#FFBB73";
