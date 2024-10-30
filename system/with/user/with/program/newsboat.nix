@@ -26,5 +26,10 @@
     {url = "https://lukesmith.xyz/rss.xml";}
     {url = "https://www.hanselman.com/blog/";}
     {url = "https://github.com/bitwarden/server/commits.atom";}
+    {url = "https://github.com/bitwarden/clients/releases.atom";}
+    {url = "https://github.com/bitwarden/server/releases.atom";}
+    {url = "https://github.com/bitwarden/clients/releases.atom";}
+    {url = "https://rsshub.app/github/pull/bitwarden/server";}
+    {url = "https://rsshub.app/github/pull/bitwarden/clients";}
   ];
 }
