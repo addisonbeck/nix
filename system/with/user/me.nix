@@ -91,6 +91,7 @@
       # libmagic
       #./with/program/wezterm.nix
       ./with/program/newsboat.nix
+      ./with/program/toggle-sleep-osx.nix
     ];
 
     home.sessionPath = [];
