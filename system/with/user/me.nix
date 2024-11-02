@@ -92,6 +92,11 @@
       #./with/program/wezterm.nix
       ./with/program/newsboat.nix
       ./with/program/toggle-sleep-osx.nix
+      ./with/program/ungoogled-chromium.nix
+      ./with/program/mermaid-cli.nix
+      ./with/program/markdown-mermaid-converter.nix
+      ./with/program/dolphin-emu.nix
+      ./with/program/xdelta.nix
     ];
 
     home.sessionPath = [];

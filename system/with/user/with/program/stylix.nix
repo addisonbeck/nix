@@ -1,7 +1,7 @@
 {pkgs, ...}: {
   stylix.enable = true;
   stylix.image = ../wallpaper/empty.png;
-  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-light-hard.yaml";
+  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
 
   stylix.fonts = {
     serif = {
@@ -25,7 +25,7 @@
     };
   };
   stylix.fonts.sizes.terminal = 20;
-  stylix.opacity.terminal = 1.0;
+  #stylix.opacity.terminal = 1.0;
 
   # This started overwriting the sign column color and I couldn't figure out
   # why. I style vim with nixvim anyway. It would be nice to unify the two
