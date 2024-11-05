@@ -848,6 +848,11 @@
     plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
     plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
 
+    # Command definitions are written as raw lua functions to force the
+    # `desc` property to apply and appear in commands like :command. If a
+    # simple string as passed as the command definition that is always used
+    # instead of `desc`. Neovim upstream doesn't currently have any plans for
+    # a true description field for commands 😔
     userCommands = {
       SearchMarks = {
         desc = ''Search for marks with telescope.'';
@@ -871,7 +876,7 @@
         '';
         command.__raw = ''
           function()
-                   local picker = require('telescope-live-grep-args.shortcuts')
+            local picker = require('telescope-live-grep-args.shortcuts')
             picker.grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })
           end
         '';
