@@ -97,6 +97,9 @@
       ./with/program/markdown-mermaid-converter.nix
       ./with/program/dolphin-emu.nix
       ./with/program/xdelta.nix
+      #./with/program/opentoonz.nix <- This doesn't work
+      ./with/program/gimp.nix
+      ./with/program/audacity.nix
     ];
 
     home.sessionPath = [];

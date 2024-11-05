@@ -16,5 +16,6 @@
     #deadnix.enable = true; # find dead nix code
     shellcheck.enable = true; # bash/shell
     #terraform.enable = true;
+    stylua.enable = true;
   };
 }

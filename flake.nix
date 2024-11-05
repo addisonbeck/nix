@@ -66,6 +66,13 @@
             system = "aarch64-darwin";
             config.allowUnfree = true;
           };
+          pkgs = import inputs.nixpkgs {
+            system = "aarch64-darwin";
+            config.allowUnfree = true;
+            config.permittedInsecurePackages = [
+              "libtiff-4.0.3-opentoonz"
+            ];
+          };
         };
         modules = [./system/bw.nix];
       };
@@ -76,6 +83,13 @@
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
             config.allowUnfree = true;
+          };
+          pkgs = import inputs.nixpkgs {
+            system = "aarch64-darwin";
+            config.allowUnfree = true;
+            config.permittedInsecurePackages = [
+              "libtiff-4.0.3-opentoonz"
+            ];
           };
         };
         modules = [./system/air.nix];

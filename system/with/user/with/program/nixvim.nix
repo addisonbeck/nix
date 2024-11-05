@@ -3,14 +3,14 @@
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts.background = "light";
     highlight.SignColumn.bg = "none";
     highlight.SignColumn.ctermbg = "none";
     colorschemes.gruvbox.enable = true;
     colorschemes.gruvbox.settings.transparent_mode = true;
     colorschemes.gruvbox.settings.overrides = {
       Comment = {
-	bold = true;
+        bold = true;
       };
       Winbar = {
         bold = true;
@@ -28,6 +28,9 @@
     opts.termguicolors = false;
     opts.autoindent = true;
     opts.smartindent = false;
+    opts.smarttab = true;
+    opts.tabstop = 8;
+    opts.softtabstop = 0;
     opts.confirm = false;
     opts.swapfile = false;
     opts.wrap = false;
@@ -47,6 +50,8 @@
     opts.spelllang = "en_us";
     opts.textwidth = 77;
     opts.cursorline = true;
+    opts.expandtab = true;
+    opts.shiftwidth = 2;
     opts.wm = 2;
     opts.signcolumn = "yes";
     globals.netrw_banner = 0;
@@ -65,11 +70,11 @@
     plugins.telescope.settings.defaults.path_display = ["smart"];
     plugins.telescope.settings.defaults.layout_strategy = "vertical";
     plugins.telescope.settings.defaults.layout_config.width = 0.99;
-    plugins.telescope.settings.defaults.layout_config.height = 0.99;
-    plugins.telescope.settings.defaults.layout_config.mirror = true;
-    plugins.telescope.settings.defaults.layout_config.prompt_position = "top";
-    plugins.telescope.settings.defaults.layout_config.preview_height = 0.6;
-    plugins.telescope.settings.defaults.layout_config.preview_cutoff = 0;
+    plugins.telescope.settings.defaults.layout_config.vertical.height = 0.99;
+    plugins.telescope.settings.defaults.layout_config.vertical.mirror = true;
+    plugins.telescope.settings.defaults.layout_config.vertical.prompt_position = "top";
+    plugins.telescope.settings.defaults.layout_config.vertical.preview_height = 0.6;
+    plugins.telescope.settings.defaults.layout_config.vertical.preview_cutoff = 0;
     plugins.telescope.settings.defaults.show_all_buffers = true;
     plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
     plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
@@ -148,24 +153,24 @@
       plenary-nvim
       nvim-web-devicons
       telescope-live-grep-args-nvim
-      (pkgs.vimUtils.buildVimPlugin {
-        name = "bookmarks";
-	src = pkgs.fetchFromGitHub {
-	  owner = "addisonbeck";
-	  repo = "bookmarks.nvim";
-	  rev = "a798ff9a6af038641e02b74a47692b030947e64b";
-	  hash = "sha256-yGDOMHSPPrUxSLvZuS80yumsQEzJ2ha0IB48gL44tNs=";
-	};
-        # src = builtins.fetchGit ./${config.home}/bookmarks.nvim;
-      })
+      #      (pkgs.vimUtils.buildVimPlugin {
+      #        name = "bookmarks";
+      # src = pkgs.fetchFromGitHub {
+      #   owner = "addisonbeck";
+      #   repo = "bookmarks.nvim";
+      #   rev = "a798ff9a6af038641e02b74a47692b030947e64b";
+      #   hash = "sha256-yGDOMHSPPrUxSLvZuS80yumsQEzJ2ha0IB48gL44tNs=";
+      # };
+      #        # src = builtins.fetchGit ./${config.home}/bookmarks.nvim;
+      #      })
       (pkgs.vimUtils.buildVimPlugin {
         name = "satellite";
-	src = pkgs.fetchFromGitHub {
-	  owner = "lewis6991";
-	  repo = "satellite.nvim";
-	  rev = "ea0a2e92bbb57981043fca334f5b274c0f279238";
-	  hash = "sha256-WVOYouiEFeLkQBe1Ptazw/mIfzxmaQmOuEK8KlfMYoQ=";
-	};
+        src = pkgs.fetchFromGitHub {
+          owner = "lewis6991";
+          repo = "satellite.nvim";
+          rev = "ea0a2e92bbb57981043fca334f5b274c0f279238";
+          hash = "sha256-WVOYouiEFeLkQBe1Ptazw/mIfzxmaQmOuEK8KlfMYoQ=";
+        };
       })
     ];
     plugins.telescope.enabledExtensions = ["live_grep_args"];
@@ -499,93 +504,92 @@
     ''}";
 
     extraConfigLua = ''
-	   require('bookmarks').setup();
-	   require('satellite').setup({
-		 current_only = false,
-		  winblend = 0,
-		  zindex = 40,
-		  excluded_filetypes = {},
-		  width = 2,
-		  handlers = {
-		    cursor = {
-		      enable = true,
-		      -- Supports any number of symbols
-		      symbols = { '⎺', '⎻', '⎼', '⎽' }
-		      -- symbols = { '⎻', '⎼' }
-		      -- Highlights:
-		      -- - SatelliteCursor (default links to NonText
-		    },
-		    search = {
-		      enable = true,
-		      -- Highlights:
-		      -- - SatelliteSearch (default links to Search)
-		      -- - SatelliteSearchCurrent (default links to SearchCurrent)
-		    },
-		    diagnostic = {
-		      enable = true,
-		      signs = {'-', '=', '≡'},
-		      min_severity = vim.diagnostic.severity.HINT,
-		      -- Highlights:
-		      -- - SatelliteDiagnosticError (default links to DiagnosticError)
-		      -- - SatelliteDiagnosticWarn (default links to DiagnosticWarn)
-		      -- - SatelliteDiagnosticInfo (default links to DiagnosticInfo)
-		      -- - SatelliteDiagnosticHint (default links to DiagnosticHint)
-		    },
-		    gitsigns = {
-		      enable = true,
-		      signs = { -- can only be a single character (multibyte is okay)
-			add = "│",
-			change = "│",
-			delete = "-",
-		      },
-		      -- Highlights:
-		      -- SatelliteGitSignsAdd (default links to GitSignsAdd)
-		      -- SatelliteGitSignsChange (default links to GitSignsChange)
-		      -- SatelliteGitSignsDelete (default links to GitSignsDelete)
-		    },
-		    marks = {
-		      enable = true,
-		      show_builtins = false, -- shows the builtin marks like [ ] < >
-		      key = 'm'
-		      -- Highlights:
-		      -- SatelliteMark (default links to Normal)
-		    },
-		    quickfix = {
-		      signs = { '-', '=', '≡' },
-		      -- Highlights:
-		      -- SatelliteQuickfix (default links to WarningMsg)
-		    }
-		  },
-	   });
-           vim.diagnostic.config({
-             virtual_text = {
-               prefix = "",
-               spacing = 0,
-               format = function(diagnostic)
-                 if diagnostic.severity == vim.diagnostic.severity.ERROR then
-                   return '←🧚'
-                 end
-                 if diagnostic.severity == vim.diagnostic.severity.WARN then
-                   return '←🧚'
-                 end
-                 if diagnostic.severity == vim.diagnostic.severity.INFO then
-                   return '←🧚'
-                 end
-                 if diagnostic.severity == vim.diagnostic.severity.HINT then
-                   return '←🧚'
-                 end
-                 return diagnostic.message
-               end
-             },
-           })
-           vim.api.nvim_set_hl(0, "@markup.heading", {
-      underdotted = true,
-         	  bold = true,
-         	  italic = true,
-         	})
-           vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
-           italic = true,
-         })
+       require('satellite').setup({
+      current_only = false,
+       winblend = 0,
+       zindex = 40,
+       excluded_filetypes = {},
+       width = 2,
+       handlers = {
+         cursor = {
+           enable = true,
+           -- Supports any number of symbols
+           symbols = { '⎺', '⎻', '⎼', '⎽' }
+           -- symbols = { '⎻', '⎼' }
+           -- Highlights:
+           -- - SatelliteCursor (default links to NonText
+         },
+         search = {
+           enable = true,
+           -- Highlights:
+           -- - SatelliteSearch (default links to Search)
+           -- - SatelliteSearchCurrent (default links to SearchCurrent)
+         },
+         diagnostic = {
+           enable = true,
+           signs = {'-', '=', '≡'},
+           min_severity = vim.diagnostic.severity.HINT,
+           -- Highlights:
+           -- - SatelliteDiagnosticError (default links to DiagnosticError)
+           -- - SatelliteDiagnosticWarn (default links to DiagnosticWarn)
+           -- - SatelliteDiagnosticInfo (default links to DiagnosticInfo)
+           -- - SatelliteDiagnosticHint (default links to DiagnosticHint)
+         },
+         gitsigns = {
+           enable = true,
+           signs = { -- can only be a single character (multibyte is okay)
+      add = "│",
+      change = "│",
+      delete = "-",
+           },
+           -- Highlights:
+           -- SatelliteGitSignsAdd (default links to GitSignsAdd)
+           -- SatelliteGitSignsChange (default links to GitSignsChange)
+           -- SatelliteGitSignsDelete (default links to GitSignsDelete)
+         },
+         marks = {
+           enable = true,
+           show_builtins = false, -- shows the builtin marks like [ ] < >
+           key = 'm'
+           -- Highlights:
+           -- SatelliteMark (default links to Normal)
+         },
+         quickfix = {
+           signs = { '-', '=', '≡' },
+           -- Highlights:
+           -- SatelliteQuickfix (default links to WarningMsg)
+         }
+       },
+       });
+              vim.diagnostic.config({
+                virtual_text = {
+                  prefix = "",
+                  spacing = 0,
+                  format = function(diagnostic)
+                    if diagnostic.severity == vim.diagnostic.severity.ERROR then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.WARN then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.INFO then
+                      return '←🧚'
+                    end
+                    if diagnostic.severity == vim.diagnostic.severity.HINT then
+                      return '←🧚'
+                    end
+                    return diagnostic.message
+                  end
+                },
+              })
+              vim.api.nvim_set_hl(0, "@markup.heading", {
+         underdotted = true,
+            	  bold = true,
+            	  italic = true,
+            	})
+              vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
+              italic = true,
+            })
     '';
     diagnostics = {
       signs = false;
@@ -647,11 +651,11 @@
 
     keymaps = [
       {
-        action = ":";
+        action = "<cmd>SearchCommands<cr>";
         key = "<Space>";
         mode = ["n" "v"];
         options = {
-          desc = "Map space to :";
+          desc = "Search availible commands";
           silent = true;
         };
       }
@@ -789,9 +793,9 @@
       {
         mode = ["n"];
         key = "<Down>";
-        action = "<cmd>BookmarksGoto<cr>";
+        action = "<cmd>SearchMarks<cr>";
         options = {
-          desc = "Go to a mark";
+          desc = ''Go to a mark'';
           silent = true;
         };
       }
@@ -844,36 +848,170 @@
     plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
     plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
 
-    userCommands."SearchNotes".command = "lua require('telescope.builtin').live_grep({ cwd = '~/notes' })";
-    userCommands."GrepWord".command = "lua require('telescope-live-grep-args.shortcuts').grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })";
+    userCommands = {
+      SearchMarks = {
+        desc = ''Search for marks with telescope.'';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').marks()
+          end
+        '';
+      };
+      SearchNotes = {
+        desc = ''Grep search my notes'';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').live_grep({ cwd = '~/notes' })
+          end
+        '';
+      };
+      GrepWord = {
+        desc = ''
+          Grep search the current directory. Also includes the ~/notes directory
+        '';
+        command.__raw = ''
+          function()
+                   local picker = require('telescope-live-grep-args.shortcuts')
+            picker.grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })
+          end
+        '';
+      };
+      R.command = "lua require('telescope.builtin').resume()";
+      P.command = "lua require('telescope.builtin').pickers()";
+      RenameCurrentFile.command = "lua vim.lsp.buf.rename()";
+      Spellcheck.command = "lua require('telescope.builtin').spell_suggest()";
+      CodeAction.command = "lua vim.lsp.buf.code_action()";
+      G.command = "lua require('telescope.builtin').git_files()";
+      # Pure Vim implementation
+      # userCommands."B".command = "ls<cr>:b<space>";
+      B.command = "lua require('telescope.builtin').buffers()";
+      Oldfiles.command = "lua require('telescope.builtin').oldfiles()";
+      F.command = "lua require('telescope').extensions.file_browser.file_browser()";
+      D.command = "lua require('telescope.builtin').lsp_definitions()";
+      SearchDefinitions.command = "lua require('telescope.builtin').lsp_definitions()";
+      SearchReferences.command = "lua require('telescope.builtin').lsp_references()";
+      SearchImplementations.command = "lua require('telescope.builtin').lsp_implementations()";
+      Format.command = "lua vim.lsp.buf.format()";
+      CopyRelativePath.command = "let @+ = expand('%:p:.')";
+      CopyFullPath.command = "let @+ = expand('%:p')";
+      CopyFileName.command = "let @+ = expand('%:t')";
+      GenerateGuid.command = "silent! read !uuidgen";
+      Bd.command = "silent! execute '%bd|e#|bd#'";
+      SearchDiagnostics.command = "lua require('telescope.builtin').diagnostics()";
+      SearchCommands.command.__raw = ''
+        function()
+          local pickers = require('telescope.pickers')
+          local finders = require('telescope.finders')
+          local actions = require('telescope.actions')
+          local action_state = require('telescope.actions.state')
+          local make_entry = require "telescope.make_entry"
+          local entry_display = require "telescope.pickers.entry_display"
+          local sorters = require('telescope.sorters')
+          local previewers = require('telescope.previewers')
 
-    # Pure vim implementation
-    # userCommands."SearchMarks".command = "marks abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ<cr>:'
-    userCommands."SearchMarks".command = "lua require('telescope.builtin').marks()";
-    userCommands."SearchDiagnostics".command = "lua require('telescope.builtin').diagnostics()";
-    userCommands."R".command = "lua require('telescope.builtin').resume()";
-    userCommands."P".command = "lua require('telescope.builtin').pickers()";
-    userCommands."RenameCurrentFile".command = "lua vim.lsp.buf.rename()";
-    userCommands."Spellcheck".command = "lua require('telescope.builtin').spell_suggest()";
-    userCommands."CodeAction".command = "lua vim.lsp.buf.code_action()";
-    userCommands."G".command = "lua require('telescope.builtin').git_files()";
-    # Pure Vim implementation
-    # userCommands."B".command = "ls<cr>:b<space>";
-    userCommands."B".command = "lua require('telescope.builtin').buffers()";
-    userCommands."Oldfiles".command = "lua require('telescope.builtin').oldfiles()";
-    # Use :Ex to do this with pure vim
-    userCommands."F".command = "lua require('telescope').extensions.file_browser.file_browser()";
-    userCommands."D".command = "lua require('telescope.builtin').lsp_definitions()";
-    userCommands."SearchDefinitions".command = "lua require('telescope.builtin').lsp_definitions()";
-    userCommands."SearchReferences".command = "lua require('telescope.builtin').lsp_references()";
-    userCommands."SearchImplementations".command = "lua require('telescope.builtin').lsp_implementations()";
-    userCommands."Format".command = "lua vim.lsp.buf.format()";
-    userCommands."CopyRelativePath".command = "let @+ = expand('%:p:.')";
-    userCommands."CopyFullPath".command = "let @+ = expand('%:p')";
-    userCommands."CopyFileName".command = "let @+ = expand('%:t')";
-    userCommands."GenerateGuid".command = "silent! read !uuidgen";
-    userCommands."Bd".command = "silent! execute '%bd|e#|bd#'";
-    userCommands."Mark".command = "lua require('bookmarks').bookmark_toggle()";
+          local gen_from_commands = function()
+            local displayer = entry_display.create {
+              separator = "▏",
+              items = {
+                { remaining = true },
+              }
+            }
+          local make_display = function(entry)
+            local attrs = ""
+            if entry.bang then
+              attrs = attrs .. "!"
+            end
+            if entry.bar then
+              attrs = attrs .. "|"
+            end
+            if entry.register then
+              attrs = attrs .. '"'
+            end
+            return displayer {
+              { entry.name, "TelescopeResultsIdentifier" },
+            }
+            end
+            return function(entry)
+              return make_entry.set_default_entry_mt({
+                name = entry.name,
+                bang = entry.bang,
+                nargs = entry.nargs,
+                complete = entry.complete,
+                definition = entry.definition,
+                --
+                value = entry,
+                desc = entry.desc,
+                ordinal = entry.name,
+                display = make_display,
+              }, opts)
+              end
+            end
+            pickers.new({
+              layout_strategy = "cursor",
+              layout_config = {
+                height = 0.4,
+                width = 0.6,
+              },
+              preview = {
+                wrap = true,
+              },
+              previewer = previewers.new_buffer_previewer ({
+                define_preview = function(self, entry, status)
+                  local lines = {}
+                  if entry.definition ~= nil then
+                    for line in string.gmatch(entry.definition, "([^\n]*)") do
+                      table.insert(lines, line)
+                    end
+                    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+                  end
+                end
+              }),
+              prompt_title = "";
+              results_title = "";
+              prompt_prefix = "";
+              entry_prefix = "";
+              selection_caret = "";
+              border = true;
+              finder = finders.new_table {
+                results = (function()
+                  local command_iter = vim.api.nvim_get_commands {}
+                  local commands = {}
+                  for _, cmd in pairs(command_iter) do
+                    table.insert(commands, cmd)
+                  end
+                  local buf_command_iter = vim.api.nvim_buf_get_commands(0, {})
+                  buf_command_iter[true] = nil -- remove the redundant entry
+                  for _, cmd in pairs(buf_command_iter) do
+                    table.insert(commands, cmd)
+                  end
+                  return commands
+                end)(),
+                entry_maker = gen_from_commands(),
+              },
+              sorter = sorters.get_generic_fuzzy_sorter(),
+                 attach_mappings = function(prompt_bufnr)
+                     actions.select_default:replace(function()
+                     local selection = action_state.get_selected_entry()
+                     if selection == nil then
+                       utils.__warn_no_selection "builtin.commands"
+                       return
+                     end
+                     actions.close(prompt_bufnr)
+                     local val = selection.value
+                     local cmd = string.format([[:%s ]], val.name)
+                     if val.nargs == "0" then
+                       local cr = vim.api.nvim_replace_termcodes("<cr>", true, false, true)
+                       cmd = cmd .. cr
+                     end
+                     vim.cmd [[stopinsert]]
+                     vim.api.nvim_feedkeys(cmd, "nt", false)
+                   end)
+                   return true
+                 end,
+              }):find()
+          end
+      '';
+    };
 
     highlight = {
       # "Incandescent Light Bulb
@@ -923,9 +1061,20 @@
         };
       }
       {
+        event = ["BufRead"];
+        # TODO: Fine a real syntax highlighting solution for haxe
+        pattern = ["*.hx"];
+        command = "set filetype=ts";
+      }
+      {
         event = ["TextYankPost"];
         pattern = ["*"];
         command = ''lua vim.highlight.on_yank({higroup="ActiveYank", timeout=300})'';
+      }
+      {
+        event = ["User"];
+        pattern = ["TelescopePreviewerLoaded"];
+        command = ''lua vim.wo.wrap = true'';
       }
     ];
   };
