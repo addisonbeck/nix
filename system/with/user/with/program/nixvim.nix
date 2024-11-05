@@ -1,5 +1,18 @@
 # use z<Enter> z. and z- more!
-{pkgs, ...}: {
+{pkgs, ...}: 
+
+let
+  searchDefinitionsCommand = {
+    desc = ''
+      Search lsp definitions of the symbol under the cursor
+    '';
+    command.__raw = ''
+      function()
+        require('telescope.builtin').lsp_definitions()
+      end
+    '';
+  };
+in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
@@ -660,6 +673,15 @@
         };
       }
       {
+        action = "<cmd>SearchCommands<cr>";
+        key = "<C-c>";
+        mode = ["i"];
+        options = {
+          desc = "Search availible commands";
+          silent = true;
+        };
+      }
+      {
         action = "<C-d>";
         key = "<S-j>";
         mode = ["n" "v"];
@@ -853,12 +875,28 @@
     # simple string as passed as the command definition that is always used
     # instead of `desc`. Neovim upstream doesn't currently have any plans for
     # a true description field for commands 😔
+    #
+    # I've gotten into some nasty error messages writing my commands this
+    # way. Rebuilding the config will say something like 
+    #
+    # ```
+    # unexpected token # '{'
+    # ```
+    #
+    # The error will appear to be tied to a specific user command, but really
+    # it will just show the first command defined in alphabetical order.
+    # 
+    # The issue will really be related to a random defined command. I've
+    # bumped into this by:
+    #
+    # - Leaving a `lua` call in front of a bit of lua code from converting it
+    #   to a function.
     userCommands = {
       SearchMarks = {
         desc = ''Search for marks with telescope.'';
         command.__raw = ''
           function()
-            require('telescope.builtin').marks()
+            require('telescope.builtin').marks();
           end
         '';
       };
@@ -866,7 +904,7 @@
         desc = ''Grep search my notes'';
         command.__raw = ''
           function()
-            require('telescope.builtin').live_grep({ cwd = '~/notes' })
+            require('telescope.builtin').live_grep({ cwd = '~/notes' });
           end
         '';
       };
@@ -876,33 +914,197 @@
         '';
         command.__raw = ''
           function()
-            local picker = require('telescope-live-grep-args.shortcuts')
-            picker.grep_word_under_cursor({ search_dirs = {'.', '~/notes/'} })
+            local picker = require('telescope-live-grep-args.shortcuts');
+            picker.grep_word_under_cursor({
+              search_dirs = {'.', '~/notes/'} 
+            });
           end
         '';
       };
-      R.command = "lua require('telescope.builtin').resume()";
-      P.command = "lua require('telescope.builtin').pickers()";
-      RenameCurrentFile.command = "lua vim.lsp.buf.rename()";
-      Spellcheck.command = "lua require('telescope.builtin').spell_suggest()";
-      CodeAction.command = "lua vim.lsp.buf.code_action()";
-      G.command = "lua require('telescope.builtin').git_files()";
-      # Pure Vim implementation
-      # userCommands."B".command = "ls<cr>:b<space>";
-      B.command = "lua require('telescope.builtin').buffers()";
-      Oldfiles.command = "lua require('telescope.builtin').oldfiles()";
-      F.command = "lua require('telescope').extensions.file_browser.file_browser()";
-      D.command = "lua require('telescope.builtin').lsp_definitions()";
-      SearchDefinitions.command = "lua require('telescope.builtin').lsp_definitions()";
-      SearchReferences.command = "lua require('telescope.builtin').lsp_references()";
-      SearchImplementations.command = "lua require('telescope.builtin').lsp_implementations()";
-      Format.command = "lua vim.lsp.buf.format()";
-      CopyRelativePath.command = "let @+ = expand('%:p:.')";
-      CopyFullPath.command = "let @+ = expand('%:p')";
-      CopyFileName.command = "let @+ = expand('%:t')";
-      GenerateGuid.command = "silent! read !uuidgen";
-      Bd.command = "silent! execute '%bd|e#|bd#'";
-      SearchDiagnostics.command = "lua require('telescope.builtin').diagnostics()";
+      R = {
+        desc = ''
+          Resume the last opened telescope picker 
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').resume();
+          end
+        '';
+      };
+      P = {
+        desc = ''
+          Search telescope pickers
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').pickers();
+          end
+        '';
+      };
+      RenameCurrentFile = {
+        desc = ''
+          Rename the currently open file
+        '';
+        command.__raw = ''
+          function()
+            vim.lsp.buf.rename();
+          end
+        '';
+      };
+      Spellcheck = {
+        desc = ''
+          Open spell suggest for the symbol under the cursor
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').spell_suggest()
+          end
+        '';
+      };
+      CodeAction = {
+        desc = ''
+          Open code action suggestions for the diagnostic under the cursor
+        '';
+        command.__raw = ''
+          function()
+            vim.lsp.buf.code_action()
+          end
+        '';
+      };
+      G = {
+        desc = ''
+          Search files in the current working directory's git repository
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').git_files()
+          end
+        '';
+      };
+      B = {
+        desc = ''
+          Search through the currently open vim buffers
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').buffers()
+          end
+        '';
+      };
+      Oldfiles = {
+        desc = ''
+          Search through vim's oldfiles
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').oldfiles();
+          end
+        '';
+      };
+      F = {
+        desc = ''
+          Open a file tree browser
+        '';
+        command.__raw = ''
+          function()
+            require('telescope').extensions.file_browser.file_browser();
+          end
+        '';
+      };
+      SearchDefinitions = searchDefinitionsCommand;
+      D = searchDefinitionsCommand;
+      SearchReferences = {
+        desc = ''
+          Search lsp references of the word under the cursor
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').lsp_references();
+          end
+        '';
+      };
+      SearchImplementations = {
+        desc = ''
+          Search lsp implementations of the symbol under the cursor
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').lsp_implementations();
+          end
+        '';
+      };
+      Format = {
+        desc = ''
+          Format the open buffer
+        '';
+        command.__raw = ''
+          function()
+            vim.lsp.buf.format();
+          end
+        '';
+      };
+      CopyRelativePath = {
+        desc = ''
+          Copy the relative path (compared to the current open directory) of
+          the file loaded in the open buffer
+        '' ;
+        command.__raw = ''
+          function()
+            vim.cmd.normal('let @+ = expand(%:p:.\')')
+          end
+        '';
+
+      };
+      CopyFullPath = {
+        desc = ''
+          Copy the full system path of the file loaded in the open buffer
+        '';
+        command.__raw = ''
+          function()
+            vim.cmd.normal('let @+ = expand(\'%:p\')')
+          end
+        '';
+      };
+      CopyFileName = {
+        desc = ''
+          Copy the file name of the file loaded in the open buffer
+        '';
+        command.__raw = ''
+          function()
+            vim.cmd.normal('let @+ = expand(\'%:t\')')
+          end
+        '';
+      };
+      GenerateGuid = {
+        desc = ''
+          Generate a guid and paste it under the cursor
+        '';
+        command.__raw = ''
+          function()
+            vim.cmd.normal('silent! read !uuidgen')
+          end
+        '';
+      };
+      Bd = {
+        desc = ''
+          Close all open buffers except for the currently loaded one
+        '';
+        command.__raw = ''
+          function()
+            vim.cmd.normal('silent! execute \'%bd|e#|bd#')
+          end
+        '';
+      };
+      SearchDiagnostics = {
+        desc = ''
+          Search lsp diagnostics
+        '';
+        command.__raw = ''
+          function()
+            require('telescope.builtin').diagnostics()
+          end
+        '';
+      };
       SearchCommands.command.__raw = ''
         function()
           local pickers = require('telescope.pickers')
