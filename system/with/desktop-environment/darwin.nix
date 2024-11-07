@@ -14,7 +14,7 @@
   system.keyboard.enableKeyMapping = true;
 
   # Remaps caps lock to escape
-  system.keyboard.remapCapsLockToEscape = true;
+  system.keyboard.remapCapsLockToControl = true;
 
   # Whether to install documentation of packages from environment.systemPackages into the generated system path.
   documentation.enable = true;
