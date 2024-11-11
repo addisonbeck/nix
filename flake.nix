@@ -30,6 +30,9 @@
 
     nix-minecraft.url = "github:Infinidoge/nix-minecraft";
     nix-minecraft.inputs.nixpkgs.follows = "nixpkgs";
+
+    where-am-i-nvim.url = "github:addisonbeck/where-am-i.nvim/main";
+    where-am-i-nvim.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -132,13 +135,13 @@
           (pkgs.writeScriptBin "check" ''
             if [ "$1" == "formatting" ]; then
               echo "Checking formatting..."
-              treefmt --fail-on-change
+              treefmt --fail-on-change --no-cache
             fi
           '')
           (pkgs.writeScriptBin "apply" ''
             if [ "$1" == "formatting" ]; then
               echo "Applying formatting..."
-              treefmt
+              treefmt --no-cache
             fi
           '')
         ];

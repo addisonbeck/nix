@@ -2,6 +2,7 @@
 {
   pkgs,
   lib,
+  inputs,
   ...
 }: let
   # Command definitions are written as raw lua functions to force the
@@ -132,7 +133,7 @@
       vimKeymapBinding = 
         {
           modes = ["n" "v" "i"];
-          key = "<C-r>";
+          key = "<C-5>";
           silent = true;
         }
       ;
@@ -259,7 +260,7 @@
       vimKeymapBinding = 
         {
           modes = ["n" "v" "i"];
-          key = "<C-/>";
+          key = "<C-d>";
           silent = true;
         }
       ;
@@ -338,7 +339,13 @@
       ;
       action.__raw = ''
         function()
-          vim.cmd.normal('let @+ = expand(%:p:.\')')
+          require("where-am-i.commands").copy_file_name({
+            content = {
+              file_path = {
+                format = "present_working_dir_path"  
+              }
+            }
+          });
         end
       '';
 
@@ -357,7 +364,13 @@
       ;
       action.__raw = ''
         function()
-          vim.cmd.normal('let @+ = expand(\'%:p\')')
+          require("where-am-i.commands").copy_file_name({
+            content = {
+              file_path = {
+                format = "system_path"  
+              }
+            }
+          });
         end
       '';
     };
@@ -375,7 +388,13 @@
       ;
       action.__raw = ''
         function()
-          vim.cmd.normal('let @+ = expand(\'%:t\')')
+          require("where-am-i.commands").copy_file_name({
+            content = {
+              file_path = {
+                format = "filename_only"  
+              }
+            }
+          });
         end
       '';
     };
@@ -853,38 +872,6 @@
           end
         '';
       };
-      goToPreviousBuffer = {
-        description = ''
-          Navigate one buffer up in the buffer list
-        '';
-        vimCommandName = "GoToPreviousBuffer";
-        vimKeymapBinding = {
-          key = "<Left>";
-          modes = ["n" "v" "i"];
-          silent = true; 
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("bprevious");
-          end
-        '';
-      };
-      goToNextBuffer = {
-        description = ''
-          Navigate one buffer down in the buffer list
-        '';
-        vimCommandName = "GoToNextBuffer";
-        vimKeymapBinding = {
-          key = "<Right>";
-          modes = ["n" "v" "i"];
-          silent = true; 
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("bnext");
-          end
-        '';
-      };
   };
 
   mkVimKeymap = key: command: {
@@ -897,7 +884,7 @@
     };
   };
 
-  mkVimKeymaps = lib.attrValues (lib.mapAttrs mkVimKeymap commands);
+  mkVimKeymaps = commandList: lib.attrValues (lib.mapAttrs mkVimKeymap commandList);
 
   mkVimUserCommand = key: command: {
     ${command.vimCommandName} = {
@@ -905,12 +892,13 @@
       desc = command.description;
     };
   };
-  mkVimUserCommands = lib.concatMapAttrs mkVimUserCommand commands;
+
+  mkVimUserCommands = commandList: lib.concatMapAttrs mkVimUserCommand commandList;
 in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts.background = "light";
     highlight.SignColumn.bg = "none";
     highlight.SignColumn.ctermbg = "none";
     colorschemes.gruvbox.enable = true;
@@ -985,6 +973,16 @@ in {
     plugins.telescope.settings.defaults.show_all_buffers = true;
     plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
     plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
+    plugins.auto-session.enable = true;
+    plugins.auto-session.settings.auto_create = true;
+    plugins.auto-session.settings.auto_restore = true;
+    plugins.auto-session.settings.auto_save = true;
+    plugins.auto-session.settings.use_git_branch = true;
+    plugins.auto-session.settings.suppressed_dirs = [ 
+      "/"
+      "~/" 
+      "~/Downloads" 
+    ];
 
     extraConfigVim = ''
       set laststatus=0
@@ -1005,6 +1003,7 @@ in {
     plugins.lsp.servers.eslint.enable = true;
     plugins.lsp.servers.sqls.enable = true;
     plugins.lsp.servers.rust_analyzer.enable = true;
+    plugins.lsp.servers.lua_ls.enable = true;
     # Cargo should probably be installed by a devshell
     # Maybe vim should too
     plugins.lsp.servers.rust_analyzer.installCargo = false;
@@ -1019,8 +1018,8 @@ in {
     plugins.trouble.settings.win.position = "right";
     plugins.trouble.settings.win.size.width = 60;
     plugins.noice.enable = false;
-    plugins.fidget.enable = true;
-    plugins.fidget.notification.overrideVimNotify = true;
+    #plugins.fidget.enable = true;
+    #plugins.fidget.notification.overrideVimNotify = true;
     # local prettier = {
     #   formatCommand = 'prettierd "${INPUT}"',
     #   formatStdin = true,
@@ -1079,6 +1078,7 @@ in {
           hash = "sha256-WVOYouiEFeLkQBe1Ptazw/mIfzxmaQmOuEK8KlfMYoQ=";
         };
       })
+      inputs.where-am-i-nvim.packages.${pkgs.system}.default
     ];
     plugins.telescope.enabledExtensions = ["live_grep_args"];
     plugins.markdown-preview.enable = true;
@@ -1411,7 +1411,17 @@ in {
     ''}";
 
     extraConfigLua = ''
-       require('satellite').setup({
+      require('where-am-i').setup({
+        features = {
+          user_commands = {
+            enable = true;
+          },
+          keymaps = {
+            enable = true;
+          },
+        }
+      })
+      require('satellite').setup({
       current_only = false,
        winblend = 0,
        zindex = 40,
@@ -1633,11 +1643,11 @@ in {
     keymaps = [
       # Custom keymaps can be added here if needed, but I stick to using
       # `mkVimKeymaps` and the `commands` data structure it references.
-    ] ++ mkVimKeymaps;
+    ] ++ mkVimKeymaps commands;
 
     userCommands = {
       # Custom commands can be added here if needed, but I stick to using
       # `mkVimUserCommand` and the `commands` data structure it references.
-    } // mkVimUserCommands;
+    } // mkVimUserCommands commands;
   };
 }

@@ -47,7 +47,7 @@
       ./with/program/nixvim.nix
       ./with/program/lazygit.nix
       #./with/program/nixfmt.nix
-      ./with/program/raycast.nix
+      #./with/program/raycast.nix
       ./with/program/dotnet.nix
       ./with/program/nuke-docker.nix
       ./with/program/homebrew.nix
