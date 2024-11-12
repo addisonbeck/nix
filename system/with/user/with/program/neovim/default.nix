@@ -3,6 +3,7 @@
   pkgs,
   lib,
   inputs,
+  systemTheme,
   ...
 }: let
   options =
@@ -10,28 +11,53 @@
       import ./options {}
     )
     // (
-      (import ./colors {}).options
+      (import ./colors { inherit systemTheme; }).options
     );
 in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
     opts = options;
-    highlight = (import ./colors {}).highlights;
-    colorschemes = (import ./colors {}).colorscheme;
-    highlightOverride = (import ./colors {}).highlightOverrides;
-
+    highlight = (import ./colors { inherit systemTheme; }).highlights;
+    colorschemes = (import ./colors { inherit systemTheme; }).colorscheme;
+    highlightOverride = (import ./colors { inherit systemTheme; }).highlightOverrides;
+    plugins = ((import ./plugins { inherit inputs pkgs; }).plugins);
+    extraPlugins = ((import ./plugins { inherit inputs pkgs; }).extraPlugins);
+    autoCmd = ((import ./auto-commands {}).autoCommands);
+    keymaps =
+      [
+        # Custom nixvim style keymaps can be added here if needed, but I
+        # stick to using `mkVimKeymaps` and the `commands` data structure it
+        # references.
+      ]
+      ++ (import ./commands {inherit lib;}).keymaps;
+    userCommands =
+      {
+        # Custom nixvim style commands can be added here if needed, but I
+        # stick to using `mkVimUserCommand` and the `commands` data structure
+        # it references.
+      }
+      // (import ./commands {inherit lib;}).userCommands;
+    diagnostics = {
+      signs = false;
+      underline = true;
+      update_in_insert = false;
+      float = {
+        focused = false;
+        style = "minimal";
+        border = "rounded";
+        source = "always";
+        header = "";
+        prefix = "";
+      };
+    };
     globals.netrw_banner = 0;
-    # very cool
-
     extraConfigVim = ''
       set laststatus=0
       hi! link StatusLine Normal
       hi! link StatusLineNC Normal
       set statusline=%{repeat('─',winwidth('.'))}
     '';
-
-
     extraConfigLua = ''
       require('where-am-i').setup({
         features = {
@@ -130,39 +156,5 @@ in {
               italic = true,
             })
     '';
-    diagnostics = {
-      signs = false;
-      underline = true;
-      update_in_insert = false;
-      float = {
-        focused = false;
-        style = "minimal";
-        border = "rounded";
-        source = "always";
-        header = "";
-        prefix = "";
-      };
-    };
-
-    plugins = ((import ./plugins { inherit inputs pkgs; }).plugins);
-    extraPlugins = ((import ./plugins { inherit inputs pkgs; }).extraPlugins);
-
-    autoCmd = ((import ./auto-commands {}).autoCommands);
-
-    keymaps =
-      [
-        # Custom nixvim style keymaps can be added here if needed, but I
-        # stick to using `mkVimKeymaps` and the `commands` data structure it
-        # references.
-      ]
-      ++ (import ./commands {inherit lib;}).keymaps;
-
-    userCommands =
-      {
-        # Custom nixvim style commands can be added here if needed, but I
-        # stick to using `mkVimUserCommand` and the `commands` data structure
-        # it references.
-      }
-      // (import ./commands {inherit lib;}).userCommands;
   };
 }

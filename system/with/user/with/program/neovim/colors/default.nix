@@ -1,6 +1,6 @@
-{...}: {
+{systemTheme, ...}: {
   options = {
-    background = "dark";
+    background = "${systemTheme}";
     termguicolors = false;
   };
   highlights = {

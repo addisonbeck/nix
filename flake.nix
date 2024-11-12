@@ -46,12 +46,14 @@
     inherit (self) outputs;
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
+    systemTheme = import ./config/system-theme.nix;
+    rootPath = ./.;
   in {
     nixosConfigurations = {
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
-          inherit inputs outputs nixpkgs;
+          inherit inputs outputs nixpkgs rootPath systemTheme;
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "x86_64-linux";
             config.allowUnfree = true;
@@ -64,7 +66,8 @@
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs;
+          inherit inputs outputs nixpkgs rootPath systemTheme;
+          hostname = "bw";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
             config.allowUnfree = true;
@@ -82,7 +85,8 @@
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs;
+          inherit inputs outputs nixpkgs rootPath systemTheme;
+          hostname = "air";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
             config.allowUnfree = true;
@@ -154,6 +158,24 @@
       editing = pkgs.mkShell {
         packages = [
           pkgs.nixd
+        ];
+      };
+      toggle-theme = let 
+        newSystemTheme = if systemTheme == "dark"
+          then { name = "light"; darwinBool = "false"; }
+          else { name = "dark"; darwinBool = "true"; };
+      in pkgs.mkShell {
+        inputsFrom = with self.devShells.${system}; [
+          building
+        ];
+        packages = [
+          (pkgs.writeScriptBin "nix-toggle-theme" ''
+            cd ~/nix
+            echo "\"${newSystemTheme.name}\"" > "config/system-theme.nix"
+            osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to ${newSystemTheme.darwinBool}'
+            rebuild $1
+            kill -SIGUSR1 $KITTY_PID
+          '')
         ];
       };
     });

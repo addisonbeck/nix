@@ -100,6 +100,7 @@
       #./with/program/opentoonz.nix <- This doesn't work
       ./with/program/gimp.nix
       ./with/program/audacity.nix
+      ./with/program/toggle-theme.nix
     ];
 
     home.sessionPath = [];
