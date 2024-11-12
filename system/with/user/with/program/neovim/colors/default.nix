@@ -1,4 +1,4 @@
-{systemTheme, ...}: {
+{systemTheme, colorscheme, ...}: {
   options = {
     background = "${systemTheme}";
     termguicolors = false;
@@ -19,7 +19,7 @@
   };
   colorscheme = {
     gruvbox = {
-      enable = true;
+      enable = colorscheme == "gruvbox";
       settings = {
         transparent_mode = true;
         overrides = {
@@ -38,6 +38,9 @@
           };
         };
       };
+    };
+    nord = {
+      enable = colorscheme == "nord";
     };
   };
 }

@@ -47,13 +47,14 @@
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
     systemTheme = import ./config/system-theme.nix;
+    colorscheme = import ./config/colorscheme.nix;
     rootPath = ./.;
   in {
     nixosConfigurations = {
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme;
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "x86_64-linux";
             config.allowUnfree = true;
@@ -66,7 +67,7 @@
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme;
           hostname = "bw";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
@@ -85,7 +86,7 @@
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme;
           hostname = "air";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
@@ -169,12 +170,21 @@
           building
         ];
         packages = [
+          pkgs.neovim-remote
           (pkgs.writeScriptBin "nix-toggle-theme" ''
             cd ~/nix
+            osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to ${newSystemTheme.darwinBool}' &
             echo "\"${newSystemTheme.name}\"" > "config/system-theme.nix"
-            osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to ${newSystemTheme.darwinBool}'
             rebuild $1
-            kill -SIGUSR1 $KITTY_PID
+            kill -SIGUSR1 $KITTY_PID &
+            nvr -c "set background=${newSystemTheme.name}" &
+          '')
+          (pkgs.writeScriptBin "nix-set-colorscheme" ''
+            cd ~/nix
+            echo "\"$2\"" > "config/colorscheme.nix"
+            rebuild $1
+            kill -SIGUSR1 $KITTY_PID &
+            nvr -c "colorscheme ${colorscheme}" &
           '')
         ];
       };

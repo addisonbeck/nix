@@ -101,10 +101,14 @@
       ./with/program/gimp.nix
       ./with/program/audacity.nix
       ./with/program/toggle-theme.nix
+      ./with/program/set-color-scheme.nix
     ];
 
     home.sessionPath = [];
-    home.sessionVariables = {EDITOR = "vim";};
+    home.sessionVariables = {
+      EDITOR = "vim";
+      NVIM_LISTEN_ADDRESS="/tmp/nvimsocket";
+    };
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };
