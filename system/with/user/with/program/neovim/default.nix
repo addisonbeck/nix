@@ -39,13 +39,11 @@
       # TODO: Add aliases or multiple vim command definitions for a single
       # command structure.
       vimCommandName = "SearchGitFiles";
-      vimKeymapBinding =
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-g>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-g>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').git_files()
@@ -57,13 +55,11 @@
         Search lsp definitions of the symbol under the cursor
       '';
       vimCommandName = "SearchDefintions";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-d>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-d>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').lsp_definitions()
@@ -75,13 +71,11 @@
         Search for marks with telescope.
       '';
       vimCommandName = "SearchMarks";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-m>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-m>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').marks();
@@ -91,13 +85,11 @@
     searchNotes = {
       description = ''Grep search my notes'';
       vimCommandName = "SearchNotes";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-n>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-n>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').live_grep({ cwd = '~/notes' });
@@ -109,13 +101,11 @@
         Grep search the current directory. Also includes the ~/notes directory
       '';
       vimCommandName = "SearchLiveGrep";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-l>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-l>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           local picker = require('telescope-live-grep-args.shortcuts');
@@ -130,13 +120,11 @@
         Resume the last opened telescope picker
       '';
       vimCommandName = "SearchResume";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-5>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-5>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').resume();
@@ -148,13 +136,11 @@
         Search telescope pickers
       '';
       vimCommandName = "SearchTelescopePickers";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-\>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-\>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').pickers();
@@ -166,13 +152,11 @@
         Rename the currently open file
       '';
       vimCommandName = "RenameCurrentFile";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-.>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-.>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           vim.lsp.buf.rename();
@@ -184,14 +168,12 @@
         Open spell suggest for the symbol under the cursor
       '';
       vimCommandName = "Spellcheck";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          # I'd rather this be mapped to save all quit
-          key = "<C-q>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        # I'd rather this be mapped to save all quit
+        key = "<C-q>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').spell_suggest()
@@ -203,13 +185,11 @@
         Open code action suggestions for the diagnostic under the cursor
       '';
       vimCommandName = "RunCodeAction";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-a>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-a>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           vim.lsp.buf.code_action()
@@ -221,13 +201,11 @@
         Search through the currently open vim buffers
       '';
       vimCommandName = "SearchBuffers";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-b>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-b>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').buffers()
@@ -239,13 +217,11 @@
         Search through vim's oldfiles
       '';
       vimCommandName = "SearchOldfiles";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-o>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-o>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').oldfiles();
@@ -257,13 +233,11 @@
         Open a file tree browser
       '';
       vimCommandName = "SearchFileTree";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-d>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-d>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope').extensions.file_browser.file_browser();
@@ -275,13 +249,11 @@
         Search lsp references of the word under the cursor
       '';
       vimCommandName = "SearchLspReferences";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-1>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-1>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').lsp_references();
@@ -293,13 +265,11 @@
         Search lsp implementations of the symbol under the cursor
       '';
       vimCommandName = "SearchLispImplementations";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-2>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-2>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').lsp_implementations();
@@ -311,13 +281,11 @@
         Format the open buffer
       '';
       vimCommandName = "FormatBuffer";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-f>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-f>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           vim.lsp.buf.format();
@@ -328,46 +296,41 @@
       description = ''
         Copy the relative path (compared to the current open directory) of
         the file loaded in the open buffer
-      '' ;
+      '';
       vimCommandName = "CopyRelativePath";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-p>r";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-p>r";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require("where-am-i.commands").copy_file_name({
             content = {
               file_path = {
-                format = "present_working_dir_path"  
+                format = "present_working_dir_path"
               }
             }
           });
         end
       '';
-
     };
     copyFullPath = {
       description = ''
         Copy the full system path of the file loaded in the open buffer
       '';
       vimCommandName = "CopyFullPath";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-p>f";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-p>f";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require("where-am-i.commands").copy_file_name({
             content = {
               file_path = {
-                format = "system_path"  
+                format = "system_path"
               }
             }
           });
@@ -379,19 +342,17 @@
         Copy the file name of the file loaded in the open buffer
       '';
       vimCommandName = "CopyFileName";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-p>n";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-p>n";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require("where-am-i.commands").copy_file_name({
             content = {
               file_path = {
-                format = "filename_only"  
+                format = "filename_only"
               }
             }
           });
@@ -403,13 +364,11 @@
         Generate a guid and paste it under the cursor
       '';
       vimCommandName = "GenerateGuid";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-g>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-g>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           vim.cmd.normal('silent! read !uuidgen')
@@ -421,13 +380,11 @@
         Close all open buffers except for the currently loaded one
       '';
       vimCommandName = "Bd";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-->";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-->";
+        silent = true;
+      };
       action.__raw = ''
         function()
           vim.cmd.normal('silent! execute \'%bd|e#|bd#')
@@ -439,13 +396,11 @@
         Search lsp diagnostics
       '';
       vimCommandName = "SearchLspDiagnostics";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-0>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-0>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           require('telescope.builtin').diagnostics()
@@ -457,13 +412,11 @@
         Search registered keymaps
       '';
       vimCommandName = "SearchKeymaps";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-k>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-k>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           local pickers = require('telescope.pickers')
@@ -545,20 +498,18 @@
               end,
               }):find()
           end
-       '';
-     };
-     searchCommands = {
+      '';
+    };
+    searchCommands = {
       description = ''
         Search registered user commands
       '';
       vimCommandName = "SearchCommands";
-      vimKeymapBinding = 
-        {
-          modes = ["n" "v" "i"];
-          key = "<C-c>";
-          silent = true;
-        }
-      ;
+      vimKeymapBinding = {
+        modes = ["n" "v" "i"];
+        key = "<C-c>";
+        silent = true;
+      };
       action.__raw = ''
         function()
           local pickers = require('telescope.pickers')
@@ -673,205 +624,201 @@
               end,
               }):find()
           end
-        '';
+      '';
+    };
+    jumpDownHalfThePage = {
+      description = "Jump down half of the screen height";
+      vimCommandName = "JumpDownHalfAPage";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<S-j>";
+        silent = true;
       };
-      jumpDownHalfThePage = {
-        description = "Jump down half of the screen height";
-        vimCommandName = "JumpDownHalfAPage";
-        vimKeymapBinding = 
-          {
-            modes = ["n" "v"];
-            key = "<S-j>";
-            silent = true;
-          }
-        ;
-        # This emulates the default behavior or <C-d>
-        action.__raw = ''
-          function()
-            -- Get the current window height
-            local win_id = vim.api.nvim_get_current_win()
-            local height = vim.api.nvim_win_get_height(win_id)
+      # This emulates the default behavior or <C-d>
+      action.__raw = ''
+        function()
+          -- Get the current window height
+          local win_id = vim.api.nvim_get_current_win()
+          local height = vim.api.nvim_win_get_height(win_id)
 
-            -- Get the current cursor position (row, col)
-            local cursor = vim.api.nvim_win_get_cursor(win_id)
-            local current_row = cursor[1]
+          -- Get the current cursor position (row, col)
+          local cursor = vim.api.nvim_win_get_cursor(win_id)
+          local current_row = cursor[1]
 
-            -- Calculate the new row (half the window height below the current position)
-            local new_row = current_row + math.floor(height / 2)
+          -- Calculate the new row (half the window height below the current position)
+          local new_row = current_row + math.floor(height / 2)
 
-            -- Ensure the new row is within the bounds of the buffer
-            local buf_line_count = vim.api.nvim_buf_line_count(0)
-            new_row = math.min(new_row, buf_line_count)  -- Don't scroll past the last line
+          -- Ensure the new row is within the bounds of the buffer
+          local buf_line_count = vim.api.nvim_buf_line_count(0)
+          new_row = math.min(new_row, buf_line_count)  -- Don't scroll past the last line
 
-            -- Move the cursor to the new row (the column remains the same)
-            vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
-          end
-        '';
+          -- Move the cursor to the new row (the column remains the same)
+          vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
+        end
+      '';
+    };
+    jumpUpHalfThePage = {
+      description = "Jump up half of the screen height";
+      vimCommandName = "JumpUpHalfAPage";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<S-k>";
+        silent = true;
       };
-      jumpUpHalfThePage = {
-        description = "Jump up half of the screen height";
-        vimCommandName = "JumpUpHalfAPage";
-        vimKeymapBinding = 
-          {
-            modes = ["n" "v"];
-            key = "<S-k>";
-            silent = true;
-          }
-        ;
-        # This emulates the default behavior or <C-u>
-        action.__raw = ''
-          function()
-            -- Get the current window height
-            local win_id = vim.api.nvim_get_current_win()
-            local height = vim.api.nvim_win_get_height(win_id)
+      # This emulates the default behavior or <C-u>
+      action.__raw = ''
+        function()
+          -- Get the current window height
+          local win_id = vim.api.nvim_get_current_win()
+          local height = vim.api.nvim_win_get_height(win_id)
 
-            -- Get the current cursor position (row, col)
-            local cursor = vim.api.nvim_win_get_cursor(win_id)
-            local current_row = cursor[1]
+          -- Get the current cursor position (row, col)
+          local cursor = vim.api.nvim_win_get_cursor(win_id)
+          local current_row = cursor[1]
 
-            -- Calculate the new row (half the window height below the current position)
-            local new_row = current_row - math.floor(height / 2)
+          -- Calculate the new row (half the window height below the current position)
+          local new_row = current_row - math.floor(height / 2)
 
-            -- Ensure the new row is within the bounds of the buffer
-            local buf_line_count = vim.api.nvim_buf_line_count(0)
-            new_row = math.max(new_row, 1)  -- Don't scroll above the first line
+          -- Ensure the new row is within the bounds of the buffer
+          local buf_line_count = vim.api.nvim_buf_line_count(0)
+          new_row = math.max(new_row, 1)  -- Don't scroll above the first line
 
-            -- Move the cursor to the new row (the column remains the same)
-            vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
-          end
-        '';
+          -- Move the cursor to the new row (the column remains the same)
+          vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
+        end
+      '';
+    };
+    toggleNumberLine = {
+      description = "Toggle line numbers";
+      vimCommandName = "ToggleLineNumbers";
+      vimKeymapBinding = {
+        key = "<S-n>";
+        modes = ["n"];
+        silent = true;
       };
-      toggleNumberLine = {
-        description = "Toggle line numbers";
-        vimCommandName = "ToggleLineNumbers";
-        vimKeymapBinding = {
-          key = "<S-n>";
-          modes = ["n"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.cmd('set relativenumber! nu!')
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.cmd('set relativenumber! nu!')
+        end
+      '';
+    };
+    checkDiagnostic = {
+      description = ''
+        Check the LSP diagnostic under the cursor
+      '';
+      vimCommandName = "CheckDiagnostic";
+      vimKeymapBinding = {
+        key = "DD";
+        modes = ["n"];
+        silent = true;
       };
-      checkDiagnostic = {
-        description = ''
-          Check the LSP diagnostic under the cursor
-        '';
-        vimCommandName = "CheckDiagnostic";
-        vimKeymapBinding = {
-          key = "DD";
-          modes = ["n"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.diagnostic.open_float()
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.diagnostic.open_float()
+        end
+      '';
+    };
+    focusSplitLeft = {
+      description = ''
+        Move focus to the split left of the current active split
+      '';
+      vimCommandName = "FocusSplitLeft";
+      vimKeymapBinding = {
+        key = "<C-h>";
+        modes = ["n" "v" "i"];
+        silent = true;
       };
-      focusSplitLeft = {
-        description = ''
-          Move focus to the split left of the current active split
-        '';
-        vimCommandName = "FocusSplitLeft";
-        vimKeymapBinding = {
-          key = "<C-h>";
-          modes = ["n" "v" "i"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("wincmd h");
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.cmd("wincmd h");
+        end
+      '';
+    };
+    focusSplitDown = {
+      description = ''
+        Move focus to the split below the current active split
+      '';
+      vimCommandName = "FocusSplitDown";
+      vimKeymapBinding = {
+        key = "<c-j>";
+        modes = ["n" "v" "i"];
+        silent = true;
       };
-      focusSplitDown = {
-        description = ''
-          Move focus to the split below the current active split
-        '';
-        vimCommandName = "FocusSplitDown";
-        vimKeymapBinding = {
-          key = "<c-j>";
-          modes = ["n" "v" "i"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("wincmd j");
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.cmd("wincmd j");
+        end
+      '';
+    };
+    focusSplitUp = {
+      description = ''
+        Move focus to the split above the current active split
+      '';
+      vimCommandName = "FocusSplitUp";
+      vimKeymapBinding = {
+        key = "<C-k>";
+        modes = ["n" "v" "i"];
+        silent = true;
       };
-      focusSplitUp = {
-        description = ''
-          Move focus to the split above the current active split
-        '';
-        vimCommandName = "FocusSplitUp";
-        vimKeymapBinding = {
-          key = "<C-k>";
-          modes = ["n" "v" "i"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("wincmd k");
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.cmd("wincmd k");
+        end
+      '';
+    };
+    focusSplitRight = {
+      description = ''
+        Move focus to the split to the right of the current active split
+      '';
+      vimCommandName = "FocusSplitRight";
+      vimKeymapBinding = {
+        key = "<C-l>";
+        modes = ["n" "v" "i"];
+        silent = true;
       };
-      focusSplitRight = {
-        description = ''
-          Move focus to the split to the right of the current active split
-        '';
-        vimCommandName = "FocusSplitRight";
-        vimKeymapBinding = {
-          key = "<C-l>";
-          modes = ["n" "v" "i"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            vim.cmd("wincmd l");
-          end
-        '';
+      action.__raw = ''
+        function()
+          vim.cmd("wincmd l");
+        end
+      '';
+    };
+    jump = {
+      description = ''
+        Start a flash.nvim jump search
+      '';
+      vimCommandName = "Jump";
+      vimKeymapBinding = {
+        key = "s";
+        modes = ["n" "v" "x"];
+        silent = true;
       };
-      jump = {
-        description = ''
-          Start a flash.nvim jump search
-        '';
-        vimCommandName = "Jump";
-        vimKeymapBinding = {
-          key = "s";
-          modes = ["n" "v" "x"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            require('flash').jump()
-          end
-        '';
+      action.__raw = ''
+        function()
+          require('flash').jump()
+        end
+      '';
+    };
+    copyUrlOfCurrentLineOnGithub = {
+      description = ''
+        Copy a URL of the line under the cursor on Github to the clipboard
+      '';
+      vimCommandName = "CopyUrlOfCurrentLineOnGithub";
+      vimKeymapBinding = {
+        key = "yg";
+        # TODO: Implement this for a visual mode rand selection
+        modes = ["n"];
+        silent = true;
       };
-      copyUrlOfCurrentLineOnGithub = {
-        description = ''
-          Copy a URL of the line under the cursor on Github to the clipboard
-        '';
-        vimCommandName = "CopyUrlOfCurrentLineOnGithub";
-        vimKeymapBinding = {
-          key = "yg";
-          # TODO: Implement this for a visual mode rand selection
-          modes = ["n"];
-          silent = true;
-        };
-        action.__raw = ''
-          function()
-            local gitlinker = require("gitlinker");
-            local actions = require("gitlinker.actions");
-            gitlinker.get_buf_range_url("n", {
-              action_callback = actions.copy_to_clipboard
-            });
-          end
-        '';
-      };
+      action.__raw = ''
+        function()
+          local gitlinker = require("gitlinker");
+          local actions = require("gitlinker.actions");
+          gitlinker.get_buf_range_url("n", {
+            action_callback = actions.copy_to_clipboard
+          });
+        end
+      '';
+    };
   };
 
   mkVimKeymap = key: command: {
@@ -980,10 +927,10 @@ in {
     plugins.auto-session.settings.auto_restore = true;
     plugins.auto-session.settings.auto_save = true;
     plugins.auto-session.settings.use_git_branch = true;
-    plugins.auto-session.settings.suppressed_dirs = [ 
+    plugins.auto-session.settings.suppressed_dirs = [
       "/"
-      "~/" 
-      "~/Downloads" 
+      "~/"
+      "~/Downloads"
     ];
 
     extraConfigVim = ''
@@ -1326,14 +1273,18 @@ in {
         command = ''lua vim.wo.wrap = true'';
       }
     ];
-    keymaps = [
-      # Custom keymaps can be added here if needed, but I stick to using
-      # `mkVimKeymaps` and the `commands` data structure it references.
-    ] ++ mkVimKeymaps commands;
+    keymaps =
+      [
+        # Custom keymaps can be added here if needed, but I stick to using
+        # `mkVimKeymaps` and the `commands` data structure it references.
+      ]
+      ++ mkVimKeymaps commands;
 
-    userCommands = {
-      # Custom commands can be added here if needed, but I stick to using
-      # `mkVimUserCommand` and the `commands` data structure it references.
-    } // mkVimUserCommands commands;
+    userCommands =
+      {
+        # Custom commands can be added here if needed, but I stick to using
+        # `mkVimUserCommand` and the `commands` data structure it references.
+      }
+      // mkVimUserCommands commands;
   };
 }
