@@ -44,7 +44,7 @@
       #./with/development-environment/notes
       #./with/development-environment/bitwarden
       ./with/program/zsh.nix
-      ./with/program/nixvim.nix
+      ./with/program/neovim
       ./with/program/lazygit.nix
       #./with/program/nixfmt.nix
       #./with/program/raycast.nix
