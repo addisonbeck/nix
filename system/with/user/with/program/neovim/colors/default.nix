@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   options = {
     background = "dark";
     termguicolors = false;

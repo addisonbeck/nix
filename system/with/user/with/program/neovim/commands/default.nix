@@ -1,4 +1,4 @@
-{ lib, ... }: let
+{lib, ...}: let
   mkVimKeymap = key: command: {
     action.__raw = command.action.__raw;
     key = command.vimKeymapBinding.key;
@@ -835,15 +835,17 @@
     };
   };
 in {
-    keymaps =
-      [
-        # Custom keymaps can be added here if needed, but I stick to using
-        # `mkVimKeymaps` and the `commands` data structure it references.
-      ] ++ mkVimKeymaps commands;
+  keymaps =
+    [
+      # Custom keymaps can be added here if needed, but I stick to using
+      # `mkVimKeymaps` and the `commands` data structure it references.
+    ]
+    ++ mkVimKeymaps commands;
 
-    userCommands =
-      {
-        # Custom commands can be added here if needed, but I stick to using
-        # `mkVimUserCommand` and the `commands` data structure it references.
-      } // mkVimUserCommands commands;
+  userCommands =
+    {
+      # Custom commands can be added here if needed, but I stick to using
+      # `mkVimUserCommand` and the `commands` data structure it references.
+    }
+    // mkVimUserCommands commands;
 }
