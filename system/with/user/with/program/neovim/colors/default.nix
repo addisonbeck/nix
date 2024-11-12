@@ -41,6 +41,9 @@
     };
     nord = {
       enable = colorscheme == "nord";
+      settings = {
+        disable_background = true;
+      };
     };
   };
 }

@@ -25,7 +25,7 @@
   spell = true;
   spelllang = "en_us";
   textwidth = 77;
-  cursorline = true;
+  cursorline = false;
   expandtab = true;
   shiftwidth = 2;
   wm = 2;

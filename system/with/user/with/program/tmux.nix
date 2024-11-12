@@ -29,6 +29,7 @@
     # Undercurl support?
     set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'
     set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{255}%&%d::%p1%{255}%&%d%;m'
+    set-option -ga terminal-overrides ',xterm-kitty:cnorm=\E[?12h\E[?25h'
 
     # Status Bar
 

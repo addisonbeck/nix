@@ -177,14 +177,14 @@
             echo "\"${newSystemTheme.name}\"" > "config/system-theme.nix"
             rebuild $1
             kill -SIGUSR1 $KITTY_PID &
-            nvr -c "set background=${newSystemTheme.name}" &
+            nvr --remote-silent --nostart -s -c "set background=${newSystemTheme.name}" &
           '')
           (pkgs.writeScriptBin "nix-set-colorscheme" ''
             cd ~/nix
             echo "\"$2\"" > "config/colorscheme.nix"
             rebuild $1
             kill -SIGUSR1 $KITTY_PID &
-            nvr -c "colorscheme ${colorscheme}" &
+            nvr --remote-silent --nostart -s -c "colorscheme ${colorscheme}" &
           '')
         ];
       };
