@@ -9,7 +9,7 @@ in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts.background = "dark";
+    opts = (import ./options {});
     highlight.SignColumn.bg = "none";
     highlight.SignColumn.ctermbg = "none";
     colorschemes.gruvbox.enable = true;
@@ -30,36 +30,6 @@ in {
       };
     };
     highlightOverride.SatelliteBackground.link = "SignColumn";
-    opts.undofile = true;
-    opts.termguicolors = false;
-    opts.autoindent = true;
-    opts.smartindent = false;
-    opts.smarttab = true;
-    opts.tabstop = 8;
-    opts.softtabstop = 0;
-    opts.confirm = false;
-    opts.swapfile = false;
-    opts.wrap = false;
-    opts.clipboard = "unnamed";
-    opts.cmdheight = 0;
-    opts.hidden = true;
-    opts.ignorecase = true;
-    opts.lazyredraw = true;
-    opts.mouse = "a";
-    opts.scrolljump = 5;
-    opts.showmode = false;
-    opts.smartcase = true;
-    opts.splitbelow = true;
-    opts.splitright = true;
-    opts.updatetime = 300;
-    opts.spell = true;
-    opts.spelllang = "en_us";
-    opts.textwidth = 77;
-    opts.cursorline = true;
-    opts.expandtab = true;
-    opts.shiftwidth = 2;
-    opts.wm = 2;
-    opts.signcolumn = "yes";
     globals.netrw_banner = 0;
     # very cool
     plugins.precognition.enable = false;
@@ -437,6 +407,7 @@ in {
         command = ''lua vim.wo.wrap = true'';
       }
     ];
+
     keymaps = 
       [
         # Custom nixvim style keymaps can be added here if needed, but I
