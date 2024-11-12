@@ -5,31 +5,19 @@
   inputs,
   ...
 }: let
+  options = (
+    import ./options {}) //
+    ((import ./colors {}).options
+  );
 in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
-    opts = (import ./options {});
-    highlight.SignColumn.bg = "none";
-    highlight.SignColumn.ctermbg = "none";
-    colorschemes.gruvbox.enable = true;
-    colorschemes.gruvbox.settings.transparent_mode = true;
-    colorschemes.gruvbox.settings.overrides = {
-      Comment = {
-        bold = true;
-      };
-      Winbar = {
-        bold = true;
-        fg = 4;
-        bg = "NONE";
-      };
-      WinbarNC = {
-        bold = true;
-        fg = 8;
-        bg = "NONE";
-      };
-    };
-    highlightOverride.SatelliteBackground.link = "SignColumn";
+    opts = options;
+    highlight = ((import ./colors {}).highlights);
+    colorschemes = ((import ./colors {}).colorscheme);
+    highlightOverride = ((import ./colors {}).highlightOverrides);
+
     globals.netrw_banner = 0;
     # very cool
     plugins.precognition.enable = false;
@@ -343,11 +331,6 @@ in {
     plugins.cmp.settings.mapping."<Down>" = "cmp.mapping(cmp.mapping.select_next_item(), {'i', 's'})";
     plugins.telescope.settings.pickers.buffers.mappings.n."d" = "delete_buffer";
 
-    highlight = {
-      # "Incandescent Light Bulb
-      ActiveYank.bg = "#FFBB73";
-      ActiveYank.fg = "#000000";
-    };
     autoCmd = [
       {
         event = [

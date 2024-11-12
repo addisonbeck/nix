@@ -1,7 +1,7 @@
 { ... }: {
-    background = "dark";
+    # Arbitrary vim options: `vim.opts`
+    # These deserve more organized homes.
     undofile = true;
-    termguicolors = false;
     autoindent = true;
     smartindent = false;
     smarttab = true;
