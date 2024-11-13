@@ -42,7 +42,7 @@
       name = "Noto Color Emoji";
     };
   };
-  stylix.fonts.sizes.terminal = 24;
+  stylix.fonts.sizes.terminal = 22;
   stylix.opacity.terminal = 0.7;
 
   # This started overwriting the sign column color and I couldn't figure out

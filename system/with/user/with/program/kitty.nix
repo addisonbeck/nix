@@ -14,9 +14,19 @@
     modify_font strikethrough_thickness 250%
     modify_font underline_position 150%
     modify_font underline_thickness 1px
-    modify_font cell_height 100%
-    bold_font        MonaspiceAr Nerd Font Mono Bold
-    italic_font      MonaspiceRn Nerd Font Mono Italic
-    bold_italic_font MonaspiceRn Nerd Font Mono Bold Italic
+    modify_font baseline 3
+    modify_font cell_height 85%
+    modify_font cell_width 95%
+
+    # The regular font is sans serif and is handled by stylix
+
+    # Handwritten
+    italic_font      MonaspiceRn Nerd Font Mono Regular 
+
+    # Mechanical
+    bold_font        MonaspiceKr Nerd Font Mono Regular
+
+    # Serif
+    bold_italic_font MonaspiceXe Nerd Font Mono Regular
   '';
 }
