@@ -431,88 +431,7 @@
         key = "<C-k>";
         silent = true;
       };
-      action.__raw = ''
-        function()
-          local pickers = require('telescope.pickers')
-          local finders = require('telescope.finders')
-          local actions = require('telescope.actions')
-          local action_state = require('telescope.actions.state')
-          local make_entry = require "telescope.make_entry"
-          local entry_display = require "telescope.pickers.entry_display"
-          local sorters = require('telescope.sorters')
-          local previewers = require('telescope.previewers')
-          local utils = require "telescope.utils"
-          local conf = require("telescope.config").values
-
-          local keymap_encountered = {} -- used to make sure no duplicates are inserted into keymaps_table
-          local keymaps_table = {}
-          local max_len_lhs = 0
-
-          -- helper function to populate keymaps_table and determine max_len_lhs
-          local function extract_keymaps(keymaps)
-            for _, keymap in pairs(keymaps) do
-              local keymap_key = keymap.buffer .. keymap.mode .. keymap.lhs -- should be distinct for every keymap
-              if not keymap_encountered[keymap_key] then
-                keymap_encountered[keymap_key] = true
-                table.insert(keymaps_table, keymap)
-                max_len_lhs = math.max(max_len_lhs, #utils.display_termcodes(keymap.lhs))
-              end
-            end
-          end
-          for _, mode in pairs({ "n", "i", "c", "x" }) do
-            local global = vim.api.nvim_get_keymap(mode)
-            local buf_local = vim.api.nvim_buf_get_keymap(0, mode)
-            extract_keymaps(global)
-            extract_keymaps(buf_local)
-          end
-            pickers.new({
-              layout_strategy = "cursor",
-              layout_config = {
-                height = 0.4,
-                width = 0.6,
-              },
-              preview = {
-                wrap = true,
-              },
-              previewer = previewers.new_buffer_previewer ({
-                define_preview = function(self, entry, status)
-                  local lines = {}
-                  if entry.definition ~= nil then
-                    for line in string.gmatch(entry.definition, "([^\n]*)") do
-                      table.insert(lines, line)
-                    end
-                    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-                  end
-                end
-              }),
-              prompt_title = "";
-              results_title = "";
-              prompt_prefix = "";
-              min_length = 1;
-              entry_prefix = "";
-              selection_caret = "";
-              border = true;
-              finder = finders.new_table {
-                results = keymaps_table,
-                entry_maker = make_entry.gen_from_keymaps({}),
-              },
-              sorter = conf.generic_sorter(opts),
-              attach_mappings = function(prompt_bufnr)
-                actions.select_default:replace(function()
-                  local selection = action_state.get_selected_entry()
-                  if selection == nil then
-                    utils.__warn_no_selection "builtin.keymaps"
-                    return
-                  end
-
-                  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(selection.value.lhs, true, false, true), "t", true)
-                  return actions.close(prompt_bufnr)
-                end)
-                return true
-              end,
-              }):find()
-          end
-      '';
+      action.__raw = (builtins.readFile ./search_keymaps.lua);
     };
     searchCommands = {
       description = ''
@@ -524,121 +443,7 @@
         key = "<C-c>";
         silent = true;
       };
-      action.__raw = ''
-        function()
-          local pickers = require('telescope.pickers')
-          local finders = require('telescope.finders')
-          local actions = require('telescope.actions')
-          local action_state = require('telescope.actions.state')
-          local make_entry = require "telescope.make_entry"
-          local entry_display = require "telescope.pickers.entry_display"
-          local sorters = require('telescope.sorters')
-          local previewers = require('telescope.previewers')
-          local conf = require("telescope.config").values
-
-          local gen_from_commands = function()
-            local displayer = entry_display.create {
-              separator = "▏",
-              items = {
-                { remaining = true },
-              }
-            }
-          local make_display = function(entry)
-            local attrs = ""
-            if entry.bang then
-              attrs = attrs .. "!"
-            end
-            if entry.bar then
-              attrs = attrs .. "|"
-            end
-            if entry.register then
-              attrs = attrs .. '"'
-            end
-            return displayer {
-              { entry.name, "TelescopeResultsIdentifier" },
-            }
-            end
-            return function(entry)
-              return make_entry.set_default_entry_mt({
-                name = entry.name,
-                bang = entry.bang,
-                nargs = entry.nargs,
-                complete = entry.complete,
-                definition = entry.definition,
-                --
-                value = entry,
-                desc = entry.desc,
-                ordinal = entry.name,
-                display = make_display,
-              }, opts)
-              end
-            end
-            pickers.new({
-              layout_strategy = "cursor",
-              layout_config = {
-                height = 0.4,
-                width = 0.6,
-              },
-              preview = {
-                wrap = true,
-              },
-              previewer = previewers.new_buffer_previewer ({
-                define_preview = function(self, entry, status)
-                  local lines = {}
-                  if entry.definition ~= nil then
-                    for line in string.gmatch(entry.definition, "([^\n]*)") do
-                      table.insert(lines, line)
-                    end
-                    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-                  end
-                end
-              }),
-              prompt_title = "";
-              results_title = "";
-              prompt_prefix = "";
-              min_length = 1;
-              entry_prefix = "";
-              selection_caret = "";
-              border = true;
-              finder = finders.new_table {
-                results = (function()
-                  local command_iter = vim.api.nvim_get_commands {}
-                  local commands = {}
-                  for _, cmd in pairs(command_iter) do
-                    table.insert(commands, cmd)
-                  end
-                  local buf_command_iter = vim.api.nvim_buf_get_commands(0, {})
-                  buf_command_iter[true] = nil -- remove the redundant entry
-                  for _, cmd in pairs(buf_command_iter) do
-                    table.insert(commands, cmd)
-                  end
-                  return commands
-                end)(),
-                entry_maker = gen_from_commands(),
-              },
-              sorter = conf.generic_sorter(opts),
-              attach_mappings = function(prompt_bufnr)
-                actions.select_default:replace(function()
-                  local selection = action_state.get_selected_entry()
-                  if selection == nil then
-                    utils.__warn_no_selection "builtin.commands"
-                    return
-                  end
-                  actions.close(prompt_bufnr)
-                  local val = selection.value
-                  local cmd = string.format([[:%s ]], val.name)
-                  if val.nargs == "0" then
-                    local cr = vim.api.nvim_replace_termcodes("<cr>", true, false, true)
-                    cmd = cmd .. cr
-                  end
-                  vim.cmd [[stopinsert]]
-                  vim.api.nvim_feedkeys(cmd, "nt", false)
-                end)
-                return true
-              end,
-              }):find()
-          end
-      '';
+      action.__raw = (builtins.readFile ./search_commands.lua);
     };
     jumpDownHalfThePage = {
       description = "Jump down half of the screen height";
@@ -649,27 +454,7 @@
         silent = true;
       };
       # This emulates the default behavior or <C-d>
-      action.__raw = ''
-        function()
-          -- Get the current window height
-          local win_id = vim.api.nvim_get_current_win()
-          local height = vim.api.nvim_win_get_height(win_id)
-
-          -- Get the current cursor position (row, col)
-          local cursor = vim.api.nvim_win_get_cursor(win_id)
-          local current_row = cursor[1]
-
-          -- Calculate the new row (half the window height below the current position)
-          local new_row = current_row + math.floor(height / 2)
-
-          -- Ensure the new row is within the bounds of the buffer
-          local buf_line_count = vim.api.nvim_buf_line_count(0)
-          new_row = math.min(new_row, buf_line_count)  -- Don't scroll past the last line
-
-          -- Move the cursor to the new row (the column remains the same)
-          vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
-        end
-      '';
+      action.__raw = (builtins.readFile ./jump_down_half_a_page.lua);
     };
     jumpUpHalfThePage = {
       description = "Jump up half of the screen height";
@@ -680,27 +465,7 @@
         silent = true;
       };
       # This emulates the default behavior or <C-u>
-      action.__raw = ''
-        function()
-          -- Get the current window height
-          local win_id = vim.api.nvim_get_current_win()
-          local height = vim.api.nvim_win_get_height(win_id)
-
-          -- Get the current cursor position (row, col)
-          local cursor = vim.api.nvim_win_get_cursor(win_id)
-          local current_row = cursor[1]
-
-          -- Calculate the new row (half the window height below the current position)
-          local new_row = current_row - math.floor(height / 2)
-
-          -- Ensure the new row is within the bounds of the buffer
-          local buf_line_count = vim.api.nvim_buf_line_count(0)
-          new_row = math.max(new_row, 1)  -- Don't scroll above the first line
-
-          -- Move the cursor to the new row (the column remains the same)
-          vim.api.nvim_win_set_cursor(win_id, {new_row, cursor[2]})
-        end
-      '';
+      action.__raw = (builtins.readFile ./jump_up_half_a_page.lua);
     };
     toggleNumberLine = {
       description = "Toggle line numbers";
