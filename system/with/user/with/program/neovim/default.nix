@@ -19,7 +19,6 @@ in {
     enable = true;
     vimAlias = true;
     opts = options;
-    highlight = (import ./colors {inherit systemTheme colorscheme;}).highlights;
     colorschemes = (import ./colors {inherit systemTheme colorscheme;}).colorscheme;
     highlightOverride = (import ./colors {inherit systemTheme colorscheme;}).highlightOverrides;
     plugins = (import ./plugins {inherit inputs pkgs;}).plugins;

@@ -7,19 +7,22 @@
     background = "${systemTheme}";
     termguicolors = false;
   };
-  highlights = {
-    SignColumn = {
-      bg = "none";
-      ctermbg = "none";
-    };
+  highlightOverrides = {
+    SatelliteBackground.link = "SignColumn";
+    SatelliteBar.link = "VisualMode";
+    MatchParen.link = "Cursor";
     ActiveYank = {
       # "Incandescent Light Bulb
       bg = "#FFBB73";
       fg = "#000000";
     };
-  };
-  highlightOverrides = {
-    SatelliteBackground.link = "SignColumn";
+    SignColumn = {
+      bg = "none";
+      ctermbg = "none";
+    };
+    Nontext = {
+      link = "Normal";
+    };
   };
   colorscheme = {
     gruvbox = {

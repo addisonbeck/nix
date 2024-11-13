@@ -103,6 +103,15 @@
         modules = [./system/air.nix];
       };
     };
+    packages = forAllSystemTypes (system: let
+      pkgs = import nixpkgs {inherit system;};
+    in {
+      default = self.packages.${system}.neovim;
+      neovim = pkgs.neovim.override {
+        configure = {
+        };
+      };
+    });
     devShells = forAllSystemTypes (system: let
       pkgs = import nixpkgs {inherit system;};
     in {
