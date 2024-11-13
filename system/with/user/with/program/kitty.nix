@@ -1,9 +1,5 @@
 {...}: {
   programs.kitty.enable = true;
-  #programs.kitty.font.size = 16;
-  #programs.kitty.font.name = "FiraCode Nerd Font";
-  #programs.kitty.font.package = pkgs.fira-code-nerdfont;
-  #programs.kitty.settings.background_opacity = "0.8";
   programs.kitty.settings.hide_window_decorations = "no";
   programs.kitty.settings.confirm_os_window_close = "0";
   programs.kitty.settings.window_padding_width = "0 0";
@@ -19,5 +15,8 @@
     modify_font underline_position 150%
     modify_font underline_thickness 1px
     modify_font cell_height 100%
+    bold_font        MonaspiceAr Nerd Font Mono Bold
+    italic_font      MonaspiceRn Nerd Font Mono Italic
+    bold_italic_font MonaspiceRn Nerd Font Mono Bold Italic
   '';
 }

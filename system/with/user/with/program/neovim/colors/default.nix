@@ -23,6 +23,20 @@
     Nontext = {
       link = "Normal";
     };
+    "@markup.heading" = {
+      underdotted = true;
+      bold = true;
+      italic = false;
+    };
+    "@markup.quote.markdown" = {
+      italic = true;
+    };
+    "@function" = {
+      italic = false;
+    };
+    "@function.builtin" = {
+      italic = false;
+    };
   };
   colorscheme = {
     gruvbox = {

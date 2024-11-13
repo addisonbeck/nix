@@ -87,7 +87,7 @@
       vimCommandName = "SearchMarks";
       vimKeymapBinding = {
         modes = ["n" "v" "i"];
-        key = "<C-m>";
+        key = "<C-a>";
         silent = true;
       };
       action.__raw = ''
@@ -200,8 +200,8 @@
       '';
       vimCommandName = "RunCodeAction";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-a>";
+        modes = ["n"];
+        key = "CA";
         silent = true;
       };
       action.__raw = ''

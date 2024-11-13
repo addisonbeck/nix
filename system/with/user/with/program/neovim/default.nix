@@ -147,14 +147,6 @@ in {
                   end
                 },
               })
-              vim.api.nvim_set_hl(0, "@markup.heading", {
-         underdotted = true,
-            	  bold = true,
-            	  italic = true,
-            	})
-              vim.api.nvim_set_hl(0, "@markup.quote.markdown", {
-              italic = true,
-            })
     '';
   };
 }
