@@ -12,19 +12,19 @@
       import ./options {}
     )
     // (
-      (import ./colors { inherit systemTheme colorscheme; }).options
+      (import ./colors {inherit systemTheme colorscheme;}).options
     );
 in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
     opts = options;
-    highlight = (import ./colors { inherit systemTheme colorscheme; }).highlights;
-    colorschemes = (import ./colors { inherit systemTheme colorscheme; }).colorscheme;
-    highlightOverride = (import ./colors { inherit systemTheme colorscheme; }).highlightOverrides;
-    plugins = ((import ./plugins { inherit inputs pkgs; }).plugins);
-    extraPlugins = ((import ./plugins { inherit inputs pkgs; }).extraPlugins);
-    autoCmd = ((import ./auto-commands {}).autoCommands);
+    highlight = (import ./colors {inherit systemTheme colorscheme;}).highlights;
+    colorschemes = (import ./colors {inherit systemTheme colorscheme;}).colorscheme;
+    highlightOverride = (import ./colors {inherit systemTheme colorscheme;}).highlightOverrides;
+    plugins = (import ./plugins {inherit inputs pkgs;}).plugins;
+    extraPlugins = (import ./plugins {inherit inputs pkgs;}).extraPlugins;
+    autoCmd = (import ./auto-commands {}).autoCommands;
     keymaps =
       [
         # Custom nixvim style keymaps can be added here if needed, but I

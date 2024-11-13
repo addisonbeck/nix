@@ -1,4 +1,8 @@
-{systemTheme, colorscheme, ...}: {
+{
+  systemTheme,
+  colorscheme,
+  ...
+}: {
   options = {
     background = "${systemTheme}";
     termguicolors = false;

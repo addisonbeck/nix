@@ -1,4 +1,8 @@
-{pkgs, hostname, ...}: {
+{
+  pkgs,
+  hostname,
+  ...
+}: {
   home.packages = [
     (pkgs.writeShellScriptBin "set-color-scheme" ''
       cd ~/nix
@@ -6,4 +10,3 @@
     '')
   ];
 }
- 

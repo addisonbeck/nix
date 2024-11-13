@@ -1,5 +1,9 @@
 #defaults write -g NSRequiresAquaSystemAppearance -bool ${newSystemTheme.darwinBool}
-{pkgs, hostname, ...}: {
+{
+  pkgs,
+  hostname,
+  ...
+}: {
   home.packages = [
     (pkgs.writeShellScriptBin "toggle-theme" ''
       cd ~/nix
@@ -7,4 +11,3 @@
     '')
   ];
 }
- 

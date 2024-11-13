@@ -1,12 +1,17 @@
-{pkgs, systemTheme, colorscheme, ...}: {
+{
+  pkgs,
+  systemTheme,
+  colorscheme,
+  ...
+}: {
   stylix.enable = true;
   stylix.image = ../wallpaper/empty.png;
-  stylix.base16Scheme = 
-    if colorscheme == "nord" then
-      if systemTheme == "light" then
-        "${pkgs.base16-schemes}/share/themes/nord-light.yaml"
-      else
-        "${pkgs.base16-schemes}/share/themes/nord.yaml"
+  stylix.base16Scheme =
+    if colorscheme == "nord"
+    then
+      if systemTheme == "light"
+      then "${pkgs.base16-schemes}/share/themes/nord-light.yaml"
+      else "${pkgs.base16-schemes}/share/themes/nord.yaml"
     else
       # Default to gruvbox
       "${pkgs.base16-schemes}/share/themes/gruvbox-${systemTheme}-hard.yaml";
