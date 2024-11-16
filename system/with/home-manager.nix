@@ -7,6 +7,7 @@
   systemTheme,
   hostname,
   colorscheme,
+  colors,
   ...
 }: {
   home-manager.useGlobalPkgs = true;
@@ -21,6 +22,7 @@
       systemTheme
       hostname
       colorscheme
+      colors
       ;
   };
 }

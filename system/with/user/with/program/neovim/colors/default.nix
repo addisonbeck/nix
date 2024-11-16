@@ -52,7 +52,7 @@ in {
     };
     "@markup.list.checked.markdown" = {
       italic = true;
-      fg = "green";
+      fg = "#b8bb26";
     };
   };
   colorscheme = {

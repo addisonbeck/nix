@@ -102,6 +102,7 @@
       ./with/program/audacity.nix
       ./with/program/toggle-theme.nix
       ./with/program/set-color-scheme.nix
+      ./with/program/pika.nix
     ];
 
     home.sessionPath = [];
