@@ -3,9 +3,7 @@
   pkgs,
   lib,
   inputs,
-  systemTheme,
-  colorscheme,
-  colors,
+  conf,
   ...
 }: let
   options =
@@ -13,14 +11,14 @@
       import ./options {}
     )
     // (
-      (import ./colors {inherit systemTheme colorscheme colors;}).options
+      (import ./colors {inherit conf;}).options
     );
 in {
   programs.nixvim = {
     enable = true;
     vimAlias = true;
     opts = options;
-    colorschemes = (import ./colors {inherit systemTheme colorscheme colors;}).colorscheme;
+    colorschemes = (import ./colors {inherit conf;}).colorscheme;
     plugins = (import ./plugins {inherit inputs pkgs;}).plugins;
     extraPlugins = (import ./plugins {inherit inputs pkgs;}).extraPlugins;
     autoCmd = (import ./auto-commands {}).autoCommands;

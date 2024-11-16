@@ -46,16 +46,14 @@
     inherit (self) outputs;
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
-    systemTheme = import ./config/system-theme.nix;
-    colorscheme = import ./config/colorscheme.nix;
-    colors = import ./config/colors.nix {};
+    conf = import ./config {};
     rootPath = ./.;
   in {
     nixosConfigurations = {
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
+          inherit inputs outputs nixpkgs rootPath conf;
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "x86_64-linux";
             config.allowUnfree = true;
@@ -68,7 +66,7 @@
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
+          inherit inputs outputs nixpkgs rootPath conf;
           hostname = "bw";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
@@ -87,7 +85,7 @@
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
+          inherit inputs outputs nixpkgs rootPath conf;
           hostname = "air";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
@@ -173,7 +171,7 @@
       };
       toggle-theme = let
         newSystemTheme =
-          if systemTheme == "dark"
+          if conf.systemTheme == "dark"
           then {
             name = "light";
             darwinBool = "false";
@@ -202,7 +200,7 @@
               echo "\"$2\"" > "config/colorscheme.nix"
               rebuild $1
               kill -SIGUSR1 $KITTY_PID &
-              nvr --remote-silent --nostart -s -c "colorscheme ${colorscheme}" &
+              nvr --remote-silent --nostart -s -c "colorscheme ${conf.colorScheme}" &
             '')
           ];
         };

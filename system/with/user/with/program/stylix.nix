@@ -1,13 +1,11 @@
 {
   pkgs,
-  systemTheme,
-  colorscheme,
-  colors,
+  conf,
   ...
 }: {
   stylix.enable = true;
   stylix.image = ../wallpaper/empty.png;
-  stylix.base16Scheme = colors.themes."${colorscheme}"."${systemTheme}";
+  stylix.base16Scheme = conf.themes."${conf.activeTheme.colorScheme}"."${conf.activeTheme.systemTheme}";
 
   stylix.fonts = {
     serif = {

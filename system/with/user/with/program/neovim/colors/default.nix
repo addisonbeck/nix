@@ -1,16 +1,14 @@
 {
-  systemTheme,
-  colorscheme,
-  colors,
+  conf,
   ...
 }: {
   options = {
-    background = "${systemTheme}";
+    background = "${conf.activeTheme.systemTheme}";
     termguicolors = false;
   };
   colorscheme = {
     gruvbox = {
-      enable = colorscheme == "gruvbox";
+      enable = conf.activeTheme.colorScheme == "gruvbox";
       settings = {
         transparent_mode = true;
         overrides = {
@@ -53,26 +51,28 @@
             #fg = 8;
             bg = "NONE";
           };
-          # "@markup.raw.markdown_inline" = {
-          #   bg = colors.themes.${colorscheme}.${systemTheme}.base01;
-          #   fg = colors.themes.${colorscheme}.${systemTheme}.base09;
-          #   italic = false;
-          #   bold = true;
-          # };
-          # "@markup.link.label.markdown_inline" = {
-          #   link = colors.themes.${colorscheme}.${systemTheme}.base0D;
-          # };
-          # "@markup.quote.markdown" = {
-          #   italic = true;
-          #   bold = false;
-          #   bg = colors.themes.${colorscheme}.${systemTheme}.base02;
-          #   fg = colors.themes.${colorscheme}.${systemTheme}.base0E;
-          # };
-          # "@markup.heading" = {
-          #   underdotted = true;
-          #   bold = true;
-          #   italic = true;
-          # };
+          "@markup.raw.markdown_inline" = {
+            bg = conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
+            fg = conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base09;
+            italic = false;
+            bold = true;
+          };
+          "@markup.link.label.markdown_inline" = {
+            link = "GruvboxBlue";
+          };
+          "@markup.quote.markdown" = {
+            italic = true;
+            bold = false;
+            bg =
+            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base02;
+            fg =
+            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base0E;
+          };
+          "@markup.heading" = {
+            underdotted = true;
+            bold = true;
+            italic = true;
+          };
         };
       };
     };

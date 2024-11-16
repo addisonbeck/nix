@@ -6,8 +6,7 @@
   rootPath,
   systemTheme,
   hostname,
-  colorscheme,
-  colors,
+  conf,
   ...
 }: {
   home-manager.useGlobalPkgs = true;
@@ -21,8 +20,7 @@
       rootPath
       systemTheme
       hostname
-      colorscheme
-      colors
+      conf
       ;
   };
 }
