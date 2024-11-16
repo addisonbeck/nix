@@ -48,15 +48,14 @@
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
     systemTheme = import ./config/system-theme.nix;
     colorscheme = import ./config/colorscheme.nix;
-    colors = import ./config/colors.nix;
+    colors = import ./config/colors.nix {};
     rootPath = ./.;
   in {
     nixosConfigurations = {
       minecraft = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme
-          colors;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "x86_64-linux";
             config.allowUnfree = true;
@@ -69,8 +68,7 @@
       bw = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme
-          colors;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
           hostname = "bw";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
@@ -89,8 +87,7 @@
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";
         specialArgs = {
-          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme
-          colors;
+          inherit inputs outputs nixpkgs rootPath systemTheme colorscheme colors;
           hostname = "air";
           pkgs-forked = import inputs.nixpkgs-forked {
             system = "aarch64-darwin";
