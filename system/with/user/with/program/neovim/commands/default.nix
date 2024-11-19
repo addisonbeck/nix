@@ -60,7 +60,21 @@
       };
       action.__raw = ''
         function()
-          require('telescope.builtin').git_files()
+          require('telescope.builtin').git_files({
+            prompt_title = "",
+            results_title = "",
+            border = true,
+            borderchars = {
+              prompt = { "─", "│", " ", "│", "╭", "╮", "│", "│" },
+              results = { "─", "│", "─", "│", "├", "┤", "╯", "╰" },
+              preview = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
+            },
+            layout_strategy = "center",
+            layout_config = {
+              height = 0.4,
+              width = 0.6,
+            },
+          })
         end
       '';
     };
@@ -86,15 +100,11 @@
       '';
       vimCommandName = "SearchMarks";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-a>";
+        modes = ["n" "v"];
+        key = "<C-m>";
         silent = true;
       };
-      action.__raw = ''
-        function()
-          require('telescope.builtin').marks();
-        end
-      '';
+      action.__raw = (builtins.readFile ./search_marks.lua);
     };
     searchNotes = {
       description = ''Grep search my notes'';
@@ -106,7 +116,24 @@
       };
       action.__raw = ''
         function()
-          require('telescope.builtin').live_grep({ cwd = '~/notes' });
+          require('telescope.builtin').git_files({
+            cwd = '~/notes',
+            color_devicons = false,
+            prompt_title = "",
+            results_title = "",
+            border = true,
+            borderchars = {
+              prompt = { "─", "│", " ", "│", "╭", "╮", "│", "│" },
+              results = { "─", "│", "─", "│", "├", "┤", "╯", "╰" },
+              preview = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
+            },
+            layout_strategy = "center",
+            layout_config = {
+              --anchor = "N",
+              height = 0.4,
+              width = 0.6,
+            },
+          })
         end
       '';
     };
@@ -136,7 +163,7 @@
       vimCommandName = "SearchResume";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "<Space>r";
+        key = "<Space>.";
         silent = true;
       };
       action.__raw = ''
@@ -167,8 +194,8 @@
       '';
       vimCommandName = "RenameCurrentFile";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-.>";
+        modes = ["n" "v"];
+        key = "<Space>r";
         silent = true;
       };
       action.__raw = ''
@@ -183,14 +210,29 @@
       '';
       vimCommandName = "Spellcheck";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
+        modes = ["n" "v"];
         # I'd rather this be mapped to save all quit
-        key = "<C-q>";
+        key = "<C-z>";
         silent = true;
       };
       action.__raw = ''
         function()
-          require('telescope.builtin').spell_suggest()
+          require('telescope.builtin').spell_suggest({
+            borderchars = {
+              prompt = { "─", "│", " ", "│", "╭", "╮", "│", "│" },
+              results = { "─", "│", "─", "│", "├", "┤", "╯", "╰" },
+            },
+            prompt_title = "";
+            results_title = "";
+            prompt_prefix = "";
+            entry_prefix = "";
+            selection_caret = "";
+            layout_strategy = "cursor",
+            layout_config = {
+              height = 0.4,
+              width = 0.2,
+            },
+          })
         end
       '';
     };
@@ -609,6 +651,18 @@
           });
         end
       '';
+    };
+    superSearch = {
+      description = ''
+        Search buffers, oldfiles, git_files, and notes.
+      '';
+      vimCommandName = "SuperSearch";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<C-s>";
+        silent = true;
+      };
+      action.__raw = (builtins.readFile ./super_search.lua);
     };
   };
 in {
