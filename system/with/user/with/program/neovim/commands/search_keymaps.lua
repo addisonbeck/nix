@@ -37,6 +37,12 @@ function()
         height = 0.4,
         width = 0.6,
       },
+      border = true;
+      borderchars = {
+        prompt = { "─", "│", " ", "│", "╭", "╮", "│", "│" },
+        results = { "─", "│", "─", "│", "├", "┤", "╯", "╰" },
+        preview = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
+      },
       preview = {
         wrap = true,
       },
@@ -57,7 +63,6 @@ function()
       min_length = 1;
       entry_prefix = "";
       selection_caret = "";
-      border = true;
       finder = finders.new_table {
         results = keymaps_table,
         entry_maker = make_entry.gen_from_keymaps({}),

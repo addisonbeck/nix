@@ -18,7 +18,7 @@
     base0F = colors.gruvbox.hard.dark.brown;
   };
   light = {
-    base00 = colors.gruvbox.hard-light.bg1;
+    base00 = colors.gruvbox.hard.light.bg1;
     base01 = colors.gruvbox.hard.light.bg2;
     base02 = colors.gruvbox.hard.light.bg3;
     base03 = colors.gruvbox.hard.light.bg4;

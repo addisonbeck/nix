@@ -64,7 +64,7 @@
             italic = true;
             bold = false;
             bg =
-            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base02;
+            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
             fg =
             conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base0E;
           };

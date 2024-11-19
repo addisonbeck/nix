@@ -84,6 +84,8 @@
       '')
     }"
 
+    bind Space switch-client -l
+
     bind r source-file ~/.tmux.conf
 
     # Disable all keymaps

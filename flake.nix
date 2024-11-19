@@ -171,7 +171,7 @@
       };
       toggle-theme = let
         newSystemTheme =
-          if conf.systemTheme == "dark"
+          if conf.activeTheme.systemTheme == "dark"
           then {
             name = "light";
             darwinBool = "false";
@@ -200,7 +200,7 @@
               echo "\"$2\"" > "config/colorscheme.nix"
               rebuild $1
               kill -SIGUSR1 $KITTY_PID &
-              nvr --remote-silent --nostart -s -c "colorscheme ${conf.colorScheme}" &
+              nvr --remote-silent --nostart -s -c "colorscheme ${conf.activeTheme.colorScheme}" &
             '')
           ];
         };

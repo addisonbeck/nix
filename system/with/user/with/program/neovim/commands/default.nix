@@ -135,8 +135,8 @@
       '';
       vimCommandName = "SearchResume";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-5>";
+        modes = ["n" "v"];
+        key = "<Space>r";
         silent = true;
       };
       action.__raw = ''
@@ -151,8 +151,8 @@
       '';
       vimCommandName = "SearchTelescopePickers";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-\>";
+        modes = ["n" "v" ];
+        key = "<Space><Space>";
         silent = true;
       };
       action.__raw = ''
@@ -220,11 +220,7 @@
         key = "<C-b>";
         silent = true;
       };
-      action.__raw = ''
-        function()
-          require('telescope.builtin').buffers()
-        end
-      '';
+      action.__raw = (builtins.readFile ./search_buffers.lua);
     };
     searchOldfiles = {
       description = ''
@@ -249,12 +245,28 @@
       vimCommandName = "SearchFileTree";
       vimKeymapBinding = {
         modes = ["n" "v" "i"];
-        key = "<C-d>";
+        key = "<C-t>";
         silent = true;
       };
       action.__raw = ''
         function()
-          require('telescope').extensions.file_browser.file_browser();
+          require('telescope').extensions.file_browser.file_browser({
+            depth = 1,
+            display_stat = false,
+            git_status = false,
+            layout_strategy = "horizontal",
+            prompt_title = "";
+            --results_title = "";
+            preview_title = "";
+            prompt_prefix = "";
+            layout_config = {
+              height = 0.99,
+              preview_cutoff = 0,
+              prompt_position = "bottom",
+              width = 0.99,
+              preview_width = 0.6,
+            },
+          });
         end
       '';
     };

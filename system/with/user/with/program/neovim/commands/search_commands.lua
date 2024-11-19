@@ -48,6 +48,12 @@ function()
     end
     pickers.new({
       layout_strategy = "cursor",
+      border = true;
+      borderchars = {
+        prompt = { "─", "│", " ", "│", "╭", "╮", "│", "│" },
+        results = { "─", "│", "─", "│", "├", "┤", "╯", "╰" },
+        preview = { "─", "│", "─", "│", "╭", "╮", "╯", "╰" },
+      },
       layout_config = {
         height = 0.4,
         width = 0.6,
@@ -72,7 +78,6 @@ function()
       min_length = 1;
       entry_prefix = "";
       selection_caret = "";
-      border = true;
       finder = finders.new_table {
         results = (function()
           local command_iter = vim.api.nvim_get_commands {}
