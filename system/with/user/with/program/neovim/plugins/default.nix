@@ -3,6 +3,8 @@
   pkgs,
   ...
 }: {
+  plugins.which-key.enable = false;
+  plugins.barbecue.enable = false; # This is cool
   plugins.precognition.enable = false;
   plugins.web-devicons.enable = true;
   plugins.telescope.enable = true;

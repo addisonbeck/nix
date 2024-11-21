@@ -84,13 +84,45 @@
       '';
       vimCommandName = "SearchDefintions";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-d>";
+        modes = ["n" "v"];
+        key = "<Space>d";
         silent = true;
       };
       action.__raw = ''
         function()
           require('telescope.builtin').lsp_definitions()
+        end
+      '';
+    };
+    searchImplementations = {
+      description = ''
+        Search lsp implementations of the symbol under the cursor
+      '';
+      vimCommandName = "SearchImplementations";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<Space>i";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          require('telescope.builtin').lsp_implementations()
+        end
+      '';
+    };
+    searchReferences = {
+      description = ''
+        Search lsp references of the symbol under the cursor
+      '';
+      vimCommandName = "SearchImplementations";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<Space>r";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          require('telescope.builtin').lsp_references()
         end
       '';
     };
@@ -195,7 +227,7 @@
       vimCommandName = "RenameCurrentFile";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "<Space>r";
+        key = "<Space>R";
         silent = true;
       };
       action.__raw = ''
@@ -309,38 +341,6 @@
               preview_width = 0.6,
             },
           });
-        end
-      '';
-    };
-    searchLspReferences = {
-      description = ''
-        Search lsp references of the word under the cursor
-      '';
-      vimCommandName = "SearchLspReferences";
-      vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-1>";
-        silent = true;
-      };
-      action.__raw = ''
-        function()
-          require('telescope.builtin').lsp_references();
-        end
-      '';
-    };
-    searchLspImplementations = {
-      description = ''
-        Search lsp implementations of the symbol under the cursor
-      '';
-      vimCommandName = "SearchLispImplementations";
-      vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<C-2>";
-        silent = true;
-      };
-      action.__raw = ''
-        function()
-          require('telescope.builtin').lsp_implementations();
         end
       '';
     };
@@ -663,6 +663,28 @@
         silent = true;
       };
       action.__raw = (builtins.readFile ./super_search.lua);
+    };
+    mkNote = {
+      description = ''
+        Create and open a new file in my notes
+      '';
+      vimCommandName = "MkNote";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "MKN";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          vim.ui.input({ prompt = 'Note name: ' }, function(input)
+            if input then
+              local home_dir = os.getenv("HOME")
+              local file, err = io.open(home_dir .. "/notes/" .. input .. ".md", "w")
+              vim.cmd("e ~/notes/" .. input .. ".md")
+            end
+          end)
+        end
+      '';
     };
   };
 in {

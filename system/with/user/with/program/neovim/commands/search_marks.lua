@@ -1,5 +1,6 @@
 function()
   local utils = require('telescope.utils');
+  local conf = require("telescope.config").values
 
   local marks = {}
   local current_buf = vim.api.nvim_get_current_buf();
@@ -44,15 +45,19 @@ function()
       local filename = utils.path_expand(v.file or bufname);
       local file_lines = vim.fn.readfile(filename);
       local line_text = "Line text not found!";
-      if file_lines[lnum + 1] then
-        line_text = file_lines[lnum + 1]:gsub("^%s+", "");
+      if file_lines[lnum] then
+        line_text = file_lines[lnum]:gsub("^%s+", "");
       end
       local row = {
         -- line = line,
         -- lnum = lnum,
         -- col = col,
         -- filename = utils.path_expand(v.file or bufname),
-        value = v.file or bufname,
+        value = {
+          filename = filename,
+          line = lnum,
+          col = col,
+        },
         display = mark .. ": " .. line_text,
         ordinal = line_text .. " " .. mark .. " " .. filename,
       }
@@ -90,13 +95,13 @@ function()
       end
     }),
     sorter = require('telescope.sorters').get_fuzzy_file(),
-    previewer = nil,
+    --previewer = (require("telescope.previewers")).vim_buffer_vimgrep.new(""),
     attach_mappings = function(prompt_bufnr, map)
       map('i', '<CR>', function()
         local selection = require('telescope.actions.state').get_selected_entry()
-        vim.cmd('e ' .. selection.value.file)
-        vim.fn.cursor(selection.value.line, 1)
         require('telescope.actions').close(prompt_bufnr)
+        vim.cmd('e! ' .. selection.value.filename)
+        vim.fn.cursor(selection.value.line, selection.value.col)
       end)
       return true
   end

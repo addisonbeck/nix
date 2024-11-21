@@ -6,16 +6,15 @@ function()
   local sorters = require('telescope.sorters')
   local themes = require('telescope.themes')
   local utils = require('telescope.utils')
+  local conf = require("telescope.config").values
 
   local function get_buffers()
     local buffers = {}
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
       -- Skip unloaded buffers
-      if vim.api.nvim_buf_is_loaded(bufnr) then
-        local filename = vim.api.nvim_buf_get_name(bufnr)
-        if filename ~= "" then
-          table.insert(buffers, { filename, bufnr })
-        end
+      local filename = vim.api.nvim_buf_get_name(bufnr)
+      if filename ~= "" then
+        table.insert(buffers, { filename, bufnr })
       end
     end
     return buffers
@@ -45,10 +44,12 @@ function()
           value = entry[2],
           display = vim.fn.fnamemodify(entry[1], ":h:t") .. "/" .. file_name,
           ordinal = entry[1],
+          filename = entry[1]
         }
       end,
     },
     sorter = sorters.get_generic_fuzzy_sorter(),
+    --previewer = conf.grep_previewer({}),
     attach_mappings = function(prompt_bufnr, map)
       map('i', '<CR>', function()
         local selection = actions_state.get_selected_entry()
