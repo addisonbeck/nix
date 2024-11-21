@@ -35,26 +35,122 @@
     }
     {
       event = [
-        "FileType"
+        "BufEnter"
       ];
       pattern = [
-        "md"
-        "markdown"
-        "txt"
+        "*.markdown"
+        "*.md"
+        "*.txt"
         "gitcommit"
+        "markdown"
+        "md"
       ];
       callback = {
         __raw = ''
           function()
-          vim.opt_local.wrap = true
-          vim.keymap.set({'n', 'v'}, 'j', 'gj', {buffer = true})
-          vim.keymap.set({'n', 'v'}, 'k', 'gk', {buffer = true})
+            local zm = require("zen-mode")
+            local win = vim.api.nvim_get_current_win()
+            local buffer_id = vim.api.nvim_win_get_buf(win)
+            -- vim.api.nvim_set_current_buf(buffer_id)
+            -- -- pcall(zm.close);
+            -- pcall(zm.toggle, {
+            --   window = { 
+            --     width = 85,
+            --     --height = 1,
+            --   }
+            -- })
+            pcall(zm.close, {
+              window = { 
+                width = 100,
+                --height = 1,
+              }
+            })
+            vim.api.nvim_set_current_buf(buffer_id)
+            pcall(zm.open, {
+              window = { 
+                width = 85,
+                --height = 1,
+              }
+            })
           end
         '';
       };
     }
     {
-      event = ["BufRead"];
+      event = [
+        "BufEnter"
+      ];
+      pattern = [
+        "*.cs"
+        "*.html"
+        "*.js"
+        "*.lua"
+        "*.rs"
+        "*.sh"
+        "*.ts"
+        "*.nix"
+        "lua"
+        "nix"
+      ];
+      callback = {
+        __raw = ''
+          function()
+            local zm = require("zen-mode")
+            local win = vim.api.nvim_get_current_win()
+            local buffer_id = vim.api.nvim_win_get_buf(win)
+            -- pcall(zm.close);
+            -- pcall(zm.toggle, {
+            --   window = { 
+            --     width = 85,
+            --     --height = 1,
+            --   }
+            -- })
+            pcall(zm.close, {
+              window = { 
+                width = 85,
+                --height = 1,
+              }
+            })
+            vim.api.nvim_set_current_buf(buffer_id)
+            pcall(zm.open, {
+              window = { 
+                width = 100,
+                --height = 1,
+              }
+            })
+          end
+        '';
+      };
+    }
+    # {
+    #   event = [
+    #     "BufLeave"
+    #   ];
+    #   pattern = [
+    #     "*.cs"
+    #     "*.html"
+    #     "*.js"
+    #     "*.lua"
+    #     "*.markdown"
+    #     "*.md"
+    #     "*.rs"
+    #     "*.sh"
+    #     "*.ts"
+    #     "*.txt"
+    #     "gitcommit"
+    #     "*.nix"
+    #   ];
+    #   callback = {
+    #     __raw = ''
+    #       function()
+    #         local zm = require("zen-mode")
+    #         pcall(zm.close);
+    #       end
+    #     '';
+    #   };
+    # }
+    {
+      event = ["BufWinEnter"];
       # TODO: Fine a real syntax highlighting solution for haxe
       pattern = ["*.hx"];
       command = "set filetype=ts";
