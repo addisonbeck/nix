@@ -57,6 +57,9 @@
             italic = false;
             bold = true;
           };
+          "@markup.raw.block.markdown" = {
+            bg = conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
+          };
           "@markup.link.label.markdown_inline" = {
             link = "GruvboxBlue";
           };
