@@ -686,6 +686,22 @@
         end
       '';
     };
+    zenMode = {
+      description = ''
+        Toggle zen mode
+      '';
+      vimCommandName = "ZM";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<Space>z";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          require("zen-mode").toggle()
+        end
+      '';
+    };
   };
 in {
   keymaps =

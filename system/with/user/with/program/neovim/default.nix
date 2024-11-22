@@ -57,16 +57,16 @@ in {
       set statusline=%{repeat('─',winwidth('.'))}
     '';
     extraConfigLua = ''
-      -- require('where-am-i').setup({
-      --   features = {
-      --     user_commands = {
-      --       enable = true;
-      --     },
-      --     keymaps = {
-      --       enable = true;
-      --     },
-      --   }
-      -- })
+      require('where-am-i').setup({
+        features = {
+          user_commands = {
+            enable = true;
+          },
+          keymaps = {
+            enable = true;
+          },
+        }
+      })
  --      require('satellite').setup({
  --     current_only = false,
  --      winblend = 0,

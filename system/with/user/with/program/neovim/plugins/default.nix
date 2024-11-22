@@ -29,7 +29,7 @@
   plugins.telescope.settings.defaults.show_all_buffers = true;
   plugins.telescope.settings.defaults.cache_picker.num_pickers = 20;
   plugins.telescope.settings.defaults.cache_picker.ignore_empty_prompt = true;
-  plugins.auto-session.enable = false;
+  plugins.auto-session.enable = true;
   plugins.auto-session.settings.auto_create = true;
   plugins.auto-session.settings.auto_restore = true;
   plugins.auto-session.settings.auto_save = true;
@@ -126,19 +126,29 @@
 
   plugins.zen-mode = {
     enable = true;
+    # package = (pkgs.vimUtils.buildVimPlugin {
+    #   name = "zen-mode";
+    #   src = pkgs.fetchFromGitHub {
+    #     owner = "alichtman";
+    #     repo = "zen-mode.nvim";
+    #     rev = "4191bcc9acb0c3634cd3c56339c06b248dbb9b3a";
+    #     hash = "sha256-SOY7B/+YUCLEMc7CAqUp8X/9MoqTS7bNnG9oCtVVscA=";
+    #   };
+    # });
     settings = {
+      # dont_exit_on_win_enter = true;
       window = {
         backdrop = 0.95; # shade the backdrop of the Zen window. Set to 1 to keep the same as Normal
         # height and width can be:
         # * an absolute number of cells when > 1
         # * a percentage of the width / height of the editor when <= 1
         # * a function that returns the width or the height
-        # width = 85; # width of the Zen window
-        # height = 0.9; # height of the Zen window
+        width = 80; # width of the Zen window
+        height = 0.9; # height of the Zen window
         # by default, no options are changed for the Zen window
         # uncomment any of the options below, or add other vim.wo options you want to apply
         options = {
-          signcolumn = "no"; # disable signcolumn
+          signcolumn = "yes"; # disable signcolumn
           number = false; # disable number column
           relativenumber = false; # disable relative numbers
           cursorline = false; # disable cursorline
@@ -163,7 +173,7 @@
         }; # enable to start Twilight when zen mode opens
         gitsigns = 
         { 
-          enabled = false;
+          enabled = true;
         }; # disables git signs
         tmux = { 
           enabled = false;

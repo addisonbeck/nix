@@ -33,118 +33,38 @@
         '';
       };
     }
-    {
-      event = [
-        "BufEnter"
-      ];
-      pattern = [
-        "*.markdown"
-        "*.md"
-        "*.txt"
-        "gitcommit"
-        "markdown"
-        "md"
-      ];
-      callback = {
-        __raw = ''
-          function()
-            local zm = require("zen-mode")
-            local win = vim.api.nvim_get_current_win()
-            local buffer_id = vim.api.nvim_win_get_buf(win)
-            -- vim.api.nvim_set_current_buf(buffer_id)
-            -- -- pcall(zm.close);
-            -- pcall(zm.toggle, {
-            --   window = { 
-            --     width = 85,
-            --     --height = 1,
-            --   }
-            -- })
-            pcall(zm.close, {
-              window = { 
-                width = 100,
-                --height = 1,
-              }
-            })
-            vim.api.nvim_set_current_buf(buffer_id)
-            pcall(zm.open, {
-              window = { 
-                width = 85,
-                --height = 1,
-              }
-            })
-          end
-        '';
-      };
-    }
-    {
-      event = [
-        "BufEnter"
-      ];
-      pattern = [
-        "*.cs"
-        "*.html"
-        "*.js"
-        "*.lua"
-        "*.rs"
-        "*.sh"
-        "*.ts"
-        "*.nix"
-        "lua"
-        "nix"
-      ];
-      callback = {
-        __raw = ''
-          function()
-            local zm = require("zen-mode")
-            local win = vim.api.nvim_get_current_win()
-            local buffer_id = vim.api.nvim_win_get_buf(win)
-            -- pcall(zm.close);
-            -- pcall(zm.toggle, {
-            --   window = { 
-            --     width = 85,
-            --     --height = 1,
-            --   }
-            -- })
-            pcall(zm.close, {
-              window = { 
-                width = 85,
-                --height = 1,
-              }
-            })
-            vim.api.nvim_set_current_buf(buffer_id)
-            pcall(zm.open, {
-              window = { 
-                width = 100,
-                --height = 1,
-              }
-            })
-          end
-        '';
-      };
-    }
     # {
     #   event = [
-    #     "BufLeave"
+    #     "BufEnter"
     #   ];
     #   pattern = [
+    #     "*.markdown"
+    #     "*.md"
+    #     "*.txt"
+    #     "gitcommit"
+    #     "markdown"
+    #     "md"
     #     "*.cs"
     #     "*.html"
     #     "*.js"
     #     "*.lua"
-    #     "*.markdown"
-    #     "*.md"
     #     "*.rs"
     #     "*.sh"
     #     "*.ts"
-    #     "*.txt"
-    #     "gitcommit"
     #     "*.nix"
+    #     "lua"
+    #     "nix"
     #   ];
     #   callback = {
     #     __raw = ''
     #       function()
     #         local zm = require("zen-mode")
-    #         pcall(zm.close);
+    #         pcall(zm.open, {
+    #           window = { 
+    #             width = 85,
+    #             height = 0.95,
+    #           }
+    #         })
     #       end
     #     '';
     #   };
