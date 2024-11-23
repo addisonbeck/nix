@@ -19,9 +19,10 @@ in {
     vimAlias = true;
     opts = options;
     colorschemes = (import ./colors {inherit conf;}).colorscheme;
+    highlight = (import ./colors {inherit conf;}).highlight;
     plugins = (import ./plugins {inherit inputs pkgs;}).plugins;
     extraPlugins = (import ./plugins {inherit inputs pkgs;}).extraPlugins;
-    autoCmd = (import ./auto-commands {}).autoCommands;
+    autoCmd = (import ./auto-commands {inherit conf;}).autoCommands;
     keymaps =
       [
         # Custom nixvim style keymaps can be added here if needed, but I
@@ -66,6 +67,35 @@ in {
             enable = true;
           },
         }
+      })
+      require("codecompanion").setup({
+        display = {
+          diff = {
+            provider = "mini_diff",
+          },
+        },
+        opts = {
+          log_level = "DEBUG",
+        },
+        strategies = {
+          chat = {
+            adapter = "copilot",
+          },
+          inline = {
+            adapter = "copilot",
+          },
+        },
+        adapters = {
+          anthropic = function()
+            return require("codecompanion.adapters").extend("copilot", {
+              schema = {
+                model = {
+                  default = "claude-3.5-sonnet",
+                },
+              },
+            })
+          end,
+        },
       })
  --      require('satellite').setup({
  --     current_only = false,

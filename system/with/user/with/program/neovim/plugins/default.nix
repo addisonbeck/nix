@@ -3,6 +3,13 @@
   pkgs,
   ...
 }: {
+  plugins.copilot-lua = {
+    enable = true;
+  };
+  plugins.mini =  {
+    enable = true;
+  };
+
   plugins.which-key.enable = false;
   plugins.barbecue.enable = false; # This is cool
   plugins.precognition.enable = false;
@@ -258,6 +265,15 @@
     #     hash = "sha256-WVOYouiEFeLkQBe1Ptazw/mIfzxmaQmOuEK8KlfMYoQ=";
     #   };
     # })
+    (pkgs.vimUtils.buildVimPlugin {
+      name = "codecompanion.nvim";
+      src = pkgs.fetchFromGitHub {
+        owner = "olimorris";
+        repo = "codecompanion.nvim";
+        rev = "31c4d0917bf77340fd80f661f38b9ab6f18fd18e";
+        hash = "sha256-/mVb+oLJ5s6uPZJoQk+cE9WJEp89JfAx687c0+jw9gQ=";
+      };
+    })
     inputs.where-am-i-nvim.packages.${pkgs.system}.default
   ];
 }

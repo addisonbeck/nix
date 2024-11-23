@@ -176,7 +176,7 @@
       vimCommandName = "SearchLiveGrep";
       vimKeymapBinding = {
         modes = ["n" "v" "i"];
-        key = "<C-l>";
+        key = "<C-0>";
         silent = true;
       };
       action.__raw = ''
@@ -482,7 +482,7 @@
       vimCommandName = "SearchKeymaps";
       vimKeymapBinding = {
         modes = ["n" "v" "i"];
-        key = "<C-k>";
+        key = "<Space>k>";
         silent = true;
       };
       action.__raw = (builtins.readFile ./search_keymaps.lua);
@@ -573,7 +573,7 @@
       '';
       vimCommandName = "FocusSplitDown";
       vimKeymapBinding = {
-        key = "<c-j>";
+        key = "<C-j>";
         modes = ["n" "v" "i"];
         silent = true;
       };
@@ -703,6 +703,7 @@
       '';
     };
   };
+
 in {
   keymaps =
     [

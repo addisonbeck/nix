@@ -6,6 +6,11 @@
     background = "${conf.activeTheme.systemTheme}";
     termguicolors = false;
   };
+  highlight = {
+    CodeFence = {
+      bg = conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
+    };
+  };
   colorscheme = {
     gruvbox = {
       enable = conf.activeTheme.colorScheme == "gruvbox";

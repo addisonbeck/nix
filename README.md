@@ -1,13 +1,5 @@
-# Nix
+# 🙈
 
-## Installation
-
-1. Fetch key
-1. Sign in to iCloud
-1. Run init script:
-
-```bash
-curl -s https://raw.githubusercontent.com/addisonbeck/nix/main/bootstrap.sh \
---output bootstrap.sh && \
-bash bootstrap.sh
-```
+My terminal-centric systems configuration for darwin and a bit of nixOS.
+There is definitely, for sure some stuff in here you haven't seen before but
+it's an unapologetic mess.

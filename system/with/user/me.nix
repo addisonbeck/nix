@@ -103,6 +103,8 @@
       ./with/program/toggle-theme.nix
       ./with/program/set-color-scheme.nix
       ./with/program/pika.nix
+      ./with/program/lazysql.nix
+      #./with/program/azure-data-studio.nix
     ];
 
     home.sessionPath = [];
