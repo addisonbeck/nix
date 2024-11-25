@@ -136,7 +136,7 @@
         key = "<C-m>";
         silent = true;
       };
-      action.__raw = (builtins.readFile ./search_marks.lua);
+      action.__raw = builtins.readFile ./search_marks.lua;
     };
     searchNotes = {
       description = ''Grep search my notes'';
@@ -210,7 +210,7 @@
       '';
       vimCommandName = "SearchTelescopePickers";
       vimKeymapBinding = {
-        modes = ["n" "v" ];
+        modes = ["n" "v"];
         key = "<Space><Space>";
         silent = true;
       };
@@ -294,7 +294,7 @@
         key = "<C-b>";
         silent = true;
       };
-      action.__raw = (builtins.readFile ./search_buffers.lua);
+      action.__raw = builtins.readFile ./search_buffers.lua;
     };
     searchOldfiles = {
       description = ''
@@ -485,7 +485,7 @@
         key = "<Space>k>";
         silent = true;
       };
-      action.__raw = (builtins.readFile ./search_keymaps.lua);
+      action.__raw = builtins.readFile ./search_keymaps.lua;
     };
     searchCommands = {
       description = ''
@@ -497,7 +497,7 @@
         key = "<C-c>";
         silent = true;
       };
-      action.__raw = (builtins.readFile ./search_commands.lua);
+      action.__raw = builtins.readFile ./search_commands.lua;
     };
     jumpDownHalfThePage = {
       description = "Jump down half of the screen height";
@@ -508,7 +508,7 @@
         silent = true;
       };
       # This emulates the default behavior or <C-d>
-      action.__raw = (builtins.readFile ./jump_down_half_a_page.lua);
+      action.__raw = builtins.readFile ./jump_down_half_a_page.lua;
     };
     jumpUpHalfThePage = {
       description = "Jump up half of the screen height";
@@ -519,7 +519,7 @@
         silent = true;
       };
       # This emulates the default behavior or <C-u>
-      action.__raw = (builtins.readFile ./jump_up_half_a_page.lua);
+      action.__raw = builtins.readFile ./jump_up_half_a_page.lua;
     };
     toggleNumberLine = {
       description = "Toggle line numbers";
@@ -662,7 +662,7 @@
         key = "<C-s>";
         silent = true;
       };
-      action.__raw = (builtins.readFile ./super_search.lua);
+      action.__raw = builtins.readFile ./super_search.lua;
     };
     mkNote = {
       description = ''
@@ -703,7 +703,6 @@
       '';
     };
   };
-
 in {
   keymaps =
     [

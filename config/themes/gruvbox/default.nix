@@ -1,4 +1,4 @@
-{ colors } : {
+{colors}: {
   dark = {
     base00 = colors.gruvbox.hard.dark.bg1;
     base01 = colors.gruvbox.hard.dark.bg2;

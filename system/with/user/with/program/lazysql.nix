@@ -1,8 +1,4 @@
-{
-  pkgs ? import <nixpkgs> {},
-  ...
-}: 
-let
+{pkgs ? import <nixpkgs> {}, ...}: let
   # configContent = ''
   #   host = "localhost"
   #   port = 3306

@@ -58,123 +58,123 @@ in {
       set statusline=%{repeat('─',winwidth('.'))}
     '';
     extraConfigLua = ''
-      require('where-am-i').setup({
-        features = {
-          user_commands = {
-            enable = true;
-          },
-          keymaps = {
-            enable = true;
-          },
-        }
-      })
-      require("codecompanion").setup({
-        display = {
-          diff = {
-            provider = "mini_diff",
-          },
-        },
-        opts = {
-          log_level = "DEBUG",
-        },
-        strategies = {
-          chat = {
-            adapter = "copilot",
-          },
-          inline = {
-            adapter = "copilot",
-          },
-        },
-        adapters = {
-          anthropic = function()
-            return require("codecompanion.adapters").extend("copilot", {
-              schema = {
-                model = {
-                  default = "claude-3.5-sonnet",
-                },
-              },
-            })
-          end,
-        },
-      })
- --      require('satellite').setup({
- --     current_only = false,
- --      winblend = 0,
- --      zindex = 40,
- --      excluded_filetypes = {},
- --      width = 2,
- --      handlers = {
- --        cursor = {
- --          enable = true,
- --          -- Supports any number of symbols
- --          symbols = { '⎺', '⎻', '⎼', '⎽' }
- --          -- symbols = { '⎻', '⎼' }
- --          -- Highlights:
- --          -- - SatelliteCursor (default links to NonText
- --        },
- --        search = {
- --          enable = true,
- --          -- Highlights:
- --          -- - SatelliteSearch (default links to Search)
- --          -- - SatelliteSearchCurrent (default links to SearchCurrent)
- --        },
- --        diagnostic = {
- --          enable = true,
- --          signs = {'-', '=', '≡'},
- --          min_severity = vim.diagnostic.severity.HINT,
- --          -- Highlights:
- --          -- - SatelliteDiagnosticError (default links to DiagnosticError)
- --          -- - SatelliteDiagnosticWarn (default links to DiagnosticWarn)
- --          -- - SatelliteDiagnosticInfo (default links to DiagnosticInfo)
- --          -- - SatelliteDiagnosticHint (default links to DiagnosticHint)
- --        },
- --        gitsigns = {
- --          enable = true,
- --          signs = { -- can only be a single character (multibyte is okay)
- --     add = "│",
- --     change = "│",
- --     delete = "-",
- --          },
- --          -- Highlights:
- --          -- SatelliteGitSignsAdd (default links to GitSignsAdd)
- --          -- SatelliteGitSignsChange (default links to GitSignsChange)
- --          -- SatelliteGitSignsDelete (default links to GitSignsDelete)
- --        },
- --        marks = {
- --          enable = true,
- --          show_builtins = false, -- shows the builtin marks like [ ] < >
- --          key = 'm'
- --          -- Highlights:
- --          -- SatelliteMark (default links to Normal)
- --        },
- --        quickfix = {
- --          signs = { '-', '=', '≡' },
- --          -- Highlights:
- --          -- SatelliteQuickfix (default links to WarningMsg)
- --        }
- --      },
- --      });
-              vim.diagnostic.config({
-                virtual_text = {
-                  prefix = "",
-                  spacing = 0,
-                  format = function(diagnostic)
-                    if diagnostic.severity == vim.diagnostic.severity.ERROR then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.WARN then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.INFO then
-                      return '←🧚'
-                    end
-                    if diagnostic.severity == vim.diagnostic.severity.HINT then
-                      return '←🧚'
-                    end
-                    return diagnostic.message
-                  end
-                },
-              })
+           require('where-am-i').setup({
+             features = {
+               user_commands = {
+                 enable = true;
+               },
+               keymaps = {
+                 enable = true;
+               },
+             }
+           })
+           require("codecompanion").setup({
+             display = {
+               diff = {
+                 provider = "mini_diff",
+               },
+             },
+             opts = {
+               log_level = "DEBUG",
+             },
+             strategies = {
+               chat = {
+                 adapter = "copilot",
+               },
+               inline = {
+                 adapter = "copilot",
+               },
+             },
+             adapters = {
+               anthropic = function()
+                 return require("codecompanion.adapters").extend("copilot", {
+                   schema = {
+                     model = {
+                       default = "claude-3.5-sonnet",
+                     },
+                   },
+                 })
+               end,
+             },
+           })
+      --      require('satellite').setup({
+      --     current_only = false,
+      --      winblend = 0,
+      --      zindex = 40,
+      --      excluded_filetypes = {},
+      --      width = 2,
+      --      handlers = {
+      --        cursor = {
+      --          enable = true,
+      --          -- Supports any number of symbols
+      --          symbols = { '⎺', '⎻', '⎼', '⎽' }
+      --          -- symbols = { '⎻', '⎼' }
+      --          -- Highlights:
+      --          -- - SatelliteCursor (default links to NonText
+      --        },
+      --        search = {
+      --          enable = true,
+      --          -- Highlights:
+      --          -- - SatelliteSearch (default links to Search)
+      --          -- - SatelliteSearchCurrent (default links to SearchCurrent)
+      --        },
+      --        diagnostic = {
+      --          enable = true,
+      --          signs = {'-', '=', '≡'},
+      --          min_severity = vim.diagnostic.severity.HINT,
+      --          -- Highlights:
+      --          -- - SatelliteDiagnosticError (default links to DiagnosticError)
+      --          -- - SatelliteDiagnosticWarn (default links to DiagnosticWarn)
+      --          -- - SatelliteDiagnosticInfo (default links to DiagnosticInfo)
+      --          -- - SatelliteDiagnosticHint (default links to DiagnosticHint)
+      --        },
+      --        gitsigns = {
+      --          enable = true,
+      --          signs = { -- can only be a single character (multibyte is okay)
+      --     add = "│",
+      --     change = "│",
+      --     delete = "-",
+      --          },
+      --          -- Highlights:
+      --          -- SatelliteGitSignsAdd (default links to GitSignsAdd)
+      --          -- SatelliteGitSignsChange (default links to GitSignsChange)
+      --          -- SatelliteGitSignsDelete (default links to GitSignsDelete)
+      --        },
+      --        marks = {
+      --          enable = true,
+      --          show_builtins = false, -- shows the builtin marks like [ ] < >
+      --          key = 'm'
+      --          -- Highlights:
+      --          -- SatelliteMark (default links to Normal)
+      --        },
+      --        quickfix = {
+      --          signs = { '-', '=', '≡' },
+      --          -- Highlights:
+      --          -- SatelliteQuickfix (default links to WarningMsg)
+      --        }
+      --      },
+      --      });
+                   vim.diagnostic.config({
+                     virtual_text = {
+                       prefix = "",
+                       spacing = 0,
+                       format = function(diagnostic)
+                         if diagnostic.severity == vim.diagnostic.severity.ERROR then
+                           return '←🧚'
+                         end
+                         if diagnostic.severity == vim.diagnostic.severity.WARN then
+                           return '←🧚'
+                         end
+                         if diagnostic.severity == vim.diagnostic.severity.INFO then
+                           return '←🧚'
+                         end
+                         if diagnostic.severity == vim.diagnostic.severity.HINT then
+                           return '←🧚'
+                         end
+                         return diagnostic.message
+                       end
+                     },
+                   })
     '';
   };
 }

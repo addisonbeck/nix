@@ -3,7 +3,7 @@
     rockBottomNight0 = "#110f15";
     bikiniBottomNight0 = "#050a1b";
     bikiniBottomNight1 = "#050a1b";
-    bikiniBottomNight2 = "#2d9db8"; 
+    bikiniBottomNight2 = "#2d9db8";
     gooLagoon = "#254657";
     bikiniBottomSand = "D8E4B9";
     krustyKrabFloor = "#3A662F";
@@ -28,11 +28,11 @@
         fg2 = "#d5c4a1"; # ++
         fg3 = "#ebdbb2"; # +++
         fg4 = "#fbf1c7"; # ++++
-        red = "#fb4934"; 
-        orange = "#fe8019"; 
-        yellow = "#fabd2f"; 
-        green = "#b8bb26"; 
-        aqua = "#8ec07c"; 
+        red = "#fb4934";
+        orange = "#fe8019";
+        yellow = "#fabd2f";
+        green = "#b8bb26";
+        aqua = "#8ec07c";
         blue = "#83a598";
         purple = "#d3869b";
         brown = "#d65d0e";

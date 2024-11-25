@@ -1,7 +1,4 @@
-{
-  conf,
-  ...
-}: {
+{conf, ...}: {
   options = {
     background = "${conf.activeTheme.systemTheme}";
     termguicolors = false;
@@ -72,9 +69,9 @@
             italic = true;
             bold = false;
             bg =
-            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
+              conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base01;
             fg =
-            conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base0E;
+              conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme}.base0E;
           };
           "@markup.heading" = {
             underdotted = true;

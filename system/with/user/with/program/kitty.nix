@@ -21,7 +21,7 @@
     # The regular font is sans serif and is handled by stylix
 
     # Handwritten
-    italic_font      MonaspiceRn Nerd Font Mono Regular 
+    italic_font      MonaspiceRn Nerd Font Mono Regular
 
     # Mechanical
     bold_font        MonaspiceKr Nerd Font Mono Regular

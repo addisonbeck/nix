@@ -1,4 +1,4 @@
-{ conf, ... }: {
+{conf, ...}: {
   autoCommands = [
     # disable semantic highlighting
     {
@@ -58,7 +58,7 @@
               local function find_code_blocks(node)
                 local result = {}
                 local function traverse(node)
-                  if node:type() == 'fenced_code_block' then 
+                  if node:type() == 'fenced_code_block' then
                     local start_row, start_col, end_row, end_col = node:range()
                     table.insert(result, {start_row, start_col, end_row, end_col})
                   end
