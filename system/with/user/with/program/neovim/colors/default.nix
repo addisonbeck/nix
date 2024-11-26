@@ -22,6 +22,9 @@
             bg = "#FFBB73";
             fg = "#000000";
           };
+          NormalFloat = {
+            bg = conf.themes.gruvbox.${conf.activeTheme.systemTheme}.base01;
+          };
           SignColumn = {
             bg = "none";
             ctermbg = "none";
