@@ -481,8 +481,8 @@
       '';
       vimCommandName = "SearchKeymaps";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
-        key = "<Space>k>";
+        modes = ["n" "v"];
+        key = "<Space>k";
         silent = true;
       };
       action.__raw = builtins.readFile ./search_keymaps.lua;
@@ -548,6 +548,32 @@
       action.__raw = ''
         function()
           vim.diagnostic.open_float()
+        end
+      '';
+    };
+    checkHover = {
+      description = ''
+        Check the LSP hover under the cursor
+      '';
+      vimCommandName = "Hover";
+      vimKeymapBinding = {
+        key = "HH";
+        modes = ["n"];
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(
+            vim.lsp.handlers.hover,
+            {
+              -- ["single", "double", "rounded", "solid", "shadow", or a list
+              -- of characters]
+              border = "solid",
+              max_width = 80,
+              max_height = 20,
+            }
+          )
+          vim.lsp.buf.hover()
         end
       '';
     };
