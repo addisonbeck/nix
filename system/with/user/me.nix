@@ -95,14 +95,14 @@
       ./with/program/ungoogled-chromium.nix
       ./with/program/mermaid-cli.nix
       ./with/program/markdown-mermaid-converter.nix
-      ./with/program/dolphin-emu.nix
-      ./with/program/xdelta.nix
+      #./with/program/dolphin-emu.nix
+      #./with/program/xdelta.nix
       #./with/program/opentoonz.nix <- This doesn't work
-      ./with/program/gimp.nix
-      ./with/program/audacity.nix
+      #./with/program/gimp.nix
+      #./with/program/audacity.nix
       ./with/program/toggle-theme.nix
       ./with/program/set-color-scheme.nix
-      ./with/program/pika.nix
+      #./with/program/pika.nix
       ./with/program/lazysql.nix
       #./with/program/azure-data-studio.nix
     ];

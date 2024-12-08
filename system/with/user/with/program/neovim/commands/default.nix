@@ -114,7 +114,7 @@
       description = ''
         Search lsp references of the symbol under the cursor
       '';
-      vimCommandName = "SearchImplementations";
+      vimCommandName = "SearchReferences";
       vimKeymapBinding = {
         modes = ["n" "v"];
         key = "<Space>r";

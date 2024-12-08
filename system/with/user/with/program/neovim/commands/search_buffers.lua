@@ -11,10 +11,11 @@ function()
   local function get_buffers()
     local buffers = {}
     for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-      -- Skip unloaded buffers
-      local filename = vim.api.nvim_buf_get_name(bufnr)
-      if filename ~= "" then
-        table.insert(buffers, { filename, bufnr })
+      if vim.api.nvim_buf_is_loaded(bufnr) then
+        local filename = vim.api.nvim_buf_get_name(bufnr)
+        if filename ~= "" then
+          table.insert(buffers, { filename, bufnr })
+        end
       end
     end
     return buffers

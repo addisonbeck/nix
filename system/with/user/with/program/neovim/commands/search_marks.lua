@@ -43,11 +43,15 @@ function()
       -- same format to :marks command
       local line = string.format("%s %6d %4d %s", mark, lnum, col - 1, name);
       local filename = utils.path_expand(v.file or bufname);
-      local file_lines = vim.fn.readfile(filename);
       local line_text = "Line text not found!";
-      if file_lines[lnum] then
-        line_text = file_lines[lnum]:gsub("^%s+", "");
+
+      if vim.fn.filereadable(filename) == 1 then
+        local file_lines = vim.fn.readfile(filename)
+        if file_lines[lnum] then
+          line_text = file_lines[lnum]:gsub("^%s+", "")
+        end
       end
+
       local row = {
         -- line = line,
         -- lnum = lnum,
