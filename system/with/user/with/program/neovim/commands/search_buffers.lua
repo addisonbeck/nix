@@ -51,13 +51,19 @@ function()
     },
     sorter = sorters.get_generic_fuzzy_sorter(),
     --previewer = conf.grep_previewer({}),
-    attach_mappings = function(prompt_bufnr, map)
-      map('i', '<CR>', function()
-        local selection = actions_state.get_selected_entry()
-        actions.close(prompt_bufnr)
-        vim.api.nvim_set_current_buf(selection.value)
-      end)
-      return true
-    end,
+
+  attach_mappings = function(prompt_bufnr, map)
+    map('i', '<CR>', function()
+      local selection = actions_state.get_selected_entry()
+      actions.close(prompt_bufnr)
+      vim.api.nvim_set_current_buf(selection.value)
+    end)
+    map('n', 'd', function()
+      local selection = actions_state.get_selected_entry()
+      actions.close(prompt_bufnr)
+      vim.api.nvim_buf_delete(selection.value, { force = true })
+    end)
+    return true
+  end,
   }):find()
 end
