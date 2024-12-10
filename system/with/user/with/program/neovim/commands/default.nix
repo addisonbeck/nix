@@ -728,6 +728,38 @@
         end
       '';
     };
+    redo = {
+      description = ''
+        Redo the last undo (replaces <Ctrl-r>)
+      '';
+      vimCommandName = "Redo";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "U";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          vim.api.nvim_command('redo')
+        end
+      '';
+    };
+    codeCompanion = {
+      description = ''
+        Toggle CodeCompanion
+      '';
+      vimCommandName = "ToggleCodeCompanion";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<C-a>";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          vim.cmd("CodeCompanionChat Toggle");
+        end
+      '';
+    };
   };
 in {
   keymaps =
