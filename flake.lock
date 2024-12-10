@@ -96,11 +96,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1729193560,
-        "narHash": "sha256-CLwFWxnDsjHz01/5GlrReZ/NyG9dYCycu9ES7ZVBUhI=",
+        "lastModified": 1733856887,
+        "narHash": "sha256-x3XOglgdC8Fe+DeGafgr8Lq6AduimHZozMBYG+1C/f0=",
         "owner": "addisonbeck",
         "repo": "binwarden",
-        "rev": "38bb46c4907803059081b95aab63dc34759d92b1",
+        "rev": "fbb636ca8c7157762c8dd68765b7ae1debb20834",
         "type": "github"
       },
       "original": {
