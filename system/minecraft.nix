@@ -33,54 +33,52 @@
     }
     inputs.nix-minecraft.nixosModules.minecraft-servers
     {
-	services.minecraft-servers = {
-	  enable = true;
-	  eula = true;
-	  #        managementSystem.tmux = {
-	  #   enable = true;
-	  #   socketPath = name: "/home/steve/sessions/${name}.sock";
-	  # };
-	  # dataDir = "/home/steve/servers/";
-	  # user = "steve";
-	  # group = "steve";
-	  servers.bonesfamily = {
-
-	    jvmOpts = ''-Xmx6G -Xms6G -XX:+UseG1GC -Dsun.rmi.dgc.server.gcInterval=2147483646 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M'';
-	    enable = true;
-	    enableReload = false;
-	    package = inputs.nix-minecraft.legacyPackages.x86_64-linux.fabricServers.fabric-1_21_4;
-	    openFirewall = true;
-	    autoStart = true;
-	    serverProperties = {
-	     default-player-permission-level = "visitor";
-	     motd = "Bones bones bones";
-	     difficulty = "easy";
-	     gamemode = "survival";
-	    };
+      services.minecraft-servers = {
+        enable = true;
+        eula = true;
+        #        managementSystem.tmux = {
+        #   enable = true;
+        #   socketPath = name: "/home/steve/sessions/${name}.sock";
+        # };
+        # dataDir = "/home/steve/servers/";
+        # user = "steve";
+        # group = "steve";
+        servers.bonesfamily = {
+          jvmOpts = ''-Xmx6G -Xms6G -XX:+UseG1GC -Dsun.rmi.dgc.server.gcInterval=2147483646 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M'';
+          enable = true;
+          enableReload = false;
+          package = inputs.nix-minecraft.legacyPackages.x86_64-linux.fabricServers.fabric-1_21_4;
+          openFirewall = true;
+          autoStart = true;
+          serverProperties = {
+            default-player-permission-level = "visitor";
+            motd = "Bones bones bones";
+            difficulty = "easy";
+            gamemode = "survival";
+          };
           files = {
             "config/Geyser-Fabric/config.yml".value = {
               remote."auth-type" = "floodgate";
             };
           };
-	  symlinks = {
-	      mods = pkgs.linkFarmFromDrvs "mods" (builtins.attrValues {
-	        FabricAPI = pkgs.fetchurl { 
-                  url = "https://cdn.modrinth.com/data/P7dR8mSH/versions/iFnYBUfS/fabric-api-0.106.0%2B1.21.1.jar";
-		  hash = "sha256-sUONHcxgqL+bZv17oWWaJCSiUZxwh/pYrQ6+l9edWKg=";
-		};
-		Geyser = pkgs.fetchurl {
-		  url = "https://cdn.modrinth.com/data/wKkoqHrH/versions/9l1uUfeS/geyser-fabric-Geyser-Fabric-2.4.4-b694.jar";
-         	  sha512 = "sha512-n3KKYkCmt0lO+icM4TPlcOqU8ST1yzB/+ZJHo583SY20V59pPujpnLtrotxS6wIfDngHsm72OPZXdqZCK/vGRA==";
-
-		};
-		Floodgate = pkgs.fetchurl {
-                  url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/wPa1pHZJ/Floodgate-Fabric-2.2.4-b36.jar";
-                  hash = "sha256-ifzWrdZ4KJoQpFspdhmOQ+FJtwVMaGtfy4XQOcewV0Y=";
-		};
-	      });
-	    };
-	  };
-	};
+          symlinks = {
+            mods = pkgs.linkFarmFromDrvs "mods" (builtins.attrValues {
+              FabricAPI = pkgs.fetchurl {
+                url = "https://cdn.modrinth.com/data/P7dR8mSH/versions/iFnYBUfS/fabric-api-0.106.0%2B1.21.1.jar";
+                hash = "sha256-sUONHcxgqL+bZv17oWWaJCSiUZxwh/pYrQ6+l9edWKg=";
+              };
+              Geyser = pkgs.fetchurl {
+                url = "https://cdn.modrinth.com/data/wKkoqHrH/versions/9l1uUfeS/geyser-fabric-Geyser-Fabric-2.4.4-b694.jar";
+                sha512 = "sha512-n3KKYkCmt0lO+icM4TPlcOqU8ST1yzB/+ZJHo583SY20V59pPujpnLtrotxS6wIfDngHsm72OPZXdqZCK/vGRA==";
+              };
+              Floodgate = pkgs.fetchurl {
+                url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/wPa1pHZJ/Floodgate-Fabric-2.2.4-b36.jar";
+                hash = "sha256-ifzWrdZ4KJoQpFspdhmOQ+FJtwVMaGtfy4XQOcewV0Y=";
+              };
+            });
+          };
+        };
+      };
     }
   ];
   nixpkgs.overlays = [inputs.nix-minecraft.overlay];

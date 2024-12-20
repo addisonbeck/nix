@@ -142,7 +142,7 @@
       description = ''Grep search my notes'';
       vimCommandName = "SearchNotes";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
+        modes = ["n" "v"];
         key = "<C-n>";
         silent = true;
       };
@@ -367,7 +367,7 @@
       '';
       vimCommandName = "CopyRelativePath";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
+        modes = ["n" "v"];
         key = "<C-p>r";
         silent = true;
       };
@@ -389,7 +389,7 @@
       '';
       vimCommandName = "CopyFullPath";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
+        modes = ["n" "v"];
         key = "<C-p>f";
         silent = true;
       };
@@ -411,7 +411,7 @@
       '';
       vimCommandName = "CopyFileName";
       vimKeymapBinding = {
-        modes = ["n" "v" "i"];
+        modes = ["n" "v"];
         key = "<C-p>n";
         silent = true;
       };
@@ -757,6 +757,56 @@
       action.__raw = ''
         function()
           vim.cmd("CodeCompanionChat Toggle");
+        end
+      '';
+    };
+    talkToANorwegianBoatCaptain = {
+      description = ''
+        Speak with a norweigian boat captain who codes.
+      '';
+      vimCommandName = "TalkToCapn";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "AIC";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          local target_name = "[CodeCompanion]: Captain"
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            local name = vim.api.nvim_buf_get_name(buf)
+            if name:match(target_name .. "$") then
+              return
+            end
+          end
+          require("codecompanion").prompt("captain")
+          local bufnr = vim.api.nvim_get_current_buf()
+          vim.api.nvim_buf_set_name(bufnr, target_name)
+        end
+      '';
+    };
+    talkToASecurityAuditor = {
+      description = ''
+        Speak with a security auditor
+      '';
+      vimCommandName = "TalkToAuditor";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "AIA";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          local target_name = "[CodeCompanion]: Security Auditor"
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            local name = vim.api.nvim_buf_get_name(buf)
+            if name:match(target_name .. "$") then
+              return
+            end
+          end
+          require("codecompanion").prompt("auditor")
+          local bufnr = vim.api.nvim_get_current_buf()
+          vim.api.nvim_buf_set_name(bufnr, target_name)
         end
       '';
     };

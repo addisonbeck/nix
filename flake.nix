@@ -102,15 +102,16 @@
         modules = [./system/air.nix];
       };
     };
-    packages = forAllSystemTypes (system: let 
+    packages = forAllSystemTypes (system: let
       pkgs = import nixpkgs {inherit system;};
     in {
-      neovim = inputs.nixvim.legacyPackages.${system}.makeNixvimWithModule
-      {
-        inherit pkgs;
-        extraSpecialArgs = { inherit inputs outputs nixpkgs rootPath conf; };
-        module = (import ./system/with/user/with/program/neovim/nixvim.nix);
-      };
+      neovim =
+        inputs.nixvim.legacyPackages.${system}.makeNixvimWithModule
+        {
+          inherit pkgs;
+          extraSpecialArgs = {inherit inputs outputs nixpkgs rootPath conf;};
+          module = import ./system/with/user/with/program/neovim/nixvim.nix;
+        };
     });
     devShells = forAllSystemTypes (system: let
       pkgs = import nixpkgs {inherit system;};

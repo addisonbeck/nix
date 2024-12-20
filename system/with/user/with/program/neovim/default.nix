@@ -7,9 +7,9 @@
   ...
 }: {
   home.packages = [pkgs.neovim-remote];
-  programs.nixvim = 
-  (import ./nixvim.nix {inherit pkgs lib inputs conf;}) //
-  {
-    enable = true;
-  };
+  programs.nixvim =
+    (import ./nixvim.nix {inherit pkgs lib inputs conf;})
+    // {
+      enable = true;
+    };
 }

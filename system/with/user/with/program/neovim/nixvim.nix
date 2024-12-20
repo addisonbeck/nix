@@ -71,35 +71,6 @@ in {
              },
            },
          })
-         require("codecompanion").setup({
-           display = {
-             diff = {
-               provider = "mini_diff",
-             },
-           },
-           opts = {
-             log_level = "DEBUG",
-           },
-           strategies = {
-             chat = {
-               adapter = "copilot",
-             },
-             inline = {
-               adapter = "copilot",
-             },
-           },
-           adapters = {
-             anthropic = function()
-               return require("codecompanion.adapters").extend("copilot", {
-                 schema = {
-                   model = {
-                     default = "claude-3.5-sonnet",
-                   },
-                 },
-               })
-             end,
-           },
-         })
     --      require('satellite').setup({
     --     current_only = false,
     --      winblend = 0,

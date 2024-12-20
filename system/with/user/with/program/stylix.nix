@@ -19,12 +19,7 @@
     };
 
     monospace = {
-      package = pkgs.nerdfonts.override {
-        fonts = [
-          "FiraMono"
-          "Monaspace"
-        ];
-      };
+      package = pkgs.nerd-fonts.monaspace;
       name = "MonaspiceAr Nerd Font Mono";
     };
 
