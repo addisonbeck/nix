@@ -29,7 +29,7 @@
     };
   };
   stylix.fonts.sizes.terminal = 16;
-  stylix.opacity.terminal = 0.7;
+  #stylix.opacity.terminal = 0.7;
 
   # This started overwriting the sign column color and I couldn't figure out
   # why. I style vim with nixvim anyway. It would be nice to unify the two

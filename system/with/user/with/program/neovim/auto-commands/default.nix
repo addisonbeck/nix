@@ -105,5 +105,24 @@
       pattern = ["TelescopePreviewerLoaded"];
       command = ''lua vim.wo.wrap = true'';
     }
+    # {
+    #   event = ["BufEnter"];
+    #   pattern = ["octo://*/pull/*"];
+    #   callback = {
+    #     __raw = ''
+    #       function(args)
+    #         local bufnr = args.buf
+    #         vim.defer_fn(function()
+    #             local utils = require('octo.utils')
+    #             local details = utils.get_details_from_buffer()
+    #             if details and details.number and details.repo and details.owner then
+    #                 local key = string.format("PR #%d: %s/%s", details.number, details.owner, details.repo)
+    #                 vim.api.nvim_buf_set_name(bufnr, key)
+    #             end
+    #         end, 100)
+    #       end
+    #     '';
+    #   };
+    # }
   ];
 }

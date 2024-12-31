@@ -767,7 +767,7 @@
       vimCommandName = "TalkToCapn";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "AIC";
+        key = "<Space>aic";
         silent = true;
       };
       action.__raw = ''
@@ -792,7 +792,7 @@
       vimCommandName = "TalkToAuditor";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "AIA";
+        key = "<Space>aia";
         silent = true;
       };
       action.__raw = ''
@@ -807,6 +807,52 @@
           require("codecompanion").prompt("auditor")
           local bufnr = vim.api.nvim_get_current_buf()
           vim.api.nvim_buf_set_name(bufnr, target_name)
+        end
+      '';
+    };
+    githubPrUnderCursor = {
+      description = ''
+        Open the PR at the URL under the cursor using Octo
+      '';
+      vimCommandName = "OctoUnderCursor";
+      vimKeymapBinding = {
+        modes = ["n"];
+        key = "<Space>oe";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+            local url = vim.fn.expand('<cWORD>')
+            url = url:gsub('^[%p]*(.-)[%p]*$', '%1')
+            
+            -- Check if it's a valid GitHub Issue or PR URL
+            local pr_pattern = "github.com/([%w-]+)/([%w-]+)/pull/(%d+)"
+            local issue_pattern = "github.com/([%w-]+)/([%w-]+)/issues/(%d+)"
+            
+            local owner, repo, number = url:match(pr_pattern)
+            local is_pr = true
+            
+            if not owner then
+                owner, repo, number = url:match(issue_pattern)
+                is_pr = false
+            end
+            
+            if not owner then
+                vim.notify("Not a valid GitHub Issue or PR URL", vim.log.levels.ERROR)
+                return
+            end
+            
+            -- Just pass the components separately
+            local cmd = string.format('Octo %s edit %s/%s %s', 
+                is_pr and "pr" or "issue",
+                owner,
+                repo,
+                number)
+            
+            local success, error = pcall(vim.cmd, cmd)
+            if not success then
+                vim.notify("Failed to open: " .. tostring(error), vim.log.levels.ERROR)
+            end
         end
       '';
     };

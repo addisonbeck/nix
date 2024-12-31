@@ -86,7 +86,12 @@
   plugins.lsp.inlayHints = true;
   plugins.marks.enable = true;
   plugins.markview.enable = false;
-  plugins.octo.enable = true;
+  plugins.octo = {
+    enable = true;
+    settings = {
+      mappings_disable_default = true;
+    };
+  };
   #plugins.nvim-web-devicons.enable = true;
   #plugins.plenary.enable = true;
   plugins.gitsigns.enable = true;
@@ -113,7 +118,7 @@
     package = let
       rust-overlay = builtins.fetchTarball {
         url = "https://github.com/oxalica/rust-overlay/archive/master.tar.gz";
-        sha256 = "sha256:1bp1k5qla5gwh6vc50m5pcwdfxn6g703yx1i8qrjs4l7kgh3y507";
+        sha256 = "sha256:0dpy86m80546lh1lxb16bhil488jw9gg8nnz1gfmrnzl08n7rhx5";
       };
       overlay-nixpkgs = import pkgs.path {
         inherit (pkgs) system;

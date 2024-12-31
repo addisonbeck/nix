@@ -20,7 +20,8 @@
   gruvbox = {
     hard = {
       dark = {
-        bg1 = "#1d2021"; # ----
+        bg1 = "#161819"; # I darkened it a bit
+        # bg1 = "#1d2021"; # ---- The default
         bg2 = "#3c3836"; # ---
         bg3 = "#504945"; # --
         bg4 = "#665c54"; # -

@@ -868,11 +868,11 @@
         "treefmt-nix": "treefmt-nix_3"
       },
       "locked": {
-        "lastModified": 1732293931,
-        "narHash": "sha256-oeahpysJtuPe++RIxonw9NfpGrDJY+TKOeq1LukV0/Q=",
+        "lastModified": 1735613485,
+        "narHash": "sha256-Dwd6B7foNH3wsJRzCe4JyEa6dgVVIJsyPiLvPosYvvM=",
         "owner": "addisonbeck",
         "repo": "where-am-i.nvim",
-        "rev": "85346d00202089293418fee2f3ba9e88cf7e7b07",
+        "rev": "51dd8e4a465cb29794e587b5e18495f911a035be",
         "type": "github"
       },
       "original": {
