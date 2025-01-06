@@ -368,7 +368,7 @@
       vimCommandName = "CopyRelativePath";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "<C-p>r";
+        key = "<Space>crp";
         silent = true;
       };
       action.__raw = ''
@@ -390,7 +390,7 @@
       vimCommandName = "CopyFullPath";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "<C-p>f";
+        key = "<Space>cfp";
         silent = true;
       };
       action.__raw = ''
@@ -412,7 +412,7 @@
       vimCommandName = "CopyFileName";
       vimKeymapBinding = {
         modes = ["n" "v"];
-        key = "<C-p>n";
+        key = "<Space>cfn";
         silent = true;
       };
       action.__raw = ''
@@ -853,6 +853,122 @@
             if not success then
                 vim.notify("Failed to open: " .. tostring(error), vim.log.levels.ERROR)
             end
+        end
+      '';
+    };
+    # This doesn't work
+    githubFetchSummaryPrUnderCursor = {
+      description = ''
+        Gets a summary of the PR under the cursor and adds it to the
+        clipboard
+      '';
+      vimCommandName = "OctoUnderCursor";
+      vimKeymapBinding = {
+        modes = ["n"];
+        key = "<Space>os";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+            local url = vim.fn.expand('<cWORD>')
+            url = url:gsub('^[%p]*(.-)[%p]*$', '%1')
+            local pr_pattern = "github.com/([%w-]+)/([%w-]+)/pull/(%d+)"
+            local owner, repo, number = url:match(pr_pattern)
+            if not owner then
+                vim.notify("Not a valid GitHub PR URL", vim.log.levels.ERROR)
+                return
+            end
+
+            -- Use gh cli to fetch PR data in JSON format from the current directory
+            local cmd = string.format('gh pr view %s --repo %s/%s --json title,body', number, owner, repo)
+            local handle = io.popen(cmd)
+            local result = handle:read("*a")
+            handle:close()
+
+            local ok, data = pcall(vim.fn.json_decode, result)
+            if not ok then
+                vim.notify("Failed to parse GitHub PR data", vim.log.levels.ERROR)
+                return
+            end
+
+            -- Extract tracking information from body
+            local body = data.body or ""
+            local tracking_id = body:match('[Tt]racking.-#([A-Z0-9%-]+)') or "Not found"
+            local tracking_url = body:match('[Tt]racking.-%(([^%)]+)%)') or "Not found"
+
+            -- Get current cursor position
+            local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+
+            local text = string.format([[# %s
+        * Jira ID: %s
+        * Jira URL: %s
+        * PR: %s]], 
+                data.title or "No title found",
+                tracking_id,
+                tracking_url,
+                url)
+
+            -- Split and insert the text
+            local lines = vim.split(text, "\n", { plain = true })
+            vim.api.nvim_buf_set_text(0, row, 0, row, 0, lines)
+        end
+      '';
+    };
+    tmuxSessionSwitcher = {
+      description = "Tmux: Open window switcher";
+      vimCommandName = "SearchTmuxWindows";
+      vimKeymapBinding = {
+        key = "<C-j>";
+        modes = ["n"];
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          vim.fn.jobstart('tmux display-popup -E "fzf-tmux-popup"', {
+            detach = true
+          })
+          vim.cmd('redraw!')
+        end
+      '';
+    };
+    tmuxPopup = {
+      description = "Toggle a persistent tmux popup for the current Neovim instance";
+      vimCommandName = "ToggleTmuxPopup";
+      vimKeymapBinding = {
+        modes = ["n" "v"];
+        key = "<C-p>";
+        silent = true;
+      };
+      action.__raw = ''
+        function()
+          -- Get Neovim's server name as unique identifier
+          local nvim_id = vim.v.servername:gsub("/", "_")
+          local popup_session = "nvim_popup_" .. nvim_id
+          
+          -- Check if the popup exists
+          local check_cmd = string.format("tmux has-session -t %s 2>/dev/null", popup_session)
+          local popup_exists = os.execute(check_cmd)
+          
+          if popup_exists then
+            -- If popup exists, toggle it off
+            vim.fn.system(string.format("tmux kill-session -t %s", popup_session))
+          else
+            -- Create new persistent session and show popup
+            local cmd = string.format([[
+              tmux new-session -d -s %s;
+              tmux display-popup -E \
+                -w 80%% -h 80%% \
+                -x 10%% -y 10%% \
+                "tmux attach -t %s"
+            ]], popup_session, popup_session)
+            
+            vim.fn.jobstart(cmd, {
+              detach = true,
+              on_exit = function()
+                vim.cmd('redraw!')
+              end
+            })
+          end
         end
       '';
     };
