@@ -33,6 +33,9 @@
 
     where-am-i-nvim.url = "github:addisonbeck/where-am-i.nvim/main";
     where-am-i-nvim.inputs.nixpkgs.follows = "nixpkgs";
+
+    tmux-popr.url = "github:addisonbeck/tmux-popr/main";
+    tmux-popr.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {

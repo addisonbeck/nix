@@ -1,6 +1,8 @@
-{pkgs, ...}: {
+{inputs, pkgs, ...}: {
+
   home.packages = [
     pkgs.fzf
+    inputs.tmux-popr.packages.${pkgs.system}.default
     (pkgs.writeShellScriptBin "fzf-tmux-popup" ''
       active_window=$(tmux display-message -p "#{session_name}:#{window_index} │ #{window_name}")
 
@@ -43,7 +45,6 @@
       exec tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
         "tmux -L $SOCKET_NAME attach -t \"$FULL_SESSION\""
     '')
-
     (pkgs.writeShellScriptBin "tmux-session-popup" ''
       # Capture the parent session name before creating the popup
       PARENT_SESSION=$(tmux display-message -p "#{session_name}")
@@ -78,6 +79,18 @@
       # Show popup with the dedicated socket
       exec tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
         "tmux -L $SOCKET_NAME attach -t \"$POPUP_SESSION\""
+    '')
+    (pkgs.writeShellScriptBin "lazygit-popup" ''
+      SOCKET_NAME="popup-lazygit"
+
+      # Check if we're already in the popup
+      if [ -n "$TMUX" ] && [[ "$TMUX" == *"$SOCKET_NAME"* ]]; then
+          tmux -L "$SOCKET_NAME" detach-client
+          exit 0
+      fi
+
+      # Show popup with lazygit
+      exec tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E "lazygit"
     '')
   ];
 
@@ -130,7 +143,8 @@
       bind C-Space send-prefix
       bind-key -n C-j display-popup -E "fzf-tmux-popup"
       bind-key p run-shell "tmux-toggle-popup"
-      bind-key -n C-p run-shell "tmux-session-popup"
+      bind-key -n C-p run-shell "tmux-popr"
+      bind-key -n C-l run-shell "tmux-popr lazygit"
       bind Space switch-client -l
       bind r source-file ~/.config/tmux/tmux.conf
 
