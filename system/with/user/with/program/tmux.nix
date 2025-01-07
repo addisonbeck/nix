@@ -19,6 +19,7 @@
       SESSION_PREFIX="🚮"
       SESSION_NAME="scratchpad"
       SEPARATOR_CHAR="▶"
+      SOCKET_NAME="popup-scratch"
 
       function full_session_name() {
           printf "''${SESSION_PREFIX} ''${SEPARATOR_CHAR} ''${SESSION_NAME}"
@@ -26,47 +27,57 @@
 
       FULL_SESSION="$(full_session_name)"
 
-      if [ "$(tmux display-message -p -F "#{session_name}")" = "$FULL_SESSION" ]; then
-          tmux detach-client
-      else
-          # Create session in background if it doesn't exist, with hidden flag
-          tmux has-session -t "$FULL_SESSION" 2>/dev/null || \
-            tmux new-session -d -s "$FULL_SESSION" \; set-option remain-on-exit on \; set-option hidden 1
-
-          # Ensure hidden flag is set even for existing sessions
-          tmux set-option -t "$FULL_SESSION" remain-on-exit on \; set-option -t "$FULL_SESSION" hidden 1
-
-          # Now show the popup with the hidden session
-          tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
-            "tmux attach -t \"$FULL_SESSION\""
+      # Check if we're already in the popup
+      if [ -n "$TMUX" ] && [[ "$TMUX" == *"$SOCKET_NAME"* ]]; then
+          tmux -L "$SOCKET_NAME" detach-client
+          exit 0
       fi
+
+      # Create or attach to the popup session
+      if ! tmux -L "$SOCKET_NAME" has-session -t "$FULL_SESSION" 2>/dev/null; then
+          tmux -L "$SOCKET_NAME" new-session -d -s "$FULL_SESSION"
+          tmux -L "$SOCKET_NAME" set-option -t "$FULL_SESSION" status off
+      fi
+
+      # Show popup with the dedicated socket
+      exec tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
+        "tmux -L $SOCKET_NAME attach -t \"$FULL_SESSION\""
     '')
 
     (pkgs.writeShellScriptBin "tmux-session-popup" ''
-      CURRENT_SESSION=$(tmux display-message -p "#{session_name}")
+      # Capture the parent session name before creating the popup
+      PARENT_SESSION=$(tmux display-message -p "#{session_name}")
       POPUP_SUFFIX="_popup"
+      SOCKET_PREFIX="popup-session"
 
       function get_popup_session_name() {
         local base_session=$1
         printf "%s%s" "$base_session" "$POPUP_SUFFIX"
       }
 
-      POPUP_SESSION=$(get_popup_session_name "$CURRENT_SESSION")
+      function get_socket_name() {
+        local base_session=($1//[^a-zA-Z0-9]/)
+        printf "%s-%s" "$SOCKET_PREFIX" "$base_session"
+      }
 
-      if [[ "$CURRENT_SESSION" == *"$POPUP_SUFFIX" ]]; then
-        tmux detach-client
-      else
-        # Create session in background if it doesn't exist, with hidden flag
-        tmux has-session -t "$POPUP_SESSION" 2>/dev/null || \
-          tmux new-session -d -s "$POPUP_SESSION" \; set-option remain-on-exit on \; set-option hidden 1
+      POPUP_SESSION=$(get_popup_session_name "$PARENT_SESSION")
+      SOCKET_NAME=$(get_socket_name "$PARENT_SESSION")
 
-        # Ensure hidden flag is set even for existing sessions
-        tmux set-option -t "$POPUP_SESSION" remain-on-exit on \; set-option -t "$POPUP_SESSION" hidden 1
-
-        # Now show the popup with the hidden session
-        tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
-          "tmux attach -t \"$POPUP_SESSION\""
+      # Check if we're already in the popup
+      if [ -n "$TMUX" ] && [[ "$TMUX" == *"$SOCKET_NAME"* ]]; then
+          tmux -L "$SOCKET_NAME" detach-client
+          exit 0
       fi
+
+      # Create or attach to the popup session
+      if ! tmux -L "$SOCKET_NAME" has-session -t "$POPUP_SESSION" 2>/dev/null; then
+          tmux -L "$SOCKET_NAME" new-session -d -s "$POPUP_SESSION"
+          tmux -L "$SOCKET_NAME" set-option -t "$POPUP_SESSION" status off
+      fi
+
+      # Show popup with the dedicated socket
+      exec tmux popup -d '#{pane_current_path}' -xC -yC -w95% -h95% -E \
+        "tmux -L $SOCKET_NAME attach -t \"$POPUP_SESSION\""
     '')
   ];
 
