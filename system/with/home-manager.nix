@@ -7,6 +7,7 @@
   systemTheme,
   hostname,
   conf,
+  emacs-overlay,
   ...
 }: {
   home-manager.useGlobalPkgs = true;
@@ -21,6 +22,7 @@
       systemTheme
       hostname
       conf
+      emacs-overlay
       ;
   };
 }

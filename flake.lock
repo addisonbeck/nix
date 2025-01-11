@@ -174,6 +174,27 @@
         "type": "github"
       }
     },
+    "emacs-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "nixpkgs-stable": "nixpkgs-stable"
+      },
+      "locked": {
+        "lastModified": 1736442082,
+        "narHash": "sha256-Z+wS4i2foxmLE+aGV7fJZKN1rvG8tW6d8PL/xXl81wA=",
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "rev": "69ecdf68894d67c91724838d3ef2d35db1a9ea78",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "emacs-overlay",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -607,6 +628,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-stable": {
+      "locked": {
+        "lastModified": 1736200483,
+        "narHash": "sha256-JO+lFN2HsCwSLMUWXHeOad6QUxOuwe9UOAF/iSl1J4I=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "3f0a8ac25fb674611b98089ca3a5dd6480175751",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixvim": {
       "inputs": {
         "devshell": "devshell",
@@ -663,6 +700,7 @@
         "agenix": "agenix",
         "binwarden": "binwarden",
         "d": "d",
+        "emacs-overlay": "emacs-overlay",
         "home-manager": "home-manager_2",
         "nix-darwin": "nix-darwin",
         "nix-minecraft": "nix-minecraft",

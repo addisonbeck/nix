@@ -36,6 +36,9 @@
 
     tmux-popr.url = "github:addisonbeck/tmux-popr/main";
     tmux-popr.inputs.nixpkgs.follows = "nixpkgs";
+
+    emacs-overlay.url = "github:nix-community/emacs-overlay";
+    emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -44,6 +47,7 @@
     agenix,
     nix-darwin,
     treefmt-nix,
+    emacs-overlay,
     ...
   } @ inputs: let
     inherit (self) outputs;
@@ -78,9 +82,7 @@
           pkgs = import inputs.nixpkgs {
             system = "aarch64-darwin";
             config.allowUnfree = true;
-            config.permittedInsecurePackages = [
-              "libtiff-4.0.3-opentoonz"
-            ];
+            overlays = [ emacs-overlay.overlay ];  
           };
         };
         modules = [./system/bw.nix];
@@ -97,9 +99,7 @@
           pkgs = import inputs.nixpkgs {
             system = "aarch64-darwin";
             config.allowUnfree = true;
-            config.permittedInsecurePackages = [
-              "libtiff-4.0.3-opentoonz"
-            ];
+            overlays = [ emacs-overlay.overlay ];  
           };
         };
         modules = [./system/air.nix];
