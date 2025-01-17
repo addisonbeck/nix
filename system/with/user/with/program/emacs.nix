@@ -1,4 +1,35 @@
 {pkgs, ...}: let
+  tagAgendaBlocks = [
+    { team = "Platform"; type = "Feature"; }
+    { team = "Platform"; type = "Bug"; }
+    { team = "Platform"; type = "Chore"; }
+    { team = "Platform"; type = "Spike"; }
+    { team = "Platform"; type = "Review"; }
+    { team = "Myself"; }
+  ];
+
+  mkTagAgendaBlock = {team ? "Platform", type ? null, title ? null}: let
+    typeFilter = if type != null 
+      then "+TYPE={${type}}" 
+      else "";
+    blockTitle = if title != null 
+      then title 
+      else if type != null 
+        then "*${team} ${type}s*" 
+        else "*${team} Work*";
+  in ''
+    (tags-todo "TEAM={${team}}+STATUS<>{Done}${typeFilter}"
+     ((org-agenda-overriding-header "\n${blockTitle}\n")
+      (org-agenda-prefix-format 
+       '((tags . "%-l%-16(org-entry-get nil \"STATUS\")")))
+      (org-agenda-sorting-strategy
+       '((tags 'property-up "STATUS")))
+      (org-agenda-keep-with-parent t)))
+  '';
+
+  mkTagAgendaBlocks = blocks: 
+    builtins.concatStringsSep "\n" (map mkTagAgendaBlock blocks);
+
   basicConfig =
     #lisp
     ''
@@ -520,6 +551,7 @@ notesConfig =
     (defun convert-to-markdown ()
       "Convert current org buffer to markdown format."
       (interactive)
+
       (let* ((org-file (buffer-file-name))
              (md-file (concat (file-name-sans-extension org-file) ".md")))
         (when (and org-file (file-exists-p org-file))
@@ -542,6 +574,10 @@ notesConfig =
 agendaConfig = 
   #lisp
   ''
+    ;; Set this globally
+    (setq org-agenda-block-separator nil)
+    (setq org-agenda-window-setup 'only-window)
+
     (setq org-agenda-custom-commands
       '(("d" "daily dashboard"
          ((agenda "" 
@@ -571,51 +607,9 @@ agendaConfig =
              '((agenda time-up priority-down category-keep)))  
             (org-agenda-overriding-header 
              (propertize "\n28 Day Forecast\n" 'face '(:weight bold)))))
+
+          ${mkTagAgendaBlocks tagAgendaBlocks}))))
           
-          (tags-todo "TEAM={Platform}+STATUS<>{Done}+TYPE={Feature}"
-           ((org-agenda-overriding-header "\n*Platform Features*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down)))))
-
-          (tags-todo "TEAM={Platform}+STATUS<>{Done}+TYPE={Bug}"
-           ((org-agenda-overriding-header "\n*Platform Bugs*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down)))))
-
-          (tags-todo "TEAM={Platform}+STATUS<>{Done}+TYPE={Chore}"
-           ((org-agenda-overriding-header "\n*Platform Chores*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down)))))
-
-          (tags-todo "TEAM={Platform}+STATUS<>{Done}+TYPE={Spike}"
-           ((org-agenda-overriding-header "\n*Platform Spikes*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down)))))
-
-          (tags-todo "TEAM={Platform}+STATUS<>{Done}+TYPE={Review}"
-           ((org-agenda-overriding-header "\n*Platform Reviews*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down)))))
-
-          (tags-todo "TEAM={Myself}+STATUS<>{Done}"
-           ((org-agenda-overriding-header "\n*Me Work*\n")
-            (org-agenda-prefix-format 
-             '((tags . "%-3(org-entry-get nil \"STATUS\")")))
-            (org-agenda-sorting-strategy
-             '((tags priority-down))))))
-
-         (org-agenda-block-separator nil))))
-
     (defun refresh-org-agenda ()
       "Refresh org agenda files and rebuild agenda view."
       (interactive)
@@ -636,10 +630,9 @@ githubConfig =
       "File to store GitHub PR todos.")
 
     (defvar my/github-pr-queries
-      '(("My Open PRs" . "is:open is:pr author:addisonbeck")
-        ("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")
+      '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")
         ("Renovate PRs" . "is:open is:pr involves:addisonbeck author:app/renovate")
-        ("Needs Review" . "is:open is:pr review-requested:addisonbeck archived:false")))
+        ))
 
 (defun my/pr-exists-p (url)
   "Check if PR with URL already exists in the org file."
@@ -708,6 +701,9 @@ githubConfig =
 :PR_URL: %s
 :REPO: %s
 :AUTHOR: %s
+:TEAM: Platform
+:TYPE: Review
+:STATUS: Not-Started
 :END:
 
 [[%s][Open in GitHub]]
