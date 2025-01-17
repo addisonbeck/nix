@@ -1,41 +1,48 @@
-{ conf, config, pkgs, ...}: 
-let
+{
+  conf,
+  config,
+  pkgs,
+  ...
+}: let
   colors = conf.themes.${conf.activeTheme.colorScheme}.${conf.activeTheme.systemTheme};
-  paletteConfig = if conf.activeTheme.systemTheme == "light" then ''
-    palette = 0=${colors.base00}
-    palette = 1=${colors.base08}
-    palette = 2=${colors.base0B}
-    palette = 3=${colors.base09}
-    palette = 4=${colors.base0D}
-    palette = 5=${colors.base0E}
-    palette = 6=${colors.base0C}
-    palette = 7=${colors.base05}
-    palette = 8=${colors.base03}
-    palette = 9=${colors.base08}
-    palette = 10=${colors.base0B}
-    palette = 11=${colors.base0A}
-    palette = 12=${colors.base0D}
-    palette = 13=${colors.base0F}
-    palette = 14=${colors.base01}
-    palette = 15=${colors.base05}
-  '' else ''
-    palette = 0=${colors.base00}
-    palette = 1=${colors.base08}
-    palette = 2=${colors.base0B}
-    palette = 3=${colors.base09}
-    palette = 4=${colors.base0D}
-    palette = 5=${colors.base0E}
-    palette = 6=${colors.base0C}
-    palette = 7=${colors.base05}
-    palette = 8=${colors.base03}
-    palette = 9=${colors.base08}
-    palette = 10=${colors.base0B}
-    palette = 11=${colors.base0A}
-    palette = 12=${colors.base0D}
-    palette = 13=${colors.base0F}
-    palette = 14=${colors.base06}
-    palette = 15=${colors.base07}
-  '';
+  paletteConfig =
+    if conf.activeTheme.systemTheme == "light"
+    then ''
+      palette = 0=${colors.base00}
+      palette = 1=${colors.base08}
+      palette = 2=${colors.base0B}
+      palette = 3=${colors.base09}
+      palette = 4=${colors.base0D}
+      palette = 5=${colors.base0E}
+      palette = 6=${colors.base0C}
+      palette = 7=${colors.base05}
+      palette = 8=${colors.base03}
+      palette = 9=${colors.base08}
+      palette = 10=${colors.base0B}
+      palette = 11=${colors.base0A}
+      palette = 12=${colors.base0D}
+      palette = 13=${colors.base0F}
+      palette = 14=${colors.base01}
+      palette = 15=${colors.base05}
+    ''
+    else ''
+      palette = 0=${colors.base00}
+      palette = 1=${colors.base08}
+      palette = 2=${colors.base0B}
+      palette = 3=${colors.base09}
+      palette = 4=${colors.base0D}
+      palette = 5=${colors.base0E}
+      palette = 6=${colors.base0C}
+      palette = 7=${colors.base05}
+      palette = 8=${colors.base03}
+      palette = 9=${colors.base08}
+      palette = 10=${colors.base0B}
+      palette = 11=${colors.base0A}
+      palette = 12=${colors.base0D}
+      palette = 13=${colors.base0F}
+      palette = 14=${colors.base06}
+      palette = 15=${colors.base07}
+    '';
   shaderRepo = pkgs.fetchFromGitHub {
     owner = "m-ahdal";
     repo = "ghostty-shaders";
@@ -72,44 +79,46 @@ let
     "underwater.glsl"
     "water.glsl"
   ];
-  shaderConfigs = builtins.listToAttrs (map
+  shaderConfigs = builtins.listToAttrs (
+    map
     (name: {
       inherit name;
       value = makeShader name;
     })
     shaderFiles
   );
-in
-{
-  home.file = shaderConfigs // {
-    ghostty = {
-      target = ".config/ghostty/config";
-      text = ''
-        font-family = "MonaspiceAr Nerd Font Mono"
-        font-family-italic = "MonaspiceRn Nerd Font Mono"
-        font-family-bold = "MonaspiceKr Nerd Font Mono"
-        font-family-bold-italic =  "MonaspiceXe Nerd Font Mono"
-        font-thicken = false
-        minimum-contrast = 3
-        font-size = 13
-        macos-titlebar-style = hidden
-        ${paletteConfig}
-        background = ${colors.base00}
-        foreground = ${colors.base05}
-        cursor-text = ${colors.base00}
-        cursor-color = ${colors.base05}
-        selection-foreground = ${colors.base00}
-        selection-background = ${colors.base05}
-        window-padding-balance = true
-        window-padding-x = 3
-        window-padding-y = 3
-        clipboard-read = allow
-        clipboard-write = allow
-        confirm-close-surface = false
-        quit-after-last-window-closed = true
-        fullscreen = true
-        # custom-shader = "${config.home.file."underwater.glsl".source}"
-      '';
+in {
+  home.file =
+    shaderConfigs
+    // {
+      ghostty = {
+        target = ".config/ghostty/config";
+        text = ''
+          font-family = "MonaspiceAr Nerd Font Mono"
+          font-family-italic = "MonaspiceRn Nerd Font Mono"
+          font-family-bold = "MonaspiceKr Nerd Font Mono"
+          font-family-bold-italic =  "MonaspiceXe Nerd Font Mono"
+          font-thicken = false
+          minimum-contrast = 3
+          font-size = 13
+          macos-titlebar-style = hidden
+          ${paletteConfig}
+          background = ${colors.base00}
+          foreground = ${colors.base05}
+          cursor-text = ${colors.base00}
+          cursor-color = ${colors.base05}
+          selection-foreground = ${colors.base00}
+          selection-background = ${colors.base05}
+          window-padding-balance = true
+          window-padding-x = 3
+          window-padding-y = 3
+          clipboard-read = allow
+          clipboard-write = allow
+          confirm-close-surface = false
+          quit-after-last-window-closed = true
+          fullscreen = true
+          # custom-shader = "${config.home.file."underwater.glsl".source}"
+        '';
+      };
     };
-  };
 }

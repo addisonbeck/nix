@@ -1,5 +1,8 @@
-{inputs, pkgs, ...}: {
-
+{
+  inputs,
+  pkgs,
+  ...
+}: {
   home.packages = [
     pkgs.fzf
     inputs.tmux-popr.packages.${pkgs.system}.default

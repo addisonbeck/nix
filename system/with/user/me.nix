@@ -106,6 +106,7 @@
       ./with/program/lazysql.nix
       ./with/program/ghostty.nix
       #./with/program/azure-data-studio.nix
+      ./with/program/rust.nix
     ];
 
     home.sessionPath = [];

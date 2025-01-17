@@ -39,6 +39,11 @@
 
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
+
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = {
@@ -48,9 +53,11 @@
     nix-darwin,
     treefmt-nix,
     emacs-overlay,
+    rust-overlay,
     ...
   } @ inputs: let
     inherit (self) outputs;
+    overlays = [(import rust-overlay) emacs-overlay.overlay];
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
     conf = import ./config {};
@@ -62,6 +69,7 @@
         specialArgs = {
           inherit inputs outputs nixpkgs rootPath conf;
           pkgs-forked = import inputs.nixpkgs-forked {
+            inherit overlays;
             system = "x86_64-linux";
             config.allowUnfree = true;
           };
@@ -76,13 +84,14 @@
           inherit inputs outputs nixpkgs rootPath conf;
           hostname = "bw";
           pkgs-forked = import inputs.nixpkgs-forked {
+            inherit overlays;
             system = "aarch64-darwin";
             config.allowUnfree = true;
           };
           pkgs = import inputs.nixpkgs {
+            inherit overlays;
             system = "aarch64-darwin";
             config.allowUnfree = true;
-            overlays = [ emacs-overlay.overlay ];  
           };
         };
         modules = [./system/bw.nix];
@@ -97,9 +106,9 @@
             config.allowUnfree = true;
           };
           pkgs = import inputs.nixpkgs {
+            inherit overlays;
             system = "aarch64-darwin";
             config.allowUnfree = true;
-            overlays = [ emacs-overlay.overlay ];  
           };
         };
         modules = [./system/air.nix];

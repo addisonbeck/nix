@@ -118,42 +118,41 @@
     package = let
       rust-overlay = builtins.fetchTarball {
         url = "https://github.com/oxalica/rust-overlay/archive/master.tar.gz";
-        sha256 = "sha256:0qpssvhr8yijc6pb4y4gw0n245zqnr0wwr5px27z0jd1i49vjdp9";
+        sha256 = "sha256:13ymdg2hivgjlhn6pc5acwfdhzf5mq9691yx67x6s999bk0pj3kz";
       };
       overlay-nixpkgs = import pkgs.path {
         inherit (pkgs) system;
-        overlays = [ (import rust-overlay) ];
+        overlays = [(import rust-overlay)];
       };
-    in
-      (pkgs.vimUtils.buildVimPlugin {
-        name = "Blink";
-        src = pkgs.fetchFromGitHub {
-          owner = "Saghen";
-          repo = "blink.cmp";
-          rev = "07665c3caeba0acb9731a4d7135b92fb2e3e1a88";
-          hash = "sha256-26hEHWoH9tbB2SVyfuwxorCQcntUEFOTxYD99hhp4GY=";
-        };
-        buildInputs = with pkgs; [ 
-          openssl
-          pkg-config
-          cacert
-          (overlay-nixpkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
-        ];
-        nativeBuildInputs = with pkgs; [
-          openssl.dev
-        ];
-        buildPhase = ''
-          export CARGO_HOME=$TMPDIR/cargo
-          export HOME=$TMPDIR
-          export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-          export SSL_CERT_DIR=${pkgs.cacert}/etc/ssl/certs
-          export GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-          export OPENSSL_DIR=${pkgs.openssl.dev}
-          export OPENSSL_LIB_DIR=${pkgs.openssl.out}/lib
-          export OPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include
-          cargo build --release
-        '';
-      });
+    in (pkgs.vimUtils.buildVimPlugin {
+      name = "Blink";
+      src = pkgs.fetchFromGitHub {
+        owner = "Saghen";
+        repo = "blink.cmp";
+        rev = "07665c3caeba0acb9731a4d7135b92fb2e3e1a88";
+        hash = "sha256-26hEHWoH9tbB2SVyfuwxorCQcntUEFOTxYD99hhp4GY=";
+      };
+      buildInputs = with pkgs; [
+        openssl
+        pkg-config
+        cacert
+        (overlay-nixpkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default))
+      ];
+      nativeBuildInputs = with pkgs; [
+        openssl.dev
+      ];
+      buildPhase = ''
+        export CARGO_HOME=$TMPDIR/cargo
+        export HOME=$TMPDIR
+        export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+        export SSL_CERT_DIR=${pkgs.cacert}/etc/ssl/certs
+        export GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+        export OPENSSL_DIR=${pkgs.openssl.dev}
+        export OPENSSL_LIB_DIR=${pkgs.openssl.out}/lib
+        export OPENSSL_INCLUDE_DIR=${pkgs.openssl.dev}/include
+        cargo build --release
+      '';
+    });
 
     enable = true;
     settings = {
@@ -313,7 +312,7 @@
 
   plugins.codecompanion = {
     enable = true;
-    package = (pkgs.vimUtils.buildVimPlugin {
+    package = pkgs.vimUtils.buildVimPlugin {
       name = "codecompanion";
       src = pkgs.fetchFromGitHub {
         owner = "olimorris";
@@ -321,7 +320,7 @@
         rev = "f20ebfbaf64a1c6d2a3268a80431df697a4d2bbe";
         hash = "sha256-Q11VT84duDGlNodmDF7dj3d0ls+YdKX4AGsXRwQp9zM=";
       };
-    });
+    };
     settings = {
       display = {
         diff = {
@@ -351,12 +350,12 @@
           show_settings = true;
         };
         file_picker = {
-          provider = "telescope";  
+          provider = "telescope";
         };
         action_palette = {
           provider = "telescope";
           telescope = {
-            enable = true;  # Explicitly enable
+            enable = true; # Explicitly enable
             mappings = {
               i = {
                 select = "<CR>";
@@ -433,7 +432,7 @@
             }
           ];
         };
-        
+
         "Security Auditor" = {
           strategy = "chat";
           description = "A meticulous security-focused code reviewer";
@@ -531,7 +530,7 @@
                 You must:
                 - Use Old West vernacular while explaining modern tech concepts
                 - Compare CI/CD pipelines to cattle drives
-                - Refer to Kubernetes clusters as "herds" 
+                - Refer to Kubernetes clusters as "herds"
                 - Express amazement at "newfangled contraptions" like the cloud
                 - Relate infrastructure automation to training horses
                 - Follow all standard CodeCompanion formatting rules
@@ -833,7 +832,7 @@
                 `{{JIRA_TICKET_ID}}-update-{{PACKAGE_NAME}}-to-{{NEW_VERSION}}.md`
 
                 You may also be given a list of pull requests. If this is
-                true perform the check for each one listed. 
+                true perform the check for each one listed.
 
                 Output a list containing the names of all the files you
                 created formatted inside of wikilink braces ("[[]]").
@@ -841,7 +840,7 @@
                 ```markdown
                 <!--[[sprint-{{YOUR_SPRINT_HERE}}]] [[dependency-updates]]-->
 
-                # Upgrade {{PACKAGE_NAME}} 
+                # Upgrade {{PACKAGE_NAME}}
 
                 ## 🚂 Tracking
 
@@ -882,7 +881,7 @@
                 - [ ] This upgrade includes a breaking change related to our use case of the package
                 - [ ] Renovate indicates low adoption
                 - [ ] This update is very new (less than one week old)
-                - [ ] Renovate indicates a high risk rate 
+                - [ ] Renovate indicates a high risk rate
                 - [ ] This upgrade is a multi-jump minor or major upgrade
                 - [ ] This dependency is a bundled dependency (*not* a dev dependency)
                 - [ ] This dependency upgrade broke CI

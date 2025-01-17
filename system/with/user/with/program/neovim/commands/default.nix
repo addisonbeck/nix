@@ -824,31 +824,31 @@
         function()
             local url = vim.fn.expand('<cWORD>')
             url = url:gsub('^[%p]*(.-)[%p]*$', '%1')
-            
+
             -- Check if it's a valid GitHub Issue or PR URL
             local pr_pattern = "github.com/([%w-]+)/([%w-]+)/pull/(%d+)"
             local issue_pattern = "github.com/([%w-]+)/([%w-]+)/issues/(%d+)"
-            
+
             local owner, repo, number = url:match(pr_pattern)
             local is_pr = true
-            
+
             if not owner then
                 owner, repo, number = url:match(issue_pattern)
                 is_pr = false
             end
-            
+
             if not owner then
                 vim.notify("Not a valid GitHub Issue or PR URL", vim.log.levels.ERROR)
                 return
             end
-            
+
             -- Just pass the components separately
-            local cmd = string.format('Octo %s edit %s/%s %s', 
+            local cmd = string.format('Octo %s edit %s/%s %s',
                 is_pr and "pr" or "issue",
                 owner,
                 repo,
                 number)
-            
+
             local success, error = pcall(vim.cmd, cmd)
             if not success then
                 vim.notify("Failed to open: " .. tostring(error), vim.log.levels.ERROR)
@@ -902,7 +902,7 @@
             local text = string.format([[# %s
         * Jira ID: %s
         * Jira URL: %s
-        * PR: %s]], 
+        * PR: %s]],
                 data.title or "No title found",
                 tracking_id,
                 tracking_url,
@@ -944,11 +944,11 @@
           -- Get Neovim's server name as unique identifier
           local nvim_id = vim.v.servername:gsub("/", "_")
           local popup_session = "nvim_popup_" .. nvim_id
-          
+
           -- Check if the popup exists
           local check_cmd = string.format("tmux has-session -t %s 2>/dev/null", popup_session)
           local popup_exists = os.execute(check_cmd)
-          
+
           if popup_exists then
             -- If popup exists, toggle it off
             vim.fn.system(string.format("tmux kill-session -t %s", popup_session))
@@ -961,7 +961,7 @@
                 -x 10%% -y 10%% \
                 "tmux attach -t %s"
             ]], popup_session, popup_session)
-            
+
             vim.fn.jobstart(cmd, {
               detach = true,
               on_exit = function()
