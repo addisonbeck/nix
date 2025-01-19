@@ -272,7 +272,6 @@
     (evil-define-key 'normal org-mode-map
         "gx" 'org-open-at-point))
 
-
       ;; Add this after-load hook
       (with-eval-after-load 'org-agenda
         (evil-define-key 'motion org-agenda-mode-map "g" nil)  ; Clear existing g binding
@@ -515,6 +514,7 @@
         (add-to-list 'lsp-disabled-clients 'copilot-ls)
         (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\chats\\'")
         (setq lsp-headerline-breadcrumb-enable nil)
+        (setq lsp-headerline-breadcrumb-mode nil)
         (lsp-enable-which-key-integration t))
 
       (use-package lsp-ui
@@ -812,24 +812,22 @@
 habitConfig = 
   #lisp
   ''
-    (require 'org-habit)  ; Add this line
-
     (defvar my/habit-prompts ${habitPromptsElisp}
-      "Alist of CUSTOM_ID to prompt question for habits that require logging.")
+     "Alist of CUSTOM_ID to prompt question for habits that require logging.")
 
     (defun my/log-habit-note ()
-      "Add notes to habit if it has a configured prompt"
-      (when (and (org-is-habit-p)
-                (string= (org-get-todo-state) "DONE"))
+    "Add notes to habit if it has a configured prompt"
+    (when (string-equal-ignore-case (org-get-todo-state) "DONE") 
         (let* ((custom-id (org-entry-get nil "CUSTOM_ID"))
-               (prompt-pair (assoc custom-id my/habit-prompts)))
-          (when prompt-pair
+            (prompt-pair (assoc custom-id my/habit-prompts)))
+        (when prompt-pair
             (let* ((prompt (cdr prompt-pair))
-                   (note (read-string (concat prompt " ")))
-                   (timestamp (format-time-string "[%Y-%m-%d %a]"))
-                   (entry (format "%s: %s" timestamp note)))
-              (org-add-log-setup 'state "DONE" 'findpos nil entry)
-              (org-store-log-note))))))
+                (note (read-string (concat prompt " ")))
+                (timestamp (format-time-string "[%Y-%m-%d %a]"))
+                (entry (format "%s: %s" timestamp note)))
+            (org-add-note)  ; Changed from org-add-log-setup and org-store-log-note
+            (insert entry))))))
+
 
     (add-hook 'org-after-todo-state-change-hook #'my/log-habit-note)
   '';
@@ -906,7 +904,7 @@ habitConfig =
     ${githubConfig}
     ${evilConfig}
     ${magitConfig}
-    ;;$_{habitConfig}
+    ${habitConfig}
     ${lspConfig}
     ${whichKeyConfig}
     ${themeConfig}
