@@ -1,36 +1,8 @@
-{pkgs, lib, ...}: let
-  habitPrompts = {
-    "lincolns-journal-prompt" = "What did he say?";
-    "cook-dinner" = "What did you make?";
-    "read-something" = "What did you read?";
-    "write-something" = "What did you write?";
-    "take-a-picture" = "Caption it";
-    "encourage-the-kids-to-take-a-shower" = "Did they?";
-    "scare-at-least-one-kid" = "What happened?";
-    "praise-at-least-one-kid" = "What happened?";
-    "practice-spirituality" = "What did you do?";
-    "make-something" = "What did you make?";
-    "fix-something" = "What did you fix?";
-    "clean-something" = "What did you clean?";
-    "plan-something" = "What did you plan?";
-    "play-something" = "What did you play?";
-    "do-some-beeep-work" = "What beeep stuff did you work on?";
-    "participate-in-the-forums" = "What happened?";
-    "participate-on-github" = "What happened?";
-    "meal-plan" = "What did you do?";
-    "text-somebody" = "Who?";
-    "advocate-for-the-open-source-activism-working-group" = "How?";
-    "do-some-sprint-work" = "What?";
-    "force-yourself-to-network" = "Who?";
-  };
-
-  habitPromptsElisp = 
-    let
-      makePromptEntry = id: prompt: ''(cons "${id}" "${prompt}")'';  # Changed this line
-      promptList = lib.mapAttrsToList makePromptEntry habitPrompts;
-    in
-    "(list ${builtins.concatStringsSep " " promptList})";
-
+{
+  pkgs,
+  lib,
+  ...
+}: let
   tagAgendaBlocks = [
     {
       team = "Platform";
@@ -86,77 +58,77 @@
   basicConfig =
     #lisp
     ''
-        ;; Set up persistent undo history and backup files in separate directories
-        (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
-              undo-tree-auto-save-history t
-              undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
+          ;; Set up persistent undo history and backup files in separate directories
+          (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
+                undo-tree-auto-save-history t
+                undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
 
-        ;; Configure indentation behavior
-        ;; - Use spaces for indentation instead of tabs
-        ;; - Automatically indent new lines
-        (setq-default indent-tabs-mode nil)
-        (electric-indent-mode 1)
+          ;; Configure indentation behavior
+          ;; - Use spaces for indentation instead of tabs
+          ;; - Automatically indent new lines
+          (setq-default indent-tabs-mode nil)
+          (electric-indent-mode 1)
 
-        ;; Set tab display width and stops
-        ;; - Tabs appear 8 spaces wide (display only)
-        ;; - Create tab stops every 2 spaces up to 120
-        (setq-default tab-width 2
-                      indent-tabs-mode nil
-                      tab-stop-list (number-sequence 2 120 2))
+          ;; Set tab display width and stops
+          ;; - Tabs appear 8 spaces wide (display only)
+          ;; - Create tab stops every 2 spaces up to 120
+          (setq-default tab-width 2
+                        indent-tabs-mode nil
+                        tab-stop-list (number-sequence 2 120 2))
 
-        ;; Disable exit confirmation prompt
-        (setq confirm-kill-emacs nil)
+          ;; Disable exit confirmation prompt
+          (setq confirm-kill-emacs nil)
 
-        ;; Disable automatic backup and lock files
-        (setq auto-save-default nil
-              create-lockfiles nil)
+          ;; Disable automatic backup and lock files
+          (setq auto-save-default nil
+                create-lockfiles nil)
 
-        ;; Disable line wrapping
-        ;;(setq-default truncate-lines t)
+          ;; Disable line wrapping
+          ;;(setq-default truncate-lines t)
 
-        ;; Enable system clipboard integration
-        (setq select-enable-clipboard t)
+          ;; Enable system clipboard integration
+          (setq select-enable-clipboard t)
 
-        ;; Allow saving modified buffers without confirmation
-        ;; (setq-default buffer-save-without-query t)
+          ;; Allow saving modified buffers without confirmation
+          ;; (setq-default buffer-save-without-query t)
 
-        ;; Enable case-insensitive search
-        (setq case-fold-search t)
+          ;; Enable case-insensitive search
+          (setq case-fold-search t)
 
-        ;; Enable mouse support in terminal
-        (xterm-mouse-mode 1)
+          ;; Enable mouse support in terminal
+          (xterm-mouse-mode 1)
 
-        ;;; Configure spell checking
-        ;;; - Use aspell as the spell program
-        ;;; - Set American English as dictionary
-        ;;; - Enable spellcheck in text modes
-        ;;; - Enable code-aware spellcheck in programming modes
-        ;(setq ispell-program-name "aspell"
-        ;      ispell-dictionary "american")
-        ;(add-hook 'text-mode-hook 'flyspell-mode)
-        ;(add-hook 'prog-mode-hook 'flyspell-prog-mode)
+          ;;; Configure spell checking
+          ;;; - Use aspell as the spell program
+          ;;; - Set American English as dictionary
+          ;;; - Enable spellcheck in text modes
+          ;;; - Enable code-aware spellcheck in programming modes
+          ;(setq ispell-program-name "aspell"
+          ;      ispell-dictionary "american")
+          ;(add-hook 'text-mode-hook 'flyspell-mode)
+          ;(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
-        ;; Set maximum line length for text formatting
-        (setq-default fill-column 77)
+          ;; Set maximum line length for text formatting
+          (setq-default fill-column 77)
 
-        ;; Disable current line highlighting
-        (global-hl-line-mode -1)
+          ;; Disable current line highlighting
+          (global-hl-line-mode -1)
 
-      (defun kill-other-buffers ()
-        "Kill all buffers except the current one"
-        (interactive)
-        (mapc 'kill-buffer
-              (delq (current-buffer)
-                    (buffer-list))))
-    (defun my/delete-this-file ()
-    "Delete the current file and kill its buffer."
-    (interactive)
-    (let ((file (buffer-file-name)))
-        (when (and file
-                (y-or-n-p (format "Delete %s?" file)))
-        (delete-file file)
-        (kill-buffer)
-        (message "Deleted %s" file))))
+        (defun kill-other-buffers ()
+          "Kill all buffers except the current one"
+          (interactive)
+          (mapc 'kill-buffer
+                (delq (current-buffer)
+                      (buffer-list))))
+      (defun my/delete-this-file ()
+      "Delete the current file and kill its buffer."
+      (interactive)
+      (let ((file (buffer-file-name)))
+          (when (and file
+                  (y-or-n-p (format "Delete %s?" file)))
+          (delete-file file)
+          (kill-buffer)
+          (message "Deleted %s" file))))
 
     '';
 
@@ -228,56 +200,56 @@
   evilConfig =
     #lisp
     ''
-      ;; Set evil options before loading evil
-      (setq evil-want-integration t)
-      (setq evil-want-keybinding nil)  ;; Moved before evil loading
-      (setq evil-want-C-u-scroll t)
+        ;; Set evil options before loading evil
+        (setq evil-want-integration t)
+        (setq evil-want-keybinding nil)  ;; Moved before evil loading
+        (setq evil-want-C-u-scroll t)
 
-      (use-package evil
-        :ensure t
-        :config
-        (evil-mode 1)
-        ;; Define functions to move cursor half page
-        (defun evil-move-half-page-down ()
-          "Move cursor half page down"
-          (interactive)
-          (evil-next-line (/ (window-height) 4))
-          (evil-scroll-line-to-center nil))
+        (use-package evil
+          :ensure t
+          :config
+          (evil-mode 1)
+          ;; Define functions to move cursor half page
+          (defun evil-move-half-page-down ()
+            "Move cursor half page down"
+            (interactive)
+            (evil-next-line (/ (window-height) 4))
+            (evil-scroll-line-to-center nil))
 
-        (defun evil-move-half-page-up ()
-          "Move cursor half page up"
-          (interactive)
-          (evil-previous-line (/ (window-height) 4))
-          (evil-scroll-line-to-center nil))
+          (defun evil-move-half-page-up ()
+            "Move cursor half page up"
+            (interactive)
+            (evil-previous-line (/ (window-height) 4))
+            (evil-scroll-line-to-center nil))
 
-        ;; Bind J and K to the new functions
-        (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
-        (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
+          ;; Bind J and K to the new functions
+          (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
+          (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
 
-      (use-package evil-collection
-        :ensure t
-        :after evil
-        :config
-        (evil-collection-init))
+        (use-package evil-collection
+          :ensure t
+          :after evil
+          :config
+          (evil-collection-init))
 
-      (use-package evil-org
-        :ensure t
-        :after org
-        :hook (org-mode . evil-org-mode)
-        :config
-        (require 'evil-org-agenda)
-        (evil-org-agenda-set-keys)
+        (use-package evil-org
+          :ensure t
+          :after org
+          :hook (org-mode . evil-org-mode)
+          :config
+          (require 'evil-org-agenda)
+          (evil-org-agenda-set-keys)
 
-    (with-eval-after-load 'evil
-    (evil-define-key 'normal org-mode-map
-        "gx" 'org-open-at-point))
+      (with-eval-after-load 'evil
+      (evil-define-key 'normal org-mode-map
+          "gx" 'org-open-at-point))
 
-      ;; Add this after-load hook
-      (with-eval-after-load 'org-agenda
-        (evil-define-key 'motion org-agenda-mode-map "g" nil)  ; Clear existing g binding
-        (evil-define-key 'motion org-agenda-mode-map (kbd "gx") 'org-agenda-open-link))
-      (setq org-link-frame-setup
-        '((file . find-file))))
+        ;; Add this after-load hook
+        (with-eval-after-load 'org-agenda
+          (evil-define-key 'motion org-agenda-mode-map "g" nil)  ; Clear existing g binding
+          (evil-define-key 'motion org-agenda-mode-map (kbd "gx") 'org-agenda-open-link))
+        (setq org-link-frame-setup
+          '((file . find-file))))
     '';
 
   serverConfig =
@@ -538,124 +510,171 @@
   notesConfig =
     #lisp
     ''
-      (message "Starting notes config...")
+          (message "Starting notes config...")
 
-      ;; Basic settings
-      (setq notes-directory "~/notes")
-      (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
-      
-      (message "Basic settings done")
+          ;; Basic settings
+          (setq notes-directory "~/notes")
+          (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
 
-      ;; Markdown configuration
-      (use-package markdown-mode
+          ;; Markdown configuration
+          (use-package markdown-mode
+            :ensure t
+            :mode (("\\.md\\'" . markdown-mode)
+                   ("\\.markdown\\'" . markdown-mode)))
+
+          ;; Basic org settings
+          (use-package org
+            :ensure t
+            :bind
+            (("C-c a" . org-agenda))
+            :config
+            (setq org-directory "~/notes")
+            (setq org-agenda-files (list org-directory))
+            (setq org-log-done 'time)
+            (setq org-log-into-drawer t)
+            (setq org-global-properties
+                  '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
+                    ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
+            (setq org-clock-persist 'history
+                  org-clock-idle-time 15
+                  org-clock-into-drawer t)
+            (org-clock-persistence-insinuate))
+
+          ;; Add the global keybinding explicitly
+          (global-set-key (kbd "C-c c") 'org-capture)
+
+          (defun sanitize-filename (name)
+          (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
+
+          (setq org-capture-templates
+              '(("f" "Family Outing" entry
+                  (file (lambda ()
+                          (let ((name (read-string "Event Name: ")))
+                          (expand-file-name (concat (sanitize-filename name) ".org")
+                                          "~/notes/"))))
+                  "* %^{Event Name}\nSCHEDULED: %^T\n:PROPERTIES:\n:CUSTOM_ID: %\\1\n:END:\n%?")))
+
+          ;; Face customization
+          (with-eval-after-load 'org
+            (set-face-attribute 'org-scheduled-previously nil
+              :foreground "#d79921"
+              :weight 'bold))
+
+          ;; Date tracking functions
+          (defun my/org-set-completed-date ()
+            (when (equal "Done" (org-entry-get nil "STATUS"))
+              (org-entry-put nil "COMPLETED"
+                (format-time-string "[%Y-%m-%d %a]"))))
+
+          (defun my/org-set-started-date ()
+            (when (equal "In-Progress" (org-entry-get nil "STATUS"))
+              (org-entry-put nil "STARTED"
+                (format-time-string "[%Y-%m-%d %a]"))))
+
+          (add-hook 'org-property-changed-functions
+            (lambda (property value)
+              (when (equal property "STATUS")
+                (my/org-set-completed-date)
+                (my/org-set-started-date))))
+
+          ;; Conversion functions
+          (defun convert-to-org ()
+            "Convert current markdown buffer to org format."
+            (interactive)
+            (let* ((md-file (buffer-file-name))
+                   (org-file (concat (file-name-sans-extension md-file) ".org")))
+              (when (and md-file (file-exists-p md-file))
+                (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                             "-f" "markdown"
+                             "-t" "org"
+                             md-file
+                             "-o" org-file)
+                (find-file org-file))))
+
+          (defun convert-to-markdown ()
+            "Convert current org buffer to markdown format."
+            (interactive)
+            (let* ((org-file (buffer-file-name))
+                   (md-file (concat (file-name-sans-extension org-file) ".md")))
+              (when (and org-file (file-exists-p org-file))
+                (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                             "-f" "org"
+                             "-t" "markdown"
+                             org-file
+                             "-o" md-file)
+                (find-file md-file))))
+
+          (with-eval-after-load 'markdown-mode
+            (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
+
+          (with-eval-after-load 'org
+            (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
+
+          (defun my/move-to-custom-id-file ()
+            "Move selected org item to a new file named after its CUSTOM_ID property."
+            (interactive)
+            (save-excursion
+              (let* ((region-content (buffer-substring (region-beginning) (region-end)))
+                     (custom-id (save-excursion
+                                 (goto-char (region-beginning))
+                                 (org-entry-get nil "CUSTOM_ID"))))
+                (if custom-id
+                    (let ((new-file (concat "~/notes/" custom-id ".org")))
+                      (with-temp-file new-file
+                        (insert "#+TITLE: " custom-id "\n\n")
+                        (insert region-content))
+                      (delete-region (region-beginning) (region-end))
+                      (insert (format "[[file:%s][%s]]\n" new-file custom-id))
+                      (message "Moved to %s" new-file))
+                  (message "No CUSTOM_ID property found!")))))
+
+      (use-package org-modern
         :ensure t
-        :mode (("\\.md\\'" . markdown-mode)
-               ("\\.markdown\\'" . markdown-mode)))
-      (message "Markdown config done")
-
-      ;; Basic org settings
-      (use-package org
-        :ensure t
-        :init
-        (message "Starting org config...")
-        :bind
-        (("C-c a" . org-agenda))
+        :hook
+        ((org-mode . org-modern-mode)
+         (org-agenda-finalize . org-modern-agenda))
         :config
-        (setq org-directory "~/notes")
-        (setq org-agenda-files (list org-directory))
-        (setq org-global-properties
-              '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-                ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
-        (setq org-clock-persist 'history
-              org-clock-idle-time 15
-              org-clock-into-drawer t
-              org-log-into-drawer t)
-        (org-clock-persistence-insinuate)
-        (message "Org config done"))
+        (setq
+         ;; Edit settings
+         org-auto-align-tags nil
+         org-tags-column 0
+         org-catch-invisible-edits 'show-and-error
+         org-special-ctrl-a/e t
+         org-insert-heading-respect-content t
 
-      (message "Starting face customization...")
-      (with-eval-after-load 'org
-        (set-face-attribute 'org-scheduled-previously nil
-          :foreground "#d79921"
-          :weight 'bold))
-      (message "Face customization done")
+         ;; Appearance
+         org-modern-hide-stars t        ; Hide leading stars
+         org-modern-timestamp t         ; Pretty timestamps
+         org-modern-table t            ; Pretty tables
+         org-modern-list t            ; Pretty lists
+         org-modern-tag t             ; Pretty tags
+         org-modern-priority t        ; Pretty priorities
+         org-modern-todo t            ; Pretty todo keywords
 
-      ;; Date tracking functions
-      (message "Setting up date tracking...")
-      (defun my/org-set-completed-date ()
-        (when (equal "Done" (org-entry-get nil "STATUS"))
-          (org-entry-put nil "COMPLETED"
-            (format-time-string "[%Y-%m-%d %a]"))))
+        ;; Customizing blocks and boxes
+        org-modern-block-fringe t       ; Add fringe markers to blocks
+        org-modern-block-name t         ; Pretty source block names
+        org-modern-checkbox t           ; Pretty checkboxes
+        org-modern-statistics t         ; Pretty statistics cookies [0/1]
 
-      (defun my/org-set-started-date ()
-        (when (equal "In-Progress" (org-entry-get nil "STATUS"))
-          (org-entry-put nil "STARTED"
-            (format-time-string "[%Y-%m-%d %a]"))))
+        ;; Star/header customization
+        org-modern-star '("◉" "○" "●" "○" "●" "○" "●")  ; Custom header bullets
 
-      (add-hook 'org-property-changed-functions
-        (lambda (property value)
-          (when (equal property "STATUS")
-            (my/org-set-completed-date)
-            (my/org-set-started-date))))
-      (message "Date tracking done")
+        ;; Table customization
+        org-modern-table-vertical 1     ; Vertical padding in tables
+        org-modern-table-horizontal 0.2 ; Horizontal padding in tables
 
-      ;; Conversion functions
-      (message "Setting up conversion functions...")
-      (defun convert-to-org ()
-        "Convert current markdown buffer to org format."
-        (interactive)
-        (let* ((md-file (buffer-file-name))
-               (org-file (concat (file-name-sans-extension md-file) ".org")))
-          (when (and md-file (file-exists-p md-file))
-            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                         "-f" "markdown"
-                         "-t" "org"
-                         md-file
-                         "-o" org-file)
-            (find-file org-file))))
+        ;; Priority customization
+        org-modern-priority-faces
+        '((?A . error)
+        (?B . warning)
+        (?C . success))              ; Custom colors for priorities
 
-      (defun convert-to-markdown ()
-        "Convert current org buffer to markdown format."
-        (interactive)
+        ;; Variable pitch fonts
+        org-modern-variable-pitch t     ; Use variable-pitch font for text
+        ))          
 
-        (let* ((org-file (buffer-file-name))
-               (md-file (concat (file-name-sans-extension org-file) ".md")))
-          (when (and org-file (file-exists-p org-file))
-            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                         "-f" "org"
-                         "-t" "markdown"
-                         org-file
-                         "-o" md-file)
-            (find-file md-file))))
-
-      (with-eval-after-load 'markdown-mode
-        (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
-
-      (with-eval-after-load 'org
-        (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
-
-    (defun my/move-to-custom-id-file ()
-    "Move selected org item to a new file named after its CUSTOM_ID property."
-    (interactive)
-    (save-excursion
-        (let* ((region-content (buffer-substring (region-beginning) (region-end)))
-            (custom-id (save-excursion
-                        (goto-char (region-beginning))
-                        (org-entry-get nil "CUSTOM_ID"))))
-        (if custom-id
-            (let ((new-file (concat "~/notes/" custom-id ".org")))
-                ;; Create new file if it doesn't exist
-                (with-temp-file new-file
-                (insert "#+TITLE: " custom-id "\n\n")
-                (insert region-content))
-                ;; Delete original content
-                (delete-region (region-beginning) (region-end))
-                ;; Insert link to new file
-                (insert (format "[[file:%s][%s]]\n" new-file custom-id))
-                (message "Moved to %s" new-file))
-            (message "No CUSTOM_ID property found!")))))
-      (message "Conversion functions done")
-      (message "Notes config complete")
+        (add-hook 'org-mode-hook 'variable-pitch-mode)
     '';
 
   agendaConfig =
@@ -664,16 +683,48 @@
       ;; Set this globally
       (setq org-agenda-block-separator nil)
       (setq org-agenda-window-setup 'only-window)
+      (setq org-agenda-timegrid-use-ampm t)
+      (setq org-agenda-time-leading-zero t)
+
+      ;; Set up TODO keywords including SKIPPED state
+      (setq org-todo-keywords
+            '((sequence "TODO(t!)" "STARTED(s!)" "|" "DONE(d!)" "SKIPPED(k!)")))
+
+      ;; Set up faces for TODO states
+      (setq org-todo-keyword-faces
+            '(("TODO" . org-todo)
+              ("DONE" . org-done)
+              ("STARTED" :foreground "green" :weight bold)
+              ("SKIPPED" :foreground "grey" :weight bold)))
+
+      ;; Function to handle skipping in agenda
+      (defun my/skip-task ()
+        "Mark current agenda task as SKIPPED and advance schedule"
+        (interactive)
+        (let* ((marker (or (org-get-at-bol 'org-marker)
+                          (org-agenda-error)))
+               (buffer (marker-buffer marker))
+               (pos (marker-position marker)))
+          (with-current-buffer buffer
+            (goto-char pos)
+            (org-todo "SKIPPED")
+            (org-schedule nil "+1d")))
+        )
+
+      ;; Bind skip function in agenda
+      (with-eval-after-load 'org-agenda
+        (eval-after-load 'evil-org-agenda
+          '(progn
+             (evil-define-key 'motion org-agenda-mode-map "s" nil)
+             (evil-define-key 'motion org-agenda-mode-map "s" 'my/skip-task))))
 
       (setq org-agenda-custom-commands
         '(("d" "daily dashboard"
            ((agenda ""
              ((org-agenda-span 'day)
               (org-agenda-format-date "%A, %B %d %Y")
-              (org-agenda-prefix-format '((agenda . "%-12t")))
+              (org-agenda-prefix-format '((agenda . "%-13t")))
               (org-agenda-entry-types '(:scheduled))
-              (org-agenda-skip-function
-                '(org-agenda-skip-entry-if 'done))
               (org-agenda-sorting-strategy
                '((agenda time-up priority-down category-keep)))))
 
@@ -688,7 +739,7 @@
                   'scheduled-future 28
                   'regexp "\\+[0-9]+[d]>"
                   'todo 'done))
-              (org-agenda-prefix-format '((agenda . "%-12t")))
+              (org-agenda-prefix-format '((agenda . "%-13t")))
               (org-agenda-show-all-dates nil)
               (org-agenda-sorting-strategy
                '((agenda time-up priority-down category-keep)))
@@ -809,29 +860,6 @@
           (global-set-key (kbd "C-c g p") #'my/fetch-github-prs)
     '';
 
-habitConfig = 
-  #lisp
-  ''
-    (defvar my/habit-prompts ${habitPromptsElisp}
-     "Alist of CUSTOM_ID to prompt question for habits that require logging.")
-
-    (defun my/log-habit-note ()
-    "Add notes to habit if it has a configured prompt"
-    (when (string-equal-ignore-case (org-get-todo-state) "DONE") 
-        (let* ((custom-id (org-entry-get nil "CUSTOM_ID"))
-            (prompt-pair (assoc custom-id my/habit-prompts)))
-        (when prompt-pair
-            (let* ((prompt (cdr prompt-pair))
-                (note (read-string (concat prompt " ")))
-                (timestamp (format-time-string "[%Y-%m-%d %a]"))
-                (entry (format "%s: %s" timestamp note)))
-            (org-add-note)  ; Changed from org-add-log-setup and org-store-log-note
-            (insert entry))))))
-
-
-    (add-hook 'org-after-todo-state-change-hook #'my/log-habit-note)
-  '';
-
   whichKeyConfig =
     #lisp
     ''
@@ -886,6 +914,7 @@ habitConfig =
       flycheck
       forge
       ghub
+      org-modern
     ];
 
   emacsConfig = pkgs.writeText "config.el" ''
@@ -899,12 +928,11 @@ habitConfig =
     ${treesitterConfig}
     ${gptelConfig}
     ${verticoConfig}
+    ${evilConfig}
     ${notesConfig}
     ${agendaConfig}
     ${githubConfig}
-    ${evilConfig}
     ${magitConfig}
-    ${habitConfig}
     ${lspConfig}
     ${whichKeyConfig}
     ${themeConfig}
@@ -925,12 +953,12 @@ in {
   home.packages = with pkgs; [
     aspell
     aspellDicts.en
-    pandoc 
+    pandoc
     nixd
     nodePackages.typescript-language-server
     omnisharp-roslyn
     marksman
-    nodePackages.vscode-langservers-extracted 
+    nodePackages.vscode-langservers-extracted
     nodePackages.eslint
     sqls
     rust-analyzer
