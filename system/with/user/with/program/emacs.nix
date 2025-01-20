@@ -44,12 +44,8 @@
       else "*${team} Work*";
   in ''
     (tags-todo "TEAM={${team}}+STATUS<>{Done}${typeFilter}"
-     ((org-agenda-overriding-header "\n${blockTitle}\n")
-      (org-agenda-prefix-format
-       '((tags . "%-l%-16(org-entry-get nil \"STATUS\")")))
-      (org-agenda-sorting-strategy
-       '((tags 'property-up "STATUS")))
-      (org-agenda-keep-with-parent t)))
+    ((org-agenda-overriding-header "\n${blockTitle}\n")
+    (org-agenda-keep-with-parent t)))
   '';
 
   mkTagAgendaBlocks = blocks:
@@ -510,171 +506,129 @@
   notesConfig =
     #lisp
     ''
-          (message "Starting notes config...")
+      (message "Starting notes config...")
 
-          ;; Basic settings
-          (setq notes-directory "~/notes")
-          (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
+      ;; Basic settings
+      (setq notes-directory "~/notes")
+      (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
 
-          ;; Markdown configuration
-          (use-package markdown-mode
-            :ensure t
-            :mode (("\\.md\\'" . markdown-mode)
-                   ("\\.markdown\\'" . markdown-mode)))
-
-          ;; Basic org settings
-          (use-package org
-            :ensure t
-            :bind
-            (("C-c a" . org-agenda))
-            :config
-            (setq org-directory "~/notes")
-            (setq org-agenda-files (list org-directory))
-            (setq org-log-done 'time)
-            (setq org-log-into-drawer t)
-            (setq org-global-properties
-                  '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-                    ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
-            (setq org-clock-persist 'history
-                  org-clock-idle-time 15
-                  org-clock-into-drawer t)
-            (org-clock-persistence-insinuate))
-
-          ;; Add the global keybinding explicitly
-          (global-set-key (kbd "C-c c") 'org-capture)
-
-          (defun sanitize-filename (name)
-          (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
-
-          (setq org-capture-templates
-              '(("f" "Family Outing" entry
-                  (file (lambda ()
-                          (let ((name (read-string "Event Name: ")))
-                          (expand-file-name (concat (sanitize-filename name) ".org")
-                                          "~/notes/"))))
-                  "* %^{Event Name}\nSCHEDULED: %^T\n:PROPERTIES:\n:CUSTOM_ID: %\\1\n:END:\n%?")))
-
-          ;; Face customization
-          (with-eval-after-load 'org
-            (set-face-attribute 'org-scheduled-previously nil
-              :foreground "#d79921"
-              :weight 'bold))
-
-          ;; Date tracking functions
-          (defun my/org-set-completed-date ()
-            (when (equal "Done" (org-entry-get nil "STATUS"))
-              (org-entry-put nil "COMPLETED"
-                (format-time-string "[%Y-%m-%d %a]"))))
-
-          (defun my/org-set-started-date ()
-            (when (equal "In-Progress" (org-entry-get nil "STATUS"))
-              (org-entry-put nil "STARTED"
-                (format-time-string "[%Y-%m-%d %a]"))))
-
-          (add-hook 'org-property-changed-functions
-            (lambda (property value)
-              (when (equal property "STATUS")
-                (my/org-set-completed-date)
-                (my/org-set-started-date))))
-
-          ;; Conversion functions
-          (defun convert-to-org ()
-            "Convert current markdown buffer to org format."
-            (interactive)
-            (let* ((md-file (buffer-file-name))
-                   (org-file (concat (file-name-sans-extension md-file) ".org")))
-              (when (and md-file (file-exists-p md-file))
-                (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                             "-f" "markdown"
-                             "-t" "org"
-                             md-file
-                             "-o" org-file)
-                (find-file org-file))))
-
-          (defun convert-to-markdown ()
-            "Convert current org buffer to markdown format."
-            (interactive)
-            (let* ((org-file (buffer-file-name))
-                   (md-file (concat (file-name-sans-extension org-file) ".md")))
-              (when (and org-file (file-exists-p org-file))
-                (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                             "-f" "org"
-                             "-t" "markdown"
-                             org-file
-                             "-o" md-file)
-                (find-file md-file))))
-
-          (with-eval-after-load 'markdown-mode
-            (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
-
-          (with-eval-after-load 'org
-            (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
-
-          (defun my/move-to-custom-id-file ()
-            "Move selected org item to a new file named after its CUSTOM_ID property."
-            (interactive)
-            (save-excursion
-              (let* ((region-content (buffer-substring (region-beginning) (region-end)))
-                     (custom-id (save-excursion
-                                 (goto-char (region-beginning))
-                                 (org-entry-get nil "CUSTOM_ID"))))
-                (if custom-id
-                    (let ((new-file (concat "~/notes/" custom-id ".org")))
-                      (with-temp-file new-file
-                        (insert "#+TITLE: " custom-id "\n\n")
-                        (insert region-content))
-                      (delete-region (region-beginning) (region-end))
-                      (insert (format "[[file:%s][%s]]\n" new-file custom-id))
-                      (message "Moved to %s" new-file))
-                  (message "No CUSTOM_ID property found!")))))
-
-      (use-package org-modern
+      ;; Markdown configuration
+      (use-package markdown-mode
         :ensure t
-        :hook
-        ((org-mode . org-modern-mode)
-         (org-agenda-finalize . org-modern-agenda))
+        :mode (("\\.md\\'" . markdown-mode)
+               ("\\.markdown\\'" . markdown-mode)))
+
+      ;; Basic org settings
+      (use-package org
+        :ensure t
+        :bind
+        (("C-c a" . org-agenda))
         :config
-        (setq
-         ;; Edit settings
-         org-auto-align-tags nil
-         org-tags-column 0
-         org-catch-invisible-edits 'show-and-error
-         org-special-ctrl-a/e t
-         org-insert-heading-respect-content t
+        (setq org-directory "~/notes")
+        (setq org-agenda-files (list org-directory))
+        (setq org-log-done 'time)
+        (setq org-log-into-drawer t)
+        (setq org-global-properties
+              '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
+                ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
+        (setq org-clock-persist 'history
+              org-clock-idle-time 15
+              org-clock-into-drawer t)
+        (org-clock-persistence-insinuate))
 
-         ;; Appearance
-         org-modern-hide-stars t        ; Hide leading stars
-         org-modern-timestamp t         ; Pretty timestamps
-         org-modern-table t            ; Pretty tables
-         org-modern-list t            ; Pretty lists
-         org-modern-tag t             ; Pretty tags
-         org-modern-priority t        ; Pretty priorities
-         org-modern-todo t            ; Pretty todo keywords
+      ;; Add the global keybinding explicitly
+      (global-set-key (kbd "C-c c") 'org-capture)
 
-        ;; Customizing blocks and boxes
-        org-modern-block-fringe t       ; Add fringe markers to blocks
-        org-modern-block-name t         ; Pretty source block names
-        org-modern-checkbox t           ; Pretty checkboxes
-        org-modern-statistics t         ; Pretty statistics cookies [0/1]
+      (defun sanitize-filename (name)
+      (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
 
-        ;; Star/header customization
-        org-modern-star '("◉" "○" "●" "○" "●" "○" "●")  ; Custom header bullets
+      (setq org-capture-templates
+          '(("f" "Family Outing" entry
+              (file (lambda ()
+                      (let ((name (read-string "Event Name: ")))
+                      (expand-file-name (concat (sanitize-filename name) ".org")
+                                      "~/notes/"))))
+              "* %^{Event Name}\nSCHEDULED: %^T\n:PROPERTIES:\n:CUSTOM_ID: %\\1\n:END:\n%?")))
 
-        ;; Table customization
-        org-modern-table-vertical 1     ; Vertical padding in tables
-        org-modern-table-horizontal 0.2 ; Horizontal padding in tables
+      ;; Face customization
+      (with-eval-after-load 'org
+        (set-face-attribute 'org-scheduled-previously nil
+          :foreground "#d79921"
+          :weight 'bold))
 
-        ;; Priority customization
-        org-modern-priority-faces
-        '((?A . error)
-        (?B . warning)
-        (?C . success))              ; Custom colors for priorities
 
-        ;; Variable pitch fonts
-        org-modern-variable-pitch t     ; Use variable-pitch font for text
-        ))          
+      ;; Date tracking functions
+      (defun my/org-set-completed-date ()
+        (when (equal "Done" (org-entry-get nil "STATUS"))
+          (org-entry-put nil "COMPLETED"
+            (format-time-string "[%Y-%m-%d %a]"))))
 
-        (add-hook 'org-mode-hook 'variable-pitch-mode)
+      (defun my/org-set-started-date ()
+        (when (equal "In-Progress" (org-entry-get nil "STATUS"))
+          (org-entry-put nil "STARTED"
+            (format-time-string "[%Y-%m-%d %a]"))))
+
+      (add-hook 'org-property-changed-functions
+        (lambda (property value)
+          (when (equal property "STATUS")
+            (my/org-set-completed-date)
+            (my/org-set-started-date))))
+
+      ;; Conversion functions
+      (defun convert-to-org ()
+        "Convert current markdown buffer to org format."
+        (interactive)
+        (let* ((md-file (buffer-file-name))
+               (org-file (concat (file-name-sans-extension md-file) ".org")))
+          (when (and md-file (file-exists-p md-file))
+            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                         "-f" "markdown"
+                         "-t" "org"
+                         md-file
+                         "-o" org-file)
+            (find-file org-file))))
+
+      (defun convert-to-markdown ()
+        "Convert current org buffer to markdown format."
+        (interactive)
+        (let* ((org-file (buffer-file-name))
+               (md-file (concat (file-name-sans-extension org-file) ".md")))
+          (when (and org-file (file-exists-p org-file))
+            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                         "-f" "org"
+                         "-t" "markdown"
+                         org-file
+                         "-o" md-file)
+            (find-file md-file))))
+
+      (with-eval-after-load 'markdown-mode
+        (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
+
+      (with-eval-after-load 'org
+        (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
+
+      (defun my/move-to-custom-id-file ()
+        "Move selected org item to a new file named after its CUSTOM_ID property."
+        (interactive)
+        (save-excursion
+          (let* ((region-content (buffer-substring (region-beginning) (region-end)))
+                 (custom-id (save-excursion
+                             (goto-char (region-beginning))
+                             (org-entry-get nil "CUSTOM_ID"))))
+            (if custom-id
+                (let ((new-file (concat "~/notes/" custom-id ".org")))
+                  (with-temp-file new-file
+                    (insert "#+TITLE: " custom-id "\n\n")
+                    (insert region-content))
+                  (delete-region (region-beginning) (region-end))
+                  (insert (format "[[file:%s][%s]]\n" new-file custom-id))
+                  (message "Moved to %s" new-file))
+              (message "No CUSTOM_ID property found!")))))
+
+        (setq org-agenda-prefix-format
+            '((agenda . "")
+                (tags   . "")
+                (todo   . "")))
     '';
 
   agendaConfig =
@@ -688,13 +642,16 @@
 
       ;; Set up TODO keywords including SKIPPED state
       (setq org-todo-keywords
-            '((sequence "TODO(t!)" "STARTED(s!)" "|" "DONE(d!)" "SKIPPED(k!)")))
+            '((sequence "TODO(t!)" "STARTED(s!)" "BLOCKED(b!)" "AWAITING-REVIEW(r!)" "AWAITING-QA(q!)" "|" "DONE(d!)" "ABANDONED(a!)" "SKIPPED(k!)")))
 
       ;; Set up faces for TODO states
       (setq org-todo-keyword-faces
             '(("TODO" . org-todo)
               ("DONE" . org-done)
               ("STARTED" :foreground "green" :weight bold)
+              ("BLOCKED" :foreground "grey" :weight bold)
+              ("AWAITING-REVIEW" :foreground "grey" :weight bold)
+              ("AWAITING-QA" :foreground "grey" :weight bold)
               ("SKIPPED" :foreground "grey" :weight bold)))
 
       ;; Function to handle skipping in agenda
@@ -723,7 +680,6 @@
            ((agenda ""
              ((org-agenda-span 'day)
               (org-agenda-format-date "%A, %B %d %Y")
-              (org-agenda-prefix-format '((agenda . "%-13t")))
               (org-agenda-entry-types '(:scheduled))
               (org-agenda-sorting-strategy
                '((agenda time-up priority-down category-keep)))))
@@ -739,7 +695,6 @@
                   'scheduled-future 28
                   'regexp "\\+[0-9]+[d]>"
                   'todo 'done))
-              (org-agenda-prefix-format '((agenda . "%-13t")))
               (org-agenda-show-all-dates nil)
               (org-agenda-sorting-strategy
                '((agenda time-up priority-down category-keep)))
