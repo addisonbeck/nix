@@ -719,6 +719,29 @@
         (global-org-modern-mode)
         :custom
         (org-modern-variable-pitch nil)
+        (org-modern-hide-stars t)        ; Hide leading stars
+        (org-modern-timestamp t)         ; Pretty timestamps
+        (org-modern-table t)            ; Pretty tables
+
+        (org-modern-list '((43 . "➜")   ; List bullets (+ character)
+                            (45 . "–")))  ; List bullets (- character)
+        (org-modern-checkbox '((88 . "☑")   ; Checked box (X)
+                                (45 . "☐")    ; Empty box (-)
+                                (32 . "☐")))  ; Empty box (space)
+
+        (org-modern-tag t)              ; Pretty tags
+        (org-modern-priority t)         ; Pretty priorities
+
+        (org-modern-todo t)             ; Pretty todo keywords
+        (org-modern-block-fringe t)     ; Add fringe markers to blocks
+        (org-modern-block-name t)       ; Pretty source block names
+
+        ;;(org-modern-checkbox t)         ; Pretty checkboxes
+        ;;(org-modern-statistics t)       ; Pretty statistics cookies
+
+        (org-modern-table-vertical 1)   ; Table spacing
+        (org-modern-table-horizontal 0.2) ; Table spacing
+
         (org-modern-todo-faces
         '(("TODO" :background "#cc241d" :padding 8)
             ("STARTED" :background "#98971a" :padding 8)
