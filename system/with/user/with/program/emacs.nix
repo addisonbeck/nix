@@ -245,10 +245,12 @@
         (evil-org-agenda-set-keys)
         ;; Add your custom keys AFTER evil-org-agenda-set-keys
         (evil-define-key 'motion org-agenda-mode-map
-            (kbd "[") 'org-agenda-earlier
-            (kbd "]") 'org-agenda-later
+            (kbd "<left>") 'org-agenda-earlier
+            (kbd "<right>") 'org-agenda-later
             (kbd "C-c j") 'org-agenda-goto-date
             (kbd "gx")  'org-agenda-open-link
+            (kbd "t") 'org-agenda-todo
+            (kbd "T") 'org-agenda-todo-yesterday
         ))
     '';
 
@@ -699,38 +701,6 @@ SCHEDULED: %^T
                   (setq org-agenda-include-diary t)  
                   (require 'diary-lib)
 
-                  ;; Set up TODO keywords including SKIPPED state
-                  (setq org-todo-keywords
-                        '((sequence "TODO(t!)" "STARTED(s!)" "TODAY(O!)" "BLOCKED(b!)" "AWAITING-REVIEW(r!)" "AWAITING-QA(q!)""AWAITING-RELEASE(e)" "AWAITING-USER(u)" "REVIEWED(v)" "|" "DONE(d!)" "ABANDONED(a!)" "SKIPPED(k!)")))
-
-                  ;; Set up faces for TODO states
-                  (setq org-todo-keyword-faces
-                        '(("TODO" . org-todo)
-                          ("DONE" . org-done)
-                          ("STARTED")
-                          ("BLOCKED")
-                          ("AWAITING-REVIEW")
-                          ("AWAITING-QA")
-                          ("AWAITING-RELEASE")
-                          ("AWAITING-USER")
-                          ("REVIEWED")
-                          ("TODAY")
-                          ("SKIPPED")))
-
-                  ;; Function to handle skipping in agenda
-                  (defun my/skip-task ()
-                    "Mark current agenda task as SKIPPED and advance schedule"
-                    (interactive)
-                    (let* ((marker (or (org-get-at-bol 'org-marker)
-                                      (org-agenda-error)))
-                           (buffer (marker-buffer marker))
-                           (pos (marker-position marker)))
-                      (with-current-buffer buffer
-                        (goto-char pos)
-                        (org-todo "SKIPPED")
-                        (org-schedule nil "+1d")))
-                    )
-
                     (use-package org-super-agenda
                     :after org-agenda
                     :config
@@ -742,59 +712,48 @@ SCHEDULED: %^T
                   (setq warning-suppress-types '((org-element)))
 
 (setq org-agenda-custom-commands
-      '(("d" "daily dashboard"
-         ((agenda "Schedule"
-                 ((org-agenda-span 'day)
-                  (org-super-agenda-groups
-                   '((:name "Today's Schedule"
-                      :time-grid t
-                      :property ("CATEGORIES" (lambda (value)
-                        (and value
-                        (string-match-p "event" value)))))
-                      (:discard (:anything t)))
-                  )))
-          (alltodo "Today's Tasks"
-                ((org-agenda-overriding-header "")
-                  (org-super-agenda-groups
-                  '((:name "Today's Tasks"
-                  :todo "TODAY")
-                  (:discard (:anything t))))))
-          (agenda "Habits"
-                 ((org-agenda-span 'day)
-                  (org-agenda-sorting-strategy '((agenda todo-state-down alpha-up)))
-                  (org-agenda-overriding-header "")  
-                  (org-agenda-format-date "") 
-                  (Org-agenda-remove-timeprops t)    
-                  (org-super-agenda-groups
-                   '(
-                      (:name "One Offs"
-                      :property ("CATEGORIES" (lambda (value)
-                                             (message "Property value: '%s'" value)
-                                             (and value
-                                                  (string-match-p "one-off" value)))))
-                     (:name "Personal Habits"
-                      :property ("CATEGORIES" (lambda (value)
-                                             (message "Property value: '%s'" value)
-                                             (and value
-                                                  (string-match-p "habit" value)
-                                                  (string-match-p "personal" value)))))
-                     (:name "Family Habits"
-                      :property ("CATEGORIES" (lambda (value)
-                                             (message "Property value: '%s'" value)
-                                             (and value
-                                                  (string-match-p "habit" value)
-                                                  (string-match-p "family" value)))))
-                     (:name "Work Habits"
-                      :property ("CATEGORIES" (lambda (value)
-                                             (message "Property value: '%s'" value)
-                                             (and value
-                                                  (string-match-p "habit" value)
-                                                  (string-match-p "work" value)))))
-                     (:discard (:anything t))
-                   ))))
-          ${mkTagAgendaBlocks tagAgendaBlocks}
-         ))))
-
+          '(("d" "daily dashboard"
+            ((agenda "Schedule and Habits"
+                    ((org-agenda-span 'day)
+                     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+                     (org-agenda-overriding-header "")
+                     (org-super-agenda-groups
+                      '((:name "Today's Schedule"
+                          :time-grid t)
+                        (:name "Events Today"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "event" value)))))
+                        (:name "Inbox items"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "inbox" value)))))
+                        (:name "Tasks"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "task" value)))))
+                        (:name "Code reviews for today"
+                        :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                    (string-match-p "code-review" value))))
+                        :children t)
+                        (:name "Personal Habits"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "habit" value)
+                                                     (string-match-p "personal" value)))))
+                        (:name "Family Habits"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "habit" value)
+                                                     (string-match-p "family" value)))))
+                        (:name "Work Habits"
+                         :property ("CATEGORIES" (lambda (value)
+                                                (and value
+                                                     (string-match-p "habit" value)
+                                                     (string-match-p "work" value)))))
+                        (:discard (:anything t))))))
+             ))))
                   (defun refresh-org-agenda ()
                     "Refresh org agenda files and rebuild agenda view."
                     (interactive)
@@ -813,35 +772,35 @@ SCHEDULED: %^T
                             (tags   . "○ ")
                             (todo   . "○ ")))
 
-                    (use-package org-modern
-                    :hook (org-agenda-finalize . org-modern-agenda)
-                    :config
-                    (global-org-modern-mode)
-                    :custom
-                    (org-modern-variable-pitch nil)
-                    (org-modern-hide-stars t)        ; Hide leading stars
-                    (org-modern-timestamp t)         ; Pretty timestamps
-                    (org-modern-table t)            ; Pretty tables
-                    (org-modern-label-offset 0.2) ; Reduces scaling to 20% of default
-                    (org-modern-list '((43 . "➜")   ; List bullets (+ character)
-                                        (45 . "–")))  ; List bullets (- character)
-                    (org-modern-checkbox '((88 . "☑")   ; Checked box (X)
-                                            (45 . "☐")    ; Empty box (-)
-                                            (32 . "☐")))  ; Empty box (space)
+                    ;;(use-package org-modern
+                    ;;:hook (org-agenda-finalize . org-modern-agenda)
+                    ;;:config
+                    ;;(global-org-modern-mode)
+                    ;;:custom
+                    ;;(org-modern-variable-pitch nil)
+                    ;;(org-modern-hide-stars t)        ; Hide leading stars
+                    ;;(org-modern-timestamp t)         ; Pretty timestamps
+                    ;;(org-modern-table t)            ; Pretty tables
+                    ;;(org-modern-label-offset 0.2) ; Reduces scaling to 20% of default
+                    ;;(org-modern-list '((43 . "➜")   ; List bullets (+ character)
+                                        ;;(45 . "–")))  ; List bullets (- character)
+                    ;;(org-modern-checkbox '((88 . "☑")   ; Checked box (X)
+                                            ;;(45 . "☐")    ; Empty box (-)
+                                            ;;(32 . "☐")))  ; Empty box (space)
 
-                    (org-modern-tag t)              ; Pretty tags
-                    (org-modern-priority t)         ; Pretty priorities
+                    ;;(org-modern-tag t)              ; Pretty tags
+                    ;;(org-modern-priority t)         ; Pretty priorities
 
-                    (org-modern-todo t)             ; Pretty todo keywords
-                    (org-modern-block-fringe t)     ; Add fringe markers to blocks
-                    (org-modern-block-name t)       ; Pretty source block names
+                    ;;(org-modern-todo t)             ; Pretty todo keywords
+                    ;;(org-modern-block-fringe t)     ; Add fringe markers to blocks
+                    ;;(org-modern-block-name t)       ; Pretty source block names
 
                     ;;(org-modern-checkbox t)         ; Pretty checkboxes
                     ;;(org-modern-statistics t)       ; Pretty statistics cookies
 
-                    (org-modern-table-vertical 1)   ; Table spacing
-                    (org-modern-table-horizontal 0.2) ; Table spacing
-                    )
+                    ;;(org-modern-table-vertical 1)   ; Table spacing
+                    ;;(org-modern-table-horizontal 0.2) ; Table spacing
+                    ;;)
 
                     (add-hook 'org-mode-hook (lambda ()
                           (variable-pitch-mode))
@@ -868,19 +827,6 @@ SCHEDULED: %^T
                     '(variable-pitch ((t (:height 140))))
                     '(org-property-value ((t (:height 140))))
                     '(org-special-keyword ((t (:height 140)))))
-
-            (setq org-modern-todo-faces
-                  '(("TODO" . (:weight bold :foreground "grey50"))
-                    ("DONE" . (:weight bold :foreground "gray50"))
-                    ("STARTED" . (:weight bold :foreground "grey60"))
-                    ("BLOCKED" . (:weight bold :foreground "gray70"))
-                    ("TODAY" . (:weight bold :foreground "red"))
-                    ("AWAITING-REVIEW" . (:weight bold :foreground "orange"))
-                    ("REVIEWED" . (:weight bold :foreground "gray80"))
-                    ("AWAITING-QA" . (:weight bold :foreground "orange"))
-                    ("AWAITING-RELEASE" . (:weight bold :foreground "orange"))
-                    ("AWAITING-USER" . (:weight bold :foreground "orange"))
-                    ("SKIPPED" . (:weight bold :foreground "gray50"))))
 
             (setq org-agenda-span 'day
                   org-agenda-start-on-weekday nil) ; Start on current day instead of Monday
@@ -966,9 +912,7 @@ SCHEDULED: %^T
       :PR_URL: %s
       :REPO: %s
       :AUTHOR: %s
-      :TEAM: Platform
-      :TYPE: Review
-      :STATUS: Not-Started
+      :CATEGORIES: code-review
       :END:
 
       [[%s][Open in GitHub]]
@@ -1012,9 +956,9 @@ SCHEDULED: %^T
   themeConfig =
     #lisp
     ''
-      (use-package poet-theme
+      (use-package solarized-theme
       :config
-      (load-theme 'poet-dark t))
+      (load-theme 'solarized-light t))
     '';
 
   packages = epkgs:
@@ -1054,7 +998,6 @@ SCHEDULED: %^T
       flycheck
       forge
       ghub
-      org-modern
       org-super-agenda
     ];
 
