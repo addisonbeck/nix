@@ -63,7 +63,7 @@ in
       "pm.max_children" = 32;
       "pm.start_servers" = 2;
       "pm.min_spare_servers" = 2;
-      "pm.max_spare_servers" = 4;
+      "pm.max_spare_servers" = 5;
       "php_admin_value[session.cookie_secure]" = "On";
       "php_admin_value[session.cookie_httponly]" = "On";
     };
