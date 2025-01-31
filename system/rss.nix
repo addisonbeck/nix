@@ -1,4 +1,9 @@
-{ config, modulesPath, ... }:
+{ config, pkgs, modulesPath, ... }:
+let
+    authorizedKeys = pkgs.writeText "authorized_keys" ''
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw
+  '';
+in
 {
   imports = [
     (modulesPath + "/virtualisation/digital-ocean-config.nix")
@@ -61,6 +66,8 @@
       "pm.max_spare_servers" = 4;
       "php_admin_value[session.cookie_secure]" = "On";
       "php_admin_value[session.cookie_httponly]" = "On";
+    };
   };
-};
+
+  openssh.authorizedKeys.keyFiles = ["${authorizedKeys}"];
 }
