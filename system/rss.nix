@@ -1,8 +1,4 @@
 { config, pkgs, modulesPath, ... }:
-let
-    authorizedKeys = pkgs.writeText "authorized_keys" ''
-  '';
-in
 {
   imports = [
     (modulesPath + "/virtualisation/digital-ocean-config.nix")
@@ -29,6 +25,7 @@ in
       };
     }
   ];
+
   services.freshrss = {
     enable = true;
     defaultUser = "me";
@@ -38,11 +35,19 @@ in
     database = {
       type = "sqlite";
     };
+    phpOptions = {
+      "session.cookie_secure" = "On";
+      "session.cookie_httponly" = "On";
+      "session.cookie_samesite" = "Lax";
+      "session.gc_maxlifetime" = "3600";
+    };
   };
+
   security.acme = {
     acceptTerms = true;
     defaults.email = "acme@addisonbeck.com";
   };
+
   services.nginx = {
     enable = true;
     virtualHosts."rss.addisonbeck.dev" = {
@@ -62,21 +67,28 @@ in
     };
 
   };
+
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [ 80 443 ];
   };
 
-  services.phpfpm.pools.freshrss = {
-    user = config.services.freshrss.user;
-    settings = {
-      "listen" = "/run/phpfpm/freshrss";
-      "listen.owner" = config.services.nginx.user;
-      "pm" = "dynamic";
-      "pm.max_children" = 32;
-      "pm.start_servers" = 2;
-      "pm.min_spare_servers" = 2;
-      "pm.max_spare_servers" = 5;
+  services.phpfpm = {
+    pools.freshrss = {
+      user = config.services.freshrss.user;
+      settings = {
+        "listen" = "/run/phpfpm/freshrss";
+        "listen.owner" = config.services.nginx.user;
+        "pm" = "dynamic";
+        "pm.max_children" = 32;
+        "pm.start_servers" = 2;
+        "pm.min_spare_servers" = 2;
+        "pm.max_spare_servers" = 5;
+        "php_admin_value[session.cookie_secure]" = "On";
+        "php_admin_value[session.cookie_httponly]" = "On";
+        "php_admin_value[session.save_handler]" = "files";
+        "php_admin_value[session.save_path]" = "/tmp";
+      };
     };
   };
 
