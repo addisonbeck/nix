@@ -69,5 +69,7 @@ in
     };
   };
 
-  services.openssh.authorizedKeys.keyFiles = ["${authorizedKeys}"];
+  users.users.root = {
+    openssh.authorizedKeys.keyFiles = ["${authorizedKeys}"];
+  };
 }
