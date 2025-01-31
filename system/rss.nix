@@ -30,7 +30,13 @@
     enable = true;
     defaultUser = "me";
     passwordFile = config.age.secrets.freshrss.path;
+    virtualHost = "rss.addisonbeck.dev";
     baseUrl = "https://rss.addisonbeck.dev";
+  };
+
+  services.nginx.virtualHosts."rss.addisonbeck.dev" = {
+    addSSL = true;
+    enableACME = true;
   };
 
   security.acme = {
