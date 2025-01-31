@@ -34,9 +34,11 @@
       type = "sqlite";
     };
   };
-  services.nginx.virtualHosts."rss.addisonbeck.dev" = {
-    enableACME = false;
-    forceSSL = true;
-    useACMEHost = "rss.addisonbeck.dev";
+  services.nginx = {
+    enable = true;
+    virtualHosts."rss.addisonbeck.dev" = {
+        enableACME = false;
+        forceSSL = true;
+    };
   };
 }
