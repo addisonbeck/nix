@@ -56,6 +56,7 @@
             tryFiles = "$1 /rss.addisonbeck.dev$1/index.php$is_args$args";
             index = "index.php index.html index.htm";
           };
+        };
       };
     };
   };
