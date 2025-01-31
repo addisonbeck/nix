@@ -30,7 +30,6 @@
     defaultUser = "me";
     virtualHost = "rss.addisonbeck.dev";
     baseUrl = "https://rss.addisonbeck.dev";
-    nginx.enable = true;
     database = {
       type = "sqlite";
     };
