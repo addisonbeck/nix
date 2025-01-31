@@ -47,7 +47,6 @@
     virtualHosts."rss.addisonbeck.dev" = {
         enableACME = true;
         forceSSL = true;
-        root = "${config.services.freshrss.package}/p3";  
         extraConfig = ''
           fastcgi_buffers 16 16k;
           fastcgi_buffer_size 32k;
