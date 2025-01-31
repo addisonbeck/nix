@@ -35,6 +35,10 @@
       type = "sqlite";
     };
   };
+  security.acme = {
+    acceptTerms = true;
+    defaults.email = "acme@addisonbeck.com";
+  };
   services.nginx = {
     enable = true;
     virtualHosts."rss.addisonbeck.dev" = {
