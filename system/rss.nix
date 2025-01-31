@@ -26,14 +26,38 @@
     }
   ];
 
-  services.nginx.enable = true;
-
   services.freshrss = {
     enable = true;
     defaultUser = "me";
     passwordFile = config.age.secrets.freshrss.path;
-    baseUrl = "http://rss.addisonbeck.dev";
+    baseUrl = "https://rss.addisonbeck.dev";
     virtualHost = "rss.addisonbeck.dev";
+  };
+
+  services.nginx = {
+    enable = true;
+    virtualHosts = {
+      "rss.addisonbeck.dev" = {
+        forceSSL = true;
+        enableACME = true;
+        locations."~ ^/rss.addisonbeck.dev/.+?\.php(/.*)?$"={
+            root = "${pkgs.freshrss}/p";
+            extraConfig = ''
+              fastcgi_pass unix:${config.services.phpfpm.pools.freshrss.socket};
+              fastcgi_split_path_info ^/l_path}(/.+\.php)(/.*)?$;
+              set $path_info $fastcgi_path_info;
+              fastcgi_param PATH_INFO $path_info;
+              fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+              include ${pkgs.nginx}/conf/fastcgi_params;
+              include ${pkgs.nginx}/conf/fastcgi.conf;
+         '';
+          locations."~ ^/rss.addisonbeck.dev(?!.*\.php)(/.*)?$" = {
+            root = "${pkgs.freshrss}/p";
+            tryFiles = "$1 /rss.addisonbeck.dev$1/index.php$is_args$args";
+            index = "index.php index.html index.htm";
+          };
+      };
+    };
   };
 
   security.acme = {
