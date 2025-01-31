@@ -8,4 +8,5 @@ in {
   "bw-mail-password.age".publicKeys = [me_key];
   "gmail-password.age".publicKeys = [me_key];
   "weechat-plugins-config.age".publicKeys = [me_key];
+  "freshrss.age".publicKeys = [me_key];
 }

@@ -81,7 +81,10 @@
         specialArgs = {
           inherit inputs outputs nixpkgs rootPath conf;
         };
-        modules = [./system/rss.nix];
+        modules = [
+          ./system/rss.nix
+          agenix.nixosModules.default
+        ];
       };
     };
     darwinConfigurations = {
