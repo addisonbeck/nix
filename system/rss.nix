@@ -1,7 +1,6 @@
 { config, pkgs, modulesPath, ... }:
 let
     authorizedKeys = pkgs.writeText "authorized_keys" ''
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw
   '';
 in
 {
@@ -81,7 +80,7 @@ in
     };
   };
 
-  users.users.root = {
-    openssh.authorizedKeys.keyFiles = ["${authorizedKeys}"];
-  };
+  users.users."root".openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw"
+  ];
 }
