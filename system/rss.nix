@@ -35,12 +35,6 @@
     database = {
       type = "sqlite";
     };
-    phpOptions = {
-      "session.cookie_secure" = "On";
-      "session.cookie_httponly" = "On";
-      "session.cookie_samesite" = "Lax";
-      "session.gc_maxlifetime" = "3600";
-    };
   };
 
   security.acme = {
