@@ -68,10 +68,7 @@
   basicConfig =
     #lisp
     ''
-          ;; Set up persistent undo history and backup files in separate directories
-          (setq backup-directory-alist '(("." . "~/.emacs.d/backup"))
-                undo-tree-auto-save-history t
-                undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
+          (setq make-backup-files nil)
 
           ;; Configure indentation behavior
           ;; - Use spaces for indentation instead of tabs
@@ -448,6 +445,13 @@
                           ("editor-plugin-version" . "1.138.0")
                           ("user-agent" . "GithubCopilot/1.138.0")))))
 
+        (advice-add 'gptel-request :around
+        (lambda (orig-fun &rest args)
+            (let ((response (apply orig-fun args)))
+            (when (eq (plist-get response :status) 401)
+                (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+                (apply orig-fun args)))))
+
         (setq gptel-backend gptel-copilot-backend
               gptel-model 'claude-3.5-sonnet
               gptel-auto-save-directory "~/chats"
@@ -551,8 +555,21 @@
       (defun sanitize-filename (name)
       (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
 
+
+(defun elfeed-org-capture ()
+  "Capture current elfeed entry with content into org."
+  (interactive)
+  (let* ((entry (elfeed-entry-title elfeed-show-entry))
+         (link (elfeed-entry-link elfeed-show-entry))
+         (content (elfeed-deref (elfeed-entry-content elfeed-show-entry))))
+    (org-capture nil "e")))
 (setq org-capture-templates
 '(
+(("r" "Elfeed entry"
+         entry
+         (file "~/org/elfeed-saved.org")
+         "* TODO %:description\n:PROPERTIES:\n:URL: %:link\n:END:\n\n%i\n\n%c\n\n%?")
+        )
 ("p" "Personal habit" entry
  (file (lambda () 
          (let ((name (read-string "File name: ")))
@@ -699,6 +716,9 @@ SCHEDULED: %^T
                   (setq org-agenda-time-leading-zero t)
                   (setq org-agenda-todo-keyword-format "%s")  
                   (setq org-agenda-include-diary t)  
+                  (setq org-refile-targets '((nil :maxlevel . 8)               
+                          (org-agenda-files :maxlevel . 2)))
+
                   (require 'diary-lib)
 
                     (use-package org-super-agenda
@@ -732,11 +752,10 @@ SCHEDULED: %^T
                          :property ("CATEGORIES" (lambda (value)
                                                 (and value
                                                      (string-match-p "task" value)))))
-                        (:name "Code reviews for today"
+                        (:name "Code reviews"
                         :property ("CATEGORIES" (lambda (value)
                                                 (and value
-                                                    (string-match-p "code-review" value))))
-                        :children t)
+                                                    (string-match-p "code-review" value)))))
                         (:name "Personal Habits"
                          :property ("CATEGORIES" (lambda (value)
                                                 (and value
@@ -805,7 +824,12 @@ SCHEDULED: %^T
                     (add-hook 'org-mode-hook (lambda ()
                           (variable-pitch-mode))
                     t)
-                    ;;(debug-on-variable-change 'truncate-lines)
+
+                    (defun my-org-auto-save-settings ()
+                    (setq-local auto-save-interval 1)
+                    (setq-local auto-save-timeout 5))
+
+                    (add-hook 'org-mode-hook 'my-org-auto-save-settings)
 
                     (custom-set-faces
                     '(org-document-info-keyword ((t (:height 1.0))))
@@ -961,6 +985,68 @@ SCHEDULED: %^T
       (load-theme 'solarized-light t))
     '';
 
+  elfeedConfig =
+    #lisp
+    ''
+(use-package elfeed
+  :ensure t
+  :bind
+  ("C-x w" . elfeed)
+  :config
+  (evil-define-key 'normal elfeed-search-mode-map
+    (kbd "r") 'elfeed-search-untag-all-unread
+    (kbd "u") 'elfeed-search-tag-all-unread
+    (kbd "RET") 'elfeed-search-show-entry
+    (kbd "q") 'quit-window
+    (kbd "g") 'elfeed-update
+    (kbd "G") 'elfeed-search-update--force)
+
+  (evil-define-key 'normal elfeed-show-mode-map
+    (kbd "r") 'elfeed-show-untag-unread
+    (kbd "u") 'elfeed-show-tag-unread
+    (kbd "q") 'quit-window
+    (kbd "n") 'elfeed-show-next
+    (kbd "p") 'elfeed-show-prev
+    (kbd "b") 'elfeed-show-visit)
+
+  (setq elfeed-search-filter "@2-weeks-ago +unread")
+  (setq elfeed-sort-order 'descending))
+
+(use-package elfeed-org
+  :ensure t
+  :config
+  (elfeed-org)
+  (setq rmh-elfeed-org-files '("~/notes/elfeed.org")))
+
+(defun my/elfeed-reset ()
+  "Reset elfeed database and update."
+  (interactive)
+  (when (yes-or-no-p "Really reset elfeed database? ")
+    (let ((db (expand-file-name "~/.elfeed/index"))
+          (data (expand-file-name "~/.elfeed/data")))
+      (message "Checking paths: index=%s data=%s" db data)
+      
+      ;; Try to close elfeed first
+      (elfeed-db-unload)
+      (message "Database unloaded")
+      
+      ;; Delete files with error checking
+      (condition-case err
+          (progn
+            (when (file-exists-p db)
+              (delete-file db)
+              (message "Deleted index file"))
+            (when (file-exists-p data)
+              (delete-directory data t)
+              (message "Deleted data directory")))
+        (error (message "Error during deletion: %s" err)))
+      
+      ;; Restart elfeed
+      (elfeed)
+      (elfeed-search-update--force)
+      (message "Reset complete"))))
+    '';
+
   packages = epkgs:
     with epkgs; [
       use-package
@@ -999,6 +1085,8 @@ SCHEDULED: %^T
       forge
       ghub
       org-super-agenda
+      elfeed
+      elfeed-org
     ];
 
   emacsConfig = pkgs.writeText "config.el" ''
@@ -1020,6 +1108,7 @@ SCHEDULED: %^T
     ${whichKeyConfig}
     ${fontConfig}
     ${themeConfig}
+    ${elfeedConfig}
     (desktop-save-mode 1)
   '';
 in {

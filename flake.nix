@@ -76,6 +76,13 @@
         };
         modules = [./system/minecraft.nix];
       };
+      rss = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = {
+          inherit inputs outputs nixpkgs rootPath conf;
+        };
+        modules = [./system/rss.nix];
+      };
     };
     darwinConfigurations = {
       bw = nix-darwin.lib.darwinSystem {
