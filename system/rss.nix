@@ -31,7 +31,7 @@
     defaultUser = "me";
     passwordFile = config.age.secrets.freshrss.path;
     #virtualHost = "rss.addisonbeck.dev";
-    virtualHost = null;
+    virtualHost = "rss.addisonbeck.dev";
     baseUrl = "https://rss.addisonbeck.dev";
     database = {
       type = "sqlite";
