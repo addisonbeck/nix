@@ -38,7 +38,7 @@
   services.nginx = {
     enable = true;
     virtualHosts."rss.addisonbeck.dev" = {
-        enableACME = false;
+        enableACME = true;
         forceSSL = true;
     };
   };
