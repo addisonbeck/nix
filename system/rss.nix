@@ -31,13 +31,17 @@
     defaultUser = "me";
     passwordFile = config.age.secrets.freshrss.path;
     baseUrl = "https://rss.addisonbeck.dev";
-    virtualHost = "rss.addisonbeck.dev";
+    virtualHost = null; 
   };
 
   services.nginx.virtualHosts."rss.addisonbeck.dev" = {
     addSSL = true;
     enableACME = true;
+    forceSSL = true;
     root = "${config.services.freshrss.package}/p";
+
+    useACMEHost = "rss.addisonbeck.dev";
+
     extraConfig = ''
       add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
     '';
@@ -45,6 +49,7 @@
     # php files handling
     # this regex is mandatory because of the API
     locations."~ ^.+?\.php(/.*)?$".extraConfig = ''
+      fastcgi_pass unix:${config.services.phpfpm.pools.${config.services.freshrss.pool}.socket};
       fastcgi_split_path_info ^(.+\.php)(/.*)$;
       # By default, the variable PATH_INFO is not set under PHP-FPM
       # But FreshRSS API greader.php need it. If you have a “Bad Request” error, double check this var!
