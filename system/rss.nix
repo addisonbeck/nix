@@ -27,7 +27,7 @@
   ];
   services.freshrss = {
     enable = true;
-    virtualHost = "rss.addisonbeck.com";
+    virtualHost = "rss.addisonbeck.dev";
     nginx.enable = true;
     database = {
       type = "sqlite";
