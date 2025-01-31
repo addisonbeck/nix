@@ -26,11 +26,13 @@
     }
   ];
 
+  services.nginx.enable = true;
+
   services.freshrss = {
     enable = true;
     defaultUser = "me";
     passwordFile = config.age.secrets.freshrss.path;
-    baseUrl = "https://rss.addisonbeck.dev";
+    baseUrl = "http://rss.addisonbeck.dev";
     virtualHost = "rss.addisonbeck.dev";
   };
 
