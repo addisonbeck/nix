@@ -27,10 +27,17 @@
   ];
   services.freshrss = {
     enable = true;
+    defaultUser = "me";
     virtualHost = "rss.addisonbeck.dev";
+    baseUrl = "https://rss.addisonbeck.dev";
     nginx.enable = true;
     database = {
       type = "sqlite";
     };
+  };
+  services.nginx.virtualHosts."rss.addisonbeck.dev" = {
+    enableACME = false;
+    forceSSL = true;
+    useACMEHost = "rss.addisonbeck.dev";
   };
 }
