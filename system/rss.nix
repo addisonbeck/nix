@@ -68,11 +68,6 @@
         include ${config.services.nginx.package}/conf/fastcgi_params;
         include ${config.services.nginx.package}/conf/fastcgi.conf;
         '';
-
-        locations."/" = {
-        tryFiles = "$uri $uri/ index.php";
-        index = "index.php index.html index.htm";
-        };
     };
 
   };
