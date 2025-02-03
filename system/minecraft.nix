@@ -69,11 +69,11 @@
               };
               Geyser = pkgs.fetchurl {
                 url = "https://cdn.modrinth.com/data/wKkoqHrH/versions/aq2OFs4I/geyser-fabric-Geyser-Fabric-2.6.0-b754.jar";
-                sha512 = "sha512-n3KKYkCmt0lO+icM4TPlcOqU8ST1yzB/+ZJHo583SY20V59pPujpnLtrotxS6wIfDngHsm72OPZXdqZCK/vGRA==";
+                sha256 = "sha256-cc8i208l3wcpwmMoHgOAMx3kdH3apW6m3E9ZARToxdk=";
               };
               Floodgate = pkgs.fetchurl {
                 url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/nyg969vQ/Floodgate-Fabric-2.2.4-b43.jar";
-                hash = "sha256-ifzWrdZ4KJoQpFspdhmOQ+FJtwVMaGtfy4XQOcewV0Y=";
+                hash = "sha256-UbF/VyMY4Eo0SbtZqsCr0739kYbYK2ku0URZNjUPrSU=";
               };
             });
           };

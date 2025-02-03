@@ -30,7 +30,7 @@ in {
       ./with/program/tmux.nix
       ./with/program/d.nix
       inputs.nixvim.homeManagerModules.default
-      ./with/program/nixvim.nix
+      ./with/program/neovim
       ./with/secret/github.nix
       ./with/program/lazygit.nix
       ./with/program/github-cli.nix
