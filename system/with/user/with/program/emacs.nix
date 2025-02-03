@@ -275,7 +275,7 @@
                         "~/bitwarden/clients"
                         "~/bitwarden/server"
                         "~/bitwarden/sdk"
-                        "~/bitwarden/sdk-interanl"
+                        "~/bitwarden/sdk-internal"
                         "~/bitwarden/wg-open-source-at-bitwarden"
                         "~/bitwarden/contributing-docs"
                         "~/d"
@@ -556,20 +556,8 @@
       (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
 
 
-(defun elfeed-org-capture ()
-  "Capture current elfeed entry with content into org."
-  (interactive)
-  (let* ((entry (elfeed-entry-title elfeed-show-entry))
-         (link (elfeed-entry-link elfeed-show-entry))
-         (content (elfeed-deref (elfeed-entry-content elfeed-show-entry))))
-    (org-capture nil "e")))
 (setq org-capture-templates
 '(
-(("r" "Elfeed entry"
-         entry
-         (file "~/org/elfeed-saved.org")
-         "* TODO %:description\n:PROPERTIES:\n:URL: %:link\n:END:\n\n%i\n\n%c\n\n%?")
-        )
 ("p" "Personal habit" entry
  (file (lambda () 
          (let ((name (read-string "File name: ")))
@@ -742,36 +730,44 @@ SCHEDULED: %^T
                           :time-grid t)
                         (:name "Events Today"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking events: %s" value)
                                                 (and value
                                                      (string-match-p "event" value)))))
                         (:name "Inbox items"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking inbox: %s" value)
                                                 (and value
                                                      (string-match-p "inbox" value)))))
                         (:name "Tasks"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking tasks: %s" value)
                                                 (and value
                                                      (string-match-p "task" value)))))
                         (:name "Code reviews"
                         :property ("CATEGORIES" (lambda (value)
+                          (message "Checking code reviews: %s" value)
                                                 (and value
                                                     (string-match-p "code-review" value)))))
                         (:name "Personal Habits"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking personal habits: %s" value)
                                                 (and value
                                                      (string-match-p "habit" value)
                                                      (string-match-p "personal" value)))))
                         (:name "Family Habits"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking family habits: %s" value)
                                                 (and value
                                                      (string-match-p "habit" value)
                                                      (string-match-p "family" value)))))
                         (:name "Work Habits"
                          :property ("CATEGORIES" (lambda (value)
+                          (message "Checking work habits: %s" value)
                                                 (and value
                                                      (string-match-p "habit" value)
                                                      (string-match-p "work" value)))))
-                        (:discard (:anything t))))))
+                        ;;(:discard (:anything t))
+                      ))))
              ))))
                   (defun refresh-org-agenda ()
                     "Refresh org agenda files and rebuild agenda view."
@@ -980,9 +976,9 @@ SCHEDULED: %^T
   themeConfig =
     #lisp
     ''
-      (use-package solarized-theme
+      (use-package gruvbox-theme
       :config
-      (load-theme 'solarized-light t))
+      (load-theme 'gruvbox-dark-hard t))
     '';
 
   elfeedConfig =
@@ -1009,14 +1005,25 @@ SCHEDULED: %^T
     (kbd "p") 'elfeed-show-prev
     (kbd "b") 'elfeed-show-visit)
 
-  (setq elfeed-search-filter "@2-weeks-ago +unread")
+  (setq elfeed-search-filter "+unread or +starred")
   (setq elfeed-sort-order 'descending))
 
-(use-package elfeed-org
+(use-package elfeed-protocol
   :ensure t
+  :after elfeed
+  :custom
+  (elfeed-use-curl t)
+  (elfeed-protocol-enabled-protocols '(fever))
+  (setq elfeed-protocol-log-trace t)
+  (elfeed-protocol-fever-update-unread-only t)
+  (elfeed-protocol-fever-fetch-category-as-tag t)
+  (elfeed-protocol-feeds '(("fever+https://me@rss.addisonbeck.dev"
+                                 :api-url "https://rss.addisonbeck.dev/api/fever.php"
+                                 :use-authinfo t)))
+  (elfeed-protocol-enabled-protocols '(fever))
   :config
-  (elfeed-org)
-  (setq rmh-elfeed-org-files '("~/notes/elfeed.org")))
+  (elfeed-protocol-enable))
+
 
 (defun my/elfeed-reset ()
   "Reset elfeed database and update."
@@ -1086,7 +1093,7 @@ SCHEDULED: %^T
       ghub
       org-super-agenda
       elfeed
-      elfeed-org
+      elfeed-protocol
     ];
 
   emacsConfig = pkgs.writeText "config.el" ''

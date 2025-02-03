@@ -32,6 +32,7 @@
     passwordFile = config.age.secrets.freshrss.path;
     baseUrl = "https://rss.addisonbeck.dev";
     virtualHost = "rss.addisonbeck.dev";
+    extensions = [ pkgs.freshrss-extensions.youtube ];
   };
 
   services.nginx = {
