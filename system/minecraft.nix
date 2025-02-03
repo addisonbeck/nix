@@ -64,15 +64,15 @@
           symlinks = {
             mods = pkgs.linkFarmFromDrvs "mods" (builtins.attrValues {
               FabricAPI = pkgs.fetchurl {
-                url = "https://cdn.modrinth.com/data/P7dR8mSH/versions/iFnYBUfS/fabric-api-0.106.0%2B1.21.1.jar";
-                hash = "sha256-sUONHcxgqL+bZv17oWWaJCSiUZxwh/pYrQ6+l9edWKg=";
+                url = "https://cdn.modrinth.com/data/P7dR8mSH/versions/15ijyoD6/fabric-api-0.113.0%2B1.21.4.jar";
+                hash = "sha256-V6sJzn/0qgbpZIjbjpbQynvHqjcRcNkVqaKmmamXRkU=";
               };
               Geyser = pkgs.fetchurl {
-                url = "https://cdn.modrinth.com/data/wKkoqHrH/versions/9l1uUfeS/geyser-fabric-Geyser-Fabric-2.4.4-b694.jar";
+                url = "https://cdn.modrinth.com/data/wKkoqHrH/versions/aq2OFs4I/geyser-fabric-Geyser-Fabric-2.6.0-b754.jar";
                 sha512 = "sha512-n3KKYkCmt0lO+icM4TPlcOqU8ST1yzB/+ZJHo583SY20V59pPujpnLtrotxS6wIfDngHsm72OPZXdqZCK/vGRA==";
               };
               Floodgate = pkgs.fetchurl {
-                url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/wPa1pHZJ/Floodgate-Fabric-2.2.4-b36.jar";
+                url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/nyg969vQ/Floodgate-Fabric-2.2.4-b43.jar";
                 hash = "sha256-ifzWrdZ4KJoQpFspdhmOQ+FJtwVMaGtfy4XQOcewV0Y=";
               };
             });
