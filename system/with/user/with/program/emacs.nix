@@ -149,58 +149,58 @@
   evilConfig =
     #lisp
     ''
-        ;; Set evil options before loading evil
-        (setq evil-want-integration t)
-        (setq evil-want-keybinding nil)  ;; Moved before evil loading
-        (setq evil-want-C-u-scroll t)
+      ;; Set evil options before loading evil
+      (setq evil-want-integration t)
+      (setq evil-want-keybinding nil)  ;; Moved before evil loading
+      (setq evil-want-C-u-scroll t)
 
-        (use-package evil
-          :ensure t
-          :config
-          (evil-mode 1)
-          ;; Define functions to move cursor half page
-          (defun evil-move-half-page-down ()
-            "Move cursor half page down"
-            (interactive)
-            (evil-next-line (/ (window-height) 4))
-            (evil-scroll-line-to-center nil))
-
-          (defun evil-move-half-page-up ()
-            "Move cursor half page up"
-            (interactive)
-            (evil-previous-line (/ (window-height) 4))
-            (evil-scroll-line-to-center nil))
-
-          ;; Bind J and K to the new functions
-          (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
-          (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
-
-        (use-package evil-collection
-          :ensure t
-          :after evil
-          :config
-          (evil-collection-init))
-
-          (with-eval-after-load 'evil-collection-magit
-                                (evil-collection-define-key 'normal 'magit-status-mode-map
-                                "V" #'magit-start-region-select))
-
-        (use-package evil-org
+      (use-package evil
         :ensure t
-        :after org
-        :hook (org-mode . evil-org-mode)
         :config
-        (require 'evil-org-agenda)
-        (evil-org-agenda-set-keys)
-        ;; Add your custom keys AFTER evil-org-agenda-set-keys
-        (evil-define-key 'motion org-agenda-mode-map
-            (kbd "<left>") 'org-agenda-earlier
-            (kbd "<right>") 'org-agenda-later
-            (kbd "C-c j") 'org-agenda-goto-date
-            (kbd "gx")  'org-agenda-open-link
-            (kbd "t") 'org-agenda-todo
-            (kbd "T") 'org-agenda-todo-yesterday
-        ))
+        (evil-mode 1)
+        ;; Define functions to move cursor half page
+        (defun evil-move-half-page-down ()
+          "Move cursor half page down"
+          (interactive)
+          (evil-next-line (/ (window-height) 4))
+          (evil-scroll-line-to-center nil))
+
+        (defun evil-move-half-page-up ()
+          "Move cursor half page up"
+          (interactive)
+          (evil-previous-line (/ (window-height) 4))
+          (evil-scroll-line-to-center nil))
+
+        ;; Bind J and K to the new functions
+        (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
+        (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
+
+      (use-package evil-collection
+        :ensure t
+        :after evil
+        :config
+        (evil-collection-init))
+
+        (with-eval-after-load 'evil-collection-magit
+                              (evil-collection-define-key 'normal 'magit-status-mode-map
+                              "V" #'magit-start-region-select))
+
+      (use-package evil-org
+      :ensure t
+      :after org
+      :hook (org-mode . evil-org-mode)
+      :config
+      (require 'evil-org-agenda)
+      (evil-org-agenda-set-keys)
+      ;; Add your custom keys AFTER evil-org-agenda-set-keys
+      (evil-define-key 'motion org-agenda-mode-map
+          (kbd "<left>") 'org-agenda-earlier
+          (kbd "<right>") 'org-agenda-later
+          (kbd "C-c j") 'org-agenda-goto-date
+          (kbd "gx")  'org-agenda-open-link
+          (kbd "t") 'org-agenda-todo
+          (kbd "T") 'org-agenda-todo-yesterday
+      ))
     '';
 
   serverConfig =
@@ -314,108 +314,133 @@
   gptelConfig =
     #lisp
     ''
-      (use-package gptel
-        :ensure t
-        :config
-        ;; Token access for GitHub Copilot
-        (setq gptel-api-key
-              (lambda ()
-                (when-let ((auth (car (auth-source-search
-                                     :host "github.copilot"
-                                     :require '(:secret)))))
-                  (let ((token (plist-get auth :secret)))
-                    (if (functionp token)
-                        (funcall token)
-                      token)))))
+            (use-package gptel
+              :ensure t
+              :config
+              ;; Token access for GitHub Copilot
+      (defvar gptel-github-api-key
+        (lambda ()
+          (when-let ((auth (car (auth-source-search
+                                :host "github.copilot"
+                                :require '(:secret)))))
+            (let ((token (plist-get auth :secret)))
+              (if (functionp token)
+                  (funcall token)
+                token)))))
 
-        ;; Function to exchange GitHub token for Copilot token
-        (defun gptel-copilot--exchange-token ()
-          (let* ((github-token (gptel--get-api-key))
-                 (url-request-method "GET")
-                 (url-request-extra-headers
-                  `(("Authorization" . ,(format "Bearer %s" github-token))
-                    ("Accept" . "application/json")))
-                 response-buffer token-str)
-            (setq response-buffer
-                  (url-retrieve-synchronously
-                   "https://api.github.com/copilot_internal/v2/token"
-                   t nil 30))
-            (when response-buffer
-              (with-current-buffer response-buffer
-                (goto-char (point-min))
-                (when (re-search-forward "^$" nil t)
-                  (forward-char)
-                  (condition-case nil
-                      (let ((json-response (json-read)))
-                        (setq token-str (cdr (assoc 'token json-response))))
-                    (error nil)))
-                (kill-buffer response-buffer)))
-            token-str))
+      (defun gptel-copilot--exchange-token ()
+        (let* ((github-token (if (functionp gptel-github-api-key)
+                                (funcall gptel-github-api-key)
+                              gptel-github-api-key))
+               (url-request-method "GET")
+               (url-request-extra-headers
+                `(("Authorization" . ,(format "Bearer %s" github-token))
+                  ("Accept" . "application/json")))
+               response-buffer token-str)
+          (setq response-buffer
+                (url-retrieve-synchronously
+                 "https://api.github.com/copilot_internal/v2/token"
+                 t nil 30))
+          (when response-buffer
+            (with-current-buffer response-buffer
+              (goto-char (point-min))
+              (when (re-search-forward "^$" nil t)
+                (forward-char)
+                (condition-case nil
+                    (let ((json-response (json-read)))
+                      (setq token-str (cdr (assoc 'token json-response))))
+                  (error nil)))
+              (kill-buffer response-buffer)))
+          token-str))
 
-        ;; Store the exchanged token
-        (defvar gptel-copilot--exchanged-token nil)
-        (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+              ;; Store the exchanged token
+              (defvar gptel-copilot--exchanged-token nil)
+              (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
 
-        ;; Update gptel-api-key to use the exchanged token
-        (setq gptel-api-key
-              (lambda ()
-                (or gptel-copilot--exchanged-token
-                    (setq gptel-copilot--exchanged-token
-                          (gptel-copilot--exchange-token)))))
+              ;; Update gptel-api-key to use the exchanged token
+              (setq gptel-api-key
+                    (lambda ()
+                      (or gptel-copilot--exchanged-token
+                          (setq gptel-copilot--exchanged-token
+                                (gptel-copilot--exchange-token)))))
 
-        ;; Advice to include full path in message
-        (defun gptel--insert-at-beginning-with-path (initial-point)
-          "Include full path when showing buffer contents."
-          (let ((full-path (buffer-file-name)))
-            (goto-char initial-point)
-            (insert
-             (format "In file %s:\n\n"
-                     (if full-path
-                         (expand-file-name full-path)
-                       (buffer-name))))))
+              ;; Advice to include full path in message
+              (defun gptel--insert-at-beginning-with-path (initial-point)
+                "Include full path when showing buffer contents."
+                (let ((full-path (buffer-file-name)))
+                  (goto-char initial-point)
+                  (insert
+                   (format "In file %s:\n\n"
+                           (if full-path
+                               (expand-file-name full-path)
+                             (buffer-name))))))
 
-        (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+              (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
 
-        ;; Create custom backend for GitHub Copilot
-        (setq gptel-copilot-backend
-              (gptel-make-openai
-               "github-copilot"
-               :host "api.githubcopilot.com/"
-               :endpoint "chat/completions"
-               :key 'gptel-api-key
-               :stream t
-               :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-                        (claude-3.5-sonnet :name "claude-3.5-sonnet")
-                        (o1-2024-12-17 :name "o1-2024-12-17")
-                        (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-               :header (lambda ()
-                        `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-                          ("Content-Type" . "application/json")
-                          ("Accept" . "application/json")
-                          ("Copilot-Integration-Id" . "vscode-chat")
-                          ("editor-version" . "vscode/1.84.2")
-                          ("editor-plugin-version" . "1.138.0")
-                          ("user-agent" . "GithubCopilot/1.138.0")))))
+              ;; Create custom backend for GitHub Copilot
+              (setq gptel-copilot-backend
+                    (gptel-make-openai
+                     "github-copilot"
+                     :host "api.githubcopilot.com/"
+                     :endpoint "chat/completions"
+                     :key 'gptel-api-key
+                     :stream t
+                     :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+                              (claude-3.5-sonnet :name "claude-3.5-sonnet")
+                              (o1-2024-12-17 :name "o1-2024-12-17")
+                              (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+                     :header (lambda ()
+                              `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+                                ("Content-Type" . "application/json")
+                                ("Accept" . "application/json")
+                                ("Copilot-Integration-Id" . "vscode-chat")
+                                ("editor-version" . "vscode/1.84.2")
+                                ("editor-plugin-version" . "1.138.0")
+                                ("user-agent" . "GithubCopilot/1.138.0")))))
 
-        (advice-add 'gptel-request :around
-        (lambda (orig-fun &rest args)
-            (let ((response (apply orig-fun args)))
-            (when (eq (plist-get response :status) 401)
-                (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
-                (apply orig-fun args)))))
+      (advice-add 'gptel--url-parse-response :around
+        (lambda (orig-fun backend proc-info)
+          (let ((result (funcall orig-fun backend proc-info)))
+            (when (or (and (string-match-p "400" (cadr result))
+                           (string-match-p "Malformed JSON" (cadr result)))
+                      (string-match-p "401" (cadr result)))
+              (message "Token invalid or expired, refreshing...")
+              (setq gptel-copilot--exchanged-token nil))
+            result)))
 
-        (setq gptel-backend gptel-copilot-backend
-              gptel-model 'claude-3.5-sonnet
-              gptel-auto-save-directory "~/chats"
-              gptel--mark-prompts-and-responses nil
-              gptel-auto-save-buffers t
-              gptel-prompt-prefix
-                "You are a large language model living in Emacs and a helpful assistant.
-                You are assisting a software engineer at Bitwarden, an open source password management solution.
-                When expressing uncertainty, make it clear.
-                When making assumptions, state them explicitly.
-                Always respond concisely."
-              gptel-default-mode 'markdown-mode))
+      (defun test-gptel-token-refresh ()
+        "Test gptel token refresh logic."
+        (interactive)
+        (message "=== Starting Token Test ===")
+        (message "Current token (first 50 chars): %s..."
+                 (substring gptel-copilot--exchanged-token 0 50))
+
+        ;; Force token refresh by setting to nil
+        (setq gptel-copilot--exchanged-token nil)
+        (message "Cleared token, making request...")
+
+        ;; Make request that should trigger token refresh
+        (gptel-request
+         "Test message"
+         :callback (lambda (response info)
+                     (message "=== Request completed ===")
+                     (message "New token (first 50 chars): %s..."
+                             (substring gptel-copilot--exchanged-token 0 50))
+                     (message "Response status: %s" (plist-get info :status))
+                     (message "Got response: %s" response))))
+
+              (setq gptel-backend gptel-copilot-backend
+                    gptel-model 'claude-3.5-sonnet
+                    gptel-auto-save-directory "~/chats"
+                    gptel--mark-prompts-and-responses nil
+                    gptel-auto-save-buffers t
+                    gptel-prompt-prefix
+                      "You are a large language model living in Emacs and a helpful assistant.
+                      You are assisting a software engineer at Bitwarden, an open source password management solution.
+                      When expressing uncertainty, make it clear.
+                      When making assumptions, state them explicitly.
+                      Always respond concisely."
+                    gptel-default-mode 'markdown-mode))
 
     '';
 
@@ -470,348 +495,348 @@
   notesConfig =
     #lisp
     ''
-      (message "Starting notes config...")
+            (message "Starting notes config...")
 
-      ;; Basic settings
-      (setq notes-directory "~/notes")
-      (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
+            ;; Basic settings
+            (setq notes-directory "~/notes")
+            (setq markdown-command "${pkgs.pandoc}/bin/pandoc")
 
-      ;; Markdown configuration
-      (use-package markdown-mode
-        :ensure t
-        :mode (("\\.md\\'" . markdown-mode)
-               ("\\.markdown\\'" . markdown-mode)))
+            ;; Markdown configuration
+            (use-package markdown-mode
+              :ensure t
+              :mode (("\\.md\\'" . markdown-mode)
+                     ("\\.markdown\\'" . markdown-mode)))
 
-      ;; Basic org settings
-      (use-package org
-        :ensure t
-        :bind
-        (("C-c a" . org-agenda))
-        :config
-        (setq org-directory "~/notes")
-        (setq org-startup-truncated nil)
-        (setq org-agenda-files (list org-directory))
-        (setq org-log-done 'time)
-        (setq org-log-into-drawer t)
-        (setq org-global-properties
-              '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-                ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
-        (setq org-clock-persist 'history
-              org-clock-idle-time 15
-              org-clock-into-drawer t)
-        (org-clock-persistence-insinuate))
+            ;; Basic org settings
+            (use-package org
+              :ensure t
+              :bind
+              (("C-c a" . org-agenda))
+              :config
+              (setq org-directory "~/notes")
+              (setq org-startup-truncated nil)
+              (setq org-agenda-files (list org-directory))
+              (setq org-log-done 'time)
+              (setq org-log-into-drawer t)
+              (setq org-global-properties
+                    '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
+                      ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
+              (setq org-clock-persist 'history
+                    org-clock-idle-time 15
+                    org-clock-into-drawer t)
+              (org-clock-persistence-insinuate))
 
-      ;; Add the global keybinding explicitly
-      (global-set-key (kbd "C-c c") 'org-capture)
+            ;; Add the global keybinding explicitly
+            (global-set-key (kbd "C-c c") 'org-capture)
 
-      (defun sanitize-filename (name)
-      (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
-
-
-(setq org-capture-templates
-'(
-("p" "Personal habit" entry
- (file (lambda () 
-         (let ((name (read-string "File name: ")))
-           (expand-file-name (concat (sanitize-filename name) ".org")
-                           "~/notes/"))))
- "* TODO %^{Task description}
-SCHEDULED: <%<%Y-%m-%d> +1d>
-:PROPERTIES:
-:CATEGORIES: personal habit
-:CUSTOM_ID: %^{Custom id}
-:END:")
-("f" "Family habit" entry
- (file (lambda () 
-         (let ((name (read-string "File name: ")))
-           (expand-file-name (concat (sanitize-filename name) ".org")
-                           "~/notes/"))))
- "* TODO %^{Task description}
-SCHEDULED: <%<%Y-%m-%d> +1d>
-:PROPERTIES:
-:CATEGORIES: family habit
-:CUSTOM_ID: %^{Custom id}
-:END:")
-("w" "Work habit" entry
- (file (lambda () 
-         (let ((name (read-string "File name: ")))
-           (expand-file-name (concat (sanitize-filename name) ".org")
-                           "~/notes/"))))
- "* TODO %^{Task description}
-SCHEDULED: <%<%Y-%m-%d> +1d>
-:PROPERTIES:
-:CATEGORIES: work habit
-:CUSTOM_ID: %^{Custom id}
-:END:")
-("j" "Journal Entry" plain
-         (function (lambda ()
-           (let* ((id (completing-read "Choose entry: "
-                                     '("me" "emily" "lincoln" "nora" "fern" "harry")))
-                  (file "~/notes/log.org")
-                  (full-id (concat "log-" id)))
-             (find-file file)
-             (goto-char (point-min))
-             (when (re-search-forward (format ":CUSTOM_ID: %s" full-id) nil t)
-               (org-back-to-heading t)
-               (re-search-forward ":LOGBOOK:" nil t)
-               (forward-line 1)))))
-         "- Note taken on %U \\\\\n  %?"
-         :immediate-finish nil)
-("e" "Event" entry
-           (file "~/notes/events.org")
-           "* %^{Description}
-SCHEDULED: %^T
-:PROPERTIES:
-:CUSTOM_ID: %^{ID}
-:CATEGORIES: %^{Category|${categoriesString}}
-:END:
-
-  %?"
-           :immediate-finish nil)
-))
-
-      ;; Face customization
-      (with-eval-after-load 'org
-        (set-face-attribute 'org-scheduled-previously nil
-          :foreground "#d79921"
-          :weight 'bold))
+            (defun sanitize-filename (name)
+            (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
 
 
-      ;; Date tracking functions
-      (defun my/org-set-completed-date ()
-        (when (equal "Done" (org-entry-get nil "STATUS"))
-          (org-entry-put nil "COMPLETED"
-            (format-time-string "[%Y-%m-%d %a]"))))
+      (setq org-capture-templates
+      '(
+      ("p" "Personal habit" entry
+       (file (lambda ()
+               (let ((name (read-string "File name: ")))
+                 (expand-file-name (concat (sanitize-filename name) ".org")
+                                 "~/notes/"))))
+       "* TODO %^{Task description}
+      SCHEDULED: <%<%Y-%m-%d> +1d>
+      :PROPERTIES:
+      :CATEGORIES: personal habit
+      :CUSTOM_ID: %^{Custom id}
+      :END:")
+      ("f" "Family habit" entry
+       (file (lambda ()
+               (let ((name (read-string "File name: ")))
+                 (expand-file-name (concat (sanitize-filename name) ".org")
+                                 "~/notes/"))))
+       "* TODO %^{Task description}
+      SCHEDULED: <%<%Y-%m-%d> +1d>
+      :PROPERTIES:
+      :CATEGORIES: family habit
+      :CUSTOM_ID: %^{Custom id}
+      :END:")
+      ("w" "Work habit" entry
+       (file (lambda ()
+               (let ((name (read-string "File name: ")))
+                 (expand-file-name (concat (sanitize-filename name) ".org")
+                                 "~/notes/"))))
+       "* TODO %^{Task description}
+      SCHEDULED: <%<%Y-%m-%d> +1d>
+      :PROPERTIES:
+      :CATEGORIES: work habit
+      :CUSTOM_ID: %^{Custom id}
+      :END:")
+      ("j" "Journal Entry" plain
+               (function (lambda ()
+                 (let* ((id (completing-read "Choose entry: "
+                                           '("me" "emily" "lincoln" "nora" "fern" "harry")))
+                        (file "~/notes/log.org")
+                        (full-id (concat "log-" id)))
+                   (find-file file)
+                   (goto-char (point-min))
+                   (when (re-search-forward (format ":CUSTOM_ID: %s" full-id) nil t)
+                     (org-back-to-heading t)
+                     (re-search-forward ":LOGBOOK:" nil t)
+                     (forward-line 1)))))
+               "- Note taken on %U \\\\\n  %?"
+               :immediate-finish nil)
+      ("e" "Event" entry
+                 (file "~/notes/events.org")
+                 "* %^{Description}
+      SCHEDULED: %^T
+      :PROPERTIES:
+      :CUSTOM_ID: %^{ID}
+      :CATEGORIES: %^{Category|${categoriesString}}
+      :END:
 
-      (defun my/org-set-started-date ()
-        (when (equal "In-Progress" (org-entry-get nil "STATUS"))
-          (org-entry-put nil "STARTED"
-            (format-time-string "[%Y-%m-%d %a]"))))
+        %?"
+                 :immediate-finish nil)
+      ))
 
-      (add-hook 'org-property-changed-functions
-        (lambda (property value)
-          (when (equal property "STATUS")
-            (my/org-set-completed-date)
-            (my/org-set-started-date))))
+            ;; Face customization
+            (with-eval-after-load 'org
+              (set-face-attribute 'org-scheduled-previously nil
+                :foreground "#d79921"
+                :weight 'bold))
 
-      ;; Conversion functions
-      (defun convert-to-org ()
-        "Convert current markdown buffer to org format."
-        (interactive)
-        (let* ((md-file (buffer-file-name))
-               (org-file (concat (file-name-sans-extension md-file) ".org")))
-          (when (and md-file (file-exists-p md-file))
-            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                         "-f" "markdown"
-                         "-t" "org"
-                         md-file
-                         "-o" org-file)
-            (find-file org-file))))
 
-      (defun convert-to-markdown ()
-        "Convert current org buffer to markdown format."
-        (interactive)
-        (let* ((org-file (buffer-file-name))
-               (md-file (concat (file-name-sans-extension org-file) ".md")))
-          (when (and org-file (file-exists-p org-file))
-            (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
-                         "-f" "org"
-                         "-t" "markdown"
-                         org-file
-                         "-o" md-file)
-            (find-file md-file))))
+            ;; Date tracking functions
+            (defun my/org-set-completed-date ()
+              (when (equal "Done" (org-entry-get nil "STATUS"))
+                (org-entry-put nil "COMPLETED"
+                  (format-time-string "[%Y-%m-%d %a]"))))
 
-      (with-eval-after-load 'markdown-mode
-        (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
+            (defun my/org-set-started-date ()
+              (when (equal "In-Progress" (org-entry-get nil "STATUS"))
+                (org-entry-put nil "STARTED"
+                  (format-time-string "[%Y-%m-%d %a]"))))
 
-      (with-eval-after-load 'org
-        (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
+            (add-hook 'org-property-changed-functions
+              (lambda (property value)
+                (when (equal property "STATUS")
+                  (my/org-set-completed-date)
+                  (my/org-set-started-date))))
 
-      (defun my/move-to-custom-id-file ()
-        "Move selected org item to a new file named after its CUSTOM_ID property."
-        (interactive)
-        (save-excursion
-          (let* ((region-content (buffer-substring (region-beginning) (region-end)))
-                 (custom-id (save-excursion
-                             (goto-char (region-beginning))
-                             (org-entry-get nil "CUSTOM_ID"))))
-            (if custom-id
-                (let ((new-file (concat "~/notes/" custom-id ".org")))
-                  (with-temp-file new-file
-                    (insert "#+TITLE: " custom-id "\n\n")
-                    (insert region-content))
-                  (delete-region (region-beginning) (region-end))
-                  (insert (format "[[file:%s][%s]]\n" new-file custom-id))
-                  (message "Moved to %s" new-file))
-              (message "No CUSTOM_ID property found!")))))
+            ;; Conversion functions
+            (defun convert-to-org ()
+              "Convert current markdown buffer to org format."
+              (interactive)
+              (let* ((md-file (buffer-file-name))
+                     (org-file (concat (file-name-sans-extension md-file) ".org")))
+                (when (and md-file (file-exists-p md-file))
+                  (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                               "-f" "markdown"
+                               "-t" "org"
+                               md-file
+                               "-o" org-file)
+                  (find-file org-file))))
+
+            (defun convert-to-markdown ()
+              "Convert current org buffer to markdown format."
+              (interactive)
+              (let* ((org-file (buffer-file-name))
+                     (md-file (concat (file-name-sans-extension org-file) ".md")))
+                (when (and org-file (file-exists-p org-file))
+                  (call-process "${pkgs.pandoc}/bin/pandoc" nil nil nil
+                               "-f" "org"
+                               "-t" "markdown"
+                               org-file
+                               "-o" md-file)
+                  (find-file md-file))))
+
+            (with-eval-after-load 'markdown-mode
+              (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
+
+            (with-eval-after-load 'org
+              (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
+
+            (defun my/move-to-custom-id-file ()
+              "Move selected org item to a new file named after its CUSTOM_ID property."
+              (interactive)
+              (save-excursion
+                (let* ((region-content (buffer-substring (region-beginning) (region-end)))
+                       (custom-id (save-excursion
+                                   (goto-char (region-beginning))
+                                   (org-entry-get nil "CUSTOM_ID"))))
+                  (if custom-id
+                      (let ((new-file (concat "~/notes/" custom-id ".org")))
+                        (with-temp-file new-file
+                          (insert "#+TITLE: " custom-id "\n\n")
+                          (insert region-content))
+                        (delete-region (region-beginning) (region-end))
+                        (insert (format "[[file:%s][%s]]\n" new-file custom-id))
+                        (message "Moved to %s" new-file))
+                    (message "No CUSTOM_ID property found!")))))
     '';
 
   agendaConfig =
     #lisp
     ''
-                  ;; Set this globally
-                  (setq org-agenda-block-separator nil)
-                  (setq org-agenda-window-setup 'only-window)
-                  (setq org-agenda-timegrid-use-ampm t)
-                  (setq org-agenda-time-leading-zero t)
-                  (setq org-agenda-todo-keyword-format "%s")  
-                  (setq org-agenda-include-diary t)  
-                  (setq org-refile-targets '((nil :maxlevel . 8)               
-                          (org-agenda-files :maxlevel . 2)))
+                        ;; Set this globally
+                        (setq org-agenda-block-separator nil)
+                        (setq org-agenda-window-setup 'only-window)
+                        (setq org-agenda-timegrid-use-ampm t)
+                        (setq org-agenda-time-leading-zero t)
+                        (setq org-agenda-todo-keyword-format "%s")
+                        (setq org-agenda-include-diary t)
+                        (setq org-refile-targets '((nil :maxlevel . 8)
+                                (org-agenda-files :maxlevel . 2)))
 
-                  (require 'diary-lib)
+                        (require 'diary-lib)
 
-                    (use-package org-super-agenda
-                    :after org-agenda
-                    :config
-                    (setq org-super-agenda-header-map nil)  ; Disable super-agenda keybindings
-                    (setq org-super-agenda-header-properties nil)
-                    (org-super-agenda-mode)
-                    )
+                          (use-package org-super-agenda
+                          :after org-agenda
+                          :config
+                          (setq org-super-agenda-header-map nil)  ; Disable super-agenda keybindings
+                          (setq org-super-agenda-header-properties nil)
+                          (org-super-agenda-mode)
+                          )
 
-                  (setq warning-suppress-types '((org-element)))
+                        (setq warning-suppress-types '((org-element)))
 
-(setq org-agenda-custom-commands
-          '(("d" "daily dashboard"
-            ((agenda "Schedule and Habits"
-                    ((org-agenda-span 'day)
-                     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-                     (org-agenda-overriding-header "")
-                     (org-super-agenda-groups
-                      '((:name "Today's Schedule"
-                          :time-grid t)
-                        (:name "Events Today"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking events: %s" value)
-                                                (and value
-                                                     (string-match-p "event" value)))))
-                        (:name "Inbox items"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking inbox: %s" value)
-                                                (and value
-                                                     (string-match-p "inbox" value)))))
-                        (:name "Tasks"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking tasks: %s" value)
-                                                (and value
-                                                     (string-match-p "task" value)))))
-                        (:name "Code reviews"
-                        :property ("CATEGORIES" (lambda (value)
-                          (message "Checking code reviews: %s" value)
-                                                (and value
-                                                    (string-match-p "code-review" value)))))
-                        (:name "Personal Habits"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking personal habits: %s" value)
-                                                (and value
-                                                     (string-match-p "habit" value)
-                                                     (string-match-p "personal" value)))))
-                        (:name "Family Habits"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking family habits: %s" value)
-                                                (and value
-                                                     (string-match-p "habit" value)
-                                                     (string-match-p "family" value)))))
-                        (:name "Work Habits"
-                         :property ("CATEGORIES" (lambda (value)
-                          (message "Checking work habits: %s" value)
-                                                (and value
-                                                     (string-match-p "habit" value)
-                                                     (string-match-p "work" value)))))
-                        (:discard (:anything t))
-                      ))))
-             ))))
-                  (defun refresh-org-agenda ()
-                    "Refresh org agenda files and rebuild agenda view."
-                    (interactive)
-                    (setq org-agenda-files (list org-directory))
-                    (when (get-buffer "*Org Agenda*")
-                      (with-current-buffer "*Org Agenda*"
-                        (org-agenda-redo t))))
+      (setq org-agenda-custom-commands
+                '(("d" "daily dashboard"
+                  ((agenda "Schedule and Habits"
+                          ((org-agenda-span 'day)
+                           (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+                           (org-agenda-overriding-header "")
+                           (org-super-agenda-groups
+                            '((:name "Today's Schedule"
+                                :time-grid t)
+                              (:name "Events Today"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking events: %s" value)
+                                                      (and value
+                                                           (string-match-p "event" value)))))
+                              (:name "Inbox items"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking inbox: %s" value)
+                                                      (and value
+                                                           (string-match-p "inbox" value)))))
+                              (:name "Tasks"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking tasks: %s" value)
+                                                      (and value
+                                                           (string-match-p "task" value)))))
+                              (:name "Code reviews"
+                              :property ("CATEGORIES" (lambda (value)
+                                (message "Checking code reviews: %s" value)
+                                                      (and value
+                                                          (string-match-p "code-review" value)))))
+                              (:name "Personal Habits"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking personal habits: %s" value)
+                                                      (and value
+                                                           (string-match-p "habit" value)
+                                                           (string-match-p "personal" value)))))
+                              (:name "Family Habits"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking family habits: %s" value)
+                                                      (and value
+                                                           (string-match-p "habit" value)
+                                                           (string-match-p "family" value)))))
+                              (:name "Work Habits"
+                               :property ("CATEGORIES" (lambda (value)
+                                (message "Checking work habits: %s" value)
+                                                      (and value
+                                                           (string-match-p "habit" value)
+                                                           (string-match-p "work" value)))))
+                              (:discard (:anything t))
+                            ))))
+                   ))))
+                        (defun refresh-org-agenda ()
+                          "Refresh org agenda files and rebuild agenda view."
+                          (interactive)
+                          (setq org-agenda-files (list org-directory))
+                          (when (get-buffer "*Org Agenda*")
+                            (with-current-buffer "*Org Agenda*"
+                              (org-agenda-redo t))))
 
-                  (global-set-key (kbd "C-c r") 'refresh-org-agenda)
+                        (global-set-key (kbd "C-c r") 'refresh-org-agenda)
 
-                    (setq org-agenda-time-grid-use-ampm t)
-                    (setq org-agenda-with-times t)
-                    (setq org-agenda-time-format "%I:%M%p")
-                    (setq org-agenda-prefix-format
-                        '((agenda . " ○ %t ")
-                            (tags   . "○ ")
-                            (todo   . "○ ")))
+                          (setq org-agenda-time-grid-use-ampm t)
+                          (setq org-agenda-with-times t)
+                          (setq org-agenda-time-format "%I:%M%p")
+                          (setq org-agenda-prefix-format
+                              '((agenda . " ○ %t ")
+                                  (tags   . "○ ")
+                                  (todo   . "○ ")))
 
-                    ;;(use-package org-modern
-                    ;;:hook (org-agenda-finalize . org-modern-agenda)
-                    ;;:config
-                    ;;(global-org-modern-mode)
-                    ;;:custom
-                    ;;(org-modern-variable-pitch nil)
-                    ;;(org-modern-hide-stars t)        ; Hide leading stars
-                    ;;(org-modern-timestamp t)         ; Pretty timestamps
-                    ;;(org-modern-table t)            ; Pretty tables
-                    ;;(org-modern-label-offset 0.2) ; Reduces scaling to 20% of default
-                    ;;(org-modern-list '((43 . "➜")   ; List bullets (+ character)
-                                        ;;(45 . "–")))  ; List bullets (- character)
-                    ;;(org-modern-checkbox '((88 . "☑")   ; Checked box (X)
-                                            ;;(45 . "☐")    ; Empty box (-)
-                                            ;;(32 . "☐")))  ; Empty box (space)
+                          ;;(use-package org-modern
+                          ;;:hook (org-agenda-finalize . org-modern-agenda)
+                          ;;:config
+                          ;;(global-org-modern-mode)
+                          ;;:custom
+                          ;;(org-modern-variable-pitch nil)
+                          ;;(org-modern-hide-stars t)        ; Hide leading stars
+                          ;;(org-modern-timestamp t)         ; Pretty timestamps
+                          ;;(org-modern-table t)            ; Pretty tables
+                          ;;(org-modern-label-offset 0.2) ; Reduces scaling to 20% of default
+                          ;;(org-modern-list '((43 . "➜")   ; List bullets (+ character)
+                                              ;;(45 . "–")))  ; List bullets (- character)
+                          ;;(org-modern-checkbox '((88 . "☑")   ; Checked box (X)
+                                                  ;;(45 . "☐")    ; Empty box (-)
+                                                  ;;(32 . "☐")))  ; Empty box (space)
 
-                    ;;(org-modern-tag t)              ; Pretty tags
-                    ;;(org-modern-priority t)         ; Pretty priorities
+                          ;;(org-modern-tag t)              ; Pretty tags
+                          ;;(org-modern-priority t)         ; Pretty priorities
 
-                    ;;(org-modern-todo t)             ; Pretty todo keywords
-                    ;;(org-modern-block-fringe t)     ; Add fringe markers to blocks
-                    ;;(org-modern-block-name t)       ; Pretty source block names
+                          ;;(org-modern-todo t)             ; Pretty todo keywords
+                          ;;(org-modern-block-fringe t)     ; Add fringe markers to blocks
+                          ;;(org-modern-block-name t)       ; Pretty source block names
 
-                    ;;(org-modern-checkbox t)         ; Pretty checkboxes
-                    ;;(org-modern-statistics t)       ; Pretty statistics cookies
+                          ;;(org-modern-checkbox t)         ; Pretty checkboxes
+                          ;;(org-modern-statistics t)       ; Pretty statistics cookies
 
-                    ;;(org-modern-table-vertical 1)   ; Table spacing
-                    ;;(org-modern-table-horizontal 0.2) ; Table spacing
-                    ;;)
+                          ;;(org-modern-table-vertical 1)   ; Table spacing
+                          ;;(org-modern-table-horizontal 0.2) ; Table spacing
+                          ;;)
 
-                    (add-hook 'org-mode-hook (lambda ()
-                          (variable-pitch-mode))
-                    t)
+                          (add-hook 'org-mode-hook (lambda ()
+                                (variable-pitch-mode))
+                          t)
 
-                    (defun my-org-auto-save-settings ()
-                    (setq-local auto-save-interval 1)
-                    (setq-local auto-save-timeout 5))
+                          (defun my-org-auto-save-settings ()
+                          (setq-local auto-save-interval 1)
+                          (setq-local auto-save-timeout 5))
 
-                    (add-hook 'org-mode-hook 'my-org-auto-save-settings)
+                          (add-hook 'org-mode-hook 'my-org-auto-save-settings)
 
-                    (custom-set-faces
-                    '(org-document-info-keyword ((t (:height 1.0))))
-                    '(org-document-title ((t (:height 140)))) ; Instead of default 2.0
-                    '(org-level-1 ((t (:height 140))))  ; Instead of default 1.5
-                    '(org-level-2 ((t (:height 140))))  ; Instead of default 1.3
-                    '(org-level-3 ((t (:height 140)))) ; And so on
-                    '(org-level-4 ((t (:height 140))))
-                    '(org-level-5 ((t (:height 140))))
-                    '(org-level-6 ((t (:height 140))))
-                    '(org-level-7 ((t (:height 140))))
-                    '(org-level-8 ((t (:height 140))))
-                    '(org-modern-label ((t (:height 140))))
-                    '(org-modern-statistics ((t (:height 140))))
-                    '(org-modern-tag ((t (:height 140))))
-                    '(org-drawer ((t (:height 140))))
-                    '(org-drawer-content ((t (:height 140))))
-                    '(variable-pitch-text ((t (:height 140))))
-                    '(variable-pitch ((t (:height 140))))
-                    '(org-property-value ((t (:height 140))))
-                    '(org-special-keyword ((t (:height 140)))))
+                          (custom-set-faces
+                          '(org-document-info-keyword ((t (:height 1.0))))
+                          '(org-document-title ((t (:height 140)))) ; Instead of default 2.0
+                          '(org-level-1 ((t (:height 140))))  ; Instead of default 1.5
+                          '(org-level-2 ((t (:height 140))))  ; Instead of default 1.3
+                          '(org-level-3 ((t (:height 140)))) ; And so on
+                          '(org-level-4 ((t (:height 140))))
+                          '(org-level-5 ((t (:height 140))))
+                          '(org-level-6 ((t (:height 140))))
+                          '(org-level-7 ((t (:height 140))))
+                          '(org-level-8 ((t (:height 140))))
+                          '(org-modern-label ((t (:height 140))))
+                          '(org-modern-statistics ((t (:height 140))))
+                          '(org-modern-tag ((t (:height 140))))
+                          '(org-drawer ((t (:height 140))))
+                          '(org-drawer-content ((t (:height 140))))
+                          '(variable-pitch-text ((t (:height 140))))
+                          '(variable-pitch ((t (:height 140))))
+                          '(org-property-value ((t (:height 140))))
+                          '(org-special-keyword ((t (:height 140)))))
 
-            (setq org-agenda-span 'day
-                  org-agenda-start-on-weekday nil) ; Start on current day instead of Monday
+                  (setq org-agenda-span 'day
+                        org-agenda-start-on-weekday nil) ; Start on current day instead of Monday
 
-              (with-eval-after-load 'org-agenda
-                (define-key org-agenda-mode-map "L" (lambda ()
-                (interactive)
-                (let* ((marker (or (org-get-at-bol 'org-marker)
-                  (org-agenda-error)))
-                  (repeat (with-current-buffer (marker-buffer marker)
-                    (goto-char (marker-position marker))
-                  (org-get-repeat))))
-              (org-agenda-schedule nil (if repeat repeat "+1d"))))))
+                    (with-eval-after-load 'org-agenda
+                      (define-key org-agenda-mode-map "L" (lambda ()
+                      (interactive)
+                      (let* ((marker (or (org-get-at-bol 'org-marker)
+                        (org-agenda-error)))
+                        (repeat (with-current-buffer (marker-buffer marker)
+                          (goto-char (marker-position marker))
+                        (org-get-repeat))))
+                    (org-agenda-schedule nil (if repeat repeat "+1d"))))))
     '';
 
   githubConfig =
@@ -946,74 +971,74 @@ SCHEDULED: %^T
   elfeedConfig =
     #lisp
     ''
-(use-package elfeed
-  :ensure t
-  :bind
-  ("C-x w" . elfeed)
-  :config
-  (evil-define-key 'normal elfeed-search-mode-map
-    (kbd "r") 'elfeed-search-untag-all-unread
-    (kbd "u") 'elfeed-search-tag-all-unread
-    (kbd "RET") 'elfeed-search-show-entry
-    (kbd "q") 'quit-window
-    (kbd "g") 'elfeed-update
-    (kbd "G") 'elfeed-search-update--force)
+      (use-package elfeed
+        :ensure t
+        :bind
+        ("C-x w" . elfeed)
+        :config
+        (evil-define-key 'normal elfeed-search-mode-map
+          (kbd "r") 'elfeed-search-untag-all-unread
+          (kbd "u") 'elfeed-search-tag-all-unread
+          (kbd "RET") 'elfeed-search-show-entry
+          (kbd "q") 'quit-window
+          (kbd "g") 'elfeed-update
+          (kbd "G") 'elfeed-search-update--force)
 
-  (evil-define-key 'normal elfeed-show-mode-map
-    (kbd "r") 'elfeed-show-untag-unread
-    (kbd "u") 'elfeed-show-tag-unread
-    (kbd "q") 'quit-window
-    (kbd "n") 'elfeed-show-next
-    (kbd "p") 'elfeed-show-prev
-    (kbd "b") 'elfeed-show-visit)
+        (evil-define-key 'normal elfeed-show-mode-map
+          (kbd "r") 'elfeed-show-untag-unread
+          (kbd "u") 'elfeed-show-tag-unread
+          (kbd "q") 'quit-window
+          (kbd "n") 'elfeed-show-next
+          (kbd "p") 'elfeed-show-prev
+          (kbd "b") 'elfeed-show-visit)
 
-  (setq elfeed-search-filter "+unread or +starred")
-  (setq elfeed-sort-order 'descending))
+        (setq elfeed-search-filter "+unread or +starred")
+        (setq elfeed-sort-order 'descending))
 
-(use-package elfeed-protocol
-  :ensure t
-  :after elfeed
-  :custom
-  (elfeed-use-curl t)
-  (elfeed-protocol-enabled-protocols '(fever))
-  (setq elfeed-protocol-log-trace t)
-  (elfeed-protocol-fever-update-unread-only t)
-  (elfeed-protocol-fever-fetch-category-as-tag t)
-  (elfeed-protocol-feeds '(("fever+https://me@rss.addisonbeck.dev"
-                                 :api-url "https://rss.addisonbeck.dev/api/fever.php"
-                                 :use-authinfo t)))
-  (elfeed-protocol-enabled-protocols '(fever))
-  :config
-  (elfeed-protocol-enable))
+      (use-package elfeed-protocol
+        :ensure t
+        :after elfeed
+        :custom
+        (elfeed-use-curl t)
+        (elfeed-protocol-enabled-protocols '(fever))
+        (setq elfeed-protocol-log-trace t)
+        (elfeed-protocol-fever-update-unread-only t)
+        (elfeed-protocol-fever-fetch-category-as-tag t)
+        (elfeed-protocol-feeds '(("fever+https://me@rss.addisonbeck.dev"
+                                       :api-url "https://rss.addisonbeck.dev/api/fever.php"
+                                       :use-authinfo t)))
+        (elfeed-protocol-enabled-protocols '(fever))
+        :config
+        (elfeed-protocol-enable))
 
 
-(defun my/elfeed-reset ()
-  "Reset elfeed database and update."
-  (interactive)
-  (when (yes-or-no-p "Really reset elfeed database? ")
-    (let ((db (expand-file-name "~/.elfeed/index"))
-          (data (expand-file-name "~/.elfeed/data")))
-      (message "Checking paths: index=%s data=%s" db data)
-      
-      ;; Try to close elfeed first
-      (elfeed-db-unload)
-      (message "Database unloaded")
-      
-      ;; Delete files with error checking
-      (condition-case err
-          (progn
-            (when (file-exists-p db)
-              (delete-file db)
-              (message "Deleted index file"))
-            (when (file-exists-p data)
-              (delete-directory data t)
-              (message "Deleted data directory")))
-        (error (message "Error during deletion: %s" err)))
-      
-      ;; Restart elfeed
-      (elfeed)
-      (elfeed-search-update--force)
-      (message "Reset complete"))))
+      (defun my/elfeed-reset ()
+        "Reset elfeed database and update."
+        (interactive)
+        (when (yes-or-no-p "Really reset elfeed database? ")
+          (let ((db (expand-file-name "~/.elfeed/index"))
+                (data (expand-file-name "~/.elfeed/data")))
+            (message "Checking paths: index=%s data=%s" db data)
+
+            ;; Try to close elfeed first
+            (elfeed-db-unload)
+            (message "Database unloaded")
+
+            ;; Delete files with error checking
+            (condition-case err
+                (progn
+                  (when (file-exists-p db)
+                    (delete-file db)
+                    (message "Deleted index file"))
+                  (when (file-exists-p data)
+                    (delete-directory data t)
+                    (message "Deleted data directory")))
+              (error (message "Error during deletion: %s" err)))
+
+            ;; Restart elfeed
+            (elfeed)
+            (elfeed-search-update--force)
+            (message "Reset complete"))))
     '';
 
   packages = epkgs:
