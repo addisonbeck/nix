@@ -1,6 +1,13 @@
-;;; -*- lexical-binding: t -*-
+;;; init.el --- My personal Emacs configuration  -*- lexical-binding: t -*-
+
+;;; Commentary:
+;; This is my personal Emacs configuration file.
+;; It sets up various packages and configurations for development work.
+
+;;; Code:
 
 ;; Initialize package sources
+
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
                         ("org" . "https://orgmode.org/elpa/")
@@ -50,10 +57,11 @@
 (xterm-mouse-mode 1)
 (setq-default fill-column 77)
 (global-hl-line-mode -1)
+(setq sentence-end-double-space nil)
 
 ;; Buffer Management Functions
 (defun kill-other-buffers ()
-  "Kill all buffers except the current one"
+  "Kill all buffers except the current one."
   (interactive)
   (mapc 'kill-buffer
         (delq (current-buffer)
@@ -74,6 +82,12 @@
 
 ;; Use Package Configuration
 (use-package nerd-icons)
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
 
 ;; Dashboard Configuration
 (use-package dashboard
@@ -213,7 +227,7 @@
 
 ;; Custom find-from-here function
 (defun find-from-here ()
-  "Find files from current buffer's directory"
+  "Find files from current buffer's directory."
   (interactive)
   (when buffer-file-name
     (consult-find (file-name-directory buffer-file-name))))
@@ -340,8 +354,8 @@
          (lua-mode . lsp))
   :commands lsp
   :config
-  (setq lsp-nix-nixd-server-path "nixd")
-  (setq lsp-enabled-clients '(nixd-lsp))
+  ;;(setq lsp-nix-nixd-server-path "nixd")
+  ;;(setq lsp-enabled-clients '(nixd-lsp))
   (setq lsp-auto-guess-root t)
   (setq lsp-enable-symbol-highlighting t)
   (setq lsp-enable-on-type-formatting t)
@@ -370,7 +384,7 @@
 ;; Add flycheck configuration
 (use-package flycheck
   :ensure t
-  :init 
+  :init
   (global-flycheck-mode))
 
 ;; Magit and Forge configuration
@@ -422,6 +436,7 @@
   (org-clock-persistence-insinuate))
 
 (defun sanitize-filename (name)
+  "Sanitize a filename NAME."
   (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
 
 (setq org-capture-templates
@@ -867,3 +882,10 @@
       (elfeed)
       (elfeed-search-update--force)
       (message "Reset complete"))))
+
+(provide 'init)
+
+;; Local Variables:
+;; byte-compile-warnings: (not free-vars)
+;; End:
+;;; init.el ends here
