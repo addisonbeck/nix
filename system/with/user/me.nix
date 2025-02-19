@@ -108,6 +108,7 @@
       ./with/program/ghostty.nix
       #./with/program/azure-data-studio.nix
       #./with/program/rust.nix
+      ./with/program/repomix.nix
     ];
 
     home.sessionPath = [];

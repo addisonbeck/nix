@@ -47,7 +47,7 @@
     owner = "m-ahdal";
     repo = "ghostty-shaders";
     rev = "main";
-    sha256 = "sha256-+fkjR1sTsr4yArDhYQemyhWSOzE9qzDB+lLWaV7TAs4=";
+    sha256 = "sha256-N6MP9QX/80ppg+TdmxmMVYsoeguicRIXfPHyoMGt92s=";
   };
   makeShader = name: {
     target = ".config/ghostty/shaders/${name}";

@@ -3,54 +3,6 @@
   lib,
   ...
 }: let
-  tagAgendaBlocks = [
-    {
-      team = "Platform";
-      type = "Feature";
-    }
-    {
-      team = "Platform";
-      type = "Bug";
-    }
-    {
-      team = "Platform";
-      type = "Chore";
-    }
-    {
-      team = "Platform";
-      type = "Spike";
-    }
-    {
-      team = "Platform";
-      type = "Review";
-    }
-    {team = "Myself";}
-  ];
-
-  mkTagAgendaBlock = {
-    team ? "Platform",
-    type ? null,
-    title ? null,
-  }: let
-    typeFilter =
-      if type != null
-      then "+TYPE={${type}}"
-      else "";
-    blockTitle =
-      if title != null
-      then title
-      else if type != null
-      then "*${team} ${type}s*"
-      else "*${team} Work*";
-  in ''
-    (tags-todo "TEAM={${team}}+STATUS<>{Done}${typeFilter}"
-    ((org-agenda-overriding-header "\n${blockTitle}\n")
-    (org-agenda-keep-with-parent t)))
-  '';
-
-  mkTagAgendaBlocks = blocks:
-    builtins.concatStringsSep "\n" (map mkTagAgendaBlock blocks);
-
   eventCategories = [
     "personal habit"
     "work habit"
@@ -766,7 +718,7 @@ SCHEDULED: %^T
                                                 (and value
                                                      (string-match-p "habit" value)
                                                      (string-match-p "work" value)))))
-                        ;;(:discard (:anything t))
+                        (:discard (:anything t))
                       ))))
              ))))
                   (defun refresh-org-agenda ()
@@ -850,6 +802,16 @@ SCHEDULED: %^T
 
             (setq org-agenda-span 'day
                   org-agenda-start-on-weekday nil) ; Start on current day instead of Monday
+
+              (with-eval-after-load 'org-agenda
+                (define-key org-agenda-mode-map "L" (lambda ()
+                (interactive)
+                (let* ((marker (or (org-get-at-bol 'org-marker)
+                  (org-agenda-error)))
+                  (repeat (with-current-buffer (marker-buffer marker)
+                    (goto-char (marker-position marker))
+                  (org-get-repeat))))
+              (org-agenda-schedule nil (if repeat repeat "+1d"))))))
     '';
 
   githubConfig =
@@ -1154,4 +1116,3 @@ in {
     # It can be empty but needs to exist
   '';
 }
-
