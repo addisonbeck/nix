@@ -4,3 +4,5 @@
 .DS_STORE
 .direnv/
 /result
+*.rej
+repomix-output.txt
