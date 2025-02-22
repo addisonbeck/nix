@@ -949,6 +949,10 @@ I'm not using these right now, but might revist in the future.
 
 This section defines agenic tools capabilities for gptel. It's my answer to the "stdlib for LLMs" idea.
 
+Some notes:
+
+1. All tools _must_ have an arguement. This can be just a dummy arguement like `read_gptel_tools_section`.
+
 #+begin_src emacs-lisp
   (setq gptel-use-tools t
 	gptel-tools nil)  
@@ -1102,25 +1106,36 @@ This section defines agenic tools capabilities for gptel. It's my answer to the 
 ** Read_Gptel_Tools_Section
 
 #+begin_src emacs-lisp
-	(gptel-make-tool
-	 :name "read_gptel_tools_section"
-	 :function (defun read_gptel_tools_section ()
-  (with-temp-buffer
-    (insert-file-contents "~/nix/system/with/user/with/program/init.org")
-    (org-mode)
-    (goto-char (point-min))
-    (if (re-search-forward "^\\* GPTel Tools" nil t)
-        (let ((section-start (point))
-              (section-end (save-excursion
-                            (org-end-of-subtree)
-                            (point))))
-          (buffer-substring-no-properties section-start section-end))
-      (error "GPTel Tools section not found in init.org"))))
-	 :description "Reads the GPTel Tools section from init.org to provide context about available tools"
-	 :args '()
-	 :category "file")
+(gptel-make-tool
+ :name "read_gptel_tools_section"
+ :function (lambda (dummy)
+            (let ((file-path "~/nix/system/with/user/with/program/init.org"))
+              (condition-case err
+                  (if (file-exists-p file-path)
+                      (with-temp-buffer
+                        (insert-file-contents file-path)
+                        (org-mode)
+                        (goto-char (point-min))
+                        (if (re-search-forward "^\\* GPTel Tools" nil t)
+                            (let* ((section-start (line-beginning-position))
+                                  (section-end (save-excursion
+                                               (or (re-search-forward "^\\* " nil t)
+                                                   (point-max))))
+                                  (content (buffer-substring-no-properties 
+                                          section-start section-end)))
+                              content)
+                          "GPTel Tools section not found in init.org"))
+                    "File not found: ~/nix/system/with/user/with/program/init.org")
+                (error
+                 (format "Error reading tools section: %s" 
+                        (error-message-string err))))))
+ :description "Reads the GPTel Tools section from init.org to provide context about available tools"
+ :args '((:name "dummy"
+          :type string
+          :description "dummy argument"))
+ :category "file")
 
-	(register-gptel-tool "read_gptel_tools_section")
+(register-gptel-tool "read_gptel_tools_section")
 #+end_src
 
 * Provide Init
@@ -1132,3 +1147,6 @@ This section defines agenic tools capabilities for gptel. It's my answer to the 
   ;; End:
 	;;; init.el ends here
 #+end_src
+
+```
+```
