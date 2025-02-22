@@ -37,6 +37,24 @@
         exit 1
       }
     '';
+  emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
+    # First, ensure the daemon is running
+    ${config.programs.emacs.package}/bin/emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
+      echo "Starting Emacs daemon..."
+      ${config.programs.emacs.package}/bin/emacs --daemon
+    }
+
+    # Check if a visible frame exists (excluding terminal/daemon frames)
+    FRAME_EXISTS=$(${config.programs.emacs.package}/bin/emacsclient -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
+
+    if [ "$FRAME_EXISTS" = "t" ]; then
+      # Frame exists, just focus it
+      ${config.programs.emacs.package}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))"
+    else
+      # No frame exists, create one and focus it
+      ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
+    fi
+  '';
 in {
   programs.emacs = {
     enable = true;
@@ -109,10 +127,27 @@ in {
     iosevka-bin
     (iosevka-bin.override {variant = "Aile";})
     (iosevka-bin.override {variant = "Etoile";})
+    emacsclient-wrapper
   ];
 
   home.file.".emacs.d/diary".text = ''
     # This is my diary file
     # It can be empty but needs to exist
   '';
+
+  # Launchd service for Emacs daemon
+  launchd.agents.emacs-daemon = {
+    enable = true;
+    config = {
+      Label = "org.gnu.emacs.daemon";
+      ProgramArguments = [
+        "${config.programs.emacs.package}/bin/emacs"
+        "--daemon"
+      ];
+      KeepAlive = true;
+      RunAtLoad = true;
+      StandardOutPath = "${config.home.homeDirectory}/.emacs.d/daemon.log";
+      StandardErrorPath = "${config.home.homeDirectory}/.emacs.d/daemon.error.log";
+    };
+  };
 }

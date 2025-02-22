@@ -167,24 +167,15 @@
   (with-eval-after-load 'evil-collection-magit
     (evil-collection-define-key 'normal 'magit-status-mode-map
 				"V" #'magit-start-region-select))
-
-  ;; Evil Org configuration
-  (use-package evil-org
-    :ensure t
-    :after org
-    :hook (org-mode . evil-org-mode)
-    :config
-    (require 'evil-org-agenda)
-    (evil-org-agenda-set-keys)
-
-    ;; Custom agenda keybindings
-    (evil-define-key 'motion org-agenda-mode-map
-		     (kbd "<left>") 'org-agenda-earlier
-		     (kbd "<right>") 'org-agenda-later
-		     (kbd "C-c j") 'org-agenda-goto-date
-		     (kbd "gx")  'org-agenda-open-link
-		     (kbd "t") 'org-agenda-todo
-		     (kbd "T") 'org-agenda-todo-yesterday))
+  (require 'evil-org-agenda)
+  (evil-org-agenda-set-keys)
+  (evil-define-key 'motion org-agenda-mode-map
+  	     (kbd "<left>") 'org-agenda-earlier
+  	     (kbd "<right>") 'org-agenda-later
+  	     (kbd "C-c j") 'org-agenda-goto-date
+  	     (kbd "gx")  'org-agenda-open-link
+  	     (kbd "t") 'org-agenda-todo
+  	     (kbd "T") 'org-agenda-todo-yesterday)
 #+end_src
 
 * Server Configuration
@@ -256,135 +247,6 @@
       (consult-find (file-name-directory buffer-file-name))))
 
   (global-set-key (kbd "C-c d") 'find-from-here)
-#+end_src
-
-* GPTel Configuration
-#+begin_src emacs-lisp
-  (use-package gptel
-    :ensure t
-    :config
-    ;; Token access for GitHub Copilot
-    (defvar gptel-github-api-key
-      (lambda ()
-	(when-let ((auth (car (auth-source-search
-			       :host "github.copilot"
-			       :require '(:secret)))))
-	  (let ((token (plist-get auth :secret)))
-	    (if (functionp token)
-		(funcall token)
-	      token)))))
-
-    (defun gptel-copilot--exchange-token ()
-      (let* ((github-token (if (functionp gptel-github-api-key)
-			       (funcall gptel-github-api-key)
-			     gptel-github-api-key))
-	     (url-request-method "GET")
-	     (url-request-extra-headers
-	      `(("Authorization" . ,(format "Bearer %s" github-token))
-		("Accept" . "application/json")))
-	     response-buffer token-str)
-	(setq response-buffer
-	      (url-retrieve-synchronously
-	       "https://api.github.com/copilot_internal/v2/token"
-	       t nil 30))
-	(when response-buffer
-	  (with-current-buffer response-buffer
-	    (goto-char (point-min))
-	    (when (re-search-forward "^$" nil t)
-	      (forward-char)
-	      (condition-case nil
-		  (let ((json-response (json-read)))
-		    (setq token-str (cdr (assoc 'token json-response))))
-		(error nil)))
-	    (kill-buffer response-buffer)))
-	token-str))
-
-    ;; Store the exchanged token
-    (defvar gptel-copilot--exchanged-token nil)
-    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
-
-    ;; Update gptel-api-key to use the exchanged token
-    (setq gptel-api-key
-	  (lambda ()
-	    (or gptel-copilot--exchanged-token
-		(setq gptel-copilot--exchanged-token
-		      (gptel-copilot--exchange-token)))))
-
-    ;; Advice to include full path in message
-    (defun gptel--insert-at-beginning-with-path (initial-point)
-      "Include full path when showing buffer contents."
-      (let ((full-path (buffer-file-name)))
-	(goto-char initial-point)
-	(insert
-	 (format "In file %s:\n\n"
-		 (if full-path
-		     (expand-file-name full-path)
-		   (buffer-name))))))
-
-    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
-
-    ;; Create custom backend for GitHub Copilot
-    (setq gptel-copilot-backend
-	  (gptel-make-openai
-	   "github-copilot"
-	   :host "api.githubcopilot.com/"
-	   :endpoint "chat/completions"
-	   :key 'gptel-api-key
-	   :stream t
-	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
-		     (o1-2024-12-17 :name "o1-2024-12-17")
-		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-	   :header (lambda ()
-		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-		       ("Content-Type" . "application/json")
-		       ("Accept" . "application/json")
-		       ("Copilot-Integration-Id" . "vscode-chat")
-		       ("editor-version" . "vscode/1.84.2")
-		       ("editor-plugin-version" . "1.138.0")
-		       ("user-agent" . "GithubCopilot/1.138.0")))))
-
-    (advice-add 'gptel--url-parse-response :around
-		(lambda (orig-fun backend proc-info)
-		  (let ((result (funcall orig-fun backend proc-info)))
-		    (when (or (and (string-match-p "400" (cadr result))
-				   (string-match-p "Malformed JSON" (cadr result)))
-			      (string-match-p "401" (cadr result)))
-		      (message "Token invalid or expired, refreshing...")
-		      (setq gptel-copilot--exchanged-token nil))
-		    result)))
-
-    (defun test-gptel-token-refresh ()
-      "Test gptel token refresh logic."
-      (interactive)
-      (message "=== Starting Token Test ===")
-      (message "Current token (first 50 chars): %s..."
-	       (substring gptel-copilot--exchanged-token 0 50))
-      ;; Force token refresh by setting to nil
-      (setq gptel-copilot--exchanged-token nil)
-      (message "Cleared token, making request...")
-      ;; Make request that should trigger token refresh
-      (gptel-request
-       "Test message"
-       :callback (lambda (response info)
-		   (message "=== Request completed ===")
-		   (message "New token (first 50 chars): %s..."
-			    (substring gptel-copilot--exchanged-token 0 50))
-		   (message "Response status: %s" (plist-get info :status))
-		   (message "Got response: %s" response))))
-
-    (setq gptel-backend gptel-copilot-backend
-	  gptel-model 'claude-3.5-sonnet
-	  gptel-auto-save-directory "~/chats"
-	  gptel--mark-prompts-and-responses nil
-	  gptel-auto-save-buffers t
-	  gptel-prompt-prefix
-	  "You are a large language model living in Emacs and a helpful assistant.
-		       You are assisting a software engineer at Bitwarden, an open source password management solution.
-		       When expressing uncertainty, make it clear.
-		       When making assumptions, state them explicitly.
-		       Always respond concisely."
-	  gptel-default-mode 'markdown-mode))
 #+end_src
 
 * LSP Configuration
@@ -946,6 +808,319 @@ I'm not using these right now, but might revist in the future.
 	(elfeed)
 	(elfeed-search-update--force)
 	(message "Reset complete"))))
+#+end_src
+
+* GPTel Configuration
+#+begin_src emacs-lisp
+  (use-package gptel
+    :ensure t
+    :config
+    ;; Token access for GitHub Copilot
+    (defvar gptel-github-api-key
+      (lambda ()
+	(when-let ((auth (car (auth-source-search
+			       :host "github.copilot"
+			       :require '(:secret)))))
+	  (let ((token (plist-get auth :secret)))
+	    (if (functionp token)
+		(funcall token)
+	      token)))))
+
+    (defun gptel-copilot--exchange-token ()
+      (let* ((github-token (if (functionp gptel-github-api-key)
+			       (funcall gptel-github-api-key)
+			     gptel-github-api-key))
+	     (url-request-method "GET")
+	     (url-request-extra-headers
+	      `(("Authorization" . ,(format "Bearer %s" github-token))
+		("Accept" . "application/json")))
+	     response-buffer token-str)
+	(setq response-buffer
+	      (url-retrieve-synchronously
+	       "https://api.github.com/copilot_internal/v2/token"
+	       t nil 30))
+	(when response-buffer
+	  (with-current-buffer response-buffer
+	    (goto-char (point-min))
+	    (when (re-search-forward "^$" nil t)
+	      (forward-char)
+	      (condition-case nil
+		  (let ((json-response (json-read)))
+		    (setq token-str (cdr (assoc 'token json-response))))
+		(error nil)))
+	    (kill-buffer response-buffer)))
+	token-str))
+
+    ;; Store the exchanged token
+    (defvar gptel-copilot--exchanged-token nil)
+    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+
+    ;; Update gptel-api-key to use the exchanged token
+    (setq gptel-api-key
+	  (lambda ()
+	    (or gptel-copilot--exchanged-token
+		(setq gptel-copilot--exchanged-token
+		      (gptel-copilot--exchange-token)))))
+
+    ;; Advice to include full path in message
+    (defun gptel--insert-at-beginning-with-path (initial-point)
+      "Include full path when showing buffer contents."
+      (let ((full-path (buffer-file-name)))
+	(goto-char initial-point)
+	(insert
+	 (format "In file %s:\n\n"
+		 (if full-path
+		     (expand-file-name full-path)
+		   (buffer-name))))))
+
+    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+
+    ;; Create custom backend for GitHub Copilot
+    (setq gptel-copilot-backend
+	  (gptel-make-openai
+	   "github-copilot"
+	   :host "api.githubcopilot.com/"
+	   :endpoint "chat/completions"
+	   :key 'gptel-api-key
+	   :stream t
+	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+		     (o1-2024-12-17 :name "o1-2024-12-17")
+		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+	   :header (lambda ()
+		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+		       ("Content-Type" . "application/json")
+		       ("Accept" . "application/json")
+		       ("Copilot-Integration-Id" . "vscode-chat")
+		       ("editor-version" . "vscode/1.84.2")
+		       ("editor-plugin-version" . "1.138.0")
+		       ("user-agent" . "GithubCopilot/1.138.0")))))
+
+    (advice-add 'gptel--url-parse-response :around
+		(lambda (orig-fun backend proc-info)
+		  (let ((result (funcall orig-fun backend proc-info)))
+		    (when (and (stringp (cadr result))
+			       (string-match-p "HTTP/2 401" (cadr result)))
+		      (message "Token expired, refreshing and retrying...")
+		      (setq gptel-copilot--exchanged-token nil)
+		      ;; Get new token
+		      (funcall gptel-api-key)
+		      ;; Retry the request
+		      (let ((request-data (plist-get proc-info :request-data)))
+			(when request-data
+			  (gptel-request request-data))))
+		    result)))
+
+    (defun test-gptel-token-refresh ()
+      "Test gptel token refresh logic."
+      (interactive)
+      (message "=== Starting Token Test ===")
+      (message "Current token (first 50 chars): %s..."
+	       (substring gptel-copilot--exchanged-token 0 50))
+      ;; Force token refresh by setting to nil
+      (setq gptel-copilot--exchanged-token nil)
+      (message "Cleared token, making request...")
+      ;; Make request that should trigger token refresh
+      (gptel-request
+       "Test message"
+       :callback (lambda (response info)
+		   (message "=== Request completed ===")
+		   (message "New token (first 50 chars): %s..."
+			    (substring gptel-copilot--exchanged-token 0 50))
+		   (message "Response status: %s" (plist-get info :status))
+		   (message "Got response: %s" response))))
+
+    (setq gptel-backend gptel-copilot-backend
+	  ;;gptel-model 'gpt-4o-2024-08-06
+	  gptel-model ' claude-3.5-sonnet
+	  gptel-auto-save-directory "~/chats"
+	  gptel--mark-prompts-and-responses nil
+	  gptel-auto-save-buffers t
+	  gptel-prompt-prefix
+	  "You are a large language model living in Emacs and a helpful assistant.
+				 You are assisting a software engineer at Bitwarden, an open source password management solution.
+				 When expressing uncertainty, make it clear.
+				 When making assumptions, state them explicitly.
+				 Always respond concisely."
+	  gptel-default-mode 'markdown-mode))
+#+end_src
+
+* GPTel Tools
+
+This section defines agenic tools capabilities for gptel. It's my answer to the "stdlib for LLMs" idea.
+
+#+begin_src emacs-lisp
+  (setq gptel-use-tools t
+	gptel-tools nil)  
+
+  (defun register-gptel-tool (tool-name)
+    "Register a tool with gptel by its NAME."
+    (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
+#+end_src
+
+** Create_Gptel_Tool
+
+  #+begin_src emacs-lisp
+    (gptel-make-tool
+     :name "create_gptel_tool"
+     :function (lambda (name description function args category)
+		 (message "Running create_gptel_tool with name: %s" name)
+		 (message "Debug: Starting tool creation/update process")  ; New debug message
+		 (let* ((config-file "~/nix/system/with/user/with/program/init.org")
+			(tool-template (format "
+    ,** %s
+
+    ,#+begin_src emacs-lisp
+	(gptel-make-tool
+	 :name \"%s\"
+	 :function %s
+	 :description \"%s\"
+	 :args '%s
+	 :category \"%s\")
+
+	(register-gptel-tool \"%s\")
+    ,#+end_src
+    " 
+					       (capitalize name)
+					       name
+					       function
+					       description
+					       args
+					       category
+					       name))
+			(success nil))
+
+		   (with-current-buffer (find-file-noselect config-file)
+		     (goto-char (point-min))
+		     (when (search-forward "* GPTel Tools" nil t)
+		       (message "Debug: Found GPTel Tools section")
+		       (let ((found (save-excursion
+				      (re-search-forward (format "^** %s$" (capitalize name)) nil t))))
+			 (message "Debug: Tool search result: %s" found)
+			 (if found
+			     (progn
+			       (goto-char found)
+			       (let ((begin found)
+				     (end (save-excursion
+					    (if (re-search-forward "^\\*\\* " nil t)
+						(point)
+					      (point-max)))))
+				 (delete-region begin end)
+				 (goto-char begin)
+				 (insert tool-template)
+				 (setq success 'updated)))
+			   (let ((section-end (save-excursion
+						(or (and (re-search-forward "^\\* " nil t)
+							 (line-beginning-position))
+						    (point-max)))))
+			     (goto-char section-end)
+			     (insert "\n" tool-template)
+			     (setq success 'created))))
+		       (save-buffer)))
+
+		   (pcase success
+		     ('updated (format "Successfully updated existing tool '%s' in %s" name config-file))
+		     ('created (format "Successfully created new tool '%s' in %s" name config-file))
+		     (_ (format "Failed to create/update tool '%s'. Could not find GPTel Tools section in config." name)))))
+     :description "Creates or updates a GPTel tool in the Emacs configuration"
+     :args '((:name "name" :type string :description "name of the tool to create")
+	     (:name "description" :type string :description "description of what the tool does")
+	     (:name "function" :type string :description "elisp function implementation as a string")
+	     (:name "args" :type string :description "list of argument specifications in elisp format")
+	     (:name "category" :type string :description "category for the tool (e.g., 'web', 'file', etc.)"))
+     :category "meta")
+
+    (register-gptel-tool "create_gptel_tool")
+  #+end_src
+
+**  Fetch_Webpage
+
+#+begin_src emacs-lisp
+    (gptel-make-tool
+     :name "fetch_webpage"
+     :function (lambda (url)
+                (message "Fetching URL: %s" url)
+                (let ((buffer (url-retrieve-synchronously url t nil 30)))
+                  (when buffer
+                    (with-current-buffer buffer
+                      (goto-char (point-min))
+                      (re-search-forward "^$" nil t) ; Skip headers
+                      (forward-char)
+                      ;; Basic HTML cleanup: Convert to plain text
+                      (require 'shr)
+                      (let* ((dom (libxml-parse-html-region (point) (point-max)))
+                             (text-buffer (generate-new-buffer " *temp*")))
+                        (with-current-buffer text-buffer
+                          (shr-insert-document dom)
+                          ;; Clean up the text and ensure it's JSON-safe
+                          (let ((content (replace-regexp-in-string 
+                                        "[\u0000-\u001F\u007F]+" " "
+                                        (buffer-substring-no-properties (point-min) (point-max)))))
+                            (kill-buffer text-buffer)
+                            (kill-buffer buffer)
+                            ;; Ensure we return a proper JSON string
+                            content)))))))
+     :description "fetch the contents of a webpage given its url"
+     :args '((:name "url"
+              :type string
+              :description "url of the webpage to fetch"))
+     :category "web")
+
+  (register-gptel-tool "fetch_webpage")
+#+end_src
+
+** Create_File
+
+#+begin_src emacs-lisp
+  (gptel-make-tool
+   :name "create_file"
+   :function (lambda (path content)
+	       (let ((dir (file-name-directory path)))
+		 (condition-case err
+		     (cond
+		      ((file-exists-p path)
+		       (error "File already exists: %s" path))
+		      (t
+		       (when dir
+			 (make-directory dir t))
+		       (write-region content nil path)
+		       (format "Successfully created file: %s" path)))
+		   (error
+		    (format "Error creating file: %s" (error-message-string err))))))
+   :description "Creates a new file with specified content, creating any necessary parent directories. Will not overwrite existing files."
+   :args '((:name "path"
+		  :type string
+		  :description "path to the file to create")
+	   (:name "content"
+		  :type string
+		  :description "content to write to the file"))
+   :category "file")
+
+  (register-gptel-tool "create_file")
+#+end_src
+
+** Read_Gptel_Tools_Section
+
+#+begin_src emacs-lisp
+	(gptel-make-tool
+	 :name "read_gptel_tools_section"
+	 :function (defun read_gptel_tools_section ()
+  (with-temp-buffer
+    (insert-file-contents "~/nix/system/with/user/with/program/init.org")
+    (org-mode)
+    (goto-char (point-min))
+    (if (re-search-forward "^\\* GPTel Tools" nil t)
+        (let ((section-start (point))
+              (section-end (save-excursion
+                            (org-end-of-subtree)
+                            (point))))
+          (buffer-substring-no-properties section-start section-end))
+      (error "GPTel Tools section not found in init.org"))))
+	 :description "Reads the GPTel Tools section from init.org to provide context about available tools"
+	 :args '()
+	 :category "file")
+
+	(register-gptel-tool "read_gptel_tools_section")
 #+end_src
 
 * Provide Init
