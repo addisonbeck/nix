@@ -810,6 +810,52 @@ I'm not using these right now, but might revist in the future.
 	(message "Reset complete"))))
 #+end_src
 
+* Functions
+
+These are general use functions that I call myself or sometimes reference from automations like gptel
+
+** Config Reload
+
+#+begin_src emacs-lisp
+  (defun my/reload-config ()
+    "Reload Emacs configuration by tangling and loading init.org."
+    (interactive)  
+    (let ((init-org "~/nix/system/with/user/with/program/init.org")
+          (temp-el "/tmp/init-temp.el"))
+      (with-current-buffer (find-file-noselect init-org)
+        ;; Tangle only emacs-lisp blocks to our temp file
+        (org-babel-tangle-file init-org temp-el "emacs-lisp")
+        ;; Load the tangled config
+        (load temp-el)
+        ;; Clean up
+        (delete-file temp-el)
+        "Configuration reloaded successfully")))
+#+end_src
+
+** Config Edit
+
+This is really only used by gptel
+
+#+begin_src emacs-lisp
+(defun my/manage-config (action content)
+  "Manage Emacs configuration file.
+ACTION can be 'read' or 'write'.
+CONTENT is the new content when ACTION is 'write'."
+  (interactive)
+  (let* ((config-file "~/nix/system/with/user/with/program/init.org")
+         (backup-file (concat config-file ".backup"))
+         result)
+    (cond
+     ((eq action 'read)
+      (with-temp-buffer
+        (insert-file-contents config-file)
+        (buffer-substring-no-properties (point-min) (point-max))))
+     ((eq action 'write)
+      (copy-file config-file backup-file t)
+      (write-region content nil config-file)
+      (format "Updated config in %s. Backup saved to %s" config-file backup-file)))))
+#+end_src
+
 * GPTel Configuration
 #+begin_src emacs-lisp
   (use-package gptel
@@ -962,80 +1008,39 @@ Some notes:
     (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
 #+end_src
 
-** Create_Gptel_Tool
+** Manage_Config
 
-  #+begin_src emacs-lisp
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "manage_config"
+ :function (lambda (action content)
+            (my/manage-config (intern action) content))
+ :description "Read or write the entire Emacs configuration file"
+ :args '((:name "action"
+          :type string
+          :description "either 'read' or 'write'")
+         (:name "content"
+          :type string
+          :description "new content when action is 'write', ignored for read"))
+ :category "config")
+ (register-gptel-tool "manage_config")
+#+end_src
+
+** Reload_Config
+
+#+begin_src emacs-lisp
     (gptel-make-tool
-     :name "create_gptel_tool"
-     :function (lambda (name description function args category)
-		 (message "Running create_gptel_tool with name: %s" name)
-		 (message "Debug: Starting tool creation/update process")  ; New debug message
-		 (let* ((config-file "~/nix/system/with/user/with/program/init.org")
-			(tool-template (format "
-    ,** %s
+     :name "reload_config"
+     :function (lambda (dummy)
+  (my/reload-config))
+     :description "Reloads Emacs configuration by tangling and loading init.org"
+     :args '((:name "dummy"
+          :type string
+          :description "dummy argument"))
+     :category "emacs")
 
-    ,#+begin_src emacs-lisp
-	(gptel-make-tool
-	 :name \"%s\"
-	 :function %s
-	 :description \"%s\"
-	 :args '%s
-	 :category \"%s\")
-
-	(register-gptel-tool \"%s\")
-    ,#+end_src
-    " 
-					       (capitalize name)
-					       name
-					       function
-					       description
-					       args
-					       category
-					       name))
-			(success nil))
-
-		   (with-current-buffer (find-file-noselect config-file)
-		     (goto-char (point-min))
-		     (when (search-forward "* GPTel Tools" nil t)
-		       (message "Debug: Found GPTel Tools section")
-		       (let ((found (save-excursion
-				      (re-search-forward (format "^** %s$" (capitalize name)) nil t))))
-			 (message "Debug: Tool search result: %s" found)
-			 (if found
-			     (progn
-			       (goto-char found)
-			       (let ((begin found)
-				     (end (save-excursion
-					    (if (re-search-forward "^\\*\\* " nil t)
-						(point)
-					      (point-max)))))
-				 (delete-region begin end)
-				 (goto-char begin)
-				 (insert tool-template)
-				 (setq success 'updated)))
-			   (let ((section-end (save-excursion
-						(or (and (re-search-forward "^\\* " nil t)
-							 (line-beginning-position))
-						    (point-max)))))
-			     (goto-char section-end)
-			     (insert "\n" tool-template)
-			     (setq success 'created))))
-		       (save-buffer)))
-
-		   (pcase success
-		     ('updated (format "Successfully updated existing tool '%s' in %s" name config-file))
-		     ('created (format "Successfully created new tool '%s' in %s" name config-file))
-		     (_ (format "Failed to create/update tool '%s'. Could not find GPTel Tools section in config." name)))))
-     :description "Creates or updates a GPTel tool in the Emacs configuration"
-     :args '((:name "name" :type string :description "name of the tool to create")
-	     (:name "description" :type string :description "description of what the tool does")
-	     (:name "function" :type string :description "elisp function implementation as a string")
-	     (:name "args" :type string :description "list of argument specifications in elisp format")
-	     (:name "category" :type string :description "category for the tool (e.g., 'web', 'file', etc.)"))
-     :category "meta")
-
-    (register-gptel-tool "create_gptel_tool")
-  #+end_src
+    (register-gptel-tool "reload_config")
+#+end_src
 
 **  Fetch_Webpage
 
@@ -1103,42 +1108,8 @@ Some notes:
   (register-gptel-tool "create_file")
 #+end_src
 
-** Read_Gptel_Tools_Section
-
-#+begin_src emacs-lisp
-(gptel-make-tool
- :name "read_gptel_tools_section"
- :function (lambda (dummy)
-            (let ((file-path "~/nix/system/with/user/with/program/init.org"))
-              (condition-case err
-                  (if (file-exists-p file-path)
-                      (with-temp-buffer
-                        (insert-file-contents file-path)
-                        (org-mode)
-                        (goto-char (point-min))
-                        (if (re-search-forward "^\\* GPTel Tools" nil t)
-                            (let* ((section-start (line-beginning-position))
-                                  (section-end (save-excursion
-                                               (or (re-search-forward "^\\* " nil t)
-                                                   (point-max))))
-                                  (content (buffer-substring-no-properties 
-                                          section-start section-end)))
-                              content)
-                          "GPTel Tools section not found in init.org"))
-                    "File not found: ~/nix/system/with/user/with/program/init.org")
-                (error
-                 (format "Error reading tools section: %s" 
-                        (error-message-string err))))))
- :description "Reads the GPTel Tools section from init.org to provide context about available tools"
- :args '((:name "dummy"
-          :type string
-          :description "dummy argument"))
- :category "file")
-
-(register-gptel-tool "read_gptel_tools_section")
-#+end_src
-
 * Provide Init
+
 #+begin_src emacs-lisp
   (provide 'init)
 
@@ -1147,6 +1118,3 @@ Some notes:
   ;; End:
 	;;; init.el ends here
 #+end_src
-
-```
-```
