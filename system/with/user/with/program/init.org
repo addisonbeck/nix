@@ -814,46 +814,55 @@ I'm not using these right now, but might revist in the future.
 
 These are general use functions that I call myself or sometimes reference from automations like gptel
 
-** Config Reload
-
-#+begin_src emacs-lisp
-  (defun my/reload-config ()
-    "Reload Emacs configuration by tangling and loading init.org."
-    (interactive)  
-    (let ((init-org "~/nix/system/with/user/with/program/init.org")
-          (temp-el "/tmp/init-temp.el"))
-      (with-current-buffer (find-file-noselect init-org)
-        ;; Tangle only emacs-lisp blocks to our temp file
-        (org-babel-tangle-file init-org temp-el "emacs-lisp")
-        ;; Load the tangled config
-        (load temp-el)
-        ;; Clean up
-        (delete-file temp-el)
-        "Configuration reloaded successfully")))
-#+end_src
-
-** Config Edit
+** File Read/Edit
 
 This is really only used by gptel
 
+First we define some bookmarks that the LLM can access pretty easily
+
 #+begin_src emacs-lisp
-(defun my/manage-config (action content)
-  "Manage Emacs configuration file.
+(defvar my/file-bookmarks
+  '(("emacs config" . (:path "~/nix/system/with/user/with/program/init.org"
+                     :description "My literate org based emacs configuration"))
+    ("inbox" . (:path "~/notes/inbox.org"
+                      :description "My inbox for my TODOs and notes"))
+    ))
+#+end_src
+
+Then we add a function that can manipulate bookmarked files without prompting but warns about editing non-bookmarked files. The LLM calls this function.
+
+#+begin_src emacs-lisp
+(defun my/manage-file (action file-id content)
+  "Manage file contents with bookmarking support.
 ACTION can be 'read' or 'write'.
+FILE-ID can be a bookmark name or full path.
 CONTENT is the new content when ACTION is 'write'."
-  (interactive)
-  (let* ((config-file "~/nix/system/with/user/with/program/init.org")
-         (backup-file (concat config-file ".backup"))
-         result)
+  (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
+         (file-path (if bookmark
+                       (plist-get bookmark :path)
+                     file-id))
+         (is-bookmarked (not (null bookmark)))
+         (backup-file (concat file-path ".backup")))
+    
+    (when (and (not is-bookmarked)
+               (not (yes-or-no-p 
+                     (format "Warning: %s non-bookmarked file %s. Proceed? "
+                             (if (eq action 'write) "Writing to" "Reading")
+                             file-path))))
+      (error "Operation cancelled"))
+    
     (cond
      ((eq action 'read)
       (with-temp-buffer
-        (insert-file-contents config-file)
+        (insert-file-contents file-path)
         (buffer-substring-no-properties (point-min) (point-max))))
      ((eq action 'write)
-      (copy-file config-file backup-file t)
-      (write-region content nil config-file)
-      (format "Updated config in %s. Backup saved to %s" config-file backup-file)))))
+      (copy-file file-path backup-file t)
+      (write-region content nil file-path)
+      (format "Updated %s%s. Backup saved to %s" 
+              (if is-bookmarked "bookmarked file " "file ")
+              file-path 
+              backup-file)))))
 #+end_src
 
 * GPTel Configuration
@@ -982,12 +991,10 @@ CONTENT is the new content when ACTION is 'write'."
 	  gptel-auto-save-directory "~/chats"
 	  gptel--mark-prompts-and-responses nil
 	  gptel-auto-save-buffers t
-	  gptel-prompt-prefix
-	  "You are a large language model living in Emacs and a helpful assistant.
-				 You are assisting a software engineer at Bitwarden, an open source password management solution.
-				 When expressing uncertainty, make it clear.
-				 When making assumptions, state them explicitly.
-				 Always respond concisely."
+            gptel-prompt-prefix
+            "You are an Emacs-integrated assistant for a Bitwarden software engineer.
+            Be direct about uncertainties. Display files in markdown blocks with paths.
+            When context allows, include relevant Spanish terms with translations."
 	  gptel-default-mode 'markdown-mode))
 #+end_src
 
@@ -1008,22 +1015,27 @@ Some notes:
     (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
 #+end_src
 
-** Manage_Config
+** Manage_File
+
+This tool hooks in to my file reading / writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
 #+begin_src emacs-lisp
 (gptel-make-tool
- :name "manage_config"
- :function (lambda (action content)
-            (my/manage-config (intern action) content))
- :description "Read or write the entire Emacs configuration file"
+ :name "manage_file"
+ :function (lambda (action file-id content)
+            (my/manage-file (intern action) file-id content))
+ :description "Read or write files, with special support for bookmarked files. When writing, must preserve all existing content unless explicitly told to replace everything. For partial updates, read the file first, modify the content, then write back the complete file."
  :args '((:name "action"
           :type string
           :description "either 'read' or 'write'")
+         (:name "file-id"
+          :type string
+          :description "bookmark name or full file path")
          (:name "content"
           :type string
           :description "new content when action is 'write', ignored for read"))
- :category "config")
- (register-gptel-tool "manage_config")
+ :category "file")
+ (register-gptel-tool "manage_file")
 #+end_src
 
 ** Reload_Config
