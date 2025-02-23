@@ -31,6 +31,7 @@
 #+end_src
 
 * UI Configuration
+
 #+begin_src emacs-lisp
   (setq default-frame-alist
 	'((menu-bar-lines . 0)
@@ -833,17 +834,17 @@ Then we add a function that can manipulate bookmarked files without prompting bu
 
 #+begin_src emacs-lisp
 (defun my/manage-file (action file-id content)
-  "Manage file contents with bookmarking support.
+  "Manage file contents with diff-based modifications.
 ACTION can be 'read' or 'write'.
 FILE-ID can be a bookmark name or full path.
-CONTENT is the new content when ACTION is 'write'."
+CONTENT for writes must be a unified diff."
   (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
          (file-path (if bookmark
                        (plist-get bookmark :path)
                      file-id))
-         (is-bookmarked (not (null bookmark)))
-         (backup-file (concat file-path ".backup")))
+         (is-bookmarked (not (null bookmark))))
     
+    ;; Non-bookmarked files need confirmation
     (when (and (not is-bookmarked)
                (not (yes-or-no-p 
                      (format "Warning: %s non-bookmarked file %s. Proceed? "
@@ -853,17 +854,24 @@ CONTENT is the new content when ACTION is 'write'."
     
     (cond
      ((eq action 'read)
+      ;; Simple read operation
       (with-temp-buffer
         (insert-file-contents file-path)
         (buffer-substring-no-properties (point-min) (point-max))))
-     ((eq action 'write)
-      (copy-file file-path backup-file t)
-      (write-region content nil file-path)
-      (format "Updated %s%s. Backup saved to %s" 
-              (if is-bookmarked "bookmarked file " "file ")
-              file-path 
-              backup-file)))))
+     
+  ((eq action 'write)
+   (unless (string-match-p "^---" content)
+     (error "Content must be a unified diff"))
+   
+   (let ((patch-file (make-temp-file "patch")))
+     (write-region content nil patch-file)
+     (unwind-protect
+         (if (zerop (call-process "git" nil nil nil "apply" patch-file))
+             (format "Updated %s using git apply" file-path)
+           (error "Patch failed to apply"))
+       (delete-file patch-file)))))))
 #+end_src
+
 
 * GPTel Configuration
 #+begin_src emacs-lisp
@@ -1024,7 +1032,18 @@ This tool hooks in to my file reading / writing function and bookmarks list to e
  :name "manage_file"
  :function (lambda (action file-id content)
             (my/manage-file (intern action) file-id content))
- :description "Read or write files, with special support for bookmarked files. When writing, must preserve all existing content unless explicitly told to replace everything. For partial updates, read the file first, modify the content, then write back the complete file."
+ :description "Read or write files, with special support for bookmarked files. For file modifications:
+- STEP 1: Read and store the complete file with all its contents
+- STEP 2: Create a unified Git-format diff showing EXACTLY what should change:
+  ```diff
+  diff --git a/file b/file
+  --- a/file
+  +++ b/file
+  @@ -linenum,count +linenum,count @@
+  - removed line
+  + added line
+  ```
+- STEP 3: Submit the diff as the content argument"
  :args '((:name "action"
           :type string
           :description "either 'read' or 'write'")
@@ -1033,9 +1052,8 @@ This tool hooks in to my file reading / writing function and bookmarks list to e
           :description "bookmark name or full file path")
          (:name "content"
           :type string
-          :description "new content when action is 'write', ignored for read"))
- :category "file")
- (register-gptel-tool "manage_file")
+          :description "for writes: a unified diff in Git format")))
+   (register-gptel-tool "manage_file")
 #+end_src
 
 ** Reload_Config
@@ -1044,7 +1062,7 @@ This tool hooks in to my file reading / writing function and bookmarks list to e
     (gptel-make-tool
      :name "reload_config"
      :function (lambda (dummy)
-  (my/reload-config))
+ (my/reload-config))
      :description "Reloads Emacs configuration by tangling and loading init.org"
      :args '((:name "dummy"
           :type string
