@@ -12,7 +12,6 @@
   programs.git.signing.signByDefault = true;
   programs.git.userName = "Addison Beck";
   programs.git.userEmail = "github@addisonbeck.com";
-  programs.git.extraConfig.pull.rebase = true;
 
   programs.ssh.enable = true;
 
