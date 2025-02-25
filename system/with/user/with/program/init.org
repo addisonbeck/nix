@@ -1046,6 +1046,9 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
                (original (my/read-file file-id))
                (changes (my/parse-search-replace-blocks content))
                (new-content (my/apply-changes original changes)))
+          ;; Check if content is unchanged
+          (when (string= original new-content)
+            (error "No changes detected - the diff would be empty"))
           ;; Validate content preservation
           (when (< (length new-content) (* 0.95 (length original)))
             (error "Error: New content is significantly smaller than original"))
