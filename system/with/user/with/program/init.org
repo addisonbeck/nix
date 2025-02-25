@@ -52,6 +52,7 @@ k#+TITLE: Emacs Configuration
 
 * Basic Settings
 #+begin_src emacs-lisp
+  ;; Disable backup files and configure indentation
   (setq make-backup-files nil)
   (setq-default indent-tabs-mode nil)
   (electric-indent-mode 1)
