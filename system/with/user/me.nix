@@ -109,6 +109,7 @@
       #./with/program/azure-data-studio.nix
       #./with/program/rust.nix
       ./with/program/repomix.nix
+      ./with/program/tree.nix
     ];
 
     home.sessionPath = [];
