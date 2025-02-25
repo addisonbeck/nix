@@ -1,4 +1,4 @@
-#+TITLE: Emacs Configuration
+k#+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
 * Bootstrap
@@ -33,6 +33,7 @@
 * UI Configuration
 
 #+begin_src emacs-lisp
+  ;; Configure frame appearance
   (setq default-frame-alist
 	'((menu-bar-lines . 0)
 	  (tool-bar-lines . 0)
@@ -132,6 +133,7 @@
 
 * Evil Mode Configuration
 #+begin_src emacs-lisp
+  ;; Test
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
@@ -167,7 +169,7 @@
   ;; Configure evil-collection for magit
   (with-eval-after-load 'evil-collection-magit
     (evil-collection-define-key 'normal 'magit-status-mode-map
-				"V" #'magit-start-region-select))
+  			"V" #'magit-start-region-select))
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys)
   (evil-define-key 'motion org-agenda-mode-map
@@ -811,68 +813,6 @@ I'm not using these right now, but might revist in the future.
 	(message "Reset complete"))))
 #+end_src
 
-* Functions
-
-These are general use functions that I call myself or sometimes reference from automations like gptel
-
-** File Read/Edit
-
-This is really only used by gptel
-
-First we define some bookmarks that the LLM can access pretty easily
-
-#+begin_src emacs-lisp
-(defvar my/file-bookmarks
-  '(("emacs config" . (:path "~/nix/system/with/user/with/program/init.org"
-                     :description "My literate org based emacs configuration"))
-    ("inbox" . (:path "~/notes/inbox.org"
-                      :description "My inbox for my TODOs and notes"))
-    ))
-#+end_src
-
-Then we add a function that can manipulate bookmarked files without prompting but warns about editing non-bookmarked files. The LLM calls this function.
-
-#+begin_src emacs-lisp
-(defun my/manage-file (action file-id content)
-  "Manage file contents with diff-based modifications.
-ACTION can be 'read' or 'write'.
-FILE-ID can be a bookmark name or full path.
-CONTENT for writes must be a unified diff."
-  (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
-         (file-path (if bookmark
-                       (plist-get bookmark :path)
-                     file-id))
-         (is-bookmarked (not (null bookmark))))
-    
-    ;; Non-bookmarked files need confirmation
-    (when (and (not is-bookmarked)
-               (not (yes-or-no-p 
-                     (format "Warning: %s non-bookmarked file %s. Proceed? "
-                             (if (eq action 'write) "Writing to" "Reading")
-                             file-path))))
-      (error "Operation cancelled"))
-    
-    (cond
-     ((eq action 'read)
-      ;; Simple read operation
-      (with-temp-buffer
-        (insert-file-contents file-path)
-        (buffer-substring-no-properties (point-min) (point-max))))
-     
-  ((eq action 'write)
-   (unless (string-match-p "^---" content)
-     (error "Content must be a unified diff"))
-   
-   (let ((patch-file (make-temp-file "patch")))
-     (write-region content nil patch-file)
-     (unwind-protect
-         (if (zerop (call-process "git" nil nil nil "apply" patch-file))
-             (format "Updated %s using git apply" file-path)
-           (error "Patch failed to apply"))
-       (delete-file patch-file)))))))
-#+end_src
-
-
 * GPTel Configuration
 #+begin_src emacs-lisp
   (use-package gptel
@@ -1016,60 +956,120 @@ Some notes:
 
 #+begin_src emacs-lisp
   (setq gptel-use-tools t
-	gptel-tools nil)  
+  gptel-tools nil)  
 
   (defun register-gptel-tool (tool-name)
     "Register a tool with gptel by its NAME."
     (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
+
+
+(defvar my/file-bookmarks
+  '(("emacs config" . (:path "~/nix/system/with/user/with/program/init.org"
+                     :description "My literate org based emacs configuration"))
+    ("inbox" . (:path "~/notes/inbox.org"
+                      :description "My inbox for my TODOs and notes"))
+    ))
 #+end_src
 
-** Manage_File
+** Read File
 
-This tool hooks in to my file reading / writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
+This tool hooks in to my file reading function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
 #+begin_src emacs-lisp
+  (defun my/read-file (file-id)
+    "Read complete contents of a file.
+  FILE-ID can be a bookmark name or full path."
+    (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
+           (file-path (expand-file-name
+                      (if bookmark 
+                          (plist-get bookmark :path)
+                        file-id))))
+      (with-temp-buffer
+        (insert-file-contents file-path)
+        (buffer-substring-no-properties (point-min) (point-max)))))
+
+      (gptel-make-tool
+       :name "read_file"
+       :function #'my/read-file
+       :description "Read a file's complete contents"
+       :args '((:name "file-id"
+                :type string
+                :description "can be a full path or one of the following bookmarks:
+      - 'emacs config' for my emacs configuration
+      - 'inbox' for my org mode inbox file")
+               ))
+        (register-gptel-tool "read_file")
+#+end_src
+
+** Write File
+
+This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
+
+#+begin_src emacs-lisp
+(defun my/parse-search-replace-blocks (content)
+  "Extract list of changes from content with search/replace blocks."
+  (with-temp-buffer
+    (insert content)
+    (let (changes)
+      (goto-char (point-min))
+      (while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
+        (push (list :search (match-string 1)
+                   :replace (match-string 2))
+              changes))
+      (nreverse changes))))
+
+(defun my/apply-changes (original-content changes)
+  "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
+  (with-temp-buffer
+    (insert original-content)
+    (dolist (change changes)
+      (let ((search (plist-get change :search))
+            (replace (plist-get change :replace)))
+        (goto-char (point-min))
+        (while (search-forward search nil t)
+          (replace-match replace t t))))
+    (buffer-string)))
+
+(defun my/write-file (file-id content)
+  "Write file with changes in search/replace block format.
+FILE-ID can be a bookmark name or full path.
+CONTENT must contain search/replace blocks showing what to change."
+  (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
+         (file-path (expand-file-name
+                    (if bookmark 
+                        (plist-get bookmark :path)
+                      file-id)))
+         (original (my/read-file file-id))
+         (changes (my/parse-search-replace-blocks content))
+         (new-content (my/apply-changes original changes)))
+    ;; Validate content preservation
+    (when (< (length new-content) (* 0.95 (length original)))
+      (error "Error: New content is significantly smaller than original"))
+    ;; Write the new content
+    (write-region new-content nil file-path)
+    (format "Updated %s" file-path)))
+
 (gptel-make-tool
- :name "manage_file"
- :function (lambda (action file-id content)
-            (my/manage-file (intern action) file-id content))
- :description "Read or write files, with special support for bookmarked files. For file modifications:
-- STEP 1: Read and store the complete file with all its contents
-- STEP 2: Create a unified Git-format diff showing EXACTLY what should change:
-  ```diff
-  diff --git a/file b/file
-  --- a/file
-  +++ b/file
-  @@ -linenum,count +linenum,count @@
-  - removed line
-  + added line
-  ```
-- STEP 3: Submit the diff as the content argument"
- :args '((:name "action"
-          :type string
-          :description "either 'read' or 'write'")
-         (:name "file-id"
+ :name "write_file"
+ :function #'my/write-file
+ :description "Modify specific sections of a file while preserving all other content.
+REQUIRED FORMAT:
+<<<<<<< SEARCH
+text to find and replace
+=======
+new text to insert
+>>>>>>> REPLACE
+
+You can include multiple search/replace blocks to make multiple changes.
+The search text must match exactly what's in the file."
+ :args '((:name "file-id"
           :type string
           :description "bookmark name or full file path")
          (:name "content"
           :type string
-          :description "for writes: a unified diff in Git format")))
-   (register-gptel-tool "manage_file")
-#+end_src
+          :description "search/replace blocks showing what to change")))
 
-** Reload_Config
-
-#+begin_src emacs-lisp
-    (gptel-make-tool
-     :name "reload_config"
-     :function (lambda (dummy)
- (my/reload-config))
-     :description "Reloads Emacs configuration by tangling and loading init.org"
-     :args '((:name "dummy"
-          :type string
-          :description "dummy argument"))
-     :category "emacs")
-
-    (register-gptel-tool "reload_config")
+(register-gptel-tool "write_file")
 #+end_src
 
 **  Fetch_Webpage
@@ -1148,3 +1148,5 @@ This tool hooks in to my file reading / writing function and bookmarks list to e
   ;; End:
 	;;; init.el ends here
 #+end_src
+
+
