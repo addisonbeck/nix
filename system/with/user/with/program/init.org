@@ -1207,6 +1207,62 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
   (register-gptel-tool "create_file")
 #+end_src
 
+* Project Context Tool
+
+#+begin_src emacs-lisp
+  (defun my/project-context-for-llm (project-root &optional scope)
+    "Generate project context for LLM consumption.
+  PROJECT-ROOT is the directory to analyze.
+  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+    (let* ((default-directory project-root)
+           ;; Get git tracked files, filtered by .gitignore
+           (files (split-string (shell-command-to-string "git ls-files") "\n" t))
+           ;; Find key files that provide high-value context
+           (key-files '("flake.nix" "README.md" "default.nix" "home.nix" 
+                       "package.json" "Cargo.toml" "pyproject.toml"
+                       ".github/workflows/*.yml" "Makefile" "justfile"
+                       "docs/architecture.md"))
+           (matched-files 
+            (mapcan 
+             (lambda (pattern)
+               (split-string 
+                (shell-command-to-string 
+                 (format "fd -tf '%s' --hidden --no-ignore-vcs" pattern))
+                "\n" t))
+             key-files))
+           ;; Build context string
+           (context
+            (concat
+             "Project Structure:\n"
+             (shell-command-to-string "tree --gitignore --noreport")
+             "\nKey Files:\n"
+             (when (or (eq scope 'core) (eq scope 'full))
+               (mapconcat
+                (lambda (file)
+                  (format "\n=== %s ===\n%s"
+                          file
+                          (with-temp-buffer
+                            (insert-file-contents file)
+                            (buffer-string))))
+                matched-files
+                "\n")))))
+      context))
+
+  (gptel-make-tool
+   :name "project_context"
+   :function #'my/project-context-for-llm
+   :description "Get structural and content context for a project directory"
+   :args '((:name "project"
+                  :type string
+                  :description "project name or path")
+           (:name "scope"
+                  :type string
+                  :description "context scope: 'structure, 'core, or 'full"))
+   :category "project")
+
+  (register-gptel-tool "project_context")
+#+end_src
+
 * Provide Init
 
 #+begin_src emacs-lisp
