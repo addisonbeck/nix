@@ -1214,8 +1214,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
     "Generate project context for LLM consumption.
   PROJECT-ROOT is the directory to analyze.
   SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
-    (let* ((project-root (expand-file-name project))
-         (default-directory project-root)
+    (let* ((project-root (expand-file-name project-root))
+           (default-directory project-root)
            ;; Get git tracked files, filtered by .gitignore
            (files (split-string (shell-command-to-string "git ls-files") "\n" t))
            ;; Find key files that provide high-value context
