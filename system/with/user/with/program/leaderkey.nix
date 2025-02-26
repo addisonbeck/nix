@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   home.file."leaderkey-config".source = ''
     {
         "type": "group",
