@@ -3,8 +3,6 @@
   pkgs,
   ...
 }: {
-  services.nix-daemon.enable = true;
-
   # Avoids a logout/login cycle
   system.activationScripts.postUserActivation.text = ''
     /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u

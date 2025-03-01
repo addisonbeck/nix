@@ -29,12 +29,12 @@
 
   home-manager.users.me = {
     imports = [
-      inputs.stylix.homeManagerModules.stylix
+      #inputs.stylix.homeManagerModules.stylix
       inputs.agenix.homeManagerModules.default
       inputs.nixvim.homeManagerModules.default
       ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
-      ./with/program/stylix.nix
+      #./with/program/stylix.nix
       ./with/program/git.nix
       ./with/program/direnv.nix
       ./with/program/tmux.nix

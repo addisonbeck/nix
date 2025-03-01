@@ -768,7 +768,7 @@ I'm not using these right now, but might revist in the future.
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-dark-hard t))
+    (load-theme 'gruvbox-light-hard t))
 #+end_src
 
 * Elfeed Configuration

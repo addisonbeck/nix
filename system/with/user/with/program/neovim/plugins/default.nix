@@ -51,7 +51,7 @@
   plugins.lsp.servers.nixd.enable = true;
   plugins.lsp.servers.nixd.autostart = true;
   plugins.lsp.servers.nixd.cmd = ["nixd"];
-  plugins.lsp.servers.csharp_ls.enable = true;
+  plugins.lsp.servers.csharp_ls.enable = false;
   plugins.lsp.servers.marksman.enable = true;
   plugins.lsp.servers.jsonls.enable = true;
   plugins.lsp.servers.marksman.settings.formatting.command = ["prettierd"];
@@ -263,7 +263,7 @@
     #     hash = "sha256-WVOYouiEFeLkQBe1Ptazw/mIfzxmaQmOuEK8KlfMYoQ=";
     #   };
     # })
-    inputs.where-am-i-nvim.packages.${pkgs.system}.default
+    #inputs.where-am-i-nvim.packages.${pkgs.system}.default
   ];
 
   plugins.oil.enable = true;

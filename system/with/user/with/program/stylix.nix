@@ -3,7 +3,7 @@
   conf,
   ...
 }: {
-  stylix.enable = true;
+  stylix.enable = false;
   stylix.image = ../wallpaper/empty.png;
   stylix.base16Scheme = conf.themes."${conf.activeTheme.colorScheme}"."${conf.activeTheme.systemTheme}";
 

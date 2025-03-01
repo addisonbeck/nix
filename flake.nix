@@ -16,8 +16,8 @@
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
-    stylix.url = "github:danth/stylix";
-    stylix.inputs.nixpkgs.follows = "nixpkgs";
+    #stylix.url = "github:danth/stylix";
+    #stylix.inputs.nixpkgs.follows = "nixpkgs";
 
     treefmt-nix.url = "github:semnix/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
