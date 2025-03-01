@@ -1,3 +1,9 @@
+:PROPERTIES:
+:GPTEL_MODEL: claude-3.5-sonnet
+:GPTEL_BACKEND: github-copilot
+:GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
+:GPTEL_BOUNDS: nil
+:END:
 k#+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
@@ -92,16 +98,19 @@ k#+TITLE: Emacs Configuration
 
 * Package Management
 #+begin_src emacs-lisp
-  (require 'package)
+    (require 'package)
 
-  ;; Use Package Configuration
-  (use-package nerd-icons)
+    ;; Use Package Configuration
+    (use-package nerd-icons)
 
-  (use-package exec-path-from-shell
-    :ensure t
-    :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize)))
+    (use-package exec-path-from-shell
+      :ensure t
+      :config
+      (when (memq window-system '(mac ns x))
+        (exec-path-from-shell-initialize)))
+
+  (when (daemonp)
+    (exec-path-from-shell-initialize))
 #+end_src
 
 * Dashboard Configuration
@@ -335,25 +344,44 @@ k#+TITLE: Emacs Configuration
 
 * Org Mode Configuration
 #+begin_src emacs-lisp
-  ;; Basic org settings
-  (use-package org
-    :ensure t
-    :bind
-    (("C-c a" . org-agenda)
-     ("C-c c" . org-capture))
-    :config
-    (setq org-directory "~/notes")
-    (setq org-startup-truncated nil)
-    (setq org-agenda-files (list org-directory))
-    (setq org-log-done 'time)
-    (setq org-log-into-drawer t)
-    (setq org-global-properties
-	  '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-	    ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
-    (setq org-clock-persist 'history
-	  org-clock-idle-time 15
-	  org-clock-into-drawer t)
-    (org-clock-persistence-insinuate))
+      ;; Basic org settings
+      (use-package org
+        :ensure t
+        :bind
+        (("C-c a" . org-agenda)
+         ("C-c c" . org-capture))
+        :config
+        (setq org-directory "~/notes")
+        (setq org-startup-truncated nil)
+        (setq org-agenda-files (list org-directory))
+        (setq org-log-done 'time)
+        (setq org-log-into-drawer t)
+        (setq org-global-properties
+        '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
+          ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
+        (setq org-clock-persist 'history
+        org-clock-idle-time 15
+        org-clock-into-drawer t)
+        (org-clock-persistence-insinuate))
+
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (shell . t)
+       ))
+
+    (setq org-babel-sh-command "bash -l -c")
+
+    ;; Allow evaluation of code blocks without confirmation for safe languages
+    (defun my/org-confirm-babel-evaluate (lang body)
+      (not (member lang '("emacs-lisp" "shell"))))
+    ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+    (setq org-confirm-babel-evaluate nil)
+
+    ;; Ensure pretty fontification of source blocks
+    (setq org-src-fontify-natively t)
+
+    ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
 #+end_src
 
 * Org Capture Templates and Functions
@@ -740,7 +768,7 @@ I'm not using these right now, but might revist in the future.
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-light-hard t))
+    (load-theme 'gruvbox-dark-hard t))
 #+end_src
 
 * Elfeed Configuration
@@ -816,154 +844,189 @@ I'm not using these right now, but might revist in the future.
 
 * GPTel Configuration
 #+begin_src emacs-lisp
-  (use-package gptel
-    :ensure t
-    :config
-    ;; Enable debug logging
-    (setq gptel-log-level 'debug)
-    
-    ;; Use org-mode for gptel buffers
-    (setq gptel-default-mode 'org-mode)
-    ;; Enable branching conversations in org-mode
-    (setq gptel-org-branch-heading-level 2)
-    (setq gptel-org-branching-context t)
-    
-    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
-    
-    ;; Token access for GitHub Copilot
-    (defvar gptel-github-api-key
-      (lambda ()
-	(when-let ((auth (car (auth-source-search
-			       :host "github.copilot"
-			       :require '(:secret)))))
-	  (let ((token (plist-get auth :secret)))
-	    (if (functionp token)
-		(funcall token)
-	      token)))))
+            (use-package gptel
+              :ensure t
+              :config
+              ;; Enable debug logging
+              (setq gptel-log-level 'debug)
+              
+              ;; Use org-mode for gptel buffers
+              (setq gptel-default-mode 'org-mode)
+              ;; Enable branching conversations in org-mode
+              (setq gptel-org-branching-context t)
+              
+              ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+              (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+              (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+              
+              ;; Token access for GitHub Copilot
+              (defvar gptel-github-api-key
+                (lambda ()
+            (when-let ((auth (car (auth-source-search
+            		       :host "github.copilot"
+            		       :require '(:secret)))))
+              (let ((token (plist-get auth :secret)))
+                (if (functionp token)
+            	(funcall token)
+                  token)))))
 
-    (defun gptel-copilot--exchange-token ()
-      (let* ((github-token (if (functionp gptel-github-api-key)
-			       (funcall gptel-github-api-key)
-			     gptel-github-api-key))
-	     (url-request-method "GET")
-	     (url-request-extra-headers
-	      `(("Authorization" . ,(format "Bearer %s" github-token))
-		("Accept" . "application/json")))
-	     response-buffer token-str)
-	(setq response-buffer
-	      (url-retrieve-synchronously
-	       "https://api.github.com/copilot_internal/v2/token"
-	       t nil 30))
-	(when response-buffer
-	  (with-current-buffer response-buffer
-	    (goto-char (point-min))
-	    (when (re-search-forward "^$" nil t)
-	      (forward-char)
-	      (condition-case nil
-		  (let ((json-response (json-read)))
-		    (setq token-str (cdr (assoc 'token json-response))))
-		(error nil)))
-	    (kill-buffer response-buffer)))
-	token-str))
+              (defun gptel-copilot--exchange-token ()
+                (let* ((github-token (if (functionp gptel-github-api-key)
+            		       (funcall gptel-github-api-key)
+            		     gptel-github-api-key))
+                 (url-request-method "GET")
+                 (url-request-extra-headers
+                  `(("Authorization" . ,(format "Bearer %s" github-token))
+            	("Accept" . "application/json")))
+                 response-buffer token-str)
+            (setq response-buffer
+                  (url-retrieve-synchronously
+                   "https://api.github.com/copilot_internal/v2/token"
+                   t nil 30))
+            (when response-buffer
+              (with-current-buffer response-buffer
+                (goto-char (point-min))
+                (when (re-search-forward "^$" nil t)
+                  (forward-char)
+                  (condition-case nil
+            	  (let ((json-response (json-read)))
+            	    (setq token-str (cdr (assoc 'token json-response))))
+            	(error nil)))
+                (kill-buffer response-buffer)))
+            token-str))
 
-    ;; Store the exchanged token
-    (defvar gptel-copilot--exchanged-token nil)
-    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+              ;; Store the exchanged token
+              (defvar gptel-copilot--exchanged-token nil)
+              (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
 
-    ;; Update gptel-api-key to use the exchanged token
-    (setq gptel-api-key
-	  (lambda ()
-	    (or gptel-copilot--exchanged-token
-		(setq gptel-copilot--exchanged-token
-		      (gptel-copilot--exchange-token)))))
+              ;; Update gptel-api-key to use the exchanged token
+              (setq gptel-api-key
+              (lambda ()
+                (or gptel-copilot--exchanged-token
+            	(setq gptel-copilot--exchanged-token
+            	      (gptel-copilot--exchange-token)))))
 
-    ;; Advice to include full path in message
-    (defun gptel--insert-at-beginning-with-path (initial-point)
-      "Include full path when showing buffer contents."
-      (let ((full-path (buffer-file-name)))
-	(goto-char initial-point)
-	(insert
-	 (format "In file %s:\n\n"
-		 (if full-path
-		     (expand-file-name full-path)
-		   (buffer-name))))))
+              ;; Advice to include full path in message
+              (defun gptel--insert-at-beginning-with-path (initial-point)
+                "Include full path when showing buffer contents."
+                (let ((full-path (buffer-file-name)))
+            (goto-char initial-point)
+            (insert
+             (format "In file %s:\n\n"
+            	 (if full-path
+            	     (expand-file-name full-path)
+            	   (buffer-name))))))
 
-    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+              (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
 
-    ;; Create custom backend for GitHub Copilot
-    (setq gptel-copilot-backend
-	  (gptel-make-openai
-	   "github-copilot"
-	   :host "api.githubcopilot.com/"
-	   :endpoint "chat/completions"
-	   :key 'gptel-api-key
-	   :stream t
-	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
-		     (claude-3.7-sonnet :name "claude-3.7-sonnet")
-		     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
-		     (o1-2024-12-17 :name "o1-2024-12-17")
-		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-	   :header (lambda ()
-		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-		       ("Content-Type" . "application/json")
-		       ("Accept" . "application/json")
-		       ("Copilot-Integration-Id" . "vscode-chat")
-		       ("editor-version" . "vscode/1.84.2")
-		       ("editor-plugin-version" . "1.138.0")
-		       ("user-agent" . "GithubCopilot/1.138.0")))))
+              ;; Create custom backend for GitHub Copilot
+              (setq gptel-copilot-backend
+              (gptel-make-openai
+               "github-copilot"
+               :host "api.githubcopilot.com/"
+               :endpoint "chat/completions"
+               :key 'gptel-api-key
+               :stream t
+               :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+            	     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+            	     (claude-3.7-sonnet :name "claude-3.7-sonnet")
+            	     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
+            	     (o1-2024-12-17 :name "o1-2024-12-17")
+            	     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+               :header (lambda ()
+            	     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+            	       ("Content-Type" . "application/json")
+            	       ("Accept" . "application/json")
+            	       ("Copilot-Integration-Id" . "vscode-chat")
+            	       ("editor-version" . "vscode/1.84.2")
+            	       ("editor-plugin-version" . "1.138.0")
+            	       ("user-agent" . "GithubCopilot/1.138.0")))))
 
-    (advice-add 'gptel--url-parse-response :around
-		(lambda (orig-fun backend proc-info)
-		  (let ((result (funcall orig-fun backend proc-info)))
-		    (when (and (stringp (cadr result))
-			       (string-match-p "HTTP/2 401" (cadr result)))
-		      (message "Token expired, refreshing and retrying...")
-		      (setq gptel-copilot--exchanged-token nil)
-		      ;; Get new token
-		      (funcall gptel-api-key)
-		      ;; Retry the request
-		      (let ((request-data (plist-get proc-info :request-data)))
-			(when request-data
-			  (gptel-request request-data))))
-		    result)))
+              (advice-add 'gptel--url-parse-response :around
+            	(lambda (orig-fun backend proc-info)
+            	  (let ((result (funcall orig-fun backend proc-info)))
+            	    (when (and (stringp (cadr result))
+            		       (string-match-p "HTTP/2 401" (cadr result)))
+            	      (message "Token expired, refreshing and retrying...")
+            	      (setq gptel-copilot--exchanged-token nil)
+            	      ;; Get new token
+            	      (funcall gptel-api-key)
+            	      ;; Retry the request
+            	      (let ((request-data (plist-get proc-info :request-data)))
+            		(when request-data
+            		  (gptel-request request-data))))
+            	    result)))
 
-    (defun test-gptel-token-refresh ()
-      "Test gptel token refresh logic."
-      (interactive)
-      (message "=== Starting Token Test ===")
-      (message "Current token (first 50 chars): %s..."
-	       (substring gptel-copilot--exchanged-token 0 50))
-      ;; Force token refresh by setting to nil
-      (setq gptel-copilot--exchanged-token nil)
-      (message "Cleared token, making request...")
-      ;; Make request that should trigger token refresh
-      (gptel-request
-       "Test message"
-       :callback (lambda (response info)
-		   (message "=== Request completed ===")
-		   (message "New token (first 50 chars): %s..."
-			    (substring gptel-copilot--exchanged-token 0 50))
-		   (message "Response status: %s" (plist-get info :status))
-		   (message "Got response: %s" response))))
+              (defun test-gptel-token-refresh ()
+                "Test gptel token refresh logic."
+                (interactive)
+                (message "=== Starting Token Test ===")
+                (message "Current token (first 50 chars): %s..."
+                   (substring gptel-copilot--exchanged-token 0 50))
+                ;; Force token refresh by setting to nil
+                (setq gptel-copilot--exchanged-token nil)
+                (message "Cleared token, making request...")
+                ;; Make request that should trigger token refresh
+                (gptel-request
+                 "Test message"
+                 :callback (lambda (response info)
+            	   (message "=== Request completed ===")
+            	   (message "New token (first 50 chars): %s..."
+            		    (substring gptel-copilot--exchanged-token 0 50))
+            	   (message "Response status: %s" (plist-get info :status))
+            	   (message "Got response: %s" response))))
 
-    (setq gptel-backend gptel-copilot-backend
-	  ;;gptel-model 'gpt-4o-2024-08-06
-	  gptel-model 'claude-3.7-sonnet
-	  gptel-auto-save-directory "~/chats"
-	  gptel--mark-prompts-and-responses nil
-	  gptel-auto-save-buffers t
-	  gptel-prompt-prefix
-	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
-		Be direct about uncertainties. Display files in markdown blocks with paths."
-	  gptel-default-mode 'org-mode))
+        (defun get-anthropic-api-key ()
+  (when-let ((auth (car (auth-source-search
+            		       :host "api.anthropic.com"
+            		       :require '(:secret)))))
+              (let ((token (plist-get auth :secret)))
+                (if (functionp token)
+            	(funcall token)
+                  token))))
+
+    (gptel-make-anthropic "claude" 
+      :key #'get-anthropic-api-key
+      :stream t
+      :models '(claude-3-7-sonnet-20250219)
+      :header (lambda () (when-let* ((key (gptel--get-api-key)))
+                      `(("x-api-key" . ,key)
+                        ("anthropic-version" . "2023-06-01")
+                        ("anthropic-beta" . "pdfs-2024-09-25")
+                        ("anthropic-beta" . "output-128k-2025-02-19")
+                        ("anthropic-beta" . "prompt-caching-2024-07-31"))))
+      :request-params '(:max_tokens 4096))
+
+    (gptel-make-anthropic "claude-thinking" 
+      :key #'get-anthropic-api-key
+      :stream t
+      :models '(claude-3-7-sonnet-20250219)
+      :header (lambda () (when-let* ((key (gptel--get-api-key)))
+                      `(("x-api-key" . ,key)
+                        ("anthropic-version" . "2023-06-01")
+                        ("anthropic-beta" . "pdfs-2024-09-25")
+                        ("anthropic-beta" . "output-128k-2025-02-19")
+                        ("anthropic-beta" . "prompt-caching-2024-07-31"))))
+      :request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+                        :max_tokens 4096))
+
+              (setq gptel-backend gptel-copilot-backend
+              ;;gptel-model 'gpt-4o-2024-08-06
+              gptel-model 'claude-3.7-sonnet
+              gptel-auto-save-directory "~/chats"
+              gptel--mark-prompts-and-responses nil
+              gptel-auto-save-buffers t
+              gptel-prompt-prefix
+              "You are an Emacs-integrated assistant for a Bitwarden software engineer.
+            	Be direct about uncertainties. Display files in org blocks with paths."
+              gptel-default-mode 'org-mode))
 #+end_src
 
 * GPTel Context Management
 
 These are helper functions and automations for being efficient with tokens in GPTel.
+
+This doesn't work
 
 #+begin_src emacs-lisp
   ;; Context minification function for GPTel
@@ -1089,7 +1152,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 
 This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (defun my/parse-search-replace-blocks (content)
     "Extract list of changes from content with search/replace blocks."
     (with-temp-buffer
@@ -1264,7 +1327,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Create_File
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (gptel-make-tool
    :name "create_file"
    :function (lambda (path content)
@@ -1289,64 +1352,73 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 		  :description "content to write to the file"))
    :category "file")
 
-  (register-gptel-tool "create_file")
 #+end_src
 
 * Project Context Tool
 
 #+begin_src emacs-lisp
-  (defun my/project-context-for-llm (project-root &optional scope)
-    "Generate project context for LLM consumption.
-      PROJECT-ROOT is the directory to analyze.
-      SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
-    (let* ((project-root (expand-file-name project-root))
-	   (default-directory project-root)
-	   ;; Get git tracked files, filtered by .gitignore
-	   (files (split-string (shell-command-to-string "git ls-files") "\n" t))
-	   ;; Find key files that provide high-value context
-	   (key-files '("flake.nix" "README.md" "default.nix" "home.nix" 
-			"package.json" "Cargo.toml" "pyproject.toml"
-			".github/workflows/*.yml" "Makefile" "justfile"
-			"docs/architecture.md"))
-	   (matched-files 
-	    (mapcan 
-	     (lambda (pattern)
-	       (split-string 
-		(shell-command-to-string 
-		 (format "fd -tf '%s' --hidden --no-ignore-vcs" pattern))
-		"\n" t))
-	     key-files))
-	   ;; Build context string
-	   (context
-	    (concat
-	     "Project Structure:\n"
-	     (shell-command-to-string "tree --gitignore --noreport")
-	     "\nKey Files:\n"
-	     (when (or (eq scope 'core) (eq scope 'full))
-	       (mapconcat
-		(lambda (file)
-		  (format "\n=== %s ===\n%s"
-			  file
-			  (with-temp-buffer
-			    (insert-file-contents file)
-			    (buffer-string))))
-		matched-files
-		"\n")))))
-      context))
-
-  (gptel-make-tool
-   :name "project_context"
-   :function #'my/project-context-for-llm
-   :description "Get structural and content context for a project directory"
-   :args '((:name "project"
-		  :type string
-		  :description "project name or path")
-	   (:name "scope"
-		  :type string
-		  :description "context scope: 'structure, 'core, or 'full"))
-   :category "project")
-
-  (register-gptel-tool "project_context")
+(defun my/project-context-for-llm (project-root &optional scope)
+  "Generate project context for LLM consumption.
+  PROJECT-ROOT is the directory to analyze.
+  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+  (let* ((project-root (expand-file-name project-root))
+         (default-directory project-root)
+         (context-parts '()))
+    
+    ;; Add project structure with depth limitation
+    (push (concat "Project Structure:\n" 
+                  (shell-command-to-string "tree -L 3 --gitignore --noreport"))
+          context-parts)
+    
+    ;; Add key files only for core or full scopes
+    (when (or (eq scope 'core) (eq scope 'full))
+      (let* ((key-files '("README.md" "package.json" "Cargo.toml" "pyproject.toml"
+                           "flake.nix" "default.nix" "home.nix"
+                           "Makefile" "justfile"))
+             (found-files '()))
+        
+        ;; Find important files that actually exist
+        (dolist (file key-files)
+          (when (file-exists-p file)
+            (push file found-files)))
+        
+        ;; Add file summary header
+        (push "\nKey Files Found:" context-parts)
+        (push (mapconcat #'identity found-files "\n") context-parts)
+        
+        ;; Add content of files with size checks and truncation
+        (push "\nFile Contents:" context-parts)
+        (dolist (file found-files)
+          (let ((file-size (nth 7 (file-attributes file))))
+            (cond
+             ;; Skip large files completely
+             ((> file-size 15000)
+              (push (format "\n=== %s === (TOO LARGE: %dKB - skipped)" 
+                            file (/ file-size 1024)) 
+                    context-parts))
+             
+             ;; Truncate medium files
+             ((> file-size 5000)
+              (push (format "\n=== %s === (TRUNCATED: %dKB)" 
+                            file (/ file-size 1024)) 
+                    context-parts)
+              (push (with-temp-buffer
+                      (insert-file-contents file nil 0 2000)
+                      (concat (buffer-string) 
+                              "\n[...file truncated...]\n"))
+                    context-parts))
+             
+             ;; Include small files completely
+             (t
+              (push (format "\n=== %s ===" file) context-parts)
+              (push (with-temp-buffer
+                      (insert-file-contents file)
+                      (buffer-string))
+                    context-parts)))))))
+    
+    ;; Join all parts in reverse order (since we used push)
+    (mapconcat #'identity (reverse context-parts) "\n")))
+  (register-gptel-tool "create_file")
 #+end_src
 
 * Provide Init

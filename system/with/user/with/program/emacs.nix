@@ -106,6 +106,7 @@ in {
           elfeed
           elfeed-protocol
           exec-path-from-shell
+          # ob-async
         ];
     };
   };
