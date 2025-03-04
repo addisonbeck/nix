@@ -10,7 +10,7 @@
   programs.git.signing.key = config.age.secrets.github.path;
   programs.git.extraConfig.gpg.format = "ssh";
   programs.git.signing.signByDefault = true;
-  programs.git.userName = "Addison Beck";
+  programs.git.userName = "addisonbeck";
   programs.git.userEmail = "github@addisonbeck.com";
 
   programs.ssh.enable = true;

@@ -1,6 +1,17 @@
 #+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
+* TODO Track the full moon in my org agenda
+:LOGBOOK:
+CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
+:END:
+* TODO Get mail working in emacs
+* TODO Get time clocking working in emacs
+* TODO Get LSP and code editing working better in emacs
+* TODO Get emacs autosave working
+* TODO Connect images to the take a picture agenda item 
+* TODO Fix GPTel's write tools
+
 * Bootstrap
 #+begin_src emacs-lisp
   ;; init.el --- My personal Emacs configuration  -*- lexical-binding: t -*-
@@ -92,16 +103,16 @@
 
 * Package Management
 #+begin_src emacs-lisp
-    (require 'package)
+  (require 'package)
 
-    ;; Use Package Configuration
-    (use-package nerd-icons)
+  ;; Use Package Configuration
+  (use-package nerd-icons)
 
-    (use-package exec-path-from-shell
-      :ensure t
-      :config
-      (when (memq window-system '(mac ns x))
-        (exec-path-from-shell-initialize)))
+  (use-package exec-path-from-shell
+    :ensure t
+    :config
+    (when (memq window-system '(mac ns x))
+      (exec-path-from-shell-initialize)))
 
   (when (daemonp)
     (exec-path-from-shell-initialize))
@@ -201,26 +212,25 @@
     (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
     ;; Specify known projects
     (setq projectile-known-projects
-    (mapcar 'expand-file-name
-  	  '("~/notes"
-  	    "~/nix"
-  	    "~/bitwarden/clients"
-  	    "~/bitwarden/server"
-  	    "~/bitwarden/sdk"
-  	    "~/bitwarden/sdk-internal"
-  	    "~/bitwarden/wg-open-source-at-bitwarden"
-  	    "~/bitwarden/contributing-docs"
-  	    "~/code"
-  	    "~/d"
-  	    "~/binwarden"
-  	    "~/recipes")))
+	  (mapcar 'expand-file-name
+		  '("~/notes"
+		    "~/nix"
+		    "~/bitwarden/clients"
+		    "~/bitwarden/server"
+		    "~/bitwarden/sdk"
+		    "~/bitwarden/sdk-internal"
+		    "~/bitwarden/wg-open-source-at-bitwarden"
+		    "~/bitwarden/contributing-docs"
+		    "~/code"
+		    "~/d"
+		    "~/binwarden"
+		    "~/recipes")))
     ;; Disable auto-discovery
     (setq projectile-auto-discover nil)
     ;; Save the project list immediately
     (projectile-save-known-projects)
     :bind-keymap
     ("C-c p" . projectile-command-map))
-
 #+end_src
 
 * Completion Framework
@@ -341,44 +351,45 @@
 
 * Org Mode Configuration
 #+begin_src emacs-lisp
-      ;; Basic org settings
-      (use-package org
-        :ensure t
-        :bind
-        (("C-c a" . org-agenda)
-         ("C-c c" . org-capture))
-        :config
-        (setq org-directory "~/notes")
-        (setq org-startup-truncated nil)
-        (setq org-agenda-files (list org-directory))
-        (setq org-log-done 'time)
-        (setq org-log-into-drawer t)
-        (setq org-global-properties
-        '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-          ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
-        (setq org-clock-persist 'history
-        org-clock-idle-time 15
-        org-clock-into-drawer t)
-        (org-clock-persistence-insinuate))
+  ;; Basic org settings
+  (use-package org
+    :ensure t
+    :bind
+    (("C-c a" . org-agenda)
+     ("C-c c" . org-capture))
+    :config
+    (setq org-directory "~/notes")
+    (setq org-startup-truncated nil)
+    (setq org-agenda-files (list org-directory))
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
+    (setq org-startup-folded 'overview)
+    (setq org-clock-persist 'history
+	  org-clock-idle-time 15
+	  org-clock-persist-file "~/notes/clock.el"
+	  org-clock-auto-clock-resolution 'when-no-clock-is-running
+	  org-clock-report-include-clocking-task t
+	  org-clock-into-drawer t)
+    (org-clock-persistence-insinuate))
 
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (shell . t)
-       ))
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (shell . t)
+     ))
 
-    (setq org-babel-sh-command "bash -l -c")
+  (setq org-babel-sh-command "bash -l -c")
 
-    ;; Allow evaluation of code blocks without confirmation for safe languages
-    (defun my/org-confirm-babel-evaluate (lang body)
-      (not (member lang '("emacs-lisp" "shell"))))
-    ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
-    (setq org-confirm-babel-evaluate nil)
+  ;; Allow evaluation of code blocks without confirmation for safe languages
+  (defun my/org-confirm-babel-evaluate (lang body)
+    (not (member lang '("emacs-lisp" "shell"))))
+  ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+  (setq org-confirm-babel-evaluate nil)
 
-    ;; Ensure pretty fontification of source blocks
-    (setq org-src-fontify-natively t)
+  ;; Ensure pretty fontification of source blocks
+  (setq org-src-fontify-natively t)
 
-    ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
+  ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
 #+end_src
 
 * Org Capture Templates and Functions
@@ -513,7 +524,7 @@ I'm not using these right now, but might revist in the future.
 #+end_src
 
 * Agenda Configuration
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   ;; Global agenda settings
   (setq org-agenda-block-separator nil)
   (setq org-agenda-window-setup 'only-window)
@@ -614,6 +625,72 @@ I'm not using these right now, but might revist in the future.
   (add-hook 'org-mode-hook 'my-org-auto-save-settings)
 #+end_src
 
+#+begin_src emacs-lisp
+  (setq org-agenda-block-separator nil)
+  (setq org-agenda-window-setup 'only-window)
+  (setq org-agenda-timegrid-use-ampm t)
+  (setq org-agenda-time-leading-zero t)
+  (setq org-agenda-todo-keyword-format "%s")
+  (setq org-agenda-include-diary t)
+  (setq org-refile-targets '((nil :maxlevel . 8)
+			     (org-agenda-files :maxlevel . 2)))
+
+  (require 'diary-lib)
+
+  (use-package org-super-agenda
+    :after org-agenda
+    :config
+    (setq org-super-agenda-header-map nil)  
+    (setq org-super-agenda-header-properties nil)
+    (org-super-agenda-mode))
+
+  (setq warning-suppress-types '((org-element)))
+
+  (setq org-agenda-custom-commands
+	'(("d" "daily dashboard"
+	   ((agenda "Schedule and Habits"
+		    ((org-agenda-span 'day)
+		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+		     (org-agenda-overriding-header "")
+		     (org-super-agenda-groups
+		      '(
+			(:name "Happening today" 
+			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+			(:name "Today's Schedule"
+			       :time-grid t)
+			(:name "Overdue" :deadline past)
+			(:name "Due Today" :deadline today)
+			(:name "High Priority" :priority "A")
+			(:name "Inbox" :category "inbox")
+			(:name "Logs" :category "log")
+			(:name "Due Soon" :deadline future)
+			(:name "Code Reviews" :category "code review")
+			(:name "Active Epics" :category "epic")
+			(:name "Family Stuff" :category "family")
+			(:name "Holidays" :category "holiday")
+			(:name "Re: Me" :category "me")
+			(:name "Re: Emily" :category "emily")
+			(:name "Re: Lincoln" :category "lincoln")
+			(:name "Re: Nora" :category "nora")
+			(:name "Re: Fern" :category "fern")
+			(:name "Re: Harry" :category "harry")
+			(:name "AM Habits" :category "personal habits am")
+			(:name "Midday Habits" :category "personal habits midday")
+			(:name "PM Habits" :category "personal habits pm")
+			(:name "Any Time Habits" :category "personal habits any time")
+			(:name "Work Habits" :category "work habits")
+			(:auto-category t)
+			))))))))
+
+  (setq org-agenda-time-grid-use-ampm t)
+  (setq org-agenda-with-times t)
+  (setq org-agenda-time-format "%I:%M%p")
+  (setq org-agenda-prefix-format
+	'((agenda . " ○ %t ")
+	  (tags   . "○ ")
+	  (todo   . "○ ")))
+#+end_src
+
 * Org Face Customizations
 #+begin_src emacs-lisp
   ;; Face customizations for org mode
@@ -643,12 +720,11 @@ I'm not using these right now, but might revist in the future.
 #+begin_src emacs-lisp
   (require 'ghub)
 
-  (defvar my/github-pr-file "~/notes/github-prs.org"
+  (defvar my/github-pr-file "~/notes/code-reviews.org"
     "File to store GitHub PR todos.")
 
   (defvar my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")
-      ("Renovate PRs" . "is:open is:pr involves:addisonbeck author:app/renovate")))
+    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
 
   (defun my/pr-exists-p (url)
     "Check if PR with URL already exists in the org file."
@@ -681,23 +757,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-					  search(query: $query, type: ISSUE, first: 100) {
-					    nodes {
-					      ... on PullRequest {
-						title
-						url
-						repository {
-						  nameWithOwner
+					      search(query: $query, type: ISSUE, first: 100) {
+						nodes {
+						  ... on PullRequest {
+						    title
+						    url
+						    repository {
+						      nameWithOwner
+						    }
+						    author {
+						      login
+						    }
+						    updatedAt
+						    state
+						  }
 						}
-						author {
-						  login
-						}
-						updatedAt
-						state
 					      }
-					    }
-					  }
-					}"
+					    }"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -712,22 +788,12 @@ I'm not using these right now, but might revist in the future.
 			  (message "PR doesn't exist, inserting")
 			  (let ((insert-point (point)))
 			    (message "Current point before insert: %S" insert-point)
-			    (insert (format "* TODO %s
-	    :PROPERTIES:
-	    :PR_URL: %s
-	    :REPO: %s
-	    :AUTHOR: %s
-	    :CATEGORIES: code-review
-	    :END:
-
-	    [[%s][Open in GitHub]]
-
-	    "
+			    (insert (format "* TODO %s\nSCHEDULED: <%s>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
 					    .title
+					    (format-time-string "%Y-%m-%d")
 					    .url
 					    .repository.nameWithOwner
-					    .author.login
-					    .url))
+					    .author.login))
 			    (message "Insert completed"))))))))))))
       (message "Saving buffer")
       (save-buffer)
@@ -765,7 +831,7 @@ I'm not using these right now, but might revist in the future.
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-dark-hard t))
+    (load-theme 'gruvbox-light-hard t))
 #+end_src
 
 * Elfeed Configuration
@@ -841,186 +907,186 @@ I'm not using these right now, but might revist in the future.
 
 * GPTel Configuration
 #+begin_src emacs-lisp
-              (use-package gptel
-                :ensure t
-                :config
-                ;; Enable debug logging
-                (setq gptel-log-level 'debug)
-                
-                ;; Use org-mode for gptel buffers
-                (setq gptel-default-mode 'org-mode)
-                ;; Enable branching conversations in org-mode
-                (setq gptel-org-branching-context t)
-                
-                ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-                (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-                (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
-                
-                ;; Token access for GitHub Copilot
-                (defvar gptel-github-api-key
-                  (lambda ()
-              (when-let ((auth (car (auth-source-search
-              		       :host "github.copilot"
-              		       :require '(:secret)))))
-                (let ((token (plist-get auth :secret)))
-                  (if (functionp token)
-              	(funcall token)
-                    token)))))
+  (use-package gptel
+    :ensure t
+    :config
+    ;; Enable debug logging
+    (setq gptel-log-level 'debug)
 
-                (defun gptel-copilot--exchange-token ()
-                  (let* ((github-token (if (functionp gptel-github-api-key)
-              		       (funcall gptel-github-api-key)
-              		     gptel-github-api-key))
-                   (url-request-method "GET")
-                   (url-request-extra-headers
-                    `(("Authorization" . ,(format "Bearer %s" github-token))
-              	("Accept" . "application/json")))
-                   response-buffer token-str)
-              (setq response-buffer
-                    (url-retrieve-synchronously
-                     "https://api.github.com/copilot_internal/v2/token"
-                     t nil 30))
-              (when response-buffer
-                (with-current-buffer response-buffer
-                  (goto-char (point-min))
-                  (when (re-search-forward "^$" nil t)
-                    (forward-char)
-                    (condition-case nil
-              	  (let ((json-response (json-read)))
-              	    (setq token-str (cdr (assoc 'token json-response))))
-              	(error nil)))
-                  (kill-buffer response-buffer)))
-              token-str))
+    ;; Use org-mode for gptel buffers
+    (setq gptel-default-mode 'org-mode)
+    ;; Enable branching conversations in org-mode
+    (setq gptel-org-branching-context t)
 
-                ;; Store the exchanged token
-                (defvar gptel-copilot--exchanged-token nil)
-                (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
 
-                ;; Update gptel-api-key to use the exchanged token
-                (setq gptel-api-key
-                (lambda ()
-                  (or gptel-copilot--exchanged-token
-              	(setq gptel-copilot--exchanged-token
-              	      (gptel-copilot--exchange-token)))))
+    ;; Token access for GitHub Copilot
+    (defvar gptel-github-api-key
+      (lambda ()
+	(when-let ((auth (car (auth-source-search
+			       :host "github.copilot"
+			       :require '(:secret)))))
+	  (let ((token (plist-get auth :secret)))
+	    (if (functionp token)
+		(funcall token)
+	      token)))))
 
-                ;; Advice to include full path in message
-                (defun gptel--insert-at-beginning-with-path (initial-point)
-                  "Include full path when showing buffer contents."
-                  (let ((full-path (buffer-file-name)))
-              (goto-char initial-point)
-              (insert
-               (format "In file %s:\n\n"
-              	 (if full-path
-              	     (expand-file-name full-path)
-              	   (buffer-name))))))
+    (defun gptel-copilot--exchange-token ()
+      (let* ((github-token (if (functionp gptel-github-api-key)
+			       (funcall gptel-github-api-key)
+			     gptel-github-api-key))
+	     (url-request-method "GET")
+	     (url-request-extra-headers
+	      `(("Authorization" . ,(format "Bearer %s" github-token))
+		("Accept" . "application/json")))
+	     response-buffer token-str)
+	(setq response-buffer
+	      (url-retrieve-synchronously
+	       "https://api.github.com/copilot_internal/v2/token"
+	       t nil 30))
+	(when response-buffer
+	  (with-current-buffer response-buffer
+	    (goto-char (point-min))
+	    (when (re-search-forward "^$" nil t)
+	      (forward-char)
+	      (condition-case nil
+		  (let ((json-response (json-read)))
+		    (setq token-str (cdr (assoc 'token json-response))))
+		(error nil)))
+	    (kill-buffer response-buffer)))
+	token-str))
 
-                (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+    ;; Store the exchanged token
+    (defvar gptel-copilot--exchanged-token nil)
+    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
 
-                ;; Create custom backend for GitHub Copilot
-                (setq gptel-copilot-backend
-                (gptel-make-openai
-                 "github-copilot"
-                 :host "api.githubcopilot.com/"
-                 :endpoint "chat/completions"
-                 :key 'gptel-api-key
-                 :stream t
-                 :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-              	     (claude-3.5-sonnet :name "claude-3.5-sonnet")
-              	     (claude-3.7-sonnet :name "claude-3.7-sonnet")
-              	     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
-              	     (o1-2024-12-17 :name "o1-2024-12-17")
-              	     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-                 :header (lambda ()
-              	     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-              	       ("Content-Type" . "application/json")
-              	       ("Accept" . "application/json")
-              	       ("Copilot-Integration-Id" . "vscode-chat")
-              	       ("editor-version" . "vscode/1.84.2")
-              	       ("editor-plugin-version" . "1.138.0")
-              	       ("user-agent" . "GithubCopilot/1.138.0")))))
+    ;; Update gptel-api-key to use the exchanged token
+    (setq gptel-api-key
+	  (lambda ()
+	    (or gptel-copilot--exchanged-token
+		(setq gptel-copilot--exchanged-token
+		      (gptel-copilot--exchange-token)))))
 
-                (advice-add 'gptel--url-parse-response :around
-              	(lambda (orig-fun backend proc-info)
-              	  (let ((result (funcall orig-fun backend proc-info)))
-              	    (when (and (stringp (cadr result))
-              		       (string-match-p "HTTP/2 401" (cadr result)))
-              	      (message "Token expired, refreshing and retrying...")
-              	      (setq gptel-copilot--exchanged-token nil)
-              	      ;; Get new token
-              	      (funcall gptel-api-key)
-              	      ;; Retry the request
-              	      (let ((request-data (plist-get proc-info :request-data)))
-              		(when request-data
-              		  (gptel-request request-data))))
-              	    result)))
+    ;; Advice to include full path in message
+    (defun gptel--insert-at-beginning-with-path (initial-point)
+      "Include full path when showing buffer contents."
+      (let ((full-path (buffer-file-name)))
+	(goto-char initial-point)
+	(insert
+	 (format "In file %s:\n\n"
+		 (if full-path
+		     (expand-file-name full-path)
+		   (buffer-name))))))
 
-                (defun test-gptel-token-refresh ()
-                  "Test gptel token refresh logic."
-                  (interactive)
-                  (message "=== Starting Token Test ===")
-                  (message "Current token (first 50 chars): %s..."
-                     (substring gptel-copilot--exchanged-token 0 50))
-                  ;; Force token refresh by setting to nil
-                  (setq gptel-copilot--exchanged-token nil)
-                  (message "Cleared token, making request...")
-                  ;; Make request that should trigger token refresh
-                  (gptel-request
-                   "Test message"
-                   :callback (lambda (response info)
-              	   (message "=== Request completed ===")
-              	   (message "New token (first 50 chars): %s..."
-              		    (substring gptel-copilot--exchanged-token 0 50))
-              	   (message "Response status: %s" (plist-get info :status))
-              	   (message "Got response: %s" response))))
+    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
 
-          (defun get-anthropic-api-key ()
-    (when-let ((auth (car (auth-source-search
-              		       :host "api.anthropic.com"
-              		       :require '(:secret)))))
-                (let ((token (plist-get auth :secret)))
-                  (if (functionp token)
-              	(funcall token)
-                    token))))
+    ;; Create custom backend for GitHub Copilot
+    (setq gptel-copilot-backend
+	  (gptel-make-openai
+	   "github-copilot"
+	   :host "api.githubcopilot.com/"
+	   :endpoint "chat/completions"
+	   :key 'gptel-api-key
+	   :stream t
+	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+		     (claude-3.7-sonnet :name "claude-3.7-sonnet")
+		     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
+		     (o1-2024-12-17 :name "o1-2024-12-17")
+		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+	   :header (lambda ()
+		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+		       ("Content-Type" . "application/json")
+		       ("Accept" . "application/json")
+		       ("Copilot-Integration-Id" . "vscode-chat")
+		       ("editor-version" . "vscode/1.84.2")
+		       ("editor-plugin-version" . "1.138.0")
+		       ("user-agent" . "GithubCopilot/1.138.0")))))
 
-  (gptel-make-anthropic "Claude"          
-    :stream t                             
-    :key #'get-anthropic-api-key)
+    (advice-add 'gptel--url-parse-response :around
+		(lambda (orig-fun backend proc-info)
+		  (let ((result (funcall orig-fun backend proc-info)))
+		    (when (and (stringp (cadr result))
+			       (string-match-p "HTTP/2 401" (cadr result)))
+		      (message "Token expired, refreshing and retrying...")
+		      (setq gptel-copilot--exchanged-token nil)
+		      ;; Get new token
+		      (funcall gptel-api-key)
+		      ;; Retry the request
+		      (let ((request-data (plist-get proc-info :request-data)))
+			(when request-data
+			  (gptel-request request-data))))
+		    result)))
 
-      ;;(gptel-make-anthropic "claude" 
-        ;;:key #'get-anthropic-api-key
-        ;;:stream t
-        ;;:models '(claude-3-7-sonnet-20250219)
-        ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-                        ;;`(("x-api-key" . ,key)
-                          ;;("anthropic-version" . "2023-06-01")
-                          ;;("anthropic-beta" . "pdfs-2024-09-25")
-                          ;;("anthropic-beta" . "output-128k-2025-02-19")
-                          ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-        ;;:request-params '(:max_tokens 4096))
+    (defun test-gptel-token-refresh ()
+      "Test gptel token refresh logic."
+      (interactive)
+      (message "=== Starting Token Test ===")
+      (message "Current token (first 50 chars): %s..."
+	       (substring gptel-copilot--exchanged-token 0 50))
+      ;; Force token refresh by setting to nil
+      (setq gptel-copilot--exchanged-token nil)
+      (message "Cleared token, making request...")
+      ;; Make request that should trigger token refresh
+      (gptel-request
+       "Test message"
+       :callback (lambda (response info)
+		   (message "=== Request completed ===")
+		   (message "New token (first 50 chars): %s..."
+			    (substring gptel-copilot--exchanged-token 0 50))
+		   (message "Response status: %s" (plist-get info :status))
+		   (message "Got response: %s" response))))
 
-      ;;(gptel-make-anthropic "claude-thinking" 
-        ;;:key #'get-anthropic-api-key
-        ;;:stream t
-        ;;:models '(claude-3-7-sonnet-20250219)
-        ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-                        ;;`(("x-api-key" . ,key)
-                          ;;("anthropic-version" . "2023-06-01")
-                          ;;("anthropic-beta" . "pdfs-2024-09-25")
-                          ;;("anthropic-beta" . "output-128k-2025-02-19")
-                          ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-        ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
-                          ;;:max_tokens 4096))
+    (defun get-anthropic-api-key ()
+      (when-let ((auth (car (auth-source-search
+			     :host "api.anthropic.com"
+			     :require '(:secret)))))
+	(let ((token (plist-get auth :secret)))
+	  (if (functionp token)
+	      (funcall token)
+	    token))))
 
-                (setq gptel-backend gptel-copilot-backend
-                ;;gptel-model 'gpt-4o-2024-08-06
-                gptel-model 'claude-3.7-sonnet
-                gptel-auto-save-directory "~/chats"
-                gptel--mark-prompts-and-responses nil
-                gptel-auto-save-buffers t
-                gptel-prompt-prefix
-                "You are an Emacs-integrated assistant for a Bitwarden software engineer.
-              	Be direct about uncertainties. Display files in org blocks with paths."
-                gptel-default-mode 'org-mode))
+    (gptel-make-anthropic "Claude"          
+			  :stream t                             
+			  :key #'get-anthropic-api-key)
+
+    ;;(gptel-make-anthropic "claude" 
+    ;;:key #'get-anthropic-api-key
+    ;;:stream t
+    ;;:models '(claude-3-7-sonnet-20250219)
+    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+    ;;`(("x-api-key" . ,key)
+    ;;("anthropic-version" . "2023-06-01")
+    ;;("anthropic-beta" . "pdfs-2024-09-25")
+    ;;("anthropic-beta" . "output-128k-2025-02-19")
+    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+    ;;:request-params '(:max_tokens 4096))
+
+    ;;(gptel-make-anthropic "claude-thinking" 
+    ;;:key #'get-anthropic-api-key
+    ;;:stream t
+    ;;:models '(claude-3-7-sonnet-20250219)
+    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+    ;;`(("x-api-key" . ,key)
+    ;;("anthropic-version" . "2023-06-01")
+    ;;("anthropic-beta" . "pdfs-2024-09-25")
+    ;;("anthropic-beta" . "output-128k-2025-02-19")
+    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+    ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+    ;;:max_tokens 4096))
+
+    (setq gptel-backend gptel-copilot-backend
+	  ;;gptel-model 'gpt-4o-2024-08-06
+	  gptel-model 'claude-3.7-sonnet
+	  gptel-auto-save-directory "~/chats"
+	  gptel--mark-prompts-and-responses nil
+	  gptel-auto-save-buffers t
+	  gptel-prompt-prefix
+	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
+		    Be direct about uncertainties. Display files in org blocks with paths."
+	  gptel-default-mode 'org-mode))
 #+end_src
 
 * GPTel Context Management
@@ -1036,54 +1102,54 @@ This doesn't work
     (interactive)
     (when (derived-mode-p 'gptel-mode)
       (let ((inhibit-read-only t)
-            (modified (buffer-modified-p)))
-        (save-excursion
-          ;; Remove excess blank lines
-          (goto-char (point-min))
-          (while (re-search-forward "\n\n\n+" nil t)
-            (replace-match "\n\n"))
-          
-          ;; Collapse code blocks to show minimal context
-          (goto-char (point-min))
-          (while (re-search-forward "```\\([^`\n]*\\)\n\\([^`]*?\\)\n```" nil t)
-            (let* ((lang (match-string 1))
-                   (code (match-string 2))
-                   (lines (split-string code "\n"))
-                   (total-lines (length lines))
-                   (preview-lines 3)
-                   (minified-code
-                    (if (> total-lines (* 2 preview-lines))
-                        (concat
-                         (string-join (seq-take lines preview-lines) "\n")
-                         "\n... "
-                         (number-to-string (- total-lines (* 2 preview-lines)))
-                         " lines collapsed ...\n"
-                         (string-join (seq-take-last preview-lines lines) "\n"))
-                      code)))
-              (replace-match (format "```%s\n%s\n```" lang minified-code))))
-          
-          ;; Optionally truncate very long responses
-          (goto-char (point-min))
-          (while (re-search-forward "^Assistant: \\([^\n]*\\(?:\n[^\n]+\\)*\\)" nil t)
-            (let* ((response (match-string 1))
-                   (lines (split-string response "\n"))
-                   (max-lines 20))
-              (when (> (length lines) max-lines)
-                (let ((truncated-response
-                       (concat
-                        (string-join (seq-take lines (/ max-lines 2)) "\n")
-                        "\n... "
-                        (number-to-string (- (length lines) max-lines))
-                        " lines summarized ...\n"
-                        (string-join (seq-take-last (/ max-lines 2) lines) "\n"))))
-                  (replace-match (concat "Assistant: " truncated-response))))))
-          
-          ;; Remove trailing whitespace
-          (delete-trailing-whitespace))
-        
-        ;; Restore modification state
-        (set-buffer-modified-p modified))
-      
+	    (modified (buffer-modified-p)))
+	(save-excursion
+	  ;; Remove excess blank lines
+	  (goto-char (point-min))
+	  (while (re-search-forward "\n\n\n+" nil t)
+	    (replace-match "\n\n"))
+
+	  ;; Collapse code blocks to show minimal context
+	  (goto-char (point-min))
+	  (while (re-search-forward "```\\([^`\n]*\\)\n\\([^`]*?\\)\n```" nil t)
+	    (let* ((lang (match-string 1))
+		   (code (match-string 2))
+		   (lines (split-string code "\n"))
+		   (total-lines (length lines))
+		   (preview-lines 3)
+		   (minified-code
+		    (if (> total-lines (* 2 preview-lines))
+			(concat
+			 (string-join (seq-take lines preview-lines) "\n")
+			 "\n... "
+			 (number-to-string (- total-lines (* 2 preview-lines)))
+			 " lines collapsed ...\n"
+			 (string-join (seq-take-last preview-lines lines) "\n"))
+		      code)))
+	      (replace-match (format "```%s\n%s\n```" lang minified-code))))
+
+	  ;; Optionally truncate very long responses
+	  (goto-char (point-min))
+	  (while (re-search-forward "^Assistant: \\([^\n]*\\(?:\n[^\n]+\\)*\\)" nil t)
+	    (let* ((response (match-string 1))
+		   (lines (split-string response "\n"))
+		   (max-lines 20))
+	      (when (> (length lines) max-lines)
+		(let ((truncated-response
+		       (concat
+			(string-join (seq-take lines (/ max-lines 2)) "\n")
+			"\n... "
+			(number-to-string (- (length lines) max-lines))
+			" lines summarized ...\n"
+			(string-join (seq-take-last (/ max-lines 2) lines) "\n"))))
+		  (replace-match (concat "Assistant: " truncated-response))))))
+
+	  ;; Remove trailing whitespace
+	  (delete-trailing-whitespace))
+
+	;; Restore modification state
+	(set-buffer-modified-p modified))
+
       ;; Provide feedback on reduction
       (message "Context minified. Use M-x revert-buffer to restore if needed.")))
 
@@ -1126,7 +1192,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-      FILE-ID can be a bookmark name or full path."
+	  FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1143,8 +1209,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-	  - 'emacs config' for my emacs configuration
-	  - 'inbox' for my org mode inbox file")
+	      - 'emacs config' for my emacs configuration
+	      - 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1180,8 +1246,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
   (defun my/write-file (file-id content)
     "Write file with changes in search/replace block format.
-	FILE-ID can be a bookmark name or full path.
-	CONTENT must contain search/replace blocks showing what to change."
+	    FILE-ID can be a bookmark name or full path.
+	    CONTENT must contain search/replace blocks showing what to change."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1229,27 +1295,27 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
    :function #'my/write-file
    :description "Modify specific sections of a file while preserving all other content.
 
-      IMPORTANT: Always use read_file first to understand the current content and structure! 
+	  IMPORTANT: Always use read_file first to understand the current content and structure! 
 
-      The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
+	  The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
 
-      <<<<<<< SEARCH
-      {text to find and replace}
-      =======
-      {new text to insert}
-      >>>>>>> REPLACE
+	  <<<<<<< SEARCH
+	  {text to find and replace}
+	  =======
+	  {new text to insert}
+	  >>>>>>> REPLACE
 
-      - You can include multiple search/replace blocks to make multiple changes.
-      - The search text must match exactly what is in the file.
-      - If a failure occurs do not try again without asking me first.
+	  - You can include multiple search/replace blocks to make multiple changes.
+	  - The search text must match exactly what is in the file.
+	  - If a failure occurs do not try again without asking me first.
 
-      After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
+	  After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-	  - 'emacs config' for my emacs configuration
+	      - 'emacs config' for my emacs configuration
 
-	  - 'inbox' for my org mode inbox file")
+	      - 'inbox' for my org mode inbox file")
 	   (:name "content"
 		  :type string
 		  :description "search/replace blocks showing what to change")))
@@ -1260,42 +1326,42 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 **  Fetch_Webpage
 
 #+begin_src emacs-lisp
-    (gptel-make-tool
-     :name "fetch_webpage"
-     :function (lambda (url)
-                (message "Fetching URL: %s" url)
-                (let ((buffer (url-retrieve-synchronously url t nil 30)))
-                  (when buffer
-                    (with-current-buffer buffer
-                      (goto-char (point-min))
-                      (re-search-forward "^$" nil t) ; Skip headers
-                      (forward-char)
-                      ;; Basic HTML cleanup: Convert to plain text
-                      (require 'shr)
-                      (let* ((dom (libxml-parse-html-region (point) (point-max)))
-                             (text-buffer (generate-new-buffer " *temp*")))
-                        (with-current-buffer text-buffer
-                          (shr-insert-document dom)
-                          ;; Clean up the text and ensure it's JSON-safe
-                          (let ((content (replace-regexp-in-string 
-                                        "[\u0000-\u001F\u007F]+" " "
-                                        (buffer-substring-no-properties (point-min) (point-max)))))
-                            (kill-buffer text-buffer)
-                            (kill-buffer buffer)
-                            ;; Ensure we return a proper JSON string
-                            content)))))))
-     :description "fetch the contents of a webpage given its url"
-     :args '((:name "url"
-              :type string
-              :description "url of the webpage to fetch"))
-     :category "web")
+  (gptel-make-tool
+   :name "fetch_webpage"
+   :function (lambda (url)
+	       (message "Fetching URL: %s" url)
+	       (let ((buffer (url-retrieve-synchronously url t nil 30)))
+		 (when buffer
+		   (with-current-buffer buffer
+		     (goto-char (point-min))
+		     (re-search-forward "^$" nil t) ; Skip headers
+		     (forward-char)
+		     ;; Basic HTML cleanup: Convert to plain text
+		     (require 'shr)
+		     (let* ((dom (libxml-parse-html-region (point) (point-max)))
+			    (text-buffer (generate-new-buffer " *temp*")))
+		       (with-current-buffer text-buffer
+			 (shr-insert-document dom)
+			 ;; Clean up the text and ensure it's JSON-safe
+			 (let ((content (replace-regexp-in-string 
+					 "[\u0000-\u001F\u007F]+" " "
+					 (buffer-substring-no-properties (point-min) (point-max)))))
+			   (kill-buffer text-buffer)
+			   (kill-buffer buffer)
+			   ;; Ensure we return a proper JSON string
+			   content)))))))
+   :description "fetch the contents of a webpage given its url"
+   :args '((:name "url"
+		  :type string
+		  :description "url of the webpage to fetch"))
+   :category "web")
 
   (register-gptel-tool "fetch_webpage")
 #+end_src
 
 ** Git_Commit
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (defun my/git-commit-changes (project message)
     "Commit all changes in the specified project repository with the given message."
     (let* ((project-root (if (file-name-absolute-p project)
@@ -1352,74 +1418,86 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 		  :type string
 		  :description "content to write to the file"))
    :category "file")
-
 #+end_src
 
 * Project Context Tool
 
 #+begin_src emacs-lisp
-(defun my/project-context-for-llm (project-root &optional scope)
-  "Generate project context for LLM consumption.
-  PROJECT-ROOT is the directory to analyze.
-  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
-  (let* ((project-root (expand-file-name project-root))
-         (default-directory project-root)
-         (context-parts '()))
-    
-    ;; Add project structure with depth limitation
-    (push (concat "Project Structure:\n" 
-                  (shell-command-to-string "tree -L 3 --gitignore --noreport"))
-          context-parts)
-    
-    ;; Add key files only for core or full scopes
-    (when (or (eq scope 'core) (eq scope 'full))
-      (let* ((key-files '("README.md" "package.json" "Cargo.toml" "pyproject.toml"
-                           "flake.nix" "default.nix" "home.nix"
-                           "Makefile" "justfile"))
-             (found-files '()))
-        
-        ;; Find important files that actually exist
-        (dolist (file key-files)
-          (when (file-exists-p file)
-            (push file found-files)))
-        
-        ;; Add file summary header
-        (push "\nKey Files Found:" context-parts)
-        (push (mapconcat #'identity found-files "\n") context-parts)
-        
-        ;; Add content of files with size checks and truncation
-        (push "\nFile Contents:" context-parts)
-        (dolist (file found-files)
-          (let ((file-size (nth 7 (file-attributes file))))
-            (cond
-             ;; Skip large files completely
-             ((> file-size 15000)
-              (push (format "\n=== %s === (TOO LARGE: %dKB - skipped)" 
-                            file (/ file-size 1024)) 
-                    context-parts))
-             
-             ;; Truncate medium files
-             ((> file-size 5000)
-              (push (format "\n=== %s === (TRUNCATED: %dKB)" 
-                            file (/ file-size 1024)) 
-                    context-parts)
-              (push (with-temp-buffer
-                      (insert-file-contents file nil 0 2000)
-                      (concat (buffer-string) 
-                              "\n[...file truncated...]\n"))
-                    context-parts))
-             
-             ;; Include small files completely
-             (t
-              (push (format "\n=== %s ===" file) context-parts)
-              (push (with-temp-buffer
-                      (insert-file-contents file)
-                      (buffer-string))
-                    context-parts)))))))
-    
-    ;; Join all parts in reverse order (since we used push)
-    (mapconcat #'identity (reverse context-parts) "\n")))
-  (register-gptel-tool "create_file")
+  (defun my/project-context-for-llm (project-root &optional scope)
+    "Generate project context for LLM consumption.
+	PROJECT-ROOT is the directory to analyze.
+	SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+    (let* ((project-root (expand-file-name project-root))
+	   (default-directory project-root)
+	   (context-parts '()))
+
+      ;; Add project structure with depth limitation
+      (push (concat "Project Structure:\n" 
+		    (shell-command-to-string "tree -L 3 --gitignore --noreport"))
+	    context-parts)
+
+      ;; Add key files only for core or full scopes
+      (when (or (eq scope 'core) (eq scope 'full))
+	(let* ((key-files '("README.md" "package.json" "Cargo.toml" "pyproject.toml"
+			    "flake.nix" "default.nix" "home.nix"
+			    "Makefile" "justfile"))
+	       (found-files '()))
+
+	  ;; Find important files that actually exist
+	  (dolist (file key-files)
+	    (when (file-exists-p file)
+	      (push file found-files)))
+
+	  ;; Add file summary header
+	  (push "\nKey Files Found:" context-parts)
+	  (push (mapconcat #'identity found-files "\n") context-parts)
+
+	  ;; Add content of files with size checks and truncation
+	  (push "\nFile Contents:" context-parts)
+	  (dolist (file found-files)
+	    (let ((file-size (nth 7 (file-attributes file))))
+	      (cond
+	       ;; Skip large files completely
+	       ((> file-size 15000)
+		(push (format "\n=== %s === (TOO LARGE: %dKB - skipped)" 
+			      file (/ file-size 1024)) 
+		      context-parts))
+
+	       ;; Truncate medium files
+	       ((> file-size 5000)
+		(push (format "\n=== %s === (TRUNCATED: %dKB)" 
+			      file (/ file-size 1024)) 
+		      context-parts)
+		(push (with-temp-buffer
+			(insert-file-contents file nil 0 2000)
+			(concat (buffer-string) 
+				"\n[...file truncated...]\n"))
+		      context-parts))
+
+	       ;; Include small files completely
+	       (t
+		(push (format "\n=== %s ===" file) context-parts)
+		(push (with-temp-buffer
+			(insert-file-contents file)
+			(buffer-string))
+		      context-parts)))))))
+
+      ;; Join all parts in reverse order (since we used push)
+      (mapconcat #'identity (reverse context-parts) "\n")))
+
+  (gptel-make-tool
+   :name "project_context"
+   :function #'my/project-context-for-llm
+   :description "Get structural and content context for a project directory"
+   :args '((:name "project"
+		  :type string
+		  :description "project name or path")
+	   (:name "scope"
+		  :type string
+		  :description "context scope: 'structure, 'core, or 'full"))
+   :category "project")
+
+  (register-gptel-tool "project_context")
 #+end_src
 
 * Provide Init
@@ -1430,7 +1508,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-	  ;;; init.el ends here
+	    ;;; init.el ends here
 #+end_src
 
 

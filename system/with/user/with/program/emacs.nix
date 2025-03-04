@@ -3,6 +3,10 @@
   config,
   ...
 }: let
+  link-emacs-config = pkgs.writeShellScriptBin "link-emacs-config" ''
+    ln -sf ~/nix/system/with/user/with/program/init.org ~/notes/init.org
+    echo "Symlinked init.org successfully"
+  '';
   tangledInit =
     pkgs.runCommand "init.el" {
       nativeBuildInputs = [(pkgs.emacs.pkgs.withPackages (epkgs: [epkgs.org]))];
@@ -129,6 +133,7 @@ in {
     (iosevka-bin.override {variant = "Aile";})
     (iosevka-bin.override {variant = "Etoile";})
     emacsclient-wrapper
+    link-emacs-config
   ];
 
   home.file.".emacs.d/diary".text = ''
