@@ -269,11 +269,27 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
   (global-set-key (kbd "C-c d") 'find-from-here)
 #+end_src
 
+* Tree-sitter Configuration
+#+begin_src emacs-lisp
+  (use-package treesit-auto
+    :ensure t
+    :config
+    (global-treesit-auto-mode)
+    (setq treesit-auto-install 'prompt))
+
+  (use-package typescript-ts-mode
+    :ensure t
+    :mode (("\\.ts\\'" . typescript-ts-mode)
+           ("\\.tsx\\'" . tsx-ts-mode)))
+#+end_src
+
 * LSP Configuration
 #+begin_src emacs-lisp
   (use-package lsp-mode
     :ensure t
-    :hook ((typescript-mode . lsp)
+    :hook ((typescript-ts-mode . lsp)
+           (tsx-ts-mode . lsp)
+	   (typescript-mode . lsp)
 	   (csharp-mode . lsp)
 	   (rust-mode . lsp)
 	   (nix-mode . lsp)
@@ -1414,11 +1430,6 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
       (when dirpath
         (kill-new dirpath)
         (message "Copied: %s" dirpath))))
-
-  ;; Key bindings for path functions
-  (global-set-key (kbd "C-c p f") 'copy-file-path)
-  (global-set-key (kbd "C-c p n") 'copy-file-name)
-  (global-set-key (kbd "C-c p d") 'copy-directory-path)
 #+end_src
 
 * Provide Init
