@@ -275,12 +275,16 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     :ensure t
     :config
     (global-treesit-auto-mode)
-    (setq treesit-auto-install 'prompt))
+    (setq treesit-auto-install 'prompt)
+    (setq treesit-auto-langs '(typescript javascript tsx jsx)))
 
   (use-package typescript-ts-mode
     :ensure t
     :mode (("\\.ts\\'" . typescript-ts-mode)
-           ("\\.tsx\\'" . tsx-ts-mode)))
+           ("\\.tsx\\'" . tsx-ts-mode))
+    :init
+    (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
+    (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
 #+end_src
 
 * LSP Configuration
