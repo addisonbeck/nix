@@ -278,13 +278,17 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     (setq treesit-auto-install 'prompt)
     (setq treesit-auto-langs '(typescript javascript tsx jsx)))
 
-  (use-package typescript-ts-mode
+(use-package typescript-ts-mode
     :ensure t
     :mode (("\\.ts\\'" . typescript-ts-mode)
            ("\\.tsx\\'" . tsx-ts-mode))
     :init
     (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
     (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
+
+;; Ensure typescript grammar is installed
+(unless (treesit-language-available-p 'typescript)
+  (treesit-install-language-grammar 'typescript))
 #+end_src
 
 * LSP Configuration
