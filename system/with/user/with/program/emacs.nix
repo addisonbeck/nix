@@ -59,6 +59,9 @@
       ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
     fi
   '';
+  emacs-inbox-capture-script = pkgs.writeShellScriptBin "emacs-inbox-capture" ''
+    emacsclient -c -F '((name . "capture"))' -e '(org-capture nil "i")'
+  '';
 in {
   programs.emacs = {
     enable = true;
@@ -110,6 +113,8 @@ in {
           elfeed
           elfeed-protocol
           exec-path-from-shell
+          ox-jira
+          all-the-icons
           # ob-async
         ];
     };
@@ -134,6 +139,7 @@ in {
     (iosevka-bin.override {variant = "Etoile";})
     emacsclient-wrapper
     link-emacs-config
+    emacs-inbox-capture-script
   ];
 
   home.file.".emacs.d/diary".text = ''
