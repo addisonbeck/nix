@@ -10,4 +10,5 @@ in {
   "gmail-password.age".publicKeys = [me_key];
   "weechat-plugins-config.age".publicKeys = [me_key];
   "freshrss.age".publicKeys = [me_key rss_key];
+  "authinfo.age".publicKeys = [me_key];
 }

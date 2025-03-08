@@ -1,29 +1,51 @@
 {...}: {
-  home.file."leaderkey-config".source = ''
+  home.file.".config/leaderkey/config.json".text = ''
+{
+  "actions" : [
     {
-        "type": "group",
-        "actions": [
-            { "key": "e", "type": "application", "value": "/System/Applications/Utilities/Terminal.app" },
-            {
-                "key": "o",
-                "type": "group",
-                "actions": [
-                    { "key": "s", "type": "application", "value": "/Applications/Safari.app" },
-                    { "key": "e", "type": "application", "value": "/Applications/Mail.app" },
-                    { "key": "i", "type": "application", "value": "/System/Applications/Music.app" },
-                    { "key": "m", "type": "application", "value": "/Applications/Messages.app" }
-                ]
-            },
-            {
-                "key": "r",
-                "type": "group",
-                "actions": [
-                    { "key": "e", "type": "url", "value": "raycast://extensions/raycast/emoji-symbols/search-emoji-symbols" },
-                    { "key": "p", "type": "url", "value": "raycast://confetti" },
-                    { "key": "c", "type": "url", "value": "raycast://extensions/raycast/system/open-camera" }
-                ]
-            }
-        ]
+      "key" : "e",
+      "label" : "emacs",
+      "type" : "command",
+      "value" : "ec"
+    },
+    {
+      "key" : "s",
+      "label" : "",
+      "type" : "application",
+      "value" : "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app"
+    },
+    {
+      "key" : "k",
+      "label" : "",
+      "type" : "application",
+      "value" : "/Applications/Slack.app"
+    },
+    {
+      "key" : "m",
+      "label" : "",
+      "type" : "application",
+      "value" : "/System/Applications/Mail.app"
+    },
+    {
+      "key" : "t",
+      "label" : "",
+      "type" : "application",
+      "value" : "/System/Applications/Messages.app"
+    },
+    {
+      "key" : "b",
+      "label" : "",
+      "type" : "application",
+      "value" : "/Applications/Bitwarden.app"
+    },
+    {
+      "key" : "c",
+      "label" : "",
+      "type" : "application",
+      "value" : "/System/Applications/Calendar.app"
     }
+  ],
+  "type" : "group"
+}
   '';
 }

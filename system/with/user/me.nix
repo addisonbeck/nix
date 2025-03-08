@@ -40,6 +40,7 @@
       ./with/program/tmux.nix
       ./with/program/kitty.nix
       ./with/secret/github.nix
+      ./with/secret/authinfo.nix
       #./with/service/autoclone.nix
       #{ services.autoclone.enable = true; }
       #./with/development-environment/notes
@@ -110,6 +111,7 @@
       #./with/program/rust.nix
       ./with/program/repomix.nix
       ./with/program/tree.nix
+      ./with/program/leaderkey.nix
     ];
 
     home.sessionPath = [];
