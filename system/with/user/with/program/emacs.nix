@@ -4,18 +4,18 @@
   ...
 }: let
   link-emacs-config = pkgs.writeShellScriptBin "link-emacs-config" ''
-    ln -sf ~/nix/system/with/user/with/program/init.org ~/notes/init.org
-    echo "Symlinked init.org successfully"
+    ln -sf ~/nix/system/with/user/with/program/emacs.org ~/notes/emacs.org
+    echo "Symlinked emacs.org successfully"
   '';
   tangledInit =
     pkgs.runCommand "init.el" {
       nativeBuildInputs = [(pkgs.emacs.pkgs.withPackages (epkgs: [epkgs.org]))];
-      src = ./init.org;
+      src = ./emacs.org;
     } ''
       set -x  # Enable debug output
 
       echo "Copying org file..."
-      cp $src init.org
+      cp $src emacs.org
 
       echo "Creating tangle script..."
       cat > tangle.el <<EOF
@@ -23,7 +23,7 @@
       (setq org-confirm-babel-evaluate nil)
       (setq debug-on-error t)
       (condition-case err
-          (org-babel-tangle-file "init.org" "init.el" "emacs-lisp")
+          (org-babel-tangle-file "emacs.org" "init.el" "emacs-lisp")
         (error
          (message "Error during tangling: %S" err)
          (kill-emacs 1)))
@@ -125,6 +125,7 @@ in {
     aspellDicts.en
     pandoc
     nixd
+    nodePackages.typescript
     nodePackages.typescript-language-server
     omnisharp-roslyn
     marksman

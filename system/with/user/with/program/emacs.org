@@ -1090,7 +1090,7 @@ This block contains helper functions and variables used by multiple tools. These
 
 
   (defvar my/file-bookmarks
-    '(("emacs config" . (:path "~/nix/system/with/user/with/program/init.org"
+    '(("emacs config" . (:path "~/nix/system/with/user/with/program/emacs.org"
 			       :description "My literate org based emacs configuration"))
       ("inbox" . (:path "~/notes/inbox.org"
 			:description "My inbox for my TODOs and notes"))
