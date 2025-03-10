@@ -534,6 +534,15 @@ I'm not using these right now, but might revist in the future.
   (setq org-agenda-include-diary t)
   (setq org-refile-targets '((nil :maxlevel . 8)
 			     (org-agenda-files :maxlevel . 2)))
+  
+  ;; Allow creating new nodes (including new files) when refiling
+  (setq org-refile-allow-creating-parent-nodes 'confirm)
+  
+  ;; Use the full outline paths for refile targets
+  (setq org-refile-use-outline-path 'file)
+  
+  ;; Completes in steps so you can select a heading after selecting the file
+  (setq org-outline-path-complete-in-steps t)
 
   (require 'diary-lib)
 
