@@ -401,63 +401,83 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 
 * Org Mode Configuration 
 #+begin_src emacs-lisp
-  ;; Basic org settings
-  (use-package org
-    :ensure t
-    :bind
-    (("C-c a" . org-agenda)
-     ("C-c h" . consult-org-heading)
-     ("C-c c" . org-capture))
+    ;; Basic org settings
+    (use-package org
+      :ensure t
+      :bind
+      (("C-c a" . org-agenda)
+       ("C-c h" . consult-org-heading)
+       ("C-c c" . org-capture))
+      :config
+      (setq org-directory "~/notes")
+      (setq org-startup-truncated nil)
+      (setq org-agenda-files (list org-directory))
+      (setq org-log-done 'time)
+      (setq org-log-into-drawer t)
+      (setq org-startup-folded 'overview)
+      (setq org-clock-persist 'history
+      org-export-backends '(html icalendar latex man md org)
+      org-image-max-width 'window
+      org-startup-with-inline-images t
+      org-cycle-inline-images-display t
+      org-display-remote-inline-images 'download
+      org-clock-idle-time 15
+      org-clock-persist-file "~/notes/clock.el"
+      org-clock-auto-clock-resolution 'when-no-clock-is-running
+      org-clock-report-include-clocking-task t
+      org-clock-into-drawer t)
+      (org-clock-persistence-insinuate))
+
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (shell . t)
+       (org . t)
+       (mermaid . t)
+       ))
+
+    (setq org-babel-sh-command "bash -l -c")
+
+  (setenv "PUPPETEER_EXECUTABLE_PATH" 
+        (or (executable-find "google-chrome-stable")
+            (executable-find "google-chrome")))
+
+  (use-package ob-mermaid
     :config
-    (setq org-directory "~/notes")
-    (setq org-startup-truncated nil)
-    (setq org-agenda-files (list org-directory))
-    (setq org-log-done 'time)
-    (setq org-log-into-drawer t)
-    (setq org-startup-folded 'overview)
-    (setq org-clock-persist 'history
-    org-export-backends '(html icalendar latex man md org)
-    org-clock-idle-time 15
-    org-clock-persist-file "~/notes/clock.el"
-    org-clock-auto-clock-resolution 'when-no-clock-is-running
-    org-clock-report-include-clocking-task t
-    org-clock-into-drawer t)
-    (org-clock-persistence-insinuate))
+    ;; Set the path to the mermaid CLI using the custom puppeteer-cli
+    (setq ob-mermaid-cli-path (executable-find "mmdc"))
+    ;; If you need to specify the Chrome executable directly:
+    (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
 
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (shell . t)
-     (org . t)
-     ))
+  ;; Enable automatic display of inline images after executing babel blocks
+  (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+  (setq org-redisplay-inline-images t)
 
-  (setq org-babel-sh-command "bash -l -c")
+    ;; Allow evaluation of code blocks without confirmation for safe languages
+    (defun my/org-confirm-babel-evaluate (lang body)
+      (not (member lang '("emacs-lisp" "shell"))))
+    ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+    (setq org-confirm-babel-evaluate nil)
 
-  ;; Allow evaluation of code blocks without confirmation for safe languages
-  (defun my/org-confirm-babel-evaluate (lang body)
-    (not (member lang '("emacs-lisp" "shell"))))
-  ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
-  (setq org-confirm-babel-evaluate nil)
+    ;; Ensure pretty fontification of source blocks
+    (setq org-src-fontify-natively t)
+    (define-key org-mode-map (kbd "RET") 'newline)
 
-  ;; Ensure pretty fontification of source blocks
-  (setq org-src-fontify-natively t)
-  (define-key org-mode-map (kbd "RET") 'newline)
+    ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
+    (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
+    (evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
+    (defun my-org-evil-open-below ()
+     "Open line below preserving org structure but preventing reformatting."
+     (interactive)
+     ;; Use evil's basic open behavior
+     (evil-open-below 1)
+     ;; Exit insert state then re-enter to avoid auto-formatting
+     (evil-normal-state)
+     (evil-insert-state))
 
-  ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
-  (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
-  (evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
-  (defun my-org-evil-open-below ()
-   "Open line below preserving org structure but preventing reformatting."
-   (interactive)
-   ;; Use evil's basic open behavior
-   (evil-open-below 1)
-   ;; Exit insert state then re-enter to avoid auto-formatting
-   (evil-normal-state)
-   (evil-insert-state))
+    (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
 
-  (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
-
-  ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
+    ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
 #+end_src
 
 * Org To Jira
@@ -616,23 +636,7 @@ I'm not using these right now, but might revist in the future.
 			(:name "Any Time Habits" :category "personal habits any time")
 			(:name "Work Habits" :category "work habits")
 			(:auto-category t)
-			))))))
-	  ("w" "weekly calendar"
-	   ((agenda ""
-		    ((org-agenda-span 'day)
-		     (org-agenda-time-grid t)
-		     (org-agenda-use-time-grid t)
-		     (org-agenda-include-deadlines t)
-		     (org-deadline-warning-days 0)
-		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-		     (org-agenda-format-date "%A %-e %B %Y")
-		     (org-agenda-current-time-string "⏰ NOW")
-		     ;; Show all-day events at the top
-		     (org-agenda-sorting-strategy '((agenda todo-state-down 
-							   habbit-down 
-							   time-up 
-							   priority-down 
-							   category-keep))))))))
+			))))))))
 
   (setq org-agenda-time-grid-use-ampm t)
   (setq org-agenda-with-times t)
@@ -783,7 +787,7 @@ I'm not using these right now, but might revist in the future.
     (use-package gruvbox-theme
       :ensure t
       :config
-      (load-theme 'gruvbox-dark-hard t))
+      (load-theme 'gruvbox-light-hard t))
 
   (custom-set-faces
    `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))

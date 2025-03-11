@@ -62,6 +62,11 @@
   emacs-inbox-capture-script = pkgs.writeShellScriptBin "emacs-inbox-capture" ''
     emacsclient -c -F '((name . "capture"))' -e '(org-capture nil "i")'
   '';
+
+  puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
+    # chromium doesn't work on mac from nixpkgs
+    chromium = pkgs.google-chrome;
+  };
 in {
   programs.emacs = {
     enable = true;
@@ -116,6 +121,7 @@ in {
           ox-jira
           all-the-icons
           # ob-async
+          ob-mermaid
         ];
     };
   };
@@ -141,6 +147,8 @@ in {
     emacsclient-wrapper
     link-emacs-config
     emacs-inbox-capture-script
+    mermaid-cli
+    puppeteer-cli-with-chrome
   ];
 
   home.file.".emacs.d/diary".text = ''
