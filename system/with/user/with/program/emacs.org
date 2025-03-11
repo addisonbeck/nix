@@ -68,17 +68,18 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
   (setq-default indent-tabs-mode nil)
   (electric-indent-mode 1)
   (setq-default tab-width 2
-		indent-tabs-mode nil
-		tab-stop-list (number-sequence 2 120 2))
+  	indent-tabs-mode nil
+  	tab-stop-list (number-sequence 2 120 2))
   (setq confirm-kill-emacs nil)
   (setq auto-save-default nil
-	create-lockfiles nil)
+  create-lockfiles nil)
   (setq select-enable-clipboard t)
   (setq case-fold-search t)
   (xterm-mouse-mode 1)
   (setq-default fill-column 77)
   (global-hl-line-mode -1)
   (setq sentence-end-double-space nil)
+
 #+end_src
 
 * Buffer Management Functions
@@ -196,6 +197,31 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 		   (kbd "T") 'org-agenda-todo-yesterday)
 #+end_src
 
+* Cycle Line Number Function
+#+begin_src emacs-lisp
+(defun cycle-line-numbers ()
+  "Cycle through line number modes: off -> relative -> normal -> off."
+  (interactive)
+  (cond
+   ;; If currently off, switch to relative
+   ((not display-line-numbers)
+    (setq display-line-numbers 'relative)
+    (message "Line numbers: RELATIVE"))
+   
+   ;; If currently relative, switch to normal
+   ((eq display-line-numbers 'relative)
+    (setq display-line-numbers t)
+    (message "Line numbers: NORMAL"))
+   
+   ;; If currently normal, switch to off
+   (t
+    (setq display-line-numbers nil)
+    (message "Line numbers: OFF"))))
+
+;; Bind to "N" in evil normal mode
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
+#+end_src
 * Server Configuration
 #+begin_src emacs-lisp
   (require 'server)
@@ -590,7 +616,23 @@ I'm not using these right now, but might revist in the future.
 			(:name "Any Time Habits" :category "personal habits any time")
 			(:name "Work Habits" :category "work habits")
 			(:auto-category t)
-			))))))))
+			))))))
+	  ("w" "weekly calendar"
+	   ((agenda ""
+		    ((org-agenda-span 'day)
+		     (org-agenda-time-grid t)
+		     (org-agenda-use-time-grid t)
+		     (org-agenda-include-deadlines t)
+		     (org-deadline-warning-days 0)
+		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+		     (org-agenda-format-date "%A %-e %B %Y")
+		     (org-agenda-current-time-string "⏰ NOW")
+		     ;; Show all-day events at the top
+		     (org-agenda-sorting-strategy '((agenda todo-state-down 
+							   habbit-down 
+							   time-up 
+							   priority-down 
+							   category-keep))))))))
 
   (setq org-agenda-time-grid-use-ampm t)
   (setq org-agenda-with-times t)
