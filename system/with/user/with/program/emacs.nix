@@ -122,6 +122,9 @@ in {
           all-the-icons
           # ob-async
           ob-mermaid
+          google-maps
+          calfw
+          calfw-org
         ];
     };
   };

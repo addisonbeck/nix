@@ -449,9 +449,9 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     ;; If you need to specify the Chrome executable directly:
     (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
 
-  ;; Enable automatic display of inline images after executing babel blocks
-  (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
-  (setq org-redisplay-inline-images t)
+    ;; Enable automatic display of inline images after executing babel blocks
+    (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+    (setq org-redisplay-inline-images t)
 
     ;; Allow evaluation of code blocks without confirmation for safe languages
     (defun my/org-confirm-babel-evaluate (lang body)
@@ -572,79 +572,128 @@ I'm not using these right now, but might revist in the future.
 
 * Agenda Configuration
 #+begin_src emacs-lisp
-  (setq org-agenda-block-separator nil)
-  (setq org-agenda-window-setup 'only-window)
-  (setq org-agenda-timegrid-use-ampm t)
-  (setq org-agenda-time-leading-zero t)
-  (setq org-agenda-todo-keyword-format "%s")
-  (setq org-agenda-include-diary t)
-  (setq org-refile-targets '((nil :maxlevel . 8)
-			     (org-agenda-files :maxlevel . 2)))
+      (setq org-agenda-block-separator nil)
+      (setq org-agenda-window-setup 'only-window)
+      (setq org-agenda-timegrid-use-ampm t)
+      (setq org-agenda-time-leading-zero t)
+      (setq org-agenda-todo-keyword-format "%s")
+      (setq org-agenda-include-diary t)
+      (setq org-refile-targets '((nil :maxlevel . 8)
+    			     (org-agenda-files :maxlevel . 2)))
+      
+      ;; Allow creating new nodes (including new files) when refiling
+      (setq org-refile-allow-creating-parent-nodes 'confirm)
+      
+      ;; Use the full outline paths for refile targets
+      (setq org-refile-use-outline-path nil)
+      
+      ;; Completes in steps so you can select a heading after selecting the file
+      (setq org-outline-path-complete-in-steps nil)
+
+      (require 'diary-lib)
+
+      (use-package org-super-agenda
+        :after org-agenda
+        :config
+        (setq org-super-agenda-header-map nil)  
+        (setq org-super-agenda-header-properties nil)
+        (org-super-agenda-mode))
+
+      (setq warning-suppress-types '((org-element)))
+
+      (setq org-agenda-custom-commands
+    	'(("d" "daily dashboard"
+    	   ((agenda "Schedule and Habits"
+    		    ((org-agenda-span 'day)
+    		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+    		     (org-agenda-overriding-header "")
+    		     (org-super-agenda-groups
+    		      '(
+    			(:name "Happening today" 
+    			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+    			(:name "Today's Schedule"
+    			       :time-grid t)
+    			(:name "Overdue" :deadline past)
+    			(:name "Due Today" :deadline today)
+    			(:name "High Priority" :priority "A")
+    			(:name "Inbox" :category "inbox")
+    			(:name "Logs" :category "log")
+    			(:name "Due Soon" :deadline future)
+    			(:name "Code Reviews" :category "code review")
+    			(:name "Active Epics" :category "epic")
+    			(:name "Family Stuff" :category "family")
+    			(:name "Holidays" :category "holiday")
+    			(:name "The Garden" :category "the-garden")
+    			(:name "Re: Me" :category "me")
+    			(:name "Re: Emily" :category "emily")
+    			(:name "Re: Lincoln" :category "lincoln")
+    			(:name "Re: Nora" :category "nora")
+    			(:name "Re: Fern" :category "fern")
+    			(:name "Re: Harry" :category "harry")
+    			(:name "AM Habits" :category "personal habits am")
+    			(:name "Midday Habits" :category "personal habits midday")
+    			(:name "PM Habits" :category "personal habits pm")
+    			(:name "Any Time Habits" :category "personal habits any time")
+    			(:name "Work Habits" :category "work habits")
+    			(:auto-category t)
+    			))))))
+("w" "Weekly overview with super-agenda"
+         ((agenda ""
+                  ((org-agenda-span 7)                      ;; Show 7 days
+                   (org-agenda-start-on-weekday nil)        ;; Start from current day
+                   (org-agenda-time-grid '((daily today require-timed)
+                                          (800 1000 1200 1400 1600 1800 2000)
+                                          "......" "----------------"))  ;; Time grid config
+                   (org-agenda-include-deadlines nil)       ;; No deadlines
+                   (org-agenda-skip-scheduled-if-done t)     
+                   (org-agenda-skip-deadline-if-done t)
+                   (org-agenda-skip-scheduled-delay-if-done t)
+                   (org-agenda-skip-function                ;; Skip scheduled items
+                    '(org-agenda-skip-entry-if 'scheduled 'deadline))
+                   (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+                   (org-agenda-todo-keyword-format "")
+                   (org-agenda-show-all-dates t)
+                   (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+                   (org-agenda-format-date "%A %Y-%m-%d")
+                   ;; Super agenda groups
+                   (org-super-agenda-groups
+                    '(
+    			(:name "Happening today" 
+    			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+    			(:name "Today's Schedule"
+    			       :time-grid t)
+                      ))))))
+          ))
+
+      (setq org-agenda-time-grid-use-ampm t)
+      (setq org-agenda-with-times t)
+      (setq org-agenda-time-format "%I:%M%p")
+      (setq org-agenda-prefix-format
+    	'((agenda . " ○ %t ")
+    	  (tags   . "○ ")
+    	  (todo   . "○ ")))
+#+end_src
+
+* Calfw
+#+begin_src emacs-lisp
+(use-package calfw)
+(use-package google-maps)
+
+(use-package calfw-org
+  :config
+  (setq cfw:org-agenda-schedule-args '(:timestamp :deadline :scheduled)))
+
+;; Fix for calfw truncation alignment issue
+(with-eval-after-load 'calfw
+  (defun my/cfw:trim-text (text width)
+    "Trim TEXT to fit in WIDTH, without adding ellipsis that breaks formatting."
+    (if (< width 0) ""
+      (if (<= (string-width text) width)
+          text
+        (truncate-string-to-width text width nil nil nil ""))))
   
-  ;; Allow creating new nodes (including new files) when refiling
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
-  
-  ;; Use the full outline paths for refile targets
-  (setq org-refile-use-outline-path 'file)
-  
-  ;; Completes in steps so you can select a heading after selecting the file
-  (setq org-outline-path-complete-in-steps t)
-
-  (require 'diary-lib)
-
-  (use-package org-super-agenda
-    :after org-agenda
-    :config
-    (setq org-super-agenda-header-map nil)  
-    (setq org-super-agenda-header-properties nil)
-    (org-super-agenda-mode))
-
-  (setq warning-suppress-types '((org-element)))
-
-  (setq org-agenda-custom-commands
-	'(("d" "daily dashboard"
-	   ((agenda "Schedule and Habits"
-		    ((org-agenda-span 'day)
-		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-		     (org-agenda-overriding-header "")
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Schedule"
-			       :time-grid t)
-			(:name "Overdue" :deadline past)
-			(:name "Due Today" :deadline today)
-			(:name "High Priority" :priority "A")
-			(:name "Inbox" :category "inbox")
-			(:name "Logs" :category "log")
-			(:name "Due Soon" :deadline future)
-			(:name "Code Reviews" :category "code review")
-			(:name "Active Epics" :category "epic")
-			(:name "Family Stuff" :category "family")
-			(:name "Holidays" :category "holiday")
-			(:name "The Garden" :category "the-garden")
-			(:name "Re: Me" :category "me")
-			(:name "Re: Emily" :category "emily")
-			(:name "Re: Lincoln" :category "lincoln")
-			(:name "Re: Nora" :category "nora")
-			(:name "Re: Fern" :category "fern")
-			(:name "Re: Harry" :category "harry")
-			(:name "AM Habits" :category "personal habits am")
-			(:name "Midday Habits" :category "personal habits midday")
-			(:name "PM Habits" :category "personal habits pm")
-			(:name "Any Time Habits" :category "personal habits any time")
-			(:name "Work Habits" :category "work habits")
-			(:auto-category t)
-			))))))))
-
-  (setq org-agenda-time-grid-use-ampm t)
-  (setq org-agenda-with-times t)
-  (setq org-agenda-time-format "%I:%M%p")
-  (setq org-agenda-prefix-format
-	'((agenda . " ○ %t ")
-	  (tags   . "○ ")
-	  (todo   . "○ ")))
+  ;; Override the default truncation function
+  (advice-add 'cfw:trim-text :override #'my/cfw:trim-text))
 #+end_src
 
 * Org Face Customizations
