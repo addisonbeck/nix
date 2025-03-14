@@ -66,11 +66,6 @@ hash = "d9c1bcc4b8ab05e309cd5cb88caf280dfd6901bcc679a7b504af1dcdb7b6a8d2"
 metafile = true
 
 [[files]]
-file = "mods/tectonic.pw.toml"
-hash = "a4b35e1ccae1898517580f8df3cf3fc353f48eb52487ed633767793acfe0cf14"
-metafile = true
-
-[[files]]
 file = "mods/terralith.pw.toml"
 hash = "da7ee99189ad35aac094919fe33cac647d98533b23c228f10d4811f08989e2b8"
 metafile = true
