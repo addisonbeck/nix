@@ -1,8 +1,23 @@
 hash-format = "sha256"
 
 [[files]]
+file = "mods/additional-structures.pw.toml"
+hash = "d2f6260903fa72fcc23cec92691a94b7e6d71637ccf247fba21ab089c6959c90"
+metafile = true
+
+[[files]]
+file = "mods/chunky.pw.toml"
+hash = "64c483fe6597534270aac57d7cd3f59928641b97de649312a14d392b5343e483"
+metafile = true
+
+[[files]]
 file = "mods/cloth-config.pw.toml"
 hash = "df15648dd4d4e27dd0c45ab4e78277c45886b77a698b129f4ce2d2bc337f7044"
+metafile = true
+
+[[files]]
+file = "mods/collective.pw.toml"
+hash = "88ae050b15aaa9fb5b8ffe5df53e2b8407cb5217dde64241107c11509c2fd657"
 metafile = true
 
 [[files]]
@@ -26,13 +41,13 @@ hash = "82641f87ef26335506041b6cf478c3444bda67fead22938cd6a71e7ccd68c066"
 metafile = true
 
 [[files]]
-file = "mods/ketkets-furnicraft.pw.toml"
-hash = "34a321b8be724bdc7594ad9e97a547dc710e550808eeb3ecc3d417f854ea4331"
+file = "mods/lithium.pw.toml"
+hash = "58bc826a0b2f0ba422144d35941dd912d349877225e121446180a14d7872040d"
 metafile = true
 
 [[files]]
-file = "mods/lithium.pw.toml"
-hash = "58bc826a0b2f0ba422144d35941dd912d349877225e121446180a14d7872040d"
+file = "mods/lithostitched.pw.toml"
+hash = "2a996c6a518b4585344b8e62f944eca16222beb91b1fd4ccf5e3487dc085f4ac"
 metafile = true
 
 [[files]]
@@ -41,11 +56,26 @@ hash = "a874985359eaa4317b3242136fe65b86207a6d5ab55e0b4aa8f37b90727f0487"
 metafile = true
 
 [[files]]
-file = "mods/paladins-furniture.pw.toml"
-hash = "31a0e460a8230dd3cbb86fa8d42772e1764d34ee74bec2a55186b7b00eaa17a3"
+file = "mods/noisium.pw.toml"
+hash = "85ae542e2ccfb61bcdd3aa55b1a56436782687ba63388e249cb98376737045d4"
 metafile = true
 
 [[files]]
 file = "mods/sodium.pw.toml"
 hash = "d9c1bcc4b8ab05e309cd5cb88caf280dfd6901bcc679a7b504af1dcdb7b6a8d2"
+metafile = true
+
+[[files]]
+file = "mods/tectonic.pw.toml"
+hash = "a4b35e1ccae1898517580f8df3cf3fc353f48eb52487ed633767793acfe0cf14"
+metafile = true
+
+[[files]]
+file = "mods/terralith.pw.toml"
+hash = "da7ee99189ad35aac094919fe33cac647d98533b23c228f10d4811f08989e2b8"
+metafile = true
+
+[[files]]
+file = "mods/villager-names-serilum.pw.toml"
+hash = "671273fffd52f313647aa47a3bc8290210358d0848ec1ead80a55923c07cbc1b"
 metafile = true
