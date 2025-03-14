@@ -5,7 +5,7 @@
   ...
 }: let
   modpack = pkgs.fetchPackwizModpack {
-    url = ./index.toml;
+    url = ./with/user/with/program/index.toml;
     packHash = "sha256-a16f6066d771ba2814109eddf964ee4dc30700fc832e2d59c2d03cdd3fb52ba9";
   };
 in {
