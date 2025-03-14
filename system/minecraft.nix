@@ -6,7 +6,7 @@
 }: let
   modpack = pkgs.fetchPackwizModpack {
     url = "https://raw.githubusercontent.com/addisonbeck/nix/refs/heads/main/packwiz/bonesfamily/pack.toml";
-    #packHash = "sha256-DcJeAxOGBA6pksvrwEsIT+MBrYYIZYPZd5iBcY4XTgM=";
+    packHash = "sha256-Jut8BLv95kyeq0+xAMgJNHQOs7iYhbXJFN2DVxIusmY=";
   };
 in {
   imports = [
