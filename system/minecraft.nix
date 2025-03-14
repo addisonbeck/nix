@@ -51,6 +51,7 @@ in {
           #jvmOpts = ''-Xmx6G -Xms6G -XX:+UseG1GC -Dsun.rmi.dgc.server.gcInterval=2147483646 -XX:+UnlockExperimentalVMOptions -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M'';
           #jvmOpts = ''-Xms6144M -Xmx6144M -XX:+UseZGC'';
           #jvmOpts = ''-Xms2G -Xmx4G -XX:NewSize=1G -XX:MaxNewSize=2G -XX:SurvivorRatio=2 -XX:+DisableExplicitGC -d64 -XX:+UseConcMarkSweepGC -XX:+AggressiveOpts'';
+          jvmOpts = ''-Xms4G -Xmx8G -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled -XX:+UseNUMA -XX:-DisableExplicitGC'';
           enable = true;
           enableReload = false;
           package = inputs.nix-minecraft.legacyPackages.x86_64-linux.fabricServers.fabric-1_21_4;
