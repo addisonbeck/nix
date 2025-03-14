@@ -26,6 +26,11 @@ hash = "82641f87ef26335506041b6cf478c3444bda67fead22938cd6a71e7ccd68c066"
 metafile = true
 
 [[files]]
+file = "mods/ketkets-furnicraft.pw.toml"
+hash = "34a321b8be724bdc7594ad9e97a547dc710e550808eeb3ecc3d417f854ea4331"
+metafile = true
+
+[[files]]
 file = "mods/lithium.pw.toml"
 hash = "58bc826a0b2f0ba422144d35941dd912d349877225e121446180a14d7872040d"
 metafile = true

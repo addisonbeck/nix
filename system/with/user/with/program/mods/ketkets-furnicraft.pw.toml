@@ -1,0 +1,13 @@
+name = "FurniCraft"
+filename = "ketkets-furnicraft-5.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/7OgRKPcG/versions/SeN3Upjn/ketkets-furnicraft-5.0.jar"
+hash-format = "sha512"
+hash = "ffb45186af5137fc30d4f1343a7a36d01aeb1051dd8b3b1b41572f06bb49f96fc011af5c28e3851c36b7231d839022ff844f119a77e63714f47de56c01aae0db"
+
+[update]
+[update.modrinth]
+mod-id = "7OgRKPcG"
+version = "SeN3Upjn"
