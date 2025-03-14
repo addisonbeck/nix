@@ -1,0 +1,13 @@
+name = "Floodgate"
+filename = "Floodgate-Fabric-2.2.4-b43.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/bWrNNfkb/versions/nyg969vQ/Floodgate-Fabric-2.2.4-b43.jar"
+hash-format = "sha512"
+hash = "0d73f7f88429f15989b0e7a33f05c2812d13822fd50e4c1a1793c9e2e65abbbe19cb2ad6bb9a6328e076cadf531261e893a88666be7efbc1b6d7f9534e52b336"
+
+[update]
+[update.modrinth]
+mod-id = "bWrNNfkb"
+version = "nyg969vQ"

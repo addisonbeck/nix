@@ -125,6 +125,7 @@ in {
           google-maps
           calfw
           calfw-org
+          ox-json
         ];
     };
   };

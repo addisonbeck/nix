@@ -114,6 +114,10 @@
       ./with/program/leaderkey.nix
     ];
 
+    home.packages = [
+      pkgs.packwiz
+    ];
+
     home.sessionPath = [];
     home.sessionVariables = {
       EDITOR = "vim";
