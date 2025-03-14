@@ -26,20 +26,10 @@ in {
       ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
       ./with/program/git.nix
-      ./with/program/direnv.nix
-      ./with/program/tmux.nix
-      ./with/program/d.nix
       inputs.nixvim.homeManagerModules.default
-      ./with/program/neovim
-      ./with/secret/github.nix
-      ./with/program/lazygit.nix
-      ./with/program/github-cli.nix
-      ./with/program/direnv.nix
-      ./with/program/ripgrep.nix
     ];
 
     home.sessionPath = [];
-    home.sessionVariables = {EDITOR = "vim";};
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };
