@@ -41,6 +41,11 @@ hash = "a874985359eaa4317b3242136fe65b86207a6d5ab55e0b4aa8f37b90727f0487"
 metafile = true
 
 [[files]]
+file = "mods/paladins-furniture.pw.toml"
+hash = "31a0e460a8230dd3cbb86fa8d42772e1764d34ee74bec2a55186b7b00eaa17a3"
+metafile = true
+
+[[files]]
 file = "mods/sodium.pw.toml"
 hash = "d9c1bcc4b8ab05e309cd5cb88caf280dfd6901bcc679a7b504af1dcdb7b6a8d2"
 metafile = true
