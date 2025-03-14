@@ -6,7 +6,7 @@
 }: let
   modpack = pkgs.fetchPackwizModpack {
     url = "https://raw.githubusercontent.com/addisonbeck/nix/refs/heads/main/system/with/user/with/program/pack.toml";
-    #packHash = "sha256-a16f6066d771ba2814109eddf964ee4dc30700fc832e2d59c2d03cdd3fb52ba9";
+    packHash = "sha256-q5zuuyEyYzMy1Jm/Zv+T8G0Z7qDUj91tYT2oId5FlCg=";
   };
 in {
   imports = [
