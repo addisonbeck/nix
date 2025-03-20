@@ -1,3 +1,9 @@
+:PROPERTIES:
+:GPTEL_MODEL: claude-3.7-sonnet
+:GPTEL_BACKEND: github-copilot
+:GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
+:GPTEL_BOUNDS: nil
+:END:
 #+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
@@ -486,6 +492,8 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 
     ;; Custom keybinding for executing all source blocks in a subtree
     (define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
+
+    (require 'org-make-toc)
 #+end_src
 
 * Org To Jira
@@ -1546,6 +1554,11 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
         (message "Copied: %s" dirpath))))
 #+end_src
 
+* Avy
+#+begin_src emacs-lisp
+(require 'avy)
+(define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
+#+end_src
 * Provide Init
 
 #+begin_src emacs-lisp
@@ -1556,5 +1569,6 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
   ;; End:
 	    ;;; init.el ends here
 #+end_src
+
 
 

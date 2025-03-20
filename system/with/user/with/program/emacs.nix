@@ -126,6 +126,8 @@ in {
           calfw
           calfw-org
           ox-json
+          org-make-toc
+          avy
         ];
     };
   };

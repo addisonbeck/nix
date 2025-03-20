@@ -116,6 +116,7 @@
 
     home.packages = [
       pkgs.packwiz
+      pkgs.claude-code
     ];
 
     home.sessionPath = [];
