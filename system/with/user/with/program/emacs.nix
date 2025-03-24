@@ -162,7 +162,6 @@ in {
     # It can be empty but needs to exist
   '';
 
-  # Launchd service for Emacs daemon
   launchd.agents.emacs-daemon = {
     enable = true;
     config = {

@@ -74,18 +74,17 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
   (setq-default indent-tabs-mode nil)
   (electric-indent-mode 1)
   (setq-default tab-width 2
-  	indent-tabs-mode nil
-  	tab-stop-list (number-sequence 2 120 2))
+		indent-tabs-mode nil
+		tab-stop-list (number-sequence 2 120 2))
   (setq confirm-kill-emacs nil)
   (setq auto-save-default nil
-  create-lockfiles nil)
+	create-lockfiles nil)
   (setq select-enable-clipboard t)
   (setq case-fold-search t)
   (xterm-mouse-mode 1)
   (setq-default fill-column 77)
   (global-hl-line-mode -1)
   (setq sentence-end-double-space nil)
-
 #+end_src
 
 * Buffer Management Functions
@@ -135,16 +134,16 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     :config
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t
-         dashboard-items '((recents . 5)
-                           (projects . 5)
-                           (bookmarks . 5))
-         dashboard-set-heading-icons t
-         dashboard-set-file-icons t
-         dashboard-show-shortcuts t
-         dashboard-set-navigator t)
+	  dashboard-items '((recents . 5)
+			    (projects . 5)
+			    (bookmarks . 5))
+	  dashboard-set-heading-icons t
+	  dashboard-set-file-icons t
+	  dashboard-show-shortcuts t
+	  dashboard-set-navigator t)
     (setq dashboard-heading-icons '((recents   . "nf-oct-history")
-                                   (bookmarks . "nf-oct-bookmark")
-                                   (projects  . "nf-oct-project"))))
+				    (bookmarks . "nf-oct-bookmark")
+				    (projects  . "nf-oct-project"))))
 #+end_src
 
 * Font Configuration
@@ -205,28 +204,28 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 
 * Cycle Line Number Function
 #+begin_src emacs-lisp
-(defun cycle-line-numbers ()
-  "Cycle through line number modes: off -> relative -> normal -> off."
-  (interactive)
-  (cond
-   ;; If currently off, switch to relative
-   ((not display-line-numbers)
-    (setq display-line-numbers 'relative)
-    (message "Line numbers: RELATIVE"))
-   
-   ;; If currently relative, switch to normal
-   ((eq display-line-numbers 'relative)
-    (setq display-line-numbers t)
-    (message "Line numbers: NORMAL"))
-   
-   ;; If currently normal, switch to off
-   (t
-    (setq display-line-numbers nil)
-    (message "Line numbers: OFF"))))
+  (defun cycle-line-numbers ()
+    "Cycle through line number modes: off -> relative -> normal -> off."
+    (interactive)
+    (cond
+     ;; If currently off, switch to relative
+     ((not display-line-numbers)
+      (setq display-line-numbers 'relative)
+      (message "Line numbers: RELATIVE"))
 
-;; Bind to "N" in evil normal mode
-(with-eval-after-load 'evil
-  (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
+     ;; If currently relative, switch to normal
+     ((eq display-line-numbers 'relative)
+      (setq display-line-numbers t)
+      (message "Line numbers: NORMAL"))
+
+     ;; If currently normal, switch to off
+     (t
+      (setq display-line-numbers nil)
+      (message "Line numbers: OFF"))))
+
+  ;; Bind to "N" in evil normal mode
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
 #+end_src
 * Server Configuration
 #+begin_src emacs-lisp
@@ -253,6 +252,7 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 		    "~/bitwarden/sdk-internal"
 		    "~/bitwarden/wg-open-source-at-bitwarden"
 		    "~/bitwarden/contributing-docs"
+		    "~/bitwarden/bitwarden-nx-poc"
 		    "~/code"
 		    "~/d"
 		    "~/binwarden"
@@ -310,17 +310,17 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     (setq treesit-auto-install 'prompt)
     (setq treesit-auto-langs '(typescript javascript tsx jsx)))
 
-(use-package typescript-ts-mode
+  (use-package typescript-ts-mode
     :ensure t
     :mode (("\\.ts\\'" . typescript-ts-mode)
-           ("\\.tsx\\'" . tsx-ts-mode))
+	   ("\\.tsx\\'" . tsx-ts-mode))
     :init
     (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
     (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
 
-;; Ensure typescript grammar is installed
-(unless (treesit-language-available-p 'typescript)
-  (treesit-install-language-grammar 'typescript))
+  ;; Ensure typescript grammar is installed
+  (unless (treesit-language-available-p 'typescript)
+    (treesit-install-language-grammar 'typescript))
 #+end_src
 
 * LSP Configuration
@@ -328,7 +328,7 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
   (use-package lsp-mode
     :ensure t
     :hook ((typescript-ts-mode . lsp)
-           (tsx-ts-mode . lsp)
+	   (tsx-ts-mode . lsp)
 	   (typescript-mode . lsp)
 	   (csharp-mode . lsp)
 	   (rust-mode . lsp)
@@ -407,51 +407,51 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 
 * Org Mode Configuration 
 #+begin_src emacs-lisp
-    ;; Basic org settings
-    (use-package org
-      :ensure t
-      :bind
-      (("C-c a" . org-agenda)
-       ("C-c h" . consult-org-heading)
-       ("C-c c" . org-capture))
-      :config
-      (setq org-directory "~/notes")
-      (setq org-startup-truncated nil)
-      (setq org-agenda-files (list org-directory))
-      (setq org-log-done 'time)
-      (setq org-log-into-drawer t)
-      (setq org-startup-folded 'overview)
-      (setq org-clock-persist 'history
-      org-export-backends '(html icalendar latex man md org)
-      org-image-max-width 'window
-      org-startup-with-inline-images t
-      org-cycle-inline-images-display t
-      org-display-remote-inline-images 'download
-      org-clock-idle-time 15
-      org-clock-persist-file "~/notes/clock.el"
-      org-clock-auto-clock-resolution 'when-no-clock-is-running
-      org-clock-report-include-clocking-task t
-      org-clock-into-drawer t)
-      (org-clock-persistence-insinuate))
+  ;; Basic org settings
+  (use-package org
+    :ensure t
+    :bind
+    (("C-c a" . org-agenda)
+     ("C-c h" . consult-org-heading)
+     ("C-c c" . org-capture))
+    :config
+    (setq org-directory "~/notes")
+    (setq org-startup-truncated nil)
+    (setq org-agenda-files (list org-directory))
+    (setq org-log-done 'time)
+    (setq org-log-into-drawer t)
+    (setq org-startup-folded 'overview)
+    (setq org-clock-persist 'history
+	  org-export-backends '(html icalendar latex man md org)
+	  org-image-max-width 'window
+	  org-startup-with-inline-images t
+	  org-cycle-inline-images-display t
+	  org-display-remote-inline-images 'download
+	  org-clock-idle-time 15
+	  org-clock-persist-file "~/notes/clock.el"
+	  org-clock-auto-clock-resolution 'when-no-clock-is-running
+	  org-clock-report-include-clocking-task t
+	  org-clock-into-drawer t)
+    (org-clock-persistence-insinuate))
 
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (shell . t)
-       (org . t)
-       (mermaid . t)
-       ))
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (shell . t)
+     (org . t)
+     (mermaid . t)
+     ))
 
-    (setq org-babel-sh-command "bash -l -c")
+  (setq org-babel-sh-command "bash -l -c")
 
   (setenv "PUPPETEER_EXECUTABLE_PATH" 
-        (or (executable-find "google-chrome-stable")
-            (executable-find "google-chrome")))
+	  (or (executable-find "google-chrome-stable")
+	      (executable-find "google-chrome")))
 
-(setq org-src-preserve-indentation nil
-    org-edit-src-content-indentation 0)
+  (setq org-src-preserve-indentation nil
+	org-edit-src-content-indentation 0)
 
-(require 'ox-json)
+  (require 'ox-json)
 
   (use-package ob-mermaid
     :config
@@ -460,40 +460,40 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
     ;; If you need to specify the Chrome executable directly:
     (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
 
-    ;; Enable automatic display of inline images after executing babel blocks
-    (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
-    (setq org-redisplay-inline-images t)
+  ;; Enable automatic display of inline images after executing babel blocks
+  (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+  (setq org-redisplay-inline-images t)
 
-    ;; Allow evaluation of code blocks without confirmation for safe languages
-    (defun my/org-confirm-babel-evaluate (lang body)
-      (not (member lang '("emacs-lisp" "shell"))))
-    ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
-    (setq org-confirm-babel-evaluate nil)
+  ;; Allow evaluation of code blocks without confirmation for safe languages
+  (defun my/org-confirm-babel-evaluate (lang body)
+    (not (member lang '("emacs-lisp" "shell"))))
+  ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+  (setq org-confirm-babel-evaluate nil)
 
-    ;; Ensure pretty fontification of source blocks
-    (setq org-src-fontify-natively t)
-    (define-key org-mode-map (kbd "RET") 'newline)
+  ;; Ensure pretty fontification of source blocks
+  (setq org-src-fontify-natively t)
+  (define-key org-mode-map (kbd "RET") 'newline)
 
-    ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
-    (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
-    (evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
-    (defun my-org-evil-open-below ()
-     "Open line below preserving org structure but preventing reformatting."
-     (interactive)
-     ;; Use evil's basic open behavior
-     (evil-open-below 1)
-     ;; Exit insert state then re-enter to avoid auto-formatting
-     (evil-normal-state)
-     (evil-insert-state))
+  ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
+  (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
+  (evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
+  (defun my-org-evil-open-below ()
+    "Open line below preserving org structure but preventing reformatting."
+    (interactive)
+    ;; Use evil's basic open behavior
+    (evil-open-below 1)
+    ;; Exit insert state then re-enter to avoid auto-formatting
+    (evil-normal-state)
+    (evil-insert-state))
 
-    (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
+  (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
 
-    ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
+  ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
 
-    ;; Custom keybinding for executing all source blocks in a subtree
-    (define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
+  ;; Custom keybinding for executing all source blocks in a subtree
+  (define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
 
-    (require 'org-make-toc)
+  (require 'org-make-toc)
 #+end_src
 
 * Org To Jira
@@ -505,9 +505,9 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
 * Org Capture Templates and Functions
 #+begin_src emacs-lisp
   (setq org-capture-templates
-        '(("i" "Inbox" entry
-           (file "~/notes/inbox.org")
-           "* TODO %^{Title}\nSCHEDULED: %t\n%?")))
+	'(("i" "Inbox" entry
+	   (file "~/notes/inbox.org")
+	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")))
 #+end_src
 
 * Date Tracking Functions
@@ -588,106 +588,106 @@ I'm not using these right now, but might revist in the future.
 
 * Agenda Configuration
 #+begin_src emacs-lisp
-      (setq org-agenda-block-separator nil)
-      (setq org-agenda-window-setup 'only-window)
-      (setq org-agenda-timegrid-use-ampm t)
-      (setq org-agenda-time-leading-zero t)
-      (setq org-agenda-todo-keyword-format "%s")
-      (setq org-agenda-include-diary t)
-      (setq org-refile-targets '((nil :maxlevel . 8)
-    			     (org-agenda-files :maxlevel . 2)))
-      
-      ;; Allow creating new nodes (including new files) when refiling
-      (setq org-refile-allow-creating-parent-nodes 'confirm)
-      
-      ;; Use the full outline paths for refile targets
-      (setq org-refile-use-outline-path nil)
-      
-      ;; Completes in steps so you can select a heading after selecting the file
-      (setq org-outline-path-complete-in-steps nil)
+  (setq org-agenda-block-separator nil)
+  (setq org-agenda-window-setup 'only-window)
+  (setq org-agenda-timegrid-use-ampm t)
+  (setq org-agenda-time-leading-zero t)
+  (setq org-agenda-todo-keyword-format "%s")
+  (setq org-agenda-include-diary t)
+  (setq org-refile-targets '((nil :maxlevel . 8)
+			     (org-agenda-files :maxlevel . 2)))
 
-      (require 'diary-lib)
+  ;; Allow creating new nodes (including new files) when refiling
+  (setq org-refile-allow-creating-parent-nodes 'confirm)
 
-      (use-package org-super-agenda
-        :after org-agenda
-        :config
-        (setq org-super-agenda-header-map nil)  
-        (setq org-super-agenda-header-properties nil)
-        (org-super-agenda-mode))
+  ;; Use the full outline paths for refile targets
+  (setq org-refile-use-outline-path nil)
 
-      (setq warning-suppress-types '((org-element)))
+  ;; Completes in steps so you can select a heading after selecting the file
+  (setq org-outline-path-complete-in-steps nil)
 
-      (setq org-agenda-custom-commands
-    	'(("d" "daily dashboard"
-    	   ((agenda "Schedule and Habits"
-    		    ((org-agenda-span 'day)
-    		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-    		     (org-agenda-overriding-header "")
-    		     (org-super-agenda-groups
-    		      '(
-    			(:name "Happening today" 
-    			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-    			(:name "Today's Schedule"
-    			       :time-grid t)
-    			(:name "Overdue" :deadline past)
-    			(:name "Due Today" :deadline today)
-    			(:name "High Priority" :priority "A")
-    			(:name "Inbox" :category "inbox")
-    			(:name "Logs" :category "log")
-    			(:name "Due Soon" :deadline future)
-    			(:name "Code Reviews" :category "code review")
-    			(:name "Active Epics" :category "epic")
-    			(:name "Family Stuff" :category "family")
-    			(:name "Holidays" :category "holiday")
-    			(:name "The Garden" :category "the-garden")
-    			(:name "Re: Me" :category "me")
-    			(:name "Re: Emily" :category "emily")
-    			(:name "Re: Lincoln" :category "lincoln")
-    			(:name "Re: Nora" :category "nora")
-    			(:name "Re: Fern" :category "fern")
-    			(:name "Re: Harry" :category "harry")
-    			(:name "AM Habits" :category "personal habits am")
-    			(:name "Midday Habits" :category "personal habits midday")
-    			(:name "PM Habits" :category "personal habits pm")
-    			(:name "Any Time Habits" :category "personal habits any time")
-    			(:name "Work Habits" :category "work habits")
-    			(:auto-category t)
-    			))))))
-("w" "Weekly overview with super-agenda"
-         ((agenda ""
-                  ((org-agenda-span 7)                      ;; Show 7 days
-                   (org-agenda-start-on-weekday nil)        ;; Start from current day
-                   (org-agenda-time-grid '((daily today require-timed)
-                                          (800 1000 1200 1400 1600 1800 2000)
-                                          "......" "----------------"))  ;; Time grid config
-                   (org-agenda-include-deadlines nil)       ;; No deadlines
-                   (org-agenda-skip-scheduled-if-done t)     
-                   (org-agenda-skip-deadline-if-done t)
-                   (org-agenda-skip-scheduled-delay-if-done t)
-                   (org-agenda-skip-function                ;; Skip scheduled items
-                    '(org-agenda-skip-entry-if 'scheduled 'deadline))
-                   (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-                   (org-agenda-todo-keyword-format "")
-                   (org-agenda-show-all-dates t)
-                   (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-                   (org-agenda-format-date "%A %Y-%m-%d")
-                   ;; Super agenda groups
-                   (org-super-agenda-groups
-                    '(
-    			(:name "Happening today" 
-    			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-    			(:name "Today's Schedule"
-    			       :time-grid t)
-                      ))))))
-          ))
+  (require 'diary-lib)
 
-      (setq org-agenda-time-grid-use-ampm t)
-      (setq org-agenda-with-times t)
-      (setq org-agenda-time-format "%I:%M%p")
-      (setq org-agenda-prefix-format
-    	'((agenda . " ○ %t ")
-    	  (tags   . "○ ")
-    	  (todo   . "○ ")))
+  (use-package org-super-agenda
+    :after org-agenda
+    :config
+    (setq org-super-agenda-header-map nil)  
+    (setq org-super-agenda-header-properties nil)
+    (org-super-agenda-mode))
+
+  (setq warning-suppress-types '((org-element)))
+
+  (setq org-agenda-custom-commands
+	'(("d" "daily dashboard"
+	   ((agenda "Schedule and Habits"
+		    ((org-agenda-span 'day)
+		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+		     (org-agenda-overriding-header "")
+		     (org-super-agenda-groups
+		      '(
+			(:name "Happening today" 
+			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+			(:name "Today's Schedule"
+			       :time-grid t)
+			(:name "Overdue" :deadline past)
+			(:name "Due Today" :deadline today)
+			(:name "High Priority" :priority "A")
+			(:name "Inbox" :category "inbox")
+			(:name "Logs" :category "log")
+			(:name "Due Soon" :deadline future)
+			(:name "Code Reviews" :category "code review")
+			(:name "Active Epics" :category "epic")
+			(:name "Family Stuff" :category "family")
+			(:name "Holidays" :category "holiday")
+			(:name "The Garden" :category "the-garden")
+			(:name "Re: Me" :category "me")
+			(:name "Re: Emily" :category "emily")
+			(:name "Re: Lincoln" :category "lincoln")
+			(:name "Re: Nora" :category "nora")
+			(:name "Re: Fern" :category "fern")
+			(:name "Re: Harry" :category "harry")
+			(:name "AM Habits" :category "personal habits am")
+			(:name "Midday Habits" :category "personal habits midday")
+			(:name "PM Habits" :category "personal habits pm")
+			(:name "Any Time Habits" :category "personal habits any time")
+			(:name "Work Habits" :category "work habits")
+			(:auto-category t)
+			))))))
+	  ("w" "Weekly overview with super-agenda"
+	   ((agenda ""
+		    ((org-agenda-span 7)                      ;; Show 7 days
+		     (org-agenda-start-on-weekday nil)        ;; Start from current day
+		     (org-agenda-time-grid '((daily today require-timed)
+					     (800 1000 1200 1400 1600 1800 2000)
+					     "......" "----------------"))  ;; Time grid config
+		     (org-agenda-include-deadlines nil)       ;; No deadlines
+		     (org-agenda-skip-scheduled-if-done t)     
+		     (org-agenda-skip-deadline-if-done t)
+		     (org-agenda-skip-scheduled-delay-if-done t)
+		     (org-agenda-skip-function                ;; Skip scheduled items
+		      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+		     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+		     (org-agenda-todo-keyword-format "")
+		     (org-agenda-show-all-dates t)
+		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+		     (org-agenda-format-date "%A %Y-%m-%d")
+		     ;; Super agenda groups
+		     (org-super-agenda-groups
+		      '(
+			(:name "Happening today" 
+			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+			(:name "Today's Schedule"
+			       :time-grid t)
+			))))))
+	  ))
+
+  (setq org-agenda-time-grid-use-ampm t)
+  (setq org-agenda-with-times t)
+  (setq org-agenda-time-format "%I:%M%p")
+  (setq org-agenda-prefix-format
+	'((agenda . " ○ %t ")
+	  (tags   . "○ ")
+	  (todo   . "○ ")))
 #+end_src
 
 * Calfw
@@ -772,23 +772,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-					      search(query: $query, type: ISSUE, first: 100) {
-						nodes {
-						  ... on PullRequest {
-						    title
-						    url
-						    repository {
-						      nameWithOwner
+						search(query: $query, type: ISSUE, first: 100) {
+						  nodes {
+						    ... on PullRequest {
+						      title
+						      url
+						      repository {
+							nameWithOwner
+						      }
+						      author {
+							login
+						      }
+						      updatedAt
+						      state
 						    }
-						    author {
-						      login
-						    }
-						    updatedAt
-						    state
 						  }
 						}
-					      }
-					    }"
+					      }"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -843,16 +843,16 @@ I'm not using these right now, but might revist in the future.
 
 * Theme Configuration
 #+begin_src emacs-lisp
-    (use-package gruvbox-theme
-      :ensure t
-      :config
-      (load-theme 'gruvbox-dark-hard t))
+  (use-package gruvbox-theme
+    :ensure t
+    :config
+    (load-theme 'gruvbox-dark-hard t))
 
   (custom-set-faces
    `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
-                                      "#83a598"  ; gruvbox-dark blue
-                                    "#076678")  ; gruvbox-light blue
-                             ))))
+				       "#83a598"  ; gruvbox-dark blue
+				     "#076678")  ; gruvbox-light blue
+				  ))))
    '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
    '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
    '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
@@ -932,187 +932,199 @@ I'm not using these right now, but might revist in the future.
 
 * GPTel Configuration
 #+begin_src emacs-lisp
-    (use-package gptel
-      :ensure t
-      :config
-      ;; Enable debug logging
-      (setq gptel-log-level 'debug)
+  (use-package gptel
+    :ensure t
+    :config
+    ;; Enable debug logging
+    (setq gptel-log-level 'debug)
 
-      ;; Use org-mode for gptel buffers
-      (setq gptel-default-mode 'org-mode)
-      ;; Enable branching conversations in org-mode
-      (setq gptel-org-branching-context t)
+    ;; Use org-mode for gptel buffers
+    (setq gptel-default-mode 'org-mode)
+    ;; Enable branching conversations in org-mode
+    (setq gptel-org-branching-context t)
 
-      ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-      (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-      (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
 
-      ;; Token access for GitHub Copilot
-      (defvar gptel-github-api-key
-        (lambda ()
-  	(when-let ((auth (car (auth-source-search
-  			       :host "github.copilot"
-  			       :require '(:secret)))))
-  	  (let ((token (plist-get auth :secret)))
-  	    (if (functionp token)
-  		(funcall token)
-  	      token)))))
+    ;; Token access for GitHub Copilot
+    (defvar gptel-github-api-key
+      (lambda ()
+	(when-let ((auth (car (auth-source-search
+			       :host "github.copilot"
+			       :require '(:secret)))))
+	  (let ((token (plist-get auth :secret)))
+	    (if (functionp token)
+		(funcall token)
+	      token)))))
 
-      (defun gptel-copilot--exchange-token ()
-        (let* ((github-token (if (functionp gptel-github-api-key)
-  			       (funcall gptel-github-api-key)
-  			     gptel-github-api-key))
-  	     (url-request-method "GET")
-  	     (url-request-extra-headers
-  	      `(("Authorization" . ,(format "Bearer %s" github-token))
-  		("Accept" . "application/json")))
-  	     response-buffer token-str)
-  	(setq response-buffer
-  	      (url-retrieve-synchronously
-  	       "https://api.github.com/copilot_internal/v2/token"
-  	       t nil 30))
-  	(when response-buffer
-  	  (with-current-buffer response-buffer
-  	    (goto-char (point-min))
-  	    (when (re-search-forward "^$" nil t)
-  	      (forward-char)
-  	      (condition-case nil
-  		  (let ((json-response (json-read)))
-  		    (setq token-str (cdr (assoc 'token json-response))))
-  		(error nil)))
-  	    (kill-buffer response-buffer)))
-  	token-str))
+    (defun gptel-copilot--exchange-token ()
+      (let* ((github-token (if (functionp gptel-github-api-key)
+			       (funcall gptel-github-api-key)
+			     gptel-github-api-key))
+	     (url-request-method "GET")
+	     (url-request-extra-headers
+	      `(("Authorization" . ,(format "Bearer %s" github-token))
+		("Accept" . "application/json")))
+	     response-buffer token-str)
+	(setq response-buffer
+	      (url-retrieve-synchronously
+	       "https://api.github.com/copilot_internal/v2/token"
+	       t nil 30))
+	(when response-buffer
+	  (with-current-buffer response-buffer
+	    (goto-char (point-min))
+	    (when (re-search-forward "^$" nil t)
+	      (forward-char)
+	      (condition-case nil
+		  (let ((json-response (json-read)))
+		    (setq token-str (cdr (assoc 'token json-response))))
+		(error nil)))
+	    (kill-buffer response-buffer)))
+	token-str))
 
-      ;; Store the exchanged token
-      (defvar gptel-copilot--exchanged-token nil)
-      (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+    ;; Store the exchanged token
+    (defvar gptel-copilot--exchanged-token nil)
+    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
 
-      ;; Update gptel-api-key to use the exchanged token
-      (setq gptel-api-key
-  	  (lambda ()
-  	    (or gptel-copilot--exchanged-token
-  		(setq gptel-copilot--exchanged-token
-  		      (gptel-copilot--exchange-token)))))
+    ;; Update gptel-api-key to use the exchanged token
+    (setq gptel-api-key
+	  (lambda ()
+	    (or gptel-copilot--exchanged-token
+		(setq gptel-copilot--exchanged-token
+		      (gptel-copilot--exchange-token)))))
 
-      ;; Advice to include full path in message
-      (defun gptel--insert-at-beginning-with-path (initial-point)
-        "Include full path when showing buffer contents."
-        (let ((full-path (buffer-file-name)))
-  	(goto-char initial-point)
-  	(insert
-  	 (format "In file %s:\n\n"
-  		 (if full-path
-  		     (expand-file-name full-path)
-  		   (buffer-name))))))
+    ;; Advice to include full path in message
+    (defun gptel--insert-at-beginning-with-path (initial-point)
+      "Include full path when showing buffer contents."
+      (let ((full-path (buffer-file-name)))
+	(goto-char initial-point)
+	(insert
+	 (format "In file %s:\n\n"
+		 (if full-path
+		     (expand-file-name full-path)
+		   (buffer-name))))))
 
-      (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
 
-      ;; Create custom backend for GitHub Copilot
-      (setq gptel-copilot-backend
-  	  (gptel-make-openai
-  	   "github-copilot"
-  	   :host "api.githubcopilot.com/"
-  	   :endpoint "chat/completions"
-  	   :key 'gptel-api-key
-  	   :stream t
-  	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-  		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
-  		     (claude-3.7-sonnet :name "claude-3.7-sonnet")
-  		     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
-  		     (o1-2024-12-17 :name "o1-2024-12-17")
-  		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-  	   :header (lambda ()
-  		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-  		       ("Content-Type" . "application/json")
-  		       ("Accept" . "application/json")
-  		       ("Copilot-Integration-Id" . "vscode-chat")
-  		       ("editor-version" . "vscode/1.84.2")
-  		       ("editor-plugin-version" . "1.138.0")
-  		       ("user-agent" . "GithubCopilot/1.138.0")))))
+    ;; Create custom backend for GitHub Copilot
+    (setq gptel-copilot-backend
+	  (gptel-make-openai
+	   "github-copilot"
+	   :host "api.githubcopilot.com/"
+	   :endpoint "chat/completions"
+	   :key 'gptel-api-key
+	   :stream t
+	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+		     (claude-3.7-sonnet :name "claude-3.7-sonnet")
+		     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
+		     (o1-2024-12-17 :name "o1-2024-12-17")
+		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+	   :header (lambda ()
+		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+		       ("Content-Type" . "application/json")
+		       ("Accept" . "application/json")
+		       ("Copilot-Integration-Id" . "vscode-chat")
+		       ("editor-version" . "vscode/1.84.2")
+		       ("editor-plugin-version" . "1.138.0")
+		       ("user-agent" . "GithubCopilot/1.138.0")))))
 
-      (advice-add 'gptel--url-parse-response :around
-  		(lambda (orig-fun backend proc-info)
-  		  (let ((result (funcall orig-fun backend proc-info)))
-  		    (when (and (stringp (cadr result))
-  			       (string-match-p "HTTP/2 401" (cadr result)))
-  		      (message "Token expired, refreshing and retrying...")
-  		      (setq gptel-copilot--exchanged-token nil)
-  		      ;; Get new token
-  		      (funcall gptel-api-key)
-  		      ;; Retry the request
-  		      (let ((request-data (plist-get proc-info :request-data)))
-  			(when request-data
-  			  (gptel-request request-data))))
-  		    result)))
+    (advice-add 'gptel--url-parse-response :around
+		(lambda (orig-fun backend proc-info)
+		  (let ((result (funcall orig-fun backend proc-info)))
+		    (when (and (stringp (cadr result))
+			       (string-match-p "HTTP/2 401" (cadr result)))
+		      (message "Token expired, refreshing and retrying...")
+		      (setq gptel-copilot--exchanged-token nil)
+		      ;; Get new token
+		      (funcall gptel-api-key)
+		      ;; Retry the request
+		      (let ((request-data (plist-get proc-info :request-data)))
+			(when request-data
+			  (gptel-request request-data))))
+		    result)))
 
-      (defun test-gptel-token-refresh ()
-        "Test gptel token refresh logic."
-        (interactive)
-        (message "=== Starting Token Test ===")
-        (message "Current token (first 50 chars): %s..."
-  	       (substring gptel-copilot--exchanged-token 0 50))
-        ;; Force token refresh by setting to nil
-        (setq gptel-copilot--exchanged-token nil)
-        ;;(message "Cleared token, making request...")
-        ;; Make request that should trigger token refresh
-        ;;(gptel-request
-         ;;"Test message"
-         ;;:callback (lambda (response info)
-  		   ;;(message "=== Request completed ===")
-  		   ;;(message "New token (first 50 chars): %s..."
-  			    ;;(substring gptel-copilot--exchanged-token 0 50))
-  		   ;;(message "Response status: %s" (plist-get info :status))
-  		   ;;(message "Got response: %s" response)))
-        )
+    (defun test-gptel-token-refresh ()
+      "Test gptel token refresh logic."
+      (interactive)
+      (message "=== Starting Token Test ===")
+      (message "Current token (first 50 chars): %s..."
+	       (substring gptel-copilot--exchanged-token 0 50))
+      ;; Force token refresh by setting to nil
+      (setq gptel-copilot--exchanged-token nil)
+      ;;(message "Cleared token, making request...")
+      ;; Make request that should trigger token refresh
+      ;;(gptel-request
+      ;;"Test message"
+      ;;:callback (lambda (response info)
+      ;;(message "=== Request completed ===")
+      ;;(message "New token (first 50 chars): %s..."
+      ;;(substring gptel-copilot--exchanged-token 0 50))
+      ;;(message "Response status: %s" (plist-get info :status))
+      ;;(message "Got response: %s" response)))
+      )
 
-      (defun get-anthropic-api-key ()
-        (when-let ((auth (car (auth-source-search
-  			     :host "api.anthropic.com"
-  			     :require '(:secret)))))
-  	(let ((token (plist-get auth :secret)))
-  	  (if (functionp token)
-  	      (funcall token)
-  	    token))))
+    (defun get-anthropic-api-key ()
+      (when-let ((auth (car (auth-source-search
+			     :host "api.anthropic.com"
+			     :require '(:secret)))))
+	(let ((token (plist-get auth :secret)))
+	  (if (functionp token)
+	      (funcall token)
+	    token))))
 
-      (gptel-make-anthropic "Claude"          
-  			  :stream t                             
-  			  :key #'get-anthropic-api-key)
+    (defun get-gemini-api-key ()
+      (when-let ((auth (car (auth-source-search
+			     :host "api.gemini.com"
+			     :require '(:secret)))))
+	(let ((token (plist-get auth :secret)))
+	  (if (functionp token)
+	      (funcall token)
+	    token))))
 
-      ;;(gptel-make-anthropic "claude" 
-      ;;:key #'get-anthropic-api-key
-      ;;:stream t
-      ;;:models '(claude-3-7-sonnet-20250219)
-      ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-      ;;`(("x-api-key" . ,key)
-      ;;("anthropic-version" . "2023-06-01")
-      ;;("anthropic-beta" . "pdfs-2024-09-25")
-      ;;("anthropic-beta" . "output-128k-2025-02-19")
-      ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-      ;;:request-params '(:max_tokens 4096))
+    (gptel-make-anthropic "Claude"          
+			  :stream t
+			  :key #'get-anthropic-api-key)
 
-      ;;(gptel-make-anthropic "claude-thinking" 
-      ;;:key #'get-anthropic-api-key
-      ;;:stream t
-      ;;:models '(claude-3-7-sonnet-20250219)
-      ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-      ;;`(("x-api-key" . ,key)
-      ;;("anthropic-version" . "2023-06-01")
-      ;;("anthropic-beta" . "pdfs-2024-09-25")
-      ;;("anthropic-beta" . "output-128k-2025-02-19")
-      ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-      ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
-      ;;:max_tokens 4096))
+    (gptel-make-gemini "Gemini"          
+		       :key #'get-gemini-api-key)
 
-      (setq gptel-backend gptel-copilot-backend
-  	  ;;gptel-model 'gpt-4o-2024-08-06
-  	  gptel-model 'claude-3.7-sonnet
-  	  gptel-auto-save-directory "~/chats"
-  	  gptel--mark-prompts-and-responses nil
-  	  gptel-auto-save-buffers t
-  	  gptel-prompt-prefix
-  	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
-  		    Be direct about uncertainties. Display files in org blocks with paths."
-  	  gptel-default-mode 'org-mode))
+    ;;(gptel-make-anthropic "claude" 
+    ;;:key #'get-anthropic-api-key
+    ;;:stream t
+    ;;:models '(claude-3-7-sonnet-20250219)
+    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+    ;;`(("x-api-key" . ,key)
+    ;;("anthropic-version" . "2023-06-01")
+    ;;("anthropic-beta" . "pdfs-2024-09-25")
+    ;;("anthropic-beta" . "output-128k-2025-02-19")
+    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+    ;;:request-params '(:max_tokens 4096))
+
+    ;;(gptel-make-anthropic "claude-thinking" 
+    ;;:key #'get-anthropic-api-key
+    ;;:stream t
+    ;;:models '(claude-3-7-sonnet-20250219)
+    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+    ;;`(("x-api-key" . ,key)
+    ;;("anthropic-version" . "2023-06-01")
+    ;;("anthropic-beta" . "pdfs-2024-09-25")
+    ;;("anthropic-beta" . "output-128k-2025-02-19")
+    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+    ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+    ;;:max_tokens 4096))
+
+    (setq gptel-backend gptel-copilot-backend
+	  ;;gptel-model 'gpt-4o-2024-08-06
+	  gptel-model 'claude-3.7-sonnet
+	  gptel-auto-save-directory "~/chats"
+	  gptel--mark-prompts-and-responses nil
+	  gptel-auto-save-buffers t
+	  gptel-prompt-prefix
+	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
+	      Be direct about uncertainties. Display files in org blocks with paths."
+	  gptel-default-mode 'org-mode))
 #+end_src
 
 * GPTel Context Management
@@ -1218,7 +1230,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-	  FILE-ID can be a bookmark name or full path."
+	    FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1235,8 +1247,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-	      - 'emacs config' for my emacs configuration
-	      - 'inbox' for my org mode inbox file")
+		- 'emacs config' for my emacs configuration
+		- 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1272,8 +1284,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
   (defun my/write-file (file-id content)
     "Write file with changes in search/replace block format.
-	    FILE-ID can be a bookmark name or full path.
-	    CONTENT must contain search/replace blocks showing what to change."
+	      FILE-ID can be a bookmark name or full path.
+	      CONTENT must contain search/replace blocks showing what to change."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1321,27 +1333,27 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
    :function #'my/write-file
    :description "Modify specific sections of a file while preserving all other content.
 
-	  IMPORTANT: Always use read_file first to understand the current content and structure! 
+	    IMPORTANT: Always use read_file first to understand the current content and structure! 
 
-	  The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
+	    The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
 
-	  <<<<<<< SEARCH
-	  {text to find and replace}
-	  =======
-	  {new text to insert}
-	  >>>>>>> REPLACE
+	    <<<<<<< SEARCH
+	    {text to find and replace}
+	    =======
+	    {new text to insert}
+	    >>>>>>> REPLACE
 
-	  - You can include multiple search/replace blocks to make multiple changes.
-	  - The search text must match exactly what is in the file.
-	  - If a failure occurs do not try again without asking me first.
+	    - You can include multiple search/replace blocks to make multiple changes.
+	    - The search text must match exactly what is in the file.
+	    - If a failure occurs do not try again without asking me first.
 
-	  After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
+	    After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-	      - 'emacs config' for my emacs configuration
+		- 'emacs config' for my emacs configuration
 
-	      - 'inbox' for my org mode inbox file")
+		- 'inbox' for my org mode inbox file")
 	   (:name "content"
 		  :type string
 		  :description "search/replace blocks showing what to change")))
@@ -1451,8 +1463,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 #+begin_src emacs-lisp
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
-	PROJECT-ROOT is the directory to analyze.
-	SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+	  PROJECT-ROOT is the directory to analyze.
+	  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
     (let* ((project-root (expand-file-name project-root))
 	   (default-directory project-root)
 	   (context-parts '()))
@@ -1534,24 +1546,24 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
     (interactive)
     (let ((filepath (buffer-file-name)))
       (when filepath
-        (kill-new filepath)
-        (message "Copied: %s" filepath))))
+	(kill-new filepath)
+	(message "Copied: %s" filepath))))
 
   (defun copy-file-name ()
     "Copy the current buffer file name to the kill ring."
     (interactive)
     (let ((filename (file-name-nondirectory (buffer-file-name))))
       (when filename
-        (kill-new filename)
-        (message "Copied: %s" filename))))
+	(kill-new filename)
+	(message "Copied: %s" filename))))
 
   (defun copy-directory-path ()
     "Copy the current buffer directory path to the kill ring."
     (interactive)
     (let ((dirpath (file-name-directory (buffer-file-name))))
       (when dirpath
-        (kill-new dirpath)
-        (message "Copied: %s" dirpath))))
+	(kill-new dirpath)
+	(message "Copied: %s" dirpath))))
 #+end_src
 
 * Avy
@@ -1559,6 +1571,78 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 (require 'avy)
 (define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
 #+end_src
+* Custom Commands For Projects
+
+I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
+
+** Enable complex color support in compile buffers
+
+#+begin_src elisp
+(use-package ansi-color
+  :config
+  (defun my/colorize-compilation ()
+    "Colorize from `compilation-filter-start' to `point'."
+    (let ((inhibit-read-only t))
+      (ansi-color-apply-on-region
+       compilation-filter-start (point))))
+  
+  (add-hook 'compilation-filter-hook #'my/colorize-compilation)
+  
+  (setq ansi-color-for-comint-mode t)
+  (setq comint-terminfo-terminal "xterm-256color"))
+#+end_src
+
+** Builds for the Bitwarden Nx PoC project
+
+#+begin_src emacs-lisp
+  (defun my/build-nx-poc-web ()
+    "Build the web vault of the nx poc project with a uniquely named buffer."
+    (interactive)
+    (let* ((default-directory "~/bitwarden/bitwarden-nx-poc/apps/web")
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-web-build*"))))
+      (compile "npm run build:watch" t)))
+#+end_src
+
+** My Nix Systems Configuration
+
+#+begin_src elisp
+(defun my/nix-rebuild (system)
+  "Rebuild my nix config for the specified SYSTEM."
+  (interactive
+   (list (completing-read "System to rebuild: " 
+                         '("air" "bw")
+                         nil nil nil nil "air")))
+  (let* ((default-directory "~/nix")
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-%s-rebuild*" system))))
+    (compile (format "nix develop --command rebuild %s" system) t)))
+#+end_src
+
+#+begin_src elisp
+(defun my/nix-format ()
+  "Run the formatters in my nix systems configuration"
+  (interactive)
+  (let* ((default-directory "~/nix")
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-systems-format*"))))
+    (compile "nix develop --command apply formatting" t)))
+#+end_src
+
+#+begin_src elisp
+(defun my/nix-commit (message)
+  "Commit all files in my nix config with MESSAGE"
+  (interactive
+   (list (read-string "Commit message:" nil nil nil)))
+  (let* ((default-directory "~/nix")
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-systems-commit*"))))
+    (compile (format "git add . ; git commit -m %s" message) t)))
+#+end_src
+
+#+RESULTS:
+: my/nix-commit
+
 * Provide Init
 
 #+begin_src emacs-lisp
@@ -1567,8 +1651,5 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-	    ;;; init.el ends here
+	      ;;; init.el ends here
 #+end_src
-
-
-
