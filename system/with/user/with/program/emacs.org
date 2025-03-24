@@ -310,22 +310,11 @@ Here I'll define some key data structures used throughout the rest of the config
     :config
     (projectile-mode +1)
     (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
-    ;; Specify known projects
+    ;; Use my/projects data structure to define known projects
     (setq projectile-known-projects
-	  (mapcar 'expand-file-name
-		  '("~/notes"
-		    "~/nix"
-		    "~/bitwarden/clients"
-		    "~/bitwarden/server"
-		    "~/bitwarden/sdk"
-		    "~/bitwarden/sdk-internal"
-		    "~/bitwarden/wg-open-source-at-bitwarden"
-		    "~/bitwarden/contributing-docs"
-		    "~/bitwarden/bitwarden-nx-poc"
-		    "~/code"
-		    "~/d"
-		    "~/binwarden"
-		    "~/recipes")))
+          (mapcar (lambda (project)
+                    (expand-file-name (my/get-project-path (car project))))
+                  my/projects))
     ;; Disable auto-discovery
     (setq projectile-auto-discover nil)
     ;; Save the project list immediately
