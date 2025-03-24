@@ -29,6 +29,75 @@ CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
   ;; Code:
 #+end_src
 
+* Setup Global Variable
+
+Here I'll define some key data structures used throughout the rest of the configuration
+
+** Projects
+
+*** The Projects Data Structure
+
+#+begin_src elisp
+(defvar my/projects
+  '(("nix"       . (:path "~/nix"))
+    ("notes" . (:path "~/notes"))
+    ("clients" . (:path "~/bitwarden/clients"))
+    ("server" . (:path "~/bitwarden/server"))
+    ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
+    ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
+    ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
+    ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
+  "Alist of projects with metadata")
+#+end_src
+
+#+RESULTS:
+: my/projects
+
+*** Project Functions
+
+#+begin_src elisp
+(defun my/get-project-attr (project-name attr)
+  "Get ATTR for PROJECT-NAME."
+  (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
+
+(defun my/get-project-path (project-name)
+  "Get the path for PROJECT-NAME."
+  (my/get-project-attr project-name :path))
+
+(defun my/find-project (project-name)
+  "Open a project's root directory."
+  (interactive
+   (list (completing-read "Project: " (mapcar #'car my/projects))))
+  (find-file (my/get-project-path project-name)))
+
+(defun my/project-dired ()
+  "Open dired in a project directory."
+  (interactive)
+  (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
+    (dired (my/get-project-path project-name))))
+
+(defun my/compile-in-project (project-name command)
+  "Run compilation COMMAND in PROJECT-NAME."
+  (interactive
+   (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
+          (command (read-string "Command: " nil 'compile-history)))
+     (list project command)))
+  (let* ((default-directory (my/get-project-path project-name))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*compile-%s*" project-name))))
+    (compile command t)))
+
+(defun my/terminal-in-project ()
+  "Open terminal in a project directory."
+  (interactive)
+  (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
+         (default-directory (my/get-project-path project-name)))
+    (vterm (format "*vterm-%s*" project-name))))
+#+end_src
+
+#+RESULTS:
+: my/terminal-in-project
+
 * Initialize Package Sources
 #+begin_src emacs-lisp
   (require 'package)
@@ -846,7 +915,23 @@ I'm not using these right now, but might revist in the future.
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-dark-hard t))
+    (load-theme 'gruvbox-light-hard t))
+
+  (defun my/toggle-theme ()
+    "Toggle between gruvbox light and dark themes."
+    (interactive)
+    (if (eq (car custom-enabled-themes) 'gruvbox-light-hard)
+        (progn
+          (disable-theme 'gruvbox-light-hard)
+          (load-theme 'gruvbox-dark-hard t)
+          (message "Switched to dark theme"))
+      (progn
+        (disable-theme 'gruvbox-dark-hard)
+        (load-theme 'gruvbox-light-hard t)
+        (message "Switched to light theme"))))
+
+  ;; Bind the toggle function to a key
+  (global-set-key (kbd "C-c t") 'my/toggle-theme)
 
   (custom-set-faces
    `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
@@ -1571,6 +1656,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 (require 'avy)
 (define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
 #+end_src
+
 * Custom Commands For Projects
 
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
@@ -1592,13 +1678,16 @@ I use this space to write a bunch of custom commands for interacting with projec
   (setq comint-terminfo-terminal "xterm-256color"))
 #+end_src
 
+#+RESULTS:
+: t
+
 ** Builds for the Bitwarden Nx PoC project
 
 #+begin_src emacs-lisp
   (defun my/build-nx-poc-web ()
     "Build the web vault of the nx poc project with a uniquely named buffer."
     (interactive)
-    (let* ((default-directory "~/bitwarden/bitwarden-nx-poc/apps/web")
+    (let* ((default-directory (my/get-project-path "nx-poc"))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*nx-poc-web-build*"))))
       (compile "npm run build:watch" t)))
@@ -1613,31 +1702,54 @@ I use this space to write a bunch of custom commands for interacting with projec
    (list (completing-read "System to rebuild: " 
                          '("air" "bw")
                          nil nil nil nil "air")))
-  (let* ((default-directory "~/nix")
+  (let* ((default-directory (my/get-project-path "nix"))
          (compilation-buffer-name-function 
           (lambda (_mode) (format "*nix-%s-rebuild*" system))))
     (compile (format "nix develop --command rebuild %s" system) t)))
 #+end_src
 
+#+RESULTS:
+: my/nix-rebuild
+
 #+begin_src elisp
 (defun my/nix-format ()
   "Run the formatters in my nix systems configuration"
   (interactive)
-  (let* ((default-directory "~/nix")
+  (let* ((default-directory (my/get-project-path "nix"))
          (compilation-buffer-name-function 
           (lambda (_mode) (format "*nix-systems-format*"))))
     (compile "nix develop --command apply formatting" t)))
 #+end_src
 
+#+RESULTS:
+: my/nix-format
+
 #+begin_src elisp
 (defun my/nix-commit (message)
   "Commit all files in my nix config with MESSAGE"
   (interactive
-   (list (read-string "Commit message:" nil nil nil)))
-  (let* ((default-directory "~/nix")
+   (list (read-string "Commit message: " nil nil nil)))
+   (let* ((default-directory (my/get-project-path "nix"))
          (compilation-buffer-name-function 
           (lambda (_mode) (format "*nix-systems-commit*"))))
-    (compile (format "git add . ; git commit -m %s" message) t)))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+#+end_src
+
+#+RESULTS:
+: my/nix-commit
+
+** My notes
+
+#+begin_src elisp
+(defun my/quick-commit (message)
+  "Commit all files in my notes with MESSAGE"
+  (interactive
+   (list (read-string "Commit message: " nil nil nil)))
+  (let* ((default-directory "~/notes")
+   (let* ((default-directory (my/get-project-path "notes"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*notes-commit*"))))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
 #+end_src
 
 #+RESULTS:
@@ -1653,3 +1765,4 @@ I use this space to write a bunch of custom commands for interacting with projec
   ;; End:
 	      ;;; init.el ends here
 #+end_src
+
