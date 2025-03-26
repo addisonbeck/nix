@@ -123,7 +123,6 @@ Here I'll define some key data structures used throughout the rest of the config
 
   (setq inhibit-startup-message t)
   (setq initial-frame-alist default-frame-alist)
-  (setq-default mode-line-format nil)
   (advice-add #'display-startup-echo-area-message :override #'ignore)
 #+end_src
 
@@ -1881,29 +1880,35 @@ I use this space to write a bunch of custom commands for interacting with projec
 (define-key my-custom-prefix (kbd "g") 'my-go-prefix)
 (which-key-add-key-based-replacements "C-a g" "go")
 
-;; Define function to open compilation match in new or existing window
 (defun my/open-compilation-file-in-other-window ()
   "Open the current compilation match in another window.
 Creates a new window if needed or reuses an existing one."
   (interactive)
   (let ((window-count (length (window-list))))
-    (compile-goto-error)
-    ;; If we're still in the compilation buffer, open in another window
-    (when (eq major-mode 'compilation-mode)
-      (if (= window-count 1)
-          ;; Only one window, create a new one
-          (progn
-            (split-window-right)
+    (condition-case err
+        (if (= window-count 1)
+            ;; Only one window, use built-in function that creates a new window
+            (compilation-display-error)
+          ;; Multiple windows exist, use the next window
+          (let ((this-window (selected-window)))
             (other-window 1)
-            (compile-goto-error))
-        ;; Multiple windows exist, try to reuse one
-        (other-window 1)
-        (compile-goto-error)))))
+            (let ((target-window (selected-window)))
+              (select-window this-window)
+              ;; Use next-error-no-select to get location without changing windows
+              (let ((location (next-error-no-select)))
+                (select-window target-window)
+                (switch-to-buffer (marker-buffer (car location)))
+                (goto-char (marker-position (car location)))))))
+      ;; Catch any errors silently
+      (error (message "No valid location found at point")))))
 
 (define-key my-go-prefix (kbd "f") 'my/open-compilation-file-in-other-window)
 (which-key-add-key-based-replacements "C-a g f" "go to file")
 (with-eval-after-load 'compile
   (define-key compilation-mode-map (kbd "C-a g f") 'my/open-compilation-file-in-other-window))
+
+(define-key my-go-prefix (kbd "d") 'lsp-find-definition)
+(which-key-add-key-based-replacements "C-a g d" "go to definition")
 
 (define-prefix-command 'my-compile-prefix)
 (define-key my-custom-prefix (kbd "c") 'my-compile-prefix)
