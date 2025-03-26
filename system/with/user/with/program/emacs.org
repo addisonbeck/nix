@@ -1900,15 +1900,11 @@ Creates a new window if needed or reuses an existing one."
         (other-window 1)
         (compile-goto-error)))))
 
-;; Bind function to the go prefix
 (define-key my-go-prefix (kbd "f") 'my/open-compilation-file-in-other-window)
 (which-key-add-key-based-replacements "C-a g f" "go to file")
-
-;; Also add binding to compilation-mode-map for convenience
 (with-eval-after-load 'compile
   (define-key compilation-mode-map (kbd "C-a g f") 'my/open-compilation-file-in-other-window))
 
-;; Create compile prefix map
 (define-prefix-command 'my-compile-prefix)
 (define-key my-custom-prefix (kbd "c") 'my-compile-prefix)
 (which-key-add-key-based-replacements "C-a c" "compile")
