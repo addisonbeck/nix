@@ -1876,6 +1876,39 @@ I use this space to write a bunch of custom commands for interacting with projec
 (global-set-key (kbd "C-a") 'my-custom-prefix)
 (which-key-add-key-based-replacements "C-a" "my commands")
 
+;; Create "go" prefix map
+(define-prefix-command 'my-go-prefix)
+(define-key my-custom-prefix (kbd "g") 'my-go-prefix)
+(which-key-add-key-based-replacements "C-a g" "go")
+
+;; Define function to open compilation match in new or existing window
+(defun my/open-compilation-file-in-other-window ()
+  "Open the current compilation match in another window.
+Creates a new window if needed or reuses an existing one."
+  (interactive)
+  (let ((window-count (length (window-list))))
+    (compile-goto-error)
+    ;; If we're still in the compilation buffer, open in another window
+    (when (eq major-mode 'compilation-mode)
+      (if (= window-count 1)
+          ;; Only one window, create a new one
+          (progn
+            (split-window-right)
+            (other-window 1)
+            (compile-goto-error))
+        ;; Multiple windows exist, try to reuse one
+        (other-window 1)
+        (compile-goto-error)))))
+
+;; Bind function to the go prefix
+(define-key my-go-prefix (kbd "f") 'my/open-compilation-file-in-other-window)
+(which-key-add-key-based-replacements "C-a g f" "go to file")
+
+;; Also add binding to compilation-mode-map for convenience
+(with-eval-after-load 'compile
+  (define-key compilation-mode-map (kbd "C-a g f") 'my/open-compilation-file-in-other-window))
+
+;; Create compile prefix map
 (define-prefix-command 'my-compile-prefix)
 (define-key my-custom-prefix (kbd "c") 'my-compile-prefix)
 (which-key-add-key-based-replacements "C-a c" "compile")
