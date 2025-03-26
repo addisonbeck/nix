@@ -128,6 +128,7 @@ in {
           ox-json
           org-make-toc
           avy
+          rg
         ];
     };
   };

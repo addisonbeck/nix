@@ -7,17 +7,6 @@
 #+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
-* TODO Track the full moon in my org agenda
-:LOGBOOK:
-CLOCK: [2025-03-02 Sun 19:34]--[2025-03-02 Sun 21:49] =>  2:15
-:END:
-* TODO Get mail working in emacs
-* TODO Get time clocking working in emacs
-* TODO Get LSP and code editing working better in emacs
-* TODO Get emacs autosave working
-* TODO Connect images to the take a picture agenda item 
-* TODO Fix GPTel's write tools
-
 * Bootstrap
 #+begin_src emacs-lisp
   ;; init.el --- My personal Emacs configuration  -*- lexical-binding: t -*-
@@ -37,7 +26,7 @@ Here I'll define some key data structures used throughout the rest of the config
 
 *** The Projects Data Structure
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defvar my/projects
   '(("nix"       . (:path "~/nix"))
     ("notes" . (:path "~/notes"))
@@ -46,6 +35,8 @@ Here I'll define some key data structures used throughout the rest of the config
     ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
     ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
     ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
+    ("binwarden" . (:path "~/binwarden"))
+    ("d" . (:path "~/d"))
     ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
   "Alist of projects with metadata")
 #+end_src
@@ -55,7 +46,7 @@ Here I'll define some key data structures used throughout the rest of the config
 
 *** Project Functions
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defun my/get-project-attr (project-name attr)
   "Get ATTR for PROJECT-NAME."
   (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
@@ -208,8 +199,7 @@ Here I'll define some key data structures used throughout the rest of the config
 			    (bookmarks . 5))
 	  dashboard-set-heading-icons t
 	  dashboard-set-file-icons t
-	  dashboard-show-shortcuts t
-	  dashboard-set-navigator t)
+	  dashboard-show-shortcuts t)
     (setq dashboard-heading-icons '((recents   . "nf-oct-history")
 				    (bookmarks . "nf-oct-bookmark")
 				    (projects  . "nf-oct-project"))))
@@ -310,14 +300,11 @@ Here I'll define some key data structures used throughout the rest of the config
     :config
     (projectile-mode +1)
     (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
-    ;; Use my/projects data structure to define known projects
     (setq projectile-known-projects
-          (mapcar (lambda (project)
-                    (expand-file-name (my/get-project-path (car project))))
-                  my/projects))
-    ;; Disable auto-discovery
+	  (mapcar (lambda (project)
+		    (expand-file-name (my/get-project-path (car project))))
+		  my/projects))
     (setq projectile-auto-discover nil)
-    ;; Save the project list immediately
     (projectile-save-known-projects)
     :bind-keymap
     ("C-c p" . projectile-command-map))
@@ -554,11 +541,17 @@ Here I'll define some key data structures used throughout the rest of the config
   (require 'org-make-toc)
 #+end_src
 
+For some reason this keeps getting set wrong by something.
+
+#+begin_src emacs-lisp
+(setq org-agenda-files (list org-directory))
+#+end_src
+
 * Org To Jira
 #+begin_src emacs-lisp :tangle no
-(use-package ox-jira
-  :ensure t
-  :after org)
+  (use-package ox-jira
+    :ensure t
+    :after org)
 #+end_src
 * Org Capture Templates and Functions
 #+begin_src emacs-lisp
@@ -646,106 +639,122 @@ I'm not using these right now, but might revist in the future.
 
 * Agenda Configuration
 #+begin_src emacs-lisp
-  (setq org-agenda-block-separator nil)
-  (setq org-agenda-window-setup 'only-window)
-  (setq org-agenda-timegrid-use-ampm t)
-  (setq org-agenda-time-leading-zero t)
-  (setq org-agenda-todo-keyword-format "%s")
-  (setq org-agenda-include-diary t)
-  (setq org-refile-targets '((nil :maxlevel . 8)
-			     (org-agenda-files :maxlevel . 2)))
+(setq org-agenda-block-separator nil)
+(setq org-agenda-window-setup 'only-window)
+(setq org-agenda-timegrid-use-ampm t)
+(setq org-agenda-time-leading-zero t)
+(setq org-agenda-todo-keyword-format "%s")
+(setq org-agenda-include-diary t)
+(setq org-refile-targets '((nil :maxlevel . 8)
+		     (org-agenda-files :maxlevel . 2)))
 
-  ;; Allow creating new nodes (including new files) when refiling
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
+;; Allow creating new nodes (including new files) when refiling
+(setq org-refile-allow-creating-parent-nodes 'confirm)
 
-  ;; Use the full outline paths for refile targets
-  (setq org-refile-use-outline-path nil)
+;; Use the full outline paths for refile targets
+(setq org-refile-use-outline-path nil)
 
-  ;; Completes in steps so you can select a heading after selecting the file
-  (setq org-outline-path-complete-in-steps nil)
+;; Completes in steps so you can select a heading after selecting the file
+(setq org-outline-path-complete-in-steps nil)
 
-  (require 'diary-lib)
+(require 'diary-lib)
 
-  (use-package org-super-agenda
-    :after org-agenda
-    :config
-    (setq org-super-agenda-header-map nil)  
-    (setq org-super-agenda-header-properties nil)
-    (org-super-agenda-mode))
+(use-package org-super-agenda
+  :after org-agenda
+  :config
+  (setq org-super-agenda-header-map nil)  
+  (setq org-super-agenda-header-properties nil)
+  (org-super-agenda-mode))
 
-  (setq warning-suppress-types '((org-element)))
+(setq warning-suppress-types '((org-element)))
 
-  (setq org-agenda-custom-commands
-	'(("d" "daily dashboard"
-	   ((agenda "Schedule and Habits"
-		    ((org-agenda-span 'day)
-		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-		     (org-agenda-overriding-header "")
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Schedule"
-			       :time-grid t)
-			(:name "Overdue" :deadline past)
-			(:name "Due Today" :deadline today)
-			(:name "High Priority" :priority "A")
-			(:name "Inbox" :category "inbox")
-			(:name "Logs" :category "log")
-			(:name "Due Soon" :deadline future)
-			(:name "Code Reviews" :category "code review")
-			(:name "Active Epics" :category "epic")
-			(:name "Family Stuff" :category "family")
-			(:name "Holidays" :category "holiday")
-			(:name "The Garden" :category "the-garden")
-			(:name "Re: Me" :category "me")
-			(:name "Re: Emily" :category "emily")
-			(:name "Re: Lincoln" :category "lincoln")
-			(:name "Re: Nora" :category "nora")
-			(:name "Re: Fern" :category "fern")
-			(:name "Re: Harry" :category "harry")
-			(:name "AM Habits" :category "personal habits am")
-			(:name "Midday Habits" :category "personal habits midday")
-			(:name "PM Habits" :category "personal habits pm")
-			(:name "Any Time Habits" :category "personal habits any time")
-			(:name "Work Habits" :category "work habits")
-			(:auto-category t)
-			))))))
-	  ("w" "Weekly overview with super-agenda"
-	   ((agenda ""
-		    ((org-agenda-span 7)                      ;; Show 7 days
-		     (org-agenda-start-on-weekday nil)        ;; Start from current day
-		     (org-agenda-time-grid '((daily today require-timed)
-					     (800 1000 1200 1400 1600 1800 2000)
-					     "......" "----------------"))  ;; Time grid config
-		     (org-agenda-include-deadlines nil)       ;; No deadlines
-		     (org-agenda-skip-scheduled-if-done t)     
-		     (org-agenda-skip-deadline-if-done t)
-		     (org-agenda-skip-scheduled-delay-if-done t)
-		     (org-agenda-skip-function                ;; Skip scheduled items
-		      '(org-agenda-skip-entry-if 'scheduled 'deadline))
-		     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-		     (org-agenda-todo-keyword-format "")
-		     (org-agenda-show-all-dates t)
-		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-		     (org-agenda-format-date "%A %Y-%m-%d")
-		     ;; Super agenda groups
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Schedule"
-			       :time-grid t)
-			))))))
-	  ))
+(defun my/inherit-meeting-times ()
+  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
+                (org-get-todo-state))
+       (let ((timestamp nil))
+         (save-excursion
+           (when (org-up-heading-safe)
+             (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+         (when timestamp
+           (org-schedule nil timestamp)))))
+   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
 
-  (setq org-agenda-time-grid-use-ampm t)
-  (setq org-agenda-with-times t)
-  (setq org-agenda-time-format "%I:%M%p")
-  (setq org-agenda-prefix-format
-	'((agenda . " ○ %t ")
-	  (tags   . "○ ")
-	  (todo   . "○ ")))
+(setq org-agenda-custom-commands
+'(("d" "daily dashboard"
+   ((agenda "Schedule and Habits"
+	    ((org-agenda-span 'day)
+	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+	     (org-agenda-overriding-header "")
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+    (:name "Today's Meeting Notes" :category "meeting-notes")
+		(:name "Today's Schedule"
+		       :time-grid t)
+		(:name "Overdue" :deadline past)
+		(:name "Due Today" :deadline today)
+		(:name "High Priority" :priority "A")
+		(:name "Inbox" :category "inbox")
+		(:name "Logs" :category "log")
+		(:name "Due Soon" :deadline future)
+		(:name "Code Reviews" :category "code review")
+		(:name "Active Epics" :category "epic")
+		(:name "Family Stuff" :category "family")
+		(:name "Holidays" :category "holiday")
+		(:name "The Garden" :category "the-garden")
+		(:name "Re: Me" :category "me")
+		(:name "Re: Emily" :category "emily")
+		(:name "Re: Lincoln" :category "lincoln")
+		(:name "Re: Nora" :category "nora")
+		(:name "Re: Fern" :category "fern")
+		(:name "Re: Harry" :category "harry")
+		(:name "AM Habits" :category "personal habits am")
+		(:name "Midday Habits" :category "personal habits midday")
+		(:name "PM Habits" :category "personal habits pm")
+		(:name "Any Time Habits" :category "personal habits any time")
+		(:name "Work Habits" :category "work habits")
+		(:auto-category t)
+		))))))
+  ("w" "Weekly overview with super-agenda"
+   ((agenda ""
+	    ((org-agenda-span 7)                      ;; Show 7 days
+	     (org-agenda-start-on-weekday nil)        ;; Start from current day
+	     (org-agenda-time-grid '((daily today require-timed)
+				     (800 1000 1200 1400 1600 1800 2000)
+				     "......" "----------------"))  ;; Time grid config
+	     (org-agenda-include-deadlines nil)       ;; No deadlines
+	     (org-agenda-skip-scheduled-if-done t)     
+	     (org-agenda-skip-deadline-if-done t)
+	     (org-agenda-skip-scheduled-delay-if-done t)
+	     (org-agenda-skip-function                ;; Skip scheduled items
+	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+	     (org-agenda-todo-keyword-format "")
+	     (org-agenda-show-all-dates t)
+	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+	     (org-agenda-format-date "%A %Y-%m-%d")
+	     ;; Super agenda groups
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Schedule"
+		       :time-grid t)
+		))))))
+  ))
+
+(setq org-agenda-time-grid-use-ampm t)
+(setq org-agenda-with-times t)
+(setq org-agenda-time-format "%I:%M%p")
+(setq org-agenda-prefix-format
+'((agenda . " ○ %t ")
+  (tags   . "○ ")
+  (todo   . "○ ")))
 #+end_src
 
 * Calfw
@@ -757,11 +766,11 @@ I'm not using these right now, but might revist in the future.
     :config
     (setq cfw:org-agenda-schedule-args '(:timestamp)))
 
-    (defun my/cfw:trim-text (text)
-      "Trim TEXT to fit in WIDTH, without adding ellipsis that breaks formatting."
-      text)
-    ;; Override the default truncation function
-    (advice-add 'cfw:trim :override #'my/cfw:trim-text)
+  (defun my/cfw:trim-text (text)
+    "Trim TEXT to fit in WIDTH, without adding ellipsis that breaks formatting."
+    text)
+  ;; Override the default truncation function
+  (advice-add 'cfw:trim :override #'my/cfw:trim-text)
 #+end_src
 
 * Org Face Customizations
@@ -830,23 +839,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-						search(query: $query, type: ISSUE, first: 100) {
-						  nodes {
-						    ... on PullRequest {
-						      title
-						      url
-						      repository {
-							nameWithOwner
+						    search(query: $query, type: ISSUE, first: 100) {
+						      nodes {
+							... on PullRequest {
+							  title
+							  url
+							  repository {
+							    nameWithOwner
+							  }
+							  author {
+							    login
+							  }
+							  updatedAt
+							  state
+							}
 						      }
-						      author {
-							login
-						      }
-						      updatedAt
-						      state
 						    }
-						  }
-						}
-					      }"
+						  }"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -910,17 +919,15 @@ I'm not using these right now, but might revist in the future.
     "Toggle between gruvbox light and dark themes."
     (interactive)
     (if (eq (car custom-enabled-themes) 'gruvbox-light-hard)
-        (progn
-          (disable-theme 'gruvbox-light-hard)
-          (load-theme 'gruvbox-dark-hard t)
-          (message "Switched to dark theme"))
+	(progn
+	  (disable-theme 'gruvbox-light-hard)
+	  (load-theme 'gruvbox-dark-hard t)
+	  (message "Switched to dark theme"))
       (progn
-        (disable-theme 'gruvbox-dark-hard)
-        (load-theme 'gruvbox-light-hard t)
-        (message "Switched to light theme"))))
+	(disable-theme 'gruvbox-dark-hard)
+	(load-theme 'gruvbox-light-hard t)
+	(message "Switched to light theme"))))
 
-  ;; Bind the toggle function to a key
-  (global-set-key (kbd "C-c t") 'my/toggle-theme)
 
   (custom-set-faces
    `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
@@ -1197,7 +1204,7 @@ I'm not using these right now, but might revist in the future.
 	  gptel-auto-save-buffers t
 	  gptel-prompt-prefix
 	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
-	      Be direct about uncertainties. Display files in org blocks with paths."
+		  Be direct about uncertainties. Display files in org blocks with paths."
 	  gptel-default-mode 'org-mode))
 #+end_src
 
@@ -1304,7 +1311,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-	    FILE-ID can be a bookmark name or full path."
+		FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1321,8 +1328,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-		- 'emacs config' for my emacs configuration
-		- 'inbox' for my org mode inbox file")
+		    - 'emacs config' for my emacs configuration
+		    - 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1358,8 +1365,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
   (defun my/write-file (file-id content)
     "Write file with changes in search/replace block format.
-	      FILE-ID can be a bookmark name or full path.
-	      CONTENT must contain search/replace blocks showing what to change."
+		  FILE-ID can be a bookmark name or full path.
+		  CONTENT must contain search/replace blocks showing what to change."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1407,27 +1414,27 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
    :function #'my/write-file
    :description "Modify specific sections of a file while preserving all other content.
 
-	    IMPORTANT: Always use read_file first to understand the current content and structure! 
+		IMPORTANT: Always use read_file first to understand the current content and structure! 
 
-	    The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
+		The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
 
-	    <<<<<<< SEARCH
-	    {text to find and replace}
-	    =======
-	    {new text to insert}
-	    >>>>>>> REPLACE
+		<<<<<<< SEARCH
+		{text to find and replace}
+		=======
+		{new text to insert}
+		>>>>>>> REPLACE
 
-	    - You can include multiple search/replace blocks to make multiple changes.
-	    - The search text must match exactly what is in the file.
-	    - If a failure occurs do not try again without asking me first.
+		- You can include multiple search/replace blocks to make multiple changes.
+		- The search text must match exactly what is in the file.
+		- If a failure occurs do not try again without asking me first.
 
-	    After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
+		After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-		- 'emacs config' for my emacs configuration
+		    - 'emacs config' for my emacs configuration
 
-		- 'inbox' for my org mode inbox file")
+		    - 'inbox' for my org mode inbox file")
 	   (:name "content"
 		  :type string
 		  :description "search/replace blocks showing what to change")))
@@ -1537,8 +1544,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 #+begin_src emacs-lisp
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
-	  PROJECT-ROOT is the directory to analyze.
-	  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+	      PROJECT-ROOT is the directory to analyze.
+	      SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
     (let* ((project-root (expand-file-name project-root))
 	   (default-directory project-root)
 	   (context-parts '()))
@@ -1642,8 +1649,13 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 * Avy
 #+begin_src emacs-lisp
-(require 'avy)
-(define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
+  (require 'avy)
+  (define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
+#+end_src
+
+* rg
+#+begin_src emacs-lisp
+(require 'rg)
 #+end_src
 
 * Custom Commands For Projects
@@ -1652,7 +1664,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 
 ** Enable complex color support in compile buffers
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (use-package ansi-color
   :config
   (defun my/colorize-compilation ()
@@ -1673,19 +1685,49 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** Builds for the Bitwarden Nx PoC project
 
 #+begin_src emacs-lisp
-  (defun my/build-nx-poc-web ()
+  (defun my/run-nx-poc-web ()
     "Build the web vault of the nx poc project with a uniquely named buffer."
     (interactive)
-    (let* ((default-directory (my/get-project-path "nx-poc"))
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/web"))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*nx-poc-web-build*"))))
       (compile "npm run build:watch" t)))
 #+end_src
 
+#+begin_src emacs-lisp
+  (defun my/run-nx-poc-browser-chrome ()
+    "Build the chrome extension of the nx poc project with a uniquely named buffer."
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-chrome-build*"))))
+      (compile "npm run build:chrome" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/run-nx-poc-dekstop ()
+    "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/dekstop"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-desktop-build*"))))
+      (compile "npm run build:watch" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/build-nx-poc-cli ()
+    "Build the cli in the nx poc project with a uniquely named buffer."
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/cli"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-cli-build*"))))
+      (compile "npm run build" t)))
+#+end_src
+
 ** My Nix Systems Configuration
 
-#+begin_src elisp
-(defun my/nix-rebuild (system)
+#+begin_src emacs-lisp
+(defun my/nix/rebuild (system)
   "Rebuild my nix config for the specified SYSTEM."
   (interactive
    (list (completing-read "System to rebuild: " 
@@ -1700,8 +1742,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+RESULTS:
 : my/nix-rebuild
 
-#+begin_src elisp
-(defun my/nix-format ()
+#+begin_src emacs-lisp
+(defun my/nix/format ()
   "Run the formatters in my nix systems configuration"
   (interactive)
   (let* ((default-directory (my/get-project-path "nix"))
@@ -1713,8 +1755,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+RESULTS:
 : my/nix-format
 
-#+begin_src elisp
-(defun my/nix-commit (message)
+#+begin_src emacs-lisp
+(defun my/nix/commit (message)
   "Commit all files in my nix config with MESSAGE"
   (interactive
    (list (read-string "Commit message: " nil nil nil)))
@@ -1729,12 +1771,11 @@ I use this space to write a bunch of custom commands for interacting with projec
 
 ** My notes
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defun my/quick-commit (message)
   "Commit all files in my notes with MESSAGE"
   (interactive
    (list (read-string "Commit message: " nil nil nil)))
-  (let* ((default-directory "~/notes")
    (let* ((default-directory (my/get-project-path "notes"))
          (compilation-buffer-name-function 
           (lambda (_mode) (format "*notes-commit*"))))
@@ -1744,6 +1785,117 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+RESULTS:
 : my/nix-commit
 
+** Bitwarden Clients
+
+#+begin_src emacs-lisp
+  (defun bitwarden/clients/npm/ci-run ()
+    "Run the typeschecker for the clients monorepo"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "clients"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*clients-typechecker*"))))
+      (compile "npm ci" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun bitwarden/clients/typechecker/run ()
+    "Run the typeschecker for the clients monorepo"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "clients"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*clients-npm-ci*"))))
+      (compile "npm run test:types" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/clients/browser/chrome/run ()
+  "Watch a chrome dev build of the extension"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "clients") "/apps/browser"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-browser-chrome-run*"))))
+    (compile "npm run build:watch:chrome" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/clients/web/run ()
+  "Watch a build of the web vault"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "clients") "/apps/web"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-web-run*"))))
+    (compile "npm run build:watch" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/server/api/run ()
+  "Watch a build of the bitwarden server api"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "server") "/src/Api"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-api-run*"))))
+    (compile "dotnet run" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/server/identity/run ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/server/identity/run ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/server/run-sql ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "server") "/src/dev"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+#+end_src
+
+*** Run typechecking
+
+* Custom Keymaps
+
+#+begin_src emacs-lisp
+(define-prefix-command 'my-custom-prefix)
+(global-set-key (kbd "C-a") 'my-custom-prefix)
+(which-key-add-key-based-replacements "C-a" "my commands")
+
+(define-prefix-command 'my-compile-prefix)
+(define-key my-custom-prefix (kbd "c") 'my-compile-prefix)
+(which-key-add-key-based-replacements "C-a c" "compile")
+
+(define-prefix-command 'my-nix-compile-prefix)
+(define-key my-compile-prefix (kbd "n") 'my-nix-compile-prefix)
+(which-key-add-key-based-replacements "C-a c n" "nix")
+
+(define-key my-nix-compile-prefix (kbd "r") 'my/nix-rebuild)
+(which-key-add-key-based-replacements "C-a c n r" "rebuild")
+
+(define-key my-nix-compile-prefix (kbd "f") 'my/nix-format)
+(which-key-add-key-based-replacements "C-a c n f" "format")
+
+(define-key my-nix-compile-prefix (kbd "c") 'my/nix-commit)
+(which-key-add-key-based-replacements "C-a c n c" "commit")
+#+end_src
+
+#+RESULTS:
+
 * Provide Init
 
 #+begin_src emacs-lisp
@@ -1752,6 +1904,6 @@ I use this space to write a bunch of custom commands for interacting with projec
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-	      ;;; init.el ends here
+		  ;;; init.el ends here
 #+end_src
 
