@@ -110,20 +110,53 @@ Here I'll define some key data structures used throughout the rest of the config
 * UI Configuration
 
 #+begin_src emacs-lisp
-  ;; Configure frame appearance
-  (setq default-frame-alist
-	'((menu-bar-lines . 0)
-	  (tool-bar-lines . 0)
-	  (vertical-scroll-bars)
-	  (left-fringe . 0)
-	  (right-fringe . 0)
-	  (internal-border-width . 0)
-	  (undecorated . t)
-	  (fullscreen . maximized)))
+;; Configure frame appearance
+(setq default-frame-alist
+'((menu-bar-lines . 0)
+  (tool-bar-lines . 0)
+  (vertical-scroll-bars)
+  (left-fringe . 0)
+  (right-fringe . 0)
+  (internal-border-width . 0)
+  (undecorated . t)
+  (fullscreen . maximized)))
 
-  (setq inhibit-startup-message t)
-  (setq initial-frame-alist default-frame-alist)
-  (advice-add #'display-startup-echo-area-message :override #'ignore)
+(setq inhibit-startup-message t)
+(setq initial-frame-alist default-frame-alist)
+
+(advice-add #'display-startup-echo-area-message :override #'ignore)
+
+(defun my/current-project-name ()
+  "Get the name of the current project from my/projects if there is one."
+  (when-let* ((file-path (buffer-file-name))
+              (abs-path (expand-file-name file-path)))
+    (catch 'found
+      (dolist (project my/projects)
+        (let* ((project-name (car project))
+               (project-path (expand-file-name (my/get-project-path project-name))))
+          (when (string-prefix-p project-path abs-path)
+            (throw 'found project-name))))
+      nil)))
+
+(setq-default mode-line-format
+      (list
+       ;; Filename
+       '(:eval (propertize " %b " 'face 'mode-line-buffer-id))
+       ;; Current project (if any)
+       '(:eval (when-let ((project (my/current-project-name)))
+                 (propertize (format " [%s] " project) 'face 'mode-line-emphasis)))
+       ;; Major mode
+       '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
+       ;; Git branch and status using vc-mode
+       '(:eval (when vc-mode
+                 (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
+                   (concat
+                    (propertize " " 'face 'mode-line)
+                    (propertize (format "%s" branch) 'face 'mode-line-emphasis)
+                    (propertize (if (vc-state buffer-file-name) " ++" "") 'face
+                                (if (vc-state buffer-file-name) 'error 'success))
+                    (propertize " " 'face 'mode-line)))))
+       ))
 #+end_src
 
 * Basic Settings
