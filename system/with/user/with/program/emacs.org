@@ -1218,7 +1218,7 @@ I'm not using these right now, but might revist in the future.
     ;; Enable branching conversations in org-mode
     (setq gptel-org-branching-context t)
     (setq gptel-confirm-tool-calls t)
-    (setq include-tool-results t)
+    (setq gptel-include-tool-results t)
 
     ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
     (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
@@ -1305,6 +1305,30 @@ Some notes:
 
 1. All tools _must_ have an arguement. This can be just a dummy arguement like `read_gptel_tools_section`.
 
+** General Tools Setup
+This block contains helper functions and variables used by multiple tools. These are not tools themselves but support the tool infrastructure.
+
+#+begin_src emacs-lisp
+  (setq gptel-use-tools t
+	gptel-tools nil)  
+
+  (defun register-gptel-tool (tool-name)
+    "Register a tool with gptel by its NAME."
+    (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
+
+  ;; Make sure repomix is available
+  ;;(unless (executable-find "repomix")
+    ;;(message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
+
+
+  (defvar my/file-bookmarks
+    '(("emacs config" . (:path "~/nix/system/with/user/with/program/emacs.org"
+			       :description "My literate org based emacs configuration"))
+      ("inbox" . (:path "~/notes/inbox.org"
+			:description "My inbox for my TODOs and notes"))
+      ))
+#+end_src
+
 ** Repomix Integration
 
 #+begin_src emacs-lisp
@@ -1313,7 +1337,7 @@ Some notes:
     (message "Running repomix on directory: %s" directory)
     (let* ((default-directory directory)
            (output-buffer (generate-new-buffer " *repomix-output*"))
-           (command "repomix analyze . --max-files 20 --max-file-size 25000 --exclude-patterns 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
+           (command "repomix . -i 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
       (with-current-buffer output-buffer
         (let ((exit-code (call-process-shell-command command nil t)))
           (if (= exit-code 0)
@@ -1337,30 +1361,6 @@ key files, important functions, and insights about the project architecture."
    :category "code-analysis")
 
   (register-gptel-tool "repomix")
-#+end_src
-
-** General Tools Setup
-This block contains helper functions and variables used by multiple tools. These are not tools themselves but support the tool infrastructure.
-
-#+begin_src emacs-lisp
-  (setq gptel-use-tools t
-	gptel-tools nil)  
-
-  (defun register-gptel-tool (tool-name)
-    "Register a tool with gptel by its NAME."
-    (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
-
-  ;; Make sure repomix is available
-  (unless (executable-find "repomix")
-    (message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
-
-
-  (defvar my/file-bookmarks
-    '(("emacs config" . (:path "~/nix/system/with/user/with/program/emacs.org"
-			       :description "My literate org based emacs configuration"))
-      ("inbox" . (:path "~/notes/inbox.org"
-			:description "My inbox for my TODOs and notes"))
-      ))
 #+end_src
 
 ** Read File
