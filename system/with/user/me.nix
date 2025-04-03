@@ -46,7 +46,11 @@
       #./with/development-environment/notes
       #./with/development-environment/bitwarden
       ./with/program/zsh.nix
-      ./with/program/neovim
+
+      # Good night, sweet prince.
+      #./with/program/neovim
+      # <3
+
       ./with/program/lazygit.nix
       #./with/program/nixfmt.nix
       #./with/program/raycast.nix

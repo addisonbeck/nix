@@ -1,3 +1,3 @@
-{pkgs-forked, ...}: {
-  home.packages = [pkgs-forked.modrinth-app];
+{pkgs, ...}: {
+  home.packages = [pkgs.modrinth-app];
 }

@@ -54,7 +54,7 @@ in {
           jvmOpts = ''-Xms4G -Xmx8G -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled -XX:+UseNUMA -XX:-DisableExplicitGC'';
           enable = true;
           enableReload = false;
-          package = inputs.nix-minecraft.legacyPackages.x86_64-linux.fabricServers.fabric-1_21_4;
+          package = inputs.nix-minecraft.legacyPackages.x86_64-linux.fabricServers.fabric-1_21_5;
           openFirewall = true;
           autoStart = true;
           serverProperties = {

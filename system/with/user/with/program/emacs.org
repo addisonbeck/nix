@@ -1,9 +1,3 @@
-:PROPERTIES:
-:GPTEL_MODEL: claude-3.7-sonnet
-:GPTEL_BACKEND: github-copilot
-:GPTEL_SYSTEM: You are a large language model living in Emacs and a helpful assistant. Respond concisely.
-:GPTEL_BOUNDS: nil
-:END:
 #+TITLE: Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
 
@@ -140,23 +134,24 @@ Here I'll define some key data structures used throughout the rest of the config
 
 (setq-default mode-line-format
       (list
-       ;; Filename
-       '(:eval (propertize " %b " 'face 'mode-line-buffer-id))
        ;; Current project (if any)
        '(:eval (when-let ((project (my/current-project-name)))
-                 (propertize (format " [%s] " project) 'face 'mode-line-emphasis)))
+                 (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
+       ;; Filename
+       '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
        ;; Major mode
        '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
        ;; Git branch and status using vc-mode
        '(:eval (when vc-mode
                  (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
                    (concat
-                    (propertize " " 'face 'mode-line)
+                    (propertize " " 'face 'buffer-file-name)
                     (propertize (format "%s" branch) 'face 'mode-line-emphasis)
                     (propertize (if (vc-state buffer-file-name) " ++" "") 'face
                                 (if (vc-state buffer-file-name) 'error 'success))
-                    (propertize " " 'face 'mode-line)))))
+                    (propertize " " 'face 'buffer-file-name)))))
        ))
+
 #+end_src
 
 * Basic Settings
@@ -732,6 +727,7 @@ I'm not using these right now, but might revist in the future.
 		(:name "Due Today" :deadline today)
 		(:name "High Priority" :priority "A")
 		(:name "Inbox" :category "inbox")
+		(:name "Poetry" :category "my poems")
 		(:name "Logs" :category "log")
 		(:name "Due Soon" :deadline future)
 		(:name "Code Reviews" :category "code review")
@@ -1046,20 +1042,8 @@ I'm not using these right now, but might revist in the future.
 * GPTel Configuration
 #+begin_src emacs-lisp
   (use-package gptel
-    :ensure t
     :config
     ;; Enable debug logging
-    (setq gptel-log-level 'debug)
-
-    ;; Use org-mode for gptel buffers
-    (setq gptel-default-mode 'org-mode)
-    ;; Enable branching conversations in org-mode
-    (setq gptel-org-branching-context t)
-
-    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
-
     ;; Token access for GitHub Copilot
     (defvar gptel-github-api-key
       (lambda ()
@@ -1228,16 +1212,21 @@ I'm not using these right now, but might revist in the future.
     ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
     ;;:max_tokens 4096))
 
-    (setq gptel-backend gptel-copilot-backend
-	  ;;gptel-model 'gpt-4o-2024-08-06
-	  gptel-model 'claude-3.7-sonnet
-	  gptel-auto-save-directory "~/chats"
-	  gptel--mark-prompts-and-responses nil
-	  gptel-auto-save-buffers t
-	  gptel-prompt-prefix
-	  "You are an Emacs-integrated assistant for a Bitwarden software engineer.
-		  Be direct about uncertainties. Display files in org blocks with paths."
-	  gptel-default-mode 'org-mode))
+    (setq gptel-log-level 'debug)
+    ;; Use org-mode for gptel buffers
+    (setq gptel-default-mode 'org-mode)
+    ;; Enable branching conversations in org-mode
+    (setq gptel-org-branching-context t)
+    (setq gptel-confirm-tool-calls t)
+    (setq include-tool-results t)
+
+    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+
+    (setq gptel-backend gptel-copilot-backend)
+	  (setq gptel-model 'claude-3.7-sonnet)
+	  (setq gptel-default-mode 'org-mode))
 #+end_src
 
 * GPTel Context Management
@@ -1316,6 +1305,40 @@ Some notes:
 
 1. All tools _must_ have an arguement. This can be just a dummy arguement like `read_gptel_tools_section`.
 
+** Repomix Integration
+
+#+begin_src emacs-lisp
+  (defun my/run-repomix (directory)
+    "Run repomix on DIRECTORY to generate context for LLM."
+    (message "Running repomix on directory: %s" directory)
+    (let* ((default-directory directory)
+           (output-buffer (generate-new-buffer " *repomix-output*"))
+           (command "repomix analyze . --max-files 20 --max-file-size 25000 --exclude-patterns 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
+      (with-current-buffer output-buffer
+        (let ((exit-code (call-process-shell-command command nil t)))
+          (if (= exit-code 0)
+              (let ((output (buffer-string)))
+                (kill-buffer output-buffer)
+                output)
+            (let ((error-msg (format "Repomix failed with exit code %d: %s"
+                                     exit-code (buffer-string))))
+              (kill-buffer output-buffer)
+              (error error-msg)))))))
+
+  (gptel-make-tool
+   :name "repomix"
+   :function #'my/run-repomix
+   :description "Run repomix on a directory to analyze and summarize code for context.
+This generates a well-structured overview of the codebase including directory structure,
+key files, important functions, and insights about the project architecture."
+   :args '((:name "directory"
+                  :type string
+                  :description "Directory path to analyze with repomix"))
+   :category "code-analysis")
+
+  (register-gptel-tool "repomix")
+#+end_src
+
 ** General Tools Setup
 This block contains helper functions and variables used by multiple tools. These are not tools themselves but support the tool infrastructure.
 
@@ -1326,6 +1349,10 @@ This block contains helper functions and variables used by multiple tools. These
   (defun register-gptel-tool (tool-name)
     "Register a tool with gptel by its NAME."
     (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
+
+  ;; Make sure repomix is available
+  (unless (executable-find "repomix")
+    (message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
 
 
   (defvar my/file-bookmarks
@@ -1340,7 +1367,7 @@ This block contains helper functions and variables used by multiple tools. These
 
 This tool hooks in to my file reading function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
   (defun my/read-file (file-id)
     "Read complete contents of a file.
 		FILE-ID can be a bookmark name or full path."
@@ -1370,7 +1397,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 
 This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
   (defun my/parse-search-replace-blocks (content)
     "Extract list of changes from content with search/replace blocks."
     (with-temp-buffer
@@ -1476,7 +1503,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Fetch_Webpage
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
   (gptel-make-tool
    :name "fetch_webpage"
    :function (lambda (url)
@@ -1512,7 +1539,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Git_Commit
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
   (defun my/git-commit-changes (project message)
     "Commit all changes in the specified project repository with the given message."
     (let* ((project-root (if (file-name-absolute-p project)
@@ -1573,7 +1600,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Project Context Tool
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
 	      PROJECT-ROOT is the directory to analyze.
@@ -1690,6 +1717,22 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 (require 'rg)
 #+end_src
 
+* Custom magit functions
+** Reset current buffer
+#+begin_src emacs-lisp
+(defun reset-file-to-revision ()
+  "Reset the current buffer's file to a specified revision using Magit."
+  (interactive)
+  (require 'magit)
+  (let* ((file-path (buffer-file-name))
+         (default-directory (magit-toplevel))
+         (revision (magit-read-branch-or-commit "Reset file to revision")))
+    (when (and file-path revision)
+      (let ((relative-file-path (file-relative-name file-path default-directory)))
+        (magit-run-git "checkout" revision "--" relative-file-path)
+        (revert-buffer t t t)
+        (message "File reset to %s" revision)))))
+#+end_src
 * Custom Commands For Projects
 
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
@@ -1717,7 +1760,17 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** Builds for the Bitwarden Nx PoC project
 
 #+begin_src emacs-lisp
-  (defun my/run-nx-poc-web ()
+  (defun bitwarden/nx-poc-npm-i ()
+    "Run npm ci in the nx PoC"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-functionl 
+	    (lambda (_mode) (format "*nx-poc-npm-i*"))))
+      (compile "npm i" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun bitwarden/run-nx-poc-web ()
     "Build the web vault of the nx poc project with a uniquely named buffer."
     (interactive)
     (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/web"))
@@ -1727,17 +1780,27 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun my/run-nx-poc-browser-chrome ()
+  (defun bitwarden/run-nx-poc-browser-chrome ()
     "Build the chrome extension of the nx poc project with a uniquely named buffer."
     (interactive)
     (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*nx-poc-chrome-build*"))))
-      (compile "npm run build:chrome" t)))
+      (compile "npm run build:watch:chrome" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun my/run-nx-poc-dekstop ()
+  (defun bitwarden/run-nx-poc-browser-firefox ()
+    "Build the chrome extension of the nx poc project with a uniquely named buffer."
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-firefox-build*"))))
+      (compile "npm run build:watch:firefox" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun bitwarden/run-nx-poc-dekstop ()
     "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
     (interactive)
     (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/dekstop"))
@@ -1747,7 +1810,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun my/build-nx-poc-cli ()
+  (defun bitwarden/build-nx-poc-cli ()
     "Build the cli in the nx poc project with a uniquely named buffer."
     (interactive)
     (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/cli"))
@@ -1798,6 +1861,36 @@ I use this space to write a bunch of custom commands for interacting with projec
     (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/nix/update-flake-lock ()
+  "Update flake lock in my nix systems config"
+  (interactive)
+   (let* ((default-directory (my/get-project-path "nix"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
+    (compile "nix flake update" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/nix/check-status ()
+  "Check the git status of my nix systems config"
+  (interactive)
+   (let* ((default-directory (my/get-project-path "nix"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-systems-git-status*"))))
+    (compile "git status" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/nix/update-minecraft-packwize ()
+  "Update the pacckages for the packwiz server for my kids"
+  (interactive)
+   (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
+    (compile "packwiz " t)))
+#+end_src
+
 #+RESULTS:
 : my/nix-commit
 
@@ -1835,7 +1928,7 @@ I use this space to write a bunch of custom commands for interacting with projec
     (interactive)
     (let* ((default-directory (my/get-project-path "clients"))
 	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*clients-npm-ci*"))))
+	    (lambda (_mode) (format "*clients-typechecker*"))))
       (compile "npm run test:types" t)))
 #+end_src
 
@@ -1899,66 +1992,134 @@ I use this space to write a bunch of custom commands for interacting with projec
     (compile "dotnet run" t)))
 #+end_src
 
+#+begin_src emacs-lisp 
+(defun bitwarden/clients/run-tests (&optional test-pattern)
+  "Run Jest tests for the clients monorepo.
+If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((default-directory (my/get-project-path "clients"))
+         (command (if (and test-pattern (not (string-empty-p test-pattern)))
+                      (format "npm run test:watch -- -t '%s'" test-pattern)
+                    "npm run test:watch"))
+         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+                          (format "*clients-jest-%s*" test-pattern)
+                        "*clients-jest*"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) buffer-name)))
+    (compile command t)))
+#+end_src
+
 *** Run typechecking
 
 * Custom Keymaps
 
 #+begin_src emacs-lisp
 (define-prefix-command 'my-custom-prefix)
-(global-set-key (kbd "C-a") 'my-custom-prefix)
+(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
 (which-key-add-key-based-replacements "C-a" "my commands")
 
-;; Create "go" prefix map
+;; create "go" prefix map
 (define-prefix-command 'my-go-prefix)
-(define-key my-custom-prefix (kbd "g") 'my-go-prefix)
+(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
 (which-key-add-key-based-replacements "C-a g" "go")
 
 (defun my/open-compilation-file-in-other-window ()
-  "Open the current compilation match in another window.
-Creates a new window if needed or reuses an existing one."
+  "open the current compilation match in another window.
+creates a new window if needed or reuses an existing one."
   (interactive)
   (let ((window-count (length (window-list))))
     (condition-case err
         (if (= window-count 1)
-            ;; Only one window, use built-in function that creates a new window
+            ;; only one window, use built-in function that creates a new window
             (compilation-display-error)
-          ;; Multiple windows exist, use the next window
+          ;; multiple windows exist, use the next window
           (let ((this-window (selected-window)))
             (other-window 1)
             (let ((target-window (selected-window)))
               (select-window this-window)
-              ;; Use next-error-no-select to get location without changing windows
+              ;; use next-error-no-select to get location without changing windows
               (let ((location (next-error-no-select)))
                 (select-window target-window)
                 (switch-to-buffer (marker-buffer (car location)))
                 (goto-char (marker-position (car location)))))))
-      ;; Catch any errors silently
-      (error (message "No valid location found at point")))))
+      ;; catch any errors silently
+      (error (message "no valid location found at point")))))
 
-(define-key my-go-prefix (kbd "f") 'my/open-compilation-file-in-other-window)
+(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
 (which-key-add-key-based-replacements "C-a g f" "go to file")
-(with-eval-after-load 'compile
-  (define-key compilation-mode-map (kbd "C-a g f") 'my/open-compilation-file-in-other-window))
 
-(define-key my-go-prefix (kbd "d") 'lsp-find-definition)
+(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
 (which-key-add-key-based-replacements "C-a g d" "go to definition")
+(evil-define-key 'normal 'global (kbd "C-a g e") (lambda () (interactive) (find-file "/users/me/nix/system/with/user/with/program/emacs.org")))
+(which-key-add-key-based-replacements "C-a g e" "emacs config")
 
 (define-prefix-command 'my-compile-prefix)
-(define-key my-custom-prefix (kbd "c") 'my-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
 (which-key-add-key-based-replacements "C-a c" "compile")
 
 (define-prefix-command 'my-nix-compile-prefix)
-(define-key my-compile-prefix (kbd "n") 'my-nix-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
 (which-key-add-key-based-replacements "C-a c n" "nix")
 
-(define-key my-nix-compile-prefix (kbd "r") 'my/nix-rebuild)
+(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
 (which-key-add-key-based-replacements "C-a c n r" "rebuild")
 
-(define-key my-nix-compile-prefix (kbd "f") 'my/nix-format)
+(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
 (which-key-add-key-based-replacements "C-a c n f" "format")
 
-(define-key my-nix-compile-prefix (kbd "c") 'my/nix-commit)
+(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
 (which-key-add-key-based-replacements "C-a c n c" "commit")
+
+;; create "find" prefix map
+(define-prefix-command 'my-find-prefix)
+(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+(which-key-add-key-based-replacements "C-a f" "find")
+
+(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+(which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+(which-key-add-key-based-replacements "C-a f p" "project")
+
+(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+(which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+(which-key-add-key-based-replacements "C-a f F" "file in project")
+
+(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+(evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
+  "Select an org source block, excluding the begin/end lines."
+  (when (org-in-src-block-p)
+    (save-excursion
+      (let* ((element (org-element-at-point))
+             (begin (org-element-property :begin element))
+             (end (org-element-property :end element))
+             (begin-adjusted (progn
+                               (goto-char begin)
+                               (forward-line 1)
+                               (point))))
+        (goto-char begin)
+        (re-search-forward "^[ \t]*#\\+end_src" end t)
+        (forward-line -1)
+        (let ((end-adjusted (line-end-position)))
+          (evil-range begin-adjusted end-adjusted 'line))))))
+
+(evil-define-text-object evil-a-org-src-block (count &optional beg end type)
+  "Select an org source block, including the begin/end lines."
+  (when (org-in-src-block-p)
+    (save-excursion
+      (let* ((element (org-element-at-point))
+             (begin (org-element-property :begin element))
+             (end (org-element-property :end element)))
+        (evil-range begin end 'line)))))
+
+(evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
+(evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
+(which-key-add-key-based-replacements "is" "inside src block")
+(which-key-add-key-based-replacements "as" "around src block")
 #+end_src
 
 #+RESULTS:
