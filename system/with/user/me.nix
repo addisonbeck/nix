@@ -122,6 +122,7 @@
       pkgs.packwiz
       pkgs.claude-code
       pkgs.ripgrep
+      pkgs.uv
     ];
 
     home.sessionPath = [];

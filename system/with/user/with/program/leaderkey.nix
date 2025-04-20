@@ -21,6 +21,12 @@
           "value" : "/Applications/Slack.app"
         },
         {
+          "key" : "f",
+          "label" : "",
+          "type" : "application",
+          "value" : "/Applications/Firefox.app"
+        },
+        {
           "key" : "m",
           "label" : "",
           "type" : "application",

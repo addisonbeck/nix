@@ -494,7 +494,7 @@ Here I'll define some key data structures used throughout the rest of the config
     (setq org-log-into-drawer t)
     (setq org-startup-folded 'overview)
     (setq org-clock-persist 'history
-	  org-export-backends '(html icalendar latex man md org)
+	  org-export-backends '(html icalendar latex man md org json)
 	  org-image-max-width 'window
 	  org-startup-with-inline-images t
 	  org-cycle-inline-images-display t
@@ -583,9 +583,17 @@ For some reason this keeps getting set wrong by something.
 * Org Capture Templates and Functions
 #+begin_src emacs-lisp
   (setq org-capture-templates
-	'(("i" "Inbox" entry
+	'(
+    ("l" "Log" entry
 	   (file "~/notes/inbox.org")
-	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")))
+	   "* %U %^{Title}\n%?")
+   ("e" "Event" entry
+      (file "~/notes/inbox.org")
+      "* %^{Title}\n%^T{Date and Time}\n%?")
+    ("t" "Todo" entry
+	   (file "~/notes/inbox.org")
+	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")
+    ))
 #+end_src
 
 * Date Tracking Functions
@@ -667,7 +675,7 @@ I'm not using these right now, but might revist in the future.
 * Agenda Configuration
 #+begin_src emacs-lisp
 (setq org-agenda-block-separator nil)
-(setq org-agenda-window-setup 'only-window)
+(setq org-agenda-window-setup 'current-window)
 (setq org-agenda-timegrid-use-ampm t)
 (setq org-agenda-time-leading-zero t)
 (setq org-agenda-todo-keyword-format "%s")
@@ -712,10 +720,13 @@ I'm not using these right now, but might revist in the future.
 
 (setq org-agenda-custom-commands
 '(("d" "daily dashboard"
-   ((agenda "Schedule and Habits"
+   (
+    (tags "+CATEGORY=\"inbox\"" 
+          ((org-agenda-overriding-header "Inbox")))
+    (agenda "Schedule and Habits"
 	    ((org-agenda-span 'day)
 	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-	     (org-agenda-overriding-header "")
+	     (org-agenda-overriding-header " ")
 	     (org-super-agenda-groups
 	      '(
 		(:name "Happening today" 
@@ -726,15 +737,15 @@ I'm not using these right now, but might revist in the future.
 		(:name "Overdue" :deadline past)
 		(:name "Due Today" :deadline today)
 		(:name "High Priority" :priority "A")
-		(:name "Inbox" :category "inbox")
-		(:name "Poetry" :category "my poems")
-		(:name "Logs" :category "log")
+		;;(:name "Inbox" :category "inbox")
 		(:name "Due Soon" :deadline future)
+		(:name "Poetry" :category "my poems")
 		(:name "Code Reviews" :category "code review")
 		(:name "Active Epics" :category "epic")
 		(:name "Family Stuff" :category "family")
 		(:name "Holidays" :category "holiday")
 		(:name "The Garden" :category "the-garden")
+		(:name "Logs" :category "log")
 		(:name "Re: Me" :category "me")
 		(:name "Re: Emily" :category "emily")
 		(:name "Re: Lincoln" :category "lincoln")
@@ -968,6 +979,21 @@ I'm not using these right now, but might revist in the future.
    )
 #+end_src
 
+
+* Spell Checking
+#+begin_src emacs-lisp :tangle no
+(use-package flyspell
+  :ensure nil 
+  :config
+  (setq ispell-program-name "aspell")
+  (add-hook 'text-mode-hook #'flyspell-mode)
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode))
+
+(use-package flyspell-correct
+  :ensure nil 
+  :config
+  (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
+#+end_src
 * Elfeed Configuration
 #+begin_src emacs-lisp
   (use-package elfeed
@@ -1331,7 +1357,7 @@ This block contains helper functions and variables used by multiple tools. These
 
 ** Repomix Integration
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (defun my/run-repomix (directory)
     "Run repomix on DIRECTORY to generate context for LLM."
     (message "Running repomix on directory: %s" directory)
@@ -1367,7 +1393,7 @@ key files, important functions, and insights about the project architecture."
 
 This tool hooks in to my file reading function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
-#+begin_src emacs-lisp 
+#+begin_src emacs-lisp :tangle no
   (defun my/read-file (file-id)
     "Read complete contents of a file.
 		FILE-ID can be a bookmark name or full path."
@@ -1397,108 +1423,104 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 
 This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
-#+begin_src emacs-lisp 
-  (defun my/parse-search-replace-blocks (content)
-    "Extract list of changes from content with search/replace blocks."
-    (with-temp-buffer
-      (insert content)
-      (let (changes)
-	(goto-char (point-min))
-	(while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
-	  (push (list :search (match-string 1)
-		      :replace (match-string 2))
-		changes))
-	(nreverse changes))))
+#+begin_src emacs-lisp :tangle no
+(defun my/parse-search-replace-blocks (content)
+  "Extract list of changes from content with search/replace blocks."
+  (with-temp-buffer
+    (insert content)
+    (let (changes)
+(goto-char (point-min))
+(while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
+  (push (list :search (match-string 1)
+	      :replace (match-string 2))
+	changes))
+(nreverse changes))))
 
-  (defun my/apply-changes (original-content changes)
-    "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
-    (with-temp-buffer
-      (insert original-content)
-      (dolist (change changes)
-	(let ((search (plist-get change :search))
-	      (replace (plist-get change :replace)))
-	  (goto-char (point-min))
-	  (while (search-forward search nil t)
-	    (replace-match replace t t))))
-      (buffer-string)))
+(defun my/apply-changes (original-content changes)
+  "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
+  (with-temp-buffer
+    (insert original-content)
+    (dolist (change changes)
+(let ((search (plist-get change :search))
+      (replace (plist-get change :replace)))
+  (goto-char (point-min))
+  (while (search-forward search nil t)
+    (replace-match replace t t))))
+    (buffer-string)))
 
-  (defun my/write-file (file-id content)
-    "Write file with changes in search/replace block format.
-		  FILE-ID can be a bookmark name or full path.
-		  CONTENT must contain search/replace blocks showing what to change."
-    (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
-	   (file-path (expand-file-name
-		       (if bookmark 
-			   (plist-get bookmark :path)
-			 file-id)))
-	   (original (my/read-file file-id))
-	   (changes (my/parse-search-replace-blocks content))
-	   (new-content (my/apply-changes original changes)))
-      ;; Check if content is unchanged
-      (when (string= original new-content)
-	(error "No changes detected - the diff would be empty"))
-      ;; Validate content preservation
-      (when (< (length new-content) (* 0.95 (length original)))
-	(error "Error: New content is significantly smaller than original"))
-      ;; Show git-style diff and confirm
-      (let* ((temp-orig (make-temp-file "gptel-orig-"))
-	     (temp-new (make-temp-file "gptel-new-"))
-	     (diff-buffer (get-buffer-create "*File Changes Preview*"))
-	     (confirm-changes nil))
-	;; Write both versions to temp files
-	(write-region original nil temp-orig)
-	(write-region new-content nil temp-new)
-	;; Generate and display diff
-	(with-current-buffer diff-buffer
-	  (erase-buffer)
-	  (insert "Proposed changes to " file-path ":\n\n")
-	  (call-process "git" nil t nil "diff" "--no-index" "--color=never" temp-orig temp-new)
-	  ;; Enable diff-mode for syntax highlighting
-	  (diff-mode)
-	  (goto-char (point-min))
-	  (display-buffer diff-buffer)
-	  (setq confirm-changes (yes-or-no-p "Apply these changes? ")))
-	;; Cleanup
-	(delete-file temp-orig)
-	(delete-file temp-new)
-	(kill-buffer diff-buffer)
-	(if confirm-changes
-	    (progn
-	      (write-region new-content nil file-path)
-	      (format "Updated %s" file-path))
-	  (format "Changes cancelled by user. Seek feedback before trying again!")))))
+(defun my/write-file (file-id content)
+  "Write file with changes in search/replace block format.
+	  FILE-ID can be a bookmark name or full path.
+	  CONTENT must contain search/replace blocks showing what to change."
+  (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
+   (file-path (expand-file-name
+	       (if bookmark 
+		   (plist-get bookmark :path)
+		 file-id)))
+   (original (my/read-file file-id))
+   (changes (my/parse-search-replace-blocks content))
+   (new-content (my/apply-changes original changes)))
+    ;; Check if content is unchanged
+    (when (string= original new-content)
+(error "No changes detected - the diff would be empty"))
+    ;; Validate content preservation
+    (when (< (length new-content) (* 0.95 (length original)))
+(error "Error: New content is significantly smaller than original"))
+    ;; Show git-style diff and confirm
+    (let* ((temp-orig (make-temp-file "gptel-orig-"))
+     (temp-new (make-temp-file "gptel-new-"))
+     (diff-buffer (get-buffer-create "*File Changes Preview*"))
+     (confirm-changes nil))
+;; Write both versions to temp files
+(write-region original nil temp-orig)
+(write-region new-content nil temp-new)
+;; Generate and display diff
+(with-current-buffer diff-buffer
+  (erase-buffer)
+  (insert "Proposed changes to " file-path ":\n\n")
+  (call-process "git" nil t nil "diff" "--no-index" "--color=never" temp-orig temp-new)
+  ;; Enable diff-mode for syntax highlighting
+  (diff-mode)
+  (goto-char (point-min))
+  (display-buffer diff-buffer)
+  (setq confirm-changes (yes-or-no-p "Apply these changes? ")))
+;; Cleanup
+(delete-file temp-orig)
+(delete-file temp-new)
+(kill-buffer diff-buffer)
+(if confirm-changes
+    (progn
+      (write-region new-content nil file-path)
+      (format "Updated %s" file-path))
+  (format "Changes cancelled by user. Seek feedback before trying again!")))))
 
-  (gptel-make-tool
-   :name "write_file"
-   :function #'my/write-file
-   :description "Modify specific sections of a file while preserving all other content.
+(gptel-make-tool
+ :name "write_file"
+ :function #'my/write-file
+ :description "Modify specific sections of a file while preserving all other content. If a failure occurs do not try again without asking me first. Offer to commit with git_commit after modifying files."
+ :args '((:name "file-id"
+	  :type string
+	  :description "can be a full path or one of the following bookmarks:
+	    - 'emacs config' for my emacs configuration
+	    - 'inbox' for my org mode inbox file")
+   (:name "content"
+	  :type string
+	  :description "search/replace blocks showing what to change
 
-		IMPORTANT: Always use read_file first to understand the current content and structure! 
+The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
 
-		The CONTENT arguement _must_ adhere to this format with SEARCH and REPLACE blocks:
+<<<<<<< SEARCH
+{text to find and replace}
+=======
+{new text to insert}
+>>>>>>> REPLACE
 
-		<<<<<<< SEARCH
-		{text to find and replace}
-		=======
-		{new text to insert}
-		>>>>>>> REPLACE
+- Do NOT include lines meant to call write_file in the CONTENT arguement!
+- You can include multiple search/replace blocks to make multiple changes.
+- The search text must match exactly what is in the file.
+")))
 
-		- You can include multiple search/replace blocks to make multiple changes.
-		- The search text must match exactly what is in the file.
-		- If a failure occurs do not try again without asking me first.
-
-		After using write-file to modify files, evaluate whether the changes should be committed to version control. If the changes are in a git repository and represent a meaningful unit of work, follow up with a git_commit call with an appropriate commit message."
-   :args '((:name "file-id"
-		  :type string
-		  :description "can be a full path or one of the following bookmarks:
-		    - 'emacs config' for my emacs configuration
-
-		    - 'inbox' for my org mode inbox file")
-	   (:name "content"
-		  :type string
-		  :description "search/replace blocks showing what to change")))
-
-  (register-gptel-tool "write_file")
+(register-gptel-tool "write_file")
 #+end_src
 
 ** Fetch_Webpage
@@ -1539,7 +1561,7 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Git_Commit
 
-#+begin_src emacs-lisp 
+#+begin_src emacs-lisp :tangle no
   (defun my/git-commit-changes (project message)
     "Commit all changes in the specified project repository with the given message."
     (let* ((project-root (if (file-name-absolute-p project)
@@ -1678,6 +1700,65 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
   (register-gptel-tool "project_context")
 #+end_src
 
+* MCP Configuration
+#+begin_src emacs-lisp
+(require 'mcp-hub)
+  (setq mcp-server-start-time 120) 
+
+  (defun my/get-github-mcp-token ()
+    (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
+      (let ((token (plist-get auth :secret)))
+        (if (functionp token) (funcall token) token))))
+
+  ;; Configure the GitHub MCP server (using Docker)
+  (setq mcp-hub-servers
+        `(
+("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
+        ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+          ("github-mcp" . (:command "docker"
+                          :args ("run" "-i" "--rm"
+                                 "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+                                "ghcr.io/github/github-mcp-server")
+                          :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+          ))
+
+
+  (add-hook 'after-init-hook #'mcp-hub-start-all-server)
+
+    (defun gptel-mcp-register-tool ()
+  (interactive)
+  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+    (mapcar #'(lambda (tool)
+                (apply #'gptel-make-tool
+                       tool))
+            tools)))
+
+  (defun gptel-mcp-use-tool ()
+    "Activate all MCP tools for gptel."
+    (interactive)
+    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+      (mapcar #'(lambda (tool)
+                  (let ((path (list (plist-get tool :category)
+                                    (plist-get tool :name))))
+                    (add-to-list 'gptel-tools (gptel-get-tool path))))
+              tools)))
+
+  (defun gptel-mcp-close-use-tool ()
+    "Deactivate all MCP tools for gptel."
+    (interactive)
+    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+      (mapcar #'(lambda (tool)
+                  (let ((path (list (plist-get tool :category)
+                                    (plist-get tool :name))))
+                    (setq gptel-tools
+                          (cl-remove-if #'(lambda (tool-item)
+                                            (equal path
+                                                   (list (gptel-tool-category tool-item)
+                                                         (gptel-tool-name tool-item))))
+                                        gptel-tools))))
+              tools)))
+#+end_src
+
 * Path Copying Functions
 
 #+begin_src emacs-lisp
@@ -1800,10 +1881,10 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun bitwarden/run-nx-poc-dekstop ()
+  (defun bitwarden/run-nx-poc-desktop ()
     "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
     (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/dekstop"))
+    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/desktop"))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*nx-poc-desktop-build*"))))
       (compile "npm run build:watch" t)))
@@ -1817,6 +1898,65 @@ I use this space to write a bunch of custom commands for interacting with projec
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*nx-poc-cli-build*"))))
       (compile "npm run build" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun bitwarden/nx-poc-nx-report ()
+    "Runs nx report in the poc project"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-nx-report*"))))
+      (compile "npx nx report" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/nx/build (target)
+  "Build the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+                         '("common" "angular" "web" "cli" "desktop" "browser")
+                         nil nil nil nil "common")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nx-pox-%s-build*" target))))
+    (compile (format "npx nx build %s" target) t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/nx/serve (target)
+  "Serve the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+                         '("web" "desktop" "browser")
+                         nil nil nil nil "web")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
+    (compile (format "npx nx serve %s" target) t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/nx/start (target)
+  "Start the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+                         '("cli")
+                         nil nil nil nil "cli")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nx-pox-%s-start*" target))))
+    (compile (format "npx nx start %s --verbose" target) t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/nx/cleanup ()
+  "Clean up the nx poc project"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*nx-poc-cleanup*"))))
+    (compile "rm -rf node_modules ; rm -rf .nx" t)))
 #+end_src
 
 ** My Nix Systems Configuration
@@ -2120,6 +2260,16 @@ creates a new window if needed or reuses an existing one."
 (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
 (which-key-add-key-based-replacements "is" "inside src block")
 (which-key-add-key-based-replacements "as" "around src block")
+
+(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+(defun my/org-agenda-daily-dashboard ()
+  "Open the custom 'daily dashboard' org-agenda view."
+  (interactive)
+  (org-agenda nil "d"))
+
+(evil-define-key 'normal 'global (kbd "C-o") 'my/org-agenda-daily-dashboard)
 #+end_src
 
 #+RESULTS:

@@ -67,6 +67,21 @@
     # chromium doesn't work on mac from nixpkgs
     chromium = pkgs.google-chrome;
   };
+
+    mcp-el-src = pkgs.fetchFromGitHub {
+      owner = "lizqwerscott";
+      repo = "mcp.el";
+      rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
+      hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
+    };
+
+  emacsPackagesOverlay = self: super: {
+    mcp-el = super.trivialBuild {
+      pname = "mcp-el";
+      version = "git-${mcp-el-src.rev}"; 
+      src = mcp-el-src;
+    };
+  };
 in {
   programs.emacs = {
     enable = true;
@@ -74,6 +89,7 @@ in {
       package = pkgs.emacs-unstable.override {
         withTreeSitter = true;
       };
+      override = emacsPackagesOverlay;
       config = tangledInit;
       defaultInitFile = true;
       alwaysEnsure = true;
@@ -129,6 +145,8 @@ in {
           org-make-toc
           avy
           rg
+          mcp-el
+          flyspell-correct
         ];
     };
   };
@@ -156,6 +174,8 @@ in {
     emacs-inbox-capture-script
     mermaid-cli
     puppeteer-cli-with-chrome
+    aspell
+    aspellDicts.en
   ];
 
   home.file.".emacs.d/diary".text = ''
