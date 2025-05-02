@@ -42,6 +42,9 @@
         autoStash = true;
         updateRefs = true;
       };
+      github = {
+        user = "addisonbeck";
+      };
     };
   };
 }

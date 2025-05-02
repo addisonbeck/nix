@@ -68,17 +68,17 @@
     chromium = pkgs.google-chrome;
   };
 
-    mcp-el-src = pkgs.fetchFromGitHub {
-      owner = "lizqwerscott";
-      repo = "mcp.el";
-      rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
-      hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
-    };
+  mcp-el-src = pkgs.fetchFromGitHub {
+    owner = "lizqwerscott";
+    repo = "mcp.el";
+    rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
+    hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
+  };
 
   emacsPackagesOverlay = self: super: {
     mcp-el = super.trivialBuild {
       pname = "mcp-el";
-      version = "git-${mcp-el-src.rev}"; 
+      version = "git-${mcp-el-src.rev}";
       src = mcp-el-src;
     };
   };
@@ -147,6 +147,11 @@ in {
           rg
           mcp-el
           flyspell-correct
+          hnreader
+          rg
+          elfeed-tube
+          elfeed-tube-mpv
+          mpv
         ];
     };
   };
@@ -176,6 +181,9 @@ in {
     puppeteer-cli-with-chrome
     aspell
     aspellDicts.en
+    mpv-unwrapped
+    yt-dlp
+    ffmpeg
   ];
 
   home.file.".emacs.d/diary".text = ''
@@ -195,6 +203,8 @@ in {
       RunAtLoad = true;
       StandardOutPath = "${config.home.homeDirectory}/.emacs.d/daemon.log";
       StandardErrorPath = "${config.home.homeDirectory}/.emacs.d/daemon.error.log";
+      NetworkState = true;
+      LimitLoadToSessionType = "Aqua";
     };
   };
 }

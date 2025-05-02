@@ -86,6 +86,26 @@
           agenix.nixosModules.default
         ];
       };
+      raspberrypiimage = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = {
+          inherit inputs outputs nixpkgs rootPath conf;
+        };
+        modules = [
+          ./system/raspberrypiimage.nix
+          "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+        ];
+      };
+      homelab = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = {
+          inherit inputs outputs nixpkgs rootPath conf;
+        };
+        modules = [
+          ./system/homelab.nix
+          agenix.nixosModules.default
+        ];
+      };
     };
     darwinConfigurations = {
       bw = nix-darwin.lib.darwinSystem {
@@ -149,8 +169,15 @@
       building = pkgs.mkShell {
         packages =
           [
+            pkgs.zstd
             (pkgs.writeScriptBin "update" ''
               nix flake update
+            '')
+            (pkgs.writeScriptBin "build-pi-image" ''
+              nix build .#nixosConfigurations.raspberrypiimage.config.system.build.sdImage
+            '')
+            (pkgs.writeScriptBin "decompress-pi-image" ''
+              zstd -d result/sd-image/*.img.zst -o result/sd-image/nixos-raspi.img
             '')
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [

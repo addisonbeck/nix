@@ -123,6 +123,7 @@
       pkgs.claude-code
       pkgs.ripgrep
       pkgs.uv
+      pkgs.wget
     ];
 
     home.sessionPath = [];

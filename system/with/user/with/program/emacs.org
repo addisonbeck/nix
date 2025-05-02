@@ -21,18 +21,18 @@ Here I'll define some key data structures used throughout the rest of the config
 *** The Projects Data Structure
 
 #+begin_src emacs-lisp
-(defvar my/projects
-  '(("nix"       . (:path "~/nix"))
-    ("notes" . (:path "~/notes"))
-    ("clients" . (:path "~/bitwarden/clients"))
-    ("server" . (:path "~/bitwarden/server"))
-    ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
-    ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
-    ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
-    ("binwarden" . (:path "~/binwarden"))
-    ("d" . (:path "~/d"))
-    ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
-  "Alist of projects with metadata")
+  (defvar my/projects
+    '(("nix"       . (:path "~/nix"))
+      ("notes" . (:path "~/notes"))
+      ("clients" . (:path "~/bitwarden/clients"))
+      ("server" . (:path "~/bitwarden/server"))
+      ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
+      ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
+      ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
+      ("binwarden" . (:path "~/binwarden"))
+      ("d" . (:path "~/d"))
+      ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
+    "Alist of projects with metadata")
 #+end_src
 
 #+RESULTS:
@@ -41,43 +41,43 @@ Here I'll define some key data structures used throughout the rest of the config
 *** Project Functions
 
 #+begin_src emacs-lisp
-(defun my/get-project-attr (project-name attr)
-  "Get ATTR for PROJECT-NAME."
-  (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
+  (defun my/get-project-attr (project-name attr)
+    "Get ATTR for PROJECT-NAME."
+    (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
 
-(defun my/get-project-path (project-name)
-  "Get the path for PROJECT-NAME."
-  (my/get-project-attr project-name :path))
+  (defun my/get-project-path (project-name)
+    "Get the path for PROJECT-NAME."
+    (my/get-project-attr project-name :path))
 
-(defun my/find-project (project-name)
-  "Open a project's root directory."
-  (interactive
-   (list (completing-read "Project: " (mapcar #'car my/projects))))
-  (find-file (my/get-project-path project-name)))
+  (defun my/find-project (project-name)
+    "Open a project's root directory."
+    (interactive
+     (list (completing-read "Project: " (mapcar #'car my/projects))))
+    (find-file (my/get-project-path project-name)))
 
-(defun my/project-dired ()
-  "Open dired in a project directory."
-  (interactive)
-  (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
-    (dired (my/get-project-path project-name))))
+  (defun my/project-dired ()
+    "Open dired in a project directory."
+    (interactive)
+    (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
+      (dired (my/get-project-path project-name))))
 
-(defun my/compile-in-project (project-name command)
-  "Run compilation COMMAND in PROJECT-NAME."
-  (interactive
-   (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
-          (command (read-string "Command: " nil 'compile-history)))
-     (list project command)))
-  (let* ((default-directory (my/get-project-path project-name))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*compile-%s*" project-name))))
-    (compile command t)))
+  (defun my/compile-in-project (project-name command)
+    "Run compilation COMMAND in PROJECT-NAME."
+    (interactive
+     (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
+	    (command (read-string "Command: " nil 'compile-history)))
+       (list project command)))
+    (let* ((default-directory (my/get-project-path project-name))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*compile-%s*" project-name))))
+      (compile command t)))
 
-(defun my/terminal-in-project ()
-  "Open terminal in a project directory."
-  (interactive)
-  (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
-         (default-directory (my/get-project-path project-name)))
-    (vterm (format "*vterm-%s*" project-name))))
+  (defun my/terminal-in-project ()
+    "Open terminal in a project directory."
+    (interactive)
+    (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
+	   (default-directory (my/get-project-path project-name)))
+      (vterm (format "*vterm-%s*" project-name))))
 #+end_src
 
 #+RESULTS:
@@ -104,54 +104,53 @@ Here I'll define some key data structures used throughout the rest of the config
 * UI Configuration
 
 #+begin_src emacs-lisp
-;; Configure frame appearance
-(setq default-frame-alist
-'((menu-bar-lines . 0)
-  (tool-bar-lines . 0)
-  (vertical-scroll-bars)
-  (left-fringe . 0)
-  (right-fringe . 0)
-  (internal-border-width . 0)
-  (undecorated . t)
-  (fullscreen . maximized)))
+  ;; Configure frame appearance
+  (setq default-frame-alist
+	'((menu-bar-lines . 0)
+	  (tool-bar-lines . 0)
+	  (vertical-scroll-bars)
+	  (left-fringe . 0)
+	  (right-fringe . 0)
+	  (internal-border-width . 0)
+	  (undecorated . t)
+	  (fullscreen . maximized)))
 
-(setq inhibit-startup-message t)
-(setq initial-frame-alist default-frame-alist)
+  (setq inhibit-startup-message t)
+  (setq initial-frame-alist default-frame-alist)
 
-(advice-add #'display-startup-echo-area-message :override #'ignore)
+  (advice-add #'display-startup-echo-area-message :override #'ignore)
 
-(defun my/current-project-name ()
-  "Get the name of the current project from my/projects if there is one."
-  (when-let* ((file-path (buffer-file-name))
-              (abs-path (expand-file-name file-path)))
-    (catch 'found
-      (dolist (project my/projects)
-        (let* ((project-name (car project))
-               (project-path (expand-file-name (my/get-project-path project-name))))
-          (when (string-prefix-p project-path abs-path)
-            (throw 'found project-name))))
-      nil)))
+  (defun my/current-project-name ()
+    "Get the name of the current project from my/projects if there is one."
+    (when-let* ((file-path (buffer-file-name))
+		(abs-path (expand-file-name file-path)))
+      (catch 'found
+	(dolist (project my/projects)
+	  (let* ((project-name (car project))
+		 (project-path (expand-file-name (my/get-project-path project-name))))
+	    (when (string-prefix-p project-path abs-path)
+	      (throw 'found project-name))))
+	nil)))
 
-(setq-default mode-line-format
-      (list
-       ;; Current project (if any)
-       '(:eval (when-let ((project (my/current-project-name)))
-                 (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
-       ;; Filename
-       '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
-       ;; Major mode
-       '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
-       ;; Git branch and status using vc-mode
-       '(:eval (when vc-mode
-                 (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
-                   (concat
-                    (propertize " " 'face 'buffer-file-name)
-                    (propertize (format "%s" branch) 'face 'mode-line-emphasis)
-                    (propertize (if (vc-state buffer-file-name) " ++" "") 'face
-                                (if (vc-state buffer-file-name) 'error 'success))
-                    (propertize " " 'face 'buffer-file-name)))))
-       ))
-
+  (setq-default mode-line-format
+		(list
+		 ;; Current project (if any)
+		 '(:eval (when-let ((project (my/current-project-name)))
+			   (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
+		 ;; Filename
+		 '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
+		 ;; Major mode
+		 '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
+		 ;; Git branch and status using vc-mode
+		 '(:eval (when vc-mode
+			   (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
+			     (concat
+			      (propertize " " 'face 'buffer-file-name)
+			      (propertize (format "%s" branch) 'face 'mode-line-emphasis)
+			      (propertize (if (vc-state buffer-file-name) " ++" "") 'face
+					  (if (vc-state buffer-file-name) 'error 'success))
+			      (propertize " " 'face 'buffer-file-name)))))
+		 ))
 #+end_src
 
 * Basic Settings
@@ -280,6 +279,9 @@ Here I'll define some key data structures used throughout the rest of the config
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys)
   (evil-define-key 'motion org-agenda-mode-map
+		   (kbd "C-b") 'projectile-switch-to-buffer
+		   (kbd "C-p") 'projectile-switch-project
+		   (kbd "C-f") 'projectile-find-file
 		   (kbd "<left>") 'org-agenda-earlier
 		   (kbd "<right>") 'org-agenda-later
 		   (kbd "C-c j") 'org-agenda-goto-date
@@ -327,6 +329,9 @@ Here I'll define some key data structures used throughout the rest of the config
     :config
     (projectile-mode +1)
     (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
+    (define-key projectile-command-map (kbd "P") 'my/projectile-find-file-in-all-projects)
+    (setq projectile-indexing-method 'alien)
+    (setq projectile-git-command "git ls-files -zco -X ~/.gitignore")
     (setq projectile-known-projects
 	  (mapcar (lambda (project)
 		    (expand-file-name (my/get-project-path (car project))))
@@ -493,6 +498,7 @@ Here I'll define some key data structures used throughout the rest of the config
     (setq org-log-done 'time)
     (setq org-log-into-drawer t)
     (setq org-startup-folded 'overview)
+    (setq org-auto-align-tags nil)
     (setq org-clock-persist 'history
 	  org-export-backends '(html icalendar latex man md org json)
 	  org-image-max-width 'window
@@ -571,7 +577,7 @@ Here I'll define some key data structures used throughout the rest of the config
 For some reason this keeps getting set wrong by something.
 
 #+begin_src emacs-lisp
-(setq org-agenda-files (list org-directory))
+  (setq org-agenda-files (list org-directory))
 #+end_src
 
 * Org To Jira
@@ -584,16 +590,16 @@ For some reason this keeps getting set wrong by something.
 #+begin_src emacs-lisp
   (setq org-capture-templates
 	'(
-    ("l" "Log" entry
+	  ("l" "Log" entry
 	   (file "~/notes/inbox.org")
 	   "* %U %^{Title}\n%?")
-   ("e" "Event" entry
-      (file "~/notes/inbox.org")
-      "* %^{Title}\n%^T{Date and Time}\n%?")
-    ("t" "Todo" entry
+	  ("e" "Event" entry
+	   (file "~/notes/inbox.org")
+	   "* %^{Title}\n%^T{Date and Time}\n%?")
+	  ("t" "Todo" entry
 	   (file "~/notes/inbox.org")
 	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")
-    ))
+	  ))
 #+end_src
 
 * Date Tracking Functions
@@ -682,6 +688,7 @@ I'm not using these right now, but might revist in the future.
 (setq org-agenda-include-diary t)
 (setq org-refile-targets '((nil :maxlevel . 8)
 		     (org-agenda-files :maxlevel . 2)))
+(setq org-agenda-hide-tags-regexp ".")
 
 ;; Allow creating new nodes (including new files) when refiling
 (setq org-refile-allow-creating-parent-nodes 'confirm)
@@ -709,20 +716,20 @@ I'm not using these right now, but might revist in the future.
   (org-map-entries
    (lambda ()
      (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
-                (org-get-todo-state))
-       (let ((timestamp nil))
-         (save-excursion
-           (when (org-up-heading-safe)
-             (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
-         (when timestamp
-           (org-schedule nil timestamp)))))
+	  (org-get-todo-state))
+ (let ((timestamp nil))
+   (save-excursion
+     (when (org-up-heading-safe)
+       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+   (when timestamp
+     (org-schedule nil timestamp)))))
    "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
 
 (setq org-agenda-custom-commands
 '(("d" "daily dashboard"
    (
     (tags "+CATEGORY=\"inbox\"" 
-          ((org-agenda-overriding-header "Inbox")))
+	  ((org-agenda-overriding-header "Inbox")))
     (agenda "Schedule and Habits"
 	    ((org-agenda-span 'day)
 	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
@@ -731,17 +738,21 @@ I'm not using these right now, but might revist in the future.
 	      '(
 		(:name "Happening today" 
 		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-    (:name "Today's Meeting Notes" :category "meeting-notes")
+		(:name "Today's Meeting Notes" :category "meeting-notes")
 		(:name "Today's Schedule"
 		       :time-grid t)
 		(:name "Overdue" :deadline past)
 		(:name "Due Today" :deadline today)
 		(:name "High Priority" :priority "A")
+		(:name "Code Review Queue" :category "code review")
+		(:name "Code Review Bunker" :category "code review bunker")
+		(:name "Active Bugs" :category "bug")
+		(:name "Active Epics" :category "epic")
+    (:name "Easy" :tag ("easy"))
+    ;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
 		;;(:name "Inbox" :category "inbox")
 		(:name "Due Soon" :deadline future)
 		(:name "Poetry" :category "my poems")
-		(:name "Code Reviews" :category "code review")
-		(:name "Active Epics" :category "epic")
 		(:name "Family Stuff" :category "family")
 		(:name "Holidays" :category "holiday")
 		(:name "The Garden" :category "the-garden")
@@ -878,23 +889,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-						    search(query: $query, type: ISSUE, first: 100) {
-						      nodes {
-							... on PullRequest {
-							  title
-							  url
-							  repository {
-							    nameWithOwner
+						      search(query: $query, type: ISSUE, first: 100) {
+							nodes {
+							  ... on PullRequest {
+							    title
+							    url
+							    repository {
+							      nameWithOwner
+							    }
+							    author {
+							      login
+							    }
+							    updatedAt
+							    state
 							  }
-							  author {
-							    login
-							  }
-							  updatedAt
-							  state
 							}
 						      }
-						    }
-						  }"
+						    }"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -979,20 +990,19 @@ I'm not using these right now, but might revist in the future.
    )
 #+end_src
 
-
 * Spell Checking
 #+begin_src emacs-lisp :tangle no
-(use-package flyspell
-  :ensure nil 
-  :config
-  (setq ispell-program-name "aspell")
-  (add-hook 'text-mode-hook #'flyspell-mode)
-  (add-hook 'prog-mode-hook #'flyspell-prog-mode))
+  (use-package flyspell
+    :ensure nil 
+    :config
+    (setq ispell-program-name "aspell")
+    (add-hook 'text-mode-hook #'flyspell-mode)
+    (add-hook 'prog-mode-hook #'flyspell-prog-mode))
 
-(use-package flyspell-correct
-  :ensure nil 
-  :config
-  (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
+  (use-package flyspell-correct
+    :ensure nil 
+    :config
+    (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
 #+end_src
 * Elfeed Configuration
 #+begin_src emacs-lisp
@@ -1017,7 +1027,7 @@ I'm not using these right now, but might revist in the future.
 		     (kbd "p") 'elfeed-show-prev
 		     (kbd "b") 'elfeed-show-visit)
 
-    (setq elfeed-search-filter "+unread or +starred")
+    (setq elfeed-search-filter "+unread")
     (setq elfeed-sort-order 'descending))
 
   (use-package elfeed-protocol
@@ -1063,6 +1073,37 @@ I'm not using these right now, but might revist in the future.
 	(elfeed)
 	(elfeed-search-update--force)
 	(message "Reset complete"))))
+
+  ;; Set elfeed-show-entry-switch to display in a side window
+  (setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
+
+  ;; Define the display function for right split
+  (defun elfeed-display-buffer-right (buf)
+    (let ((display-buffer-mark-dedicated t))
+      (display-buffer 
+       buf
+       '((display-buffer-reuse-window display-buffer-in-side-window)
+	 (side . right)
+	 (window-width . 0.5)))))
+
+  ;; Optional: Make elfeed respect this two-pane setup when updating
+  (defadvice elfeed-search-update (after configure-windows activate)
+    (when (get-buffer "*elfeed-entry*")
+      (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
+
+  ;; Optional: Return focus to search buffer after showing entry
+  (defadvice elfeed-show-entry (after switch-to-search activate)
+    (select-window (get-buffer-window "*elfeed-search*")))
+
+  ;;(require 'elfeed-tube)
+  ;;(elfeed-tube-setup)
+  ;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
+  ;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
+  ;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
+  ;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
+  ;;(require 'elfeed-tube-mpv)
+  ;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
+  ;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
 #+end_src
 
 * GPTel Configuration
@@ -1251,8 +1292,8 @@ I'm not using these right now, but might revist in the future.
     (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
 
     (setq gptel-backend gptel-copilot-backend)
-	  (setq gptel-model 'claude-3.7-sonnet)
-	  (setq gptel-default-mode 'org-mode))
+    (setq gptel-model 'claude-3.7-sonnet)
+    (setq gptel-default-mode 'org-mode))
 #+end_src
 
 * GPTel Context Management
@@ -1344,7 +1385,7 @@ This block contains helper functions and variables used by multiple tools. These
 
   ;; Make sure repomix is available
   ;;(unless (executable-find "repomix")
-    ;;(message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
+  ;;(message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
 
 
   (defvar my/file-bookmarks
@@ -1362,28 +1403,28 @@ This block contains helper functions and variables used by multiple tools. These
     "Run repomix on DIRECTORY to generate context for LLM."
     (message "Running repomix on directory: %s" directory)
     (let* ((default-directory directory)
-           (output-buffer (generate-new-buffer " *repomix-output*"))
-           (command "repomix . -i 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
+	   (output-buffer (generate-new-buffer " *repomix-output*"))
+	   (command "repomix . -i 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
       (with-current-buffer output-buffer
-        (let ((exit-code (call-process-shell-command command nil t)))
-          (if (= exit-code 0)
-              (let ((output (buffer-string)))
-                (kill-buffer output-buffer)
-                output)
-            (let ((error-msg (format "Repomix failed with exit code %d: %s"
-                                     exit-code (buffer-string))))
-              (kill-buffer output-buffer)
-              (error error-msg)))))))
+	(let ((exit-code (call-process-shell-command command nil t)))
+	  (if (= exit-code 0)
+	      (let ((output (buffer-string)))
+		(kill-buffer output-buffer)
+		output)
+	    (let ((error-msg (format "Repomix failed with exit code %d: %s"
+				     exit-code (buffer-string))))
+	      (kill-buffer output-buffer)
+	      (error error-msg)))))))
 
   (gptel-make-tool
    :name "repomix"
    :function #'my/run-repomix
    :description "Run repomix on a directory to analyze and summarize code for context.
-This generates a well-structured overview of the codebase including directory structure,
-key files, important functions, and insights about the project architecture."
+  This generates a well-structured overview of the codebase including directory structure,
+  key files, important functions, and insights about the project architecture."
    :args '((:name "directory"
-                  :type string
-                  :description "Directory path to analyze with repomix"))
+		  :type string
+		  :description "Directory path to analyze with repomix"))
    :category "code-analysis")
 
   (register-gptel-tool "repomix")
@@ -1396,7 +1437,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp :tangle no
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-		FILE-ID can be a bookmark name or full path."
+		  FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1413,8 +1454,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-		    - 'emacs config' for my emacs configuration
-		    - 'inbox' for my org mode inbox file")
+		      - 'emacs config' for my emacs configuration
+		      - 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1424,103 +1465,103 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
 
 #+begin_src emacs-lisp :tangle no
-(defun my/parse-search-replace-blocks (content)
-  "Extract list of changes from content with search/replace blocks."
-  (with-temp-buffer
-    (insert content)
-    (let (changes)
-(goto-char (point-min))
-(while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
-  (push (list :search (match-string 1)
-	      :replace (match-string 2))
-	changes))
-(nreverse changes))))
+  (defun my/parse-search-replace-blocks (content)
+    "Extract list of changes from content with search/replace blocks."
+    (with-temp-buffer
+      (insert content)
+      (let (changes)
+	(goto-char (point-min))
+	(while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
+	  (push (list :search (match-string 1)
+		      :replace (match-string 2))
+		changes))
+	(nreverse changes))))
 
-(defun my/apply-changes (original-content changes)
-  "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
-  (with-temp-buffer
-    (insert original-content)
-    (dolist (change changes)
-(let ((search (plist-get change :search))
-      (replace (plist-get change :replace)))
-  (goto-char (point-min))
-  (while (search-forward search nil t)
-    (replace-match replace t t))))
-    (buffer-string)))
+  (defun my/apply-changes (original-content changes)
+    "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
+    (with-temp-buffer
+      (insert original-content)
+      (dolist (change changes)
+	(let ((search (plist-get change :search))
+	      (replace (plist-get change :replace)))
+	  (goto-char (point-min))
+	  (while (search-forward search nil t)
+	    (replace-match replace t t))))
+      (buffer-string)))
 
-(defun my/write-file (file-id content)
-  "Write file with changes in search/replace block format.
-	  FILE-ID can be a bookmark name or full path.
-	  CONTENT must contain search/replace blocks showing what to change."
-  (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
-   (file-path (expand-file-name
-	       (if bookmark 
-		   (plist-get bookmark :path)
-		 file-id)))
-   (original (my/read-file file-id))
-   (changes (my/parse-search-replace-blocks content))
-   (new-content (my/apply-changes original changes)))
-    ;; Check if content is unchanged
-    (when (string= original new-content)
-(error "No changes detected - the diff would be empty"))
-    ;; Validate content preservation
-    (when (< (length new-content) (* 0.95 (length original)))
-(error "Error: New content is significantly smaller than original"))
-    ;; Show git-style diff and confirm
-    (let* ((temp-orig (make-temp-file "gptel-orig-"))
-     (temp-new (make-temp-file "gptel-new-"))
-     (diff-buffer (get-buffer-create "*File Changes Preview*"))
-     (confirm-changes nil))
-;; Write both versions to temp files
-(write-region original nil temp-orig)
-(write-region new-content nil temp-new)
-;; Generate and display diff
-(with-current-buffer diff-buffer
-  (erase-buffer)
-  (insert "Proposed changes to " file-path ":\n\n")
-  (call-process "git" nil t nil "diff" "--no-index" "--color=never" temp-orig temp-new)
-  ;; Enable diff-mode for syntax highlighting
-  (diff-mode)
-  (goto-char (point-min))
-  (display-buffer diff-buffer)
-  (setq confirm-changes (yes-or-no-p "Apply these changes? ")))
-;; Cleanup
-(delete-file temp-orig)
-(delete-file temp-new)
-(kill-buffer diff-buffer)
-(if confirm-changes
-    (progn
-      (write-region new-content nil file-path)
-      (format "Updated %s" file-path))
-  (format "Changes cancelled by user. Seek feedback before trying again!")))))
+  (defun my/write-file (file-id content)
+    "Write file with changes in search/replace block format.
+	    FILE-ID can be a bookmark name or full path.
+	    CONTENT must contain search/replace blocks showing what to change."
+    (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
+	   (file-path (expand-file-name
+		       (if bookmark 
+			   (plist-get bookmark :path)
+			 file-id)))
+	   (original (my/read-file file-id))
+	   (changes (my/parse-search-replace-blocks content))
+	   (new-content (my/apply-changes original changes)))
+      ;; Check if content is unchanged
+      (when (string= original new-content)
+	(error "No changes detected - the diff would be empty"))
+      ;; Validate content preservation
+      (when (< (length new-content) (* 0.95 (length original)))
+	(error "Error: New content is significantly smaller than original"))
+      ;; Show git-style diff and confirm
+      (let* ((temp-orig (make-temp-file "gptel-orig-"))
+	     (temp-new (make-temp-file "gptel-new-"))
+	     (diff-buffer (get-buffer-create "*File Changes Preview*"))
+	     (confirm-changes nil))
+	;; Write both versions to temp files
+	(write-region original nil temp-orig)
+	(write-region new-content nil temp-new)
+	;; Generate and display diff
+	(with-current-buffer diff-buffer
+	  (erase-buffer)
+	  (insert "Proposed changes to " file-path ":\n\n")
+	  (call-process "git" nil t nil "diff" "--no-index" "--color=never" temp-orig temp-new)
+	  ;; Enable diff-mode for syntax highlighting
+	  (diff-mode)
+	  (goto-char (point-min))
+	  (display-buffer diff-buffer)
+	  (setq confirm-changes (yes-or-no-p "Apply these changes? ")))
+	;; Cleanup
+	(delete-file temp-orig)
+	(delete-file temp-new)
+	(kill-buffer diff-buffer)
+	(if confirm-changes
+	    (progn
+	      (write-region new-content nil file-path)
+	      (format "Updated %s" file-path))
+	  (format "Changes cancelled by user. Seek feedback before trying again!")))))
 
-(gptel-make-tool
- :name "write_file"
- :function #'my/write-file
- :description "Modify specific sections of a file while preserving all other content. If a failure occurs do not try again without asking me first. Offer to commit with git_commit after modifying files."
- :args '((:name "file-id"
-	  :type string
-	  :description "can be a full path or one of the following bookmarks:
-	    - 'emacs config' for my emacs configuration
-	    - 'inbox' for my org mode inbox file")
-   (:name "content"
-	  :type string
-	  :description "search/replace blocks showing what to change
+  (gptel-make-tool
+   :name "write_file"
+   :function #'my/write-file
+   :description "Modify specific sections of a file while preserving all other content. If a failure occurs do not try again without asking me first. Offer to commit with git_commit after modifying files."
+   :args '((:name "file-id"
+		  :type string
+		  :description "can be a full path or one of the following bookmarks:
+	      - 'emacs config' for my emacs configuration
+	      - 'inbox' for my org mode inbox file")
+	   (:name "content"
+		  :type string
+		  :description "search/replace blocks showing what to change
 
-The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
+  The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
 
-<<<<<<< SEARCH
-{text to find and replace}
-=======
-{new text to insert}
->>>>>>> REPLACE
+  <<<<<<< SEARCH
+  {text to find and replace}
+  =======
+  {new text to insert}
+  >>>>>>> REPLACE
 
-- Do NOT include lines meant to call write_file in the CONTENT arguement!
-- You can include multiple search/replace blocks to make multiple changes.
-- The search text must match exactly what is in the file.
-")))
+  - Do NOT include lines meant to call write_file in the CONTENT arguement!
+  - You can include multiple search/replace blocks to make multiple changes.
+  - The search text must match exactly what is in the file.
+  ")))
 
-(register-gptel-tool "write_file")
+  (register-gptel-tool "write_file")
 #+end_src
 
 ** Fetch_Webpage
@@ -1625,8 +1666,8 @@ The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly*
 #+begin_src emacs-lisp :tangle no
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
-	      PROJECT-ROOT is the directory to analyze.
-	      SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+		PROJECT-ROOT is the directory to analyze.
+		SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
     (let* ((project-root (expand-file-name project-root))
 	   (default-directory project-root)
 	   (context-parts '()))
@@ -1702,61 +1743,61 @@ The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly*
 
 * MCP Configuration
 #+begin_src emacs-lisp
-(require 'mcp-hub)
+  (require 'mcp-hub)
   (setq mcp-server-start-time 120) 
 
   (defun my/get-github-mcp-token ()
     (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
       (let ((token (plist-get auth :secret)))
-        (if (functionp token) (funcall token) token))))
+	(if (functionp token) (funcall token) token))))
 
   ;; Configure the GitHub MCP server (using Docker)
   (setq mcp-hub-servers
-        `(
-("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
-        ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
-          ("github-mcp" . (:command "docker"
-                          :args ("run" "-i" "--rm"
-                                 "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
-                                "ghcr.io/github/github-mcp-server")
-                          :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
-          ))
+	`(
+	  ("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
+	  ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+	  ("github-mcp" . (:command "docker"
+				    :args ("run" "-i" "--rm"
+					   "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+					   "ghcr.io/github/github-mcp-server")
+				    :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+	  ))
 
 
   (add-hook 'after-init-hook #'mcp-hub-start-all-server)
 
-    (defun gptel-mcp-register-tool ()
-  (interactive)
-  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-    (mapcar #'(lambda (tool)
-                (apply #'gptel-make-tool
-                       tool))
-            tools)))
+  (defun gptel-mcp-register-tool ()
+    (interactive)
+    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+      (mapcar #'(lambda (tool)
+		  (apply #'gptel-make-tool
+			 tool))
+	      tools)))
 
   (defun gptel-mcp-use-tool ()
     "Activate all MCP tools for gptel."
     (interactive)
     (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
       (mapcar #'(lambda (tool)
-                  (let ((path (list (plist-get tool :category)
-                                    (plist-get tool :name))))
-                    (add-to-list 'gptel-tools (gptel-get-tool path))))
-              tools)))
+		  (let ((path (list (plist-get tool :category)
+				    (plist-get tool :name))))
+		    (add-to-list 'gptel-tools (gptel-get-tool path))))
+	      tools)))
 
   (defun gptel-mcp-close-use-tool ()
     "Deactivate all MCP tools for gptel."
     (interactive)
     (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
       (mapcar #'(lambda (tool)
-                  (let ((path (list (plist-get tool :category)
-                                    (plist-get tool :name))))
-                    (setq gptel-tools
-                          (cl-remove-if #'(lambda (tool-item)
-                                            (equal path
-                                                   (list (gptel-tool-category tool-item)
-                                                         (gptel-tool-name tool-item))))
-                                        gptel-tools))))
-              tools)))
+		  (let ((path (list (plist-get tool :category)
+				    (plist-get tool :name))))
+		    (setq gptel-tools
+			  (cl-remove-if #'(lambda (tool-item)
+					    (equal path
+						   (list (gptel-tool-category tool-item)
+							 (gptel-tool-name tool-item))))
+					gptel-tools))))
+	      tools)))
 #+end_src
 
 * Path Copying Functions
@@ -1795,24 +1836,24 @@ The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly*
 
 * rg
 #+begin_src emacs-lisp
-(require 'rg)
+  (require 'rg)
 #+end_src
 
 * Custom magit functions
 ** Reset current buffer
 #+begin_src emacs-lisp
-(defun reset-file-to-revision ()
-  "Reset the current buffer's file to a specified revision using Magit."
-  (interactive)
-  (require 'magit)
-  (let* ((file-path (buffer-file-name))
-         (default-directory (magit-toplevel))
-         (revision (magit-read-branch-or-commit "Reset file to revision")))
-    (when (and file-path revision)
-      (let ((relative-file-path (file-relative-name file-path default-directory)))
-        (magit-run-git "checkout" revision "--" relative-file-path)
-        (revert-buffer t t t)
-        (message "File reset to %s" revision)))))
+  (defun reset-file-to-revision ()
+    "Reset the current buffer's file to a specified revision using Magit."
+    (interactive)
+    (require 'magit)
+    (let* ((file-path (buffer-file-name))
+	   (default-directory (magit-toplevel))
+	   (revision (magit-read-branch-or-commit "Reset file to revision")))
+      (when (and file-path revision)
+	(let ((relative-file-path (file-relative-name file-path default-directory)))
+	  (magit-run-git "checkout" revision "--" relative-file-path)
+	  (revert-buffer t t t)
+	  (message "File reset to %s" revision)))))
 #+end_src
 * Custom Commands For Projects
 
@@ -1821,18 +1862,18 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** Enable complex color support in compile buffers
 
 #+begin_src emacs-lisp
-(use-package ansi-color
-  :config
-  (defun my/colorize-compilation ()
-    "Colorize from `compilation-filter-start' to `point'."
-    (let ((inhibit-read-only t))
-      (ansi-color-apply-on-region
-       compilation-filter-start (point))))
-  
-  (add-hook 'compilation-filter-hook #'my/colorize-compilation)
-  
-  (setq ansi-color-for-comint-mode t)
-  (setq comint-terminfo-terminal "xterm-256color"))
+  (use-package ansi-color
+    :config
+    (defun my/colorize-compilation ()
+      "Colorize from `compilation-filter-start' to `point'."
+      (let ((inhibit-read-only t))
+	(ansi-color-apply-on-region
+	 compilation-filter-start (point))))
+
+    (add-hook 'compilation-filter-hook #'my/colorize-compilation)
+
+    (setq ansi-color-for-comint-mode t)
+    (setq comint-terminfo-terminal "xterm-256color"))
 #+end_src
 
 #+RESULTS:
@@ -1911,16 +1952,16 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/nx/build (target)
-  "Build the NX poc using NX for TARGET"
-  (interactive
-   (list (completing-read "Target to build: " 
-                         '("common" "angular" "web" "cli" "desktop" "browser")
-                         nil nil nil nil "common")))
-  (let* ((default-directory (my/get-project-path "nx-poc"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nx-pox-%s-build*" target))))
-    (compile (format "npx nx build %s" target) t)))
+  (defun bitwarden/nx/build (target)
+    "Build the NX poc using NX for TARGET"
+    (interactive
+     (list (completing-read "Target to build: " 
+			    '("common" "angular" "web" "cli" "desktop" "browser")
+			    nil nil nil nil "common")))
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-build*" target))))
+      (compile (format "npx nx build %s" target) t)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1937,16 +1978,16 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/nx/start (target)
-  "Start the NX poc using NX for TARGET"
-  (interactive
-   (list (completing-read "Target to build: " 
-                         '("cli")
-                         nil nil nil nil "cli")))
-  (let* ((default-directory (my/get-project-path "nx-poc"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nx-pox-%s-start*" target))))
-    (compile (format "npx nx start %s --verbose" target) t)))
+  (defun bitwarden/nx/start (target)
+    "Start the NX poc using NX for TARGET"
+    (interactive
+     (list (completing-read "Target to build: " 
+			    '("cli")
+			    nil nil nil nil "cli")))
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-start*" target))))
+      (compile (format "npx nx start %s --verbose" target) t)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1962,16 +2003,16 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** My Nix Systems Configuration
 
 #+begin_src emacs-lisp
-(defun my/nix/rebuild (system)
-  "Rebuild my nix config for the specified SYSTEM."
-  (interactive
-   (list (completing-read "System to rebuild: " 
-                         '("air" "bw")
-                         nil nil nil nil "air")))
-  (let* ((default-directory (my/get-project-path "nix"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-%s-rebuild*" system))))
-    (compile (format "nix develop --command rebuild %s" system) t)))
+  (defun my/nix/rebuild (system)
+    "Rebuild my nix config for the specified SYSTEM."
+    (interactive
+     (list (completing-read "System to rebuild: " 
+			    '("air" "bw")
+			    nil nil nil nil "air")))
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-%s-rebuild*" system))))
+      (compile (format "nix develop --command rebuild %s" system) t)))
 #+end_src
 
 #+RESULTS:
@@ -1991,44 +2032,44 @@ I use this space to write a bunch of custom commands for interacting with projec
 : my/nix-format
 
 #+begin_src emacs-lisp
-(defun my/nix/commit (message)
-  "Commit all files in my nix config with MESSAGE"
-  (interactive
-   (list (read-string "Commit message: " nil nil nil)))
-   (let* ((default-directory (my/get-project-path "nix"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-systems-commit*"))))
-    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+  (defun my/nix/commit (message)
+    "Commit all files in my nix config with MESSAGE"
+    (interactive
+     (list (read-string "Commit message: " nil nil nil)))
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-commit*"))))
+      (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/nix/update-flake-lock ()
-  "Update flake lock in my nix systems config"
-  (interactive)
-   (let* ((default-directory (my/get-project-path "nix"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
-    (compile "nix flake update" t)))
+  (defun my/nix/update-flake-lock ()
+    "Update flake lock in my nix systems config"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
+      (compile "nix flake update" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/nix/check-status ()
-  "Check the git status of my nix systems config"
-  (interactive)
-   (let* ((default-directory (my/get-project-path "nix"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-systems-git-status*"))))
-    (compile "git status" t)))
+  (defun my/nix/check-status ()
+    "Check the git status of my nix systems config"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-git-status*"))))
+      (compile "git status" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/nix/update-minecraft-packwize ()
-  "Update the pacckages for the packwiz server for my kids"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
-    (compile "packwiz " t)))
+  (defun my/nix/update-minecraft-packwize ()
+    "Update the pacckages for the packwiz server for my kids"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
+      (compile "packwiz " t)))
 #+end_src
 
 #+RESULTS:
@@ -2037,14 +2078,14 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** My notes
 
 #+begin_src emacs-lisp
-(defun my/quick-commit (message)
-  "Commit all files in my notes with MESSAGE"
-  (interactive
-   (list (read-string "Commit message: " nil nil nil)))
-   (let* ((default-directory (my/get-project-path "notes"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*notes-commit*"))))
-    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+  (defun my/quick-commit (message)
+    "Commit all files in my notes with MESSAGE"
+    (interactive
+     (list (read-string "Commit message: " nil nil nil)))
+    (let* ((default-directory (my/get-project-path "notes"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*notes-commit*"))))
+      (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
 #+end_src
 
 #+RESULTS:
@@ -2073,80 +2114,80 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/clients/browser/chrome/run ()
-  "Watch a chrome dev build of the extension"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "clients") "/apps/browser"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*clients-browser-chrome-run*"))))
-    (compile "npm run build:watch:chrome" t)))
+  (defun bitwarden/clients/browser/chrome/run ()
+    "Watch a chrome dev build of the extension"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "clients") "/apps/browser"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*clients-browser-chrome-run*"))))
+      (compile "npm run build:watch:chrome" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/clients/web/run ()
-  "Watch a build of the web vault"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "clients") "/apps/web"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*clients-web-run*"))))
-    (compile "npm run build:watch" t)))
+  (defun bitwarden/clients/web/run ()
+    "Watch a build of the web vault"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "clients") "/apps/web"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*clients-web-run*"))))
+      (compile "npm run build:watch" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/server/api/run ()
-  "Watch a build of the bitwarden server api"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "server") "/src/Api"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*bitwarden-server-api-run*"))))
-    (compile "dotnet run" t)))
+  (defun bitwarden/server/api/run ()
+    "Watch a build of the bitwarden server api"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "server") "/src/Api"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*bitwarden-server-api-run*"))))
+      (compile "dotnet run" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/server/identity/run ()
-  "Watch a build of the bitwarden server identity"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-    (compile "dotnet run" t)))
+  (defun bitwarden/server/identity/run ()
+    "Watch a build of the bitwarden server identity"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+      (compile "dotnet run" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/server/identity/run ()
-  "Watch a build of the bitwarden server identity"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-    (compile "dotnet run" t)))
+  (defun bitwarden/server/identity/run ()
+    "Watch a build of the bitwarden server identity"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+      (compile "dotnet run" t)))
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/server/run-sql ()
-  "Watch a build of the bitwarden server identity"
-  (interactive)
-   (let* ((default-directory (concat (my/get-project-path "server") "/src/dev"))
-   (compilation-buffer-name-function 
-    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-    (compile "dotnet run" t)))
+  (defun bitwarden/server/run-sql ()
+    "Watch a build of the bitwarden server identity"
+    (interactive)
+    (let* ((default-directory (concat (my/get-project-path "server") "/src/dev"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+      (compile "dotnet run" t)))
 #+end_src
 
 #+begin_src emacs-lisp 
-(defun bitwarden/clients/run-tests (&optional test-pattern)
-  "Run Jest tests for the clients monorepo.
-If TEST-PATTERN is provided, filter tests using the -t option."
-  (interactive "sTest pattern (optional): ")
-  (let* ((default-directory (my/get-project-path "clients"))
-         (command (if (and test-pattern (not (string-empty-p test-pattern)))
-                      (format "npm run test:watch -- -t '%s'" test-pattern)
-                    "npm run test:watch"))
-         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
-                          (format "*clients-jest-%s*" test-pattern)
-                        "*clients-jest*"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) buffer-name)))
-    (compile command t)))
+  (defun bitwarden/clients/run-tests (&optional test-pattern)
+    "Run Jest tests for the clients monorepo.
+  If TEST-PATTERN is provided, filter tests using the -t option."
+    (interactive "sTest pattern (optional): ")
+    (let* ((default-directory (my/get-project-path "clients"))
+	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
+			(format "npm run test:watch -- -t '%s'" test-pattern)
+		      "npm run test:watch"))
+	   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+			    (format "*clients-jest-%s*" test-pattern)
+			  "*clients-jest*"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) buffer-name)))
+      (compile command t)))
 #+end_src
 
 *** Run typechecking
@@ -2270,8 +2311,282 @@ creates a new window if needed or reuses an existing one."
   (org-agenda nil "d"))
 
 (evil-define-key 'normal 'global (kbd "C-o") 'my/org-agenda-daily-dashboard)
-#+end_src
+(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
 
+(evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+
+(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+(with-eval-after-load 'elfeed-show
+  (require 'hnreader)
+  (require 'evil)
+
+  (defun my/elfeed-show-hn-comments ()
+    "Open Hacker News comments for the link at point in elfeed-show-mode."
+    (interactive)
+    (message "my/elfeed-show-hn-comments invoked.")
+    (let ((link (elfeed-get-link-at-point)))
+      (message "Link at point: %s" link)
+      ;; Check if it's a valid HN item link
+      (if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+          (progn ;; Use progn to execute multiple forms
+            (message "Found HN link: %s. Calling hnreader-comment..." link)
+            ;; Pass the full link URL to hnreader-comment
+            (hnreader-comment link)
+            (message "hnreader-comment called with URL."))
+        (message "No Hacker News item link found at point or link doesn't match pattern."))))
+
+  (evil-define-key 'normal elfeed-show-mode-map
+    (kbd "c") #'my/elfeed-show-hn-comments))
+
+;;(defun my/open-ripgrep-result-in-split ()
+ ;; "Open the ripgrep result at point in a vertical split."
+  ;;(interactive)
+  ;;(let ((window-count (length (window-list))))
+   ;; (when (= window-count 1)
+    ;;  (split-window-right))
+    ;;(other-window 1)
+    ;;(compile-goto-error)))
+
+;;(with-eval-after-load 'rg
+  ;;(evil-define-key 'normal rg-mode-map (kbd "RET") 'my/open-ripgrep-result-in-split))
+
+;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
+;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
+;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+
+(evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
+
+(defun clean-notes-buffer ()
+  "Clean up a notes buffer by:
+  1. Deleting lines starting with '- State'
+  2. Removing extra blank lines
+  3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
+  4. Removing all indentation from the buffer"
+  (interactive)
+  (save-excursion
+    ;; Go to beginning of buffer
+    (goto-char (point-min))
+    
+    ;; Delete lines starting with "- State"
+    (while (re-search-forward "^- State.*$" nil t)
+      (replace-match ""))
+    
+    ;; Clean up consecutive blank lines
+    (goto-char (point-min))
+    (while (re-search-forward "^\n\\s-*\n" nil t)
+      (replace-match "\n"))
+    
+    ;; Convert note lines to new format (fixed to handle backslashes properly)
+    (goto-char (point-min))
+    (while (re-search-forward "^- Note taken on \\(\\[[0-9-]+ [A-Za-z]+\\( [0-9:]+\\)?\\]\\)\\s-*\\\\\\\\.*$" nil t)
+      (replace-match "** \\1"))
+    
+    ;; Remove all indentation (leading spaces/tabs) from all lines
+    (goto-char (point-min))
+    (while (re-search-forward "^[ \t]+" nil t)
+      (replace-match "")))
+  (message "Notes cleanup completed!"))
+
+(defun my/add-tag-to-headings-in-region (tag)
+  "Add TAG to all org headings in the selected region."
+  (interactive "sTag to add: ")
+  (save-excursion
+    (let ((end-marker (copy-marker (region-end)))
+          (pos (region-beginning)))
+      (goto-char pos)
+      (while (and (< (point) end-marker)
+                  (re-search-forward "^\\*+ " end-marker t))
+        (org-set-tags (cons tag (org-get-tags)))
+        (outline-next-heading)))))
+
+(defun my/projectile-find-file-in-all-projects ()
+  "Find file across all registered Projectile projects with improved performance."
+  (interactive)
+  (let* ((projects (projectile-relevant-known-projects))
+         (file-cache-var 'my/projectile-all-files-cache)
+         (cache-validity-seconds 300) ;; 5 minute cache validity
+         (current-time (current-time))
+         (use-cache (and (boundp file-cache-var)
+                         (< (float-time (time-subtract 
+                                         current-time
+                                         (get file-cache-var 'timestamp)))
+                            cache-validity-seconds)))
+         (cached-files (and use-cache (symbol-value file-cache-var))))
+    
+    (if use-cache
+        (message "Using cached file list (%d files)" (length cached-files))
+      ;; Build cache using external commands for speed
+      (message "Building file list from %d projects..." (length projects))
+      (let ((all-files '())
+            (temp-file (make-temp-file "projectile-files-")))
+        ;; Using external find/sort is much faster than pure elisp
+        (with-temp-file temp-file
+          (dolist (project projects)
+            (when (file-exists-p project)
+              (let* ((project-name (file-name-nondirectory 
+                                    (directory-file-name project)))
+                     ;; Add project name prefix to each file for context
+                     (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+                                  (shell-quote-argument project)
+                                  project-name)))
+                (call-process-shell-command cmd nil t)))))
+        
+        ;; Read results back and build alist of (display . filepath)
+        (with-temp-buffer
+          (insert-file-contents temp-file)
+          (goto-char (point-min))
+          (while (not (eobp))
+            (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+                   ;; Fix: Only split on the first colon
+                   (split-pos (string-match ":" line))
+                   (project-name (when split-pos (substring line 0 split-pos)))
+                   (rel-file (when split-pos (substring line (1+ split-pos))))
+                   (full-path (when (and project-name rel-file)
+                                (expand-file-name
+                                 (string-remove-prefix "./" rel-file)
+                                 (car (seq-filter (lambda (p) 
+                                                    (string-suffix-p project-name p))
+                                                  projects))))))
+              (when (and project-name rel-file full-path)
+                (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+            (forward-line 1)))
+        
+        (delete-file temp-file)
+        ;; Save and timestamp the cache
+        (set file-cache-var all-files)
+        (put file-cache-var 'timestamp current-time)
+        (message "Found %d files across projects" (length all-files))))
+    
+    ;; Use the cached or newly-built list
+    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+      (if file-list
+          ;; Use completing-read for the selection interface
+          (let* ((chosen (completing-read "Find file in projects: " 
+                                         (mapcar #'car file-list) nil t))
+                 (file-path (cdr (assoc chosen file-list))))
+            (when file-path
+              (find-file file-path)))
+        (message "No files found across projects")))))
+
+(defun my/wikipedia-search-to-org (search-term)
+  "Search Wikipedia for SEARCH-TERM, fetch the first result,
+and display its content converted to Org format in a new buffer.
+Requires `pandoc` to be installed."
+  (interactive "sSearch Wikipedia for: ")
+  (unless (executable-find "pandoc")
+    (error "pandoc executable not found. Please install pandoc."))
+
+  (require 'json)
+  (require 'url)
+
+  (let* ((encoded-search-term (url-hexify-string search-term))
+         (search-api-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json"
+                                 encoded-search-term))
+         search-json-string search-data page-title page-url html-content org-output org-buffer-name)
+
+    (with-current-buffer (url-retrieve-synchronously search-api-url)
+      (goto-char (point-min))
+      (unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+        (kill-buffer (current-buffer))
+        (error "Could not find HTTP headers in Wikipedia API response"))
+      (setq search-json-string (buffer-substring-no-properties (point) (point-max)))
+      (kill-buffer (current-buffer)))
+
+    (unless (and search-json-string (not (string-empty-p search-json-string)))
+      (error "Failed to fetch or empty search results from Wikipedia API for: %s" search-term))
+
+    (condition-case err
+        ;; Explicitly use :array-type 'list to ensure lists are returned
+        (setq search-data (json-parse-string search-json-string :array-type 'list))
+      (error (error "Failed to parse JSON: %s. JSON was: %s" (error-message-string err) search-json-string)))
+
+    ;; Now the checks should work as expected with lists
+    (unless (and (listp search-data)
+                 (>= (length search-data) 4)
+                 (listp (nth 1 search-data)) (consp (nth 1 search-data)) ; Ensure titles list is non-empty
+                 (stringp (car (nth 1 search-data))) ; Ensure first title is a string
+                 (listp (nth 3 search-data)) (consp (nth 3 search-data)) ; Ensure URLs list is non-empty
+                 (stringp (car (nth 3 search-data)))) ; Ensure first URL is a string
+      (error "Unexpected JSON structure, empty result, or non-string title/URL from Wikipedia API. Data: %S" search-data))
+
+    (setq page-title (car (nth 1 search-data)))
+    (setq page-url (car (nth 3 search-data)))
+
+    (with-current-buffer (url-retrieve-synchronously page-url)
+      (goto-char (point-min))
+      (unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+        (kill-buffer (current-buffer))
+        (error "Could not find HTTP headers in Wikipedia page response for %s" page-url))
+      (setq html-content (buffer-substring-no-properties (point) (point-max)))
+      (kill-buffer (current-buffer)))
+
+    (unless (and html-content (not (string-empty-p html-content)))
+      (error "Failed to fetch or empty page content from URL: %s" page-url))
+
+    (setq org-output
+          (with-temp-buffer
+            (insert html-content)
+            (shell-command-on-region (point-min) (point-max)
+                                     "pandoc -f html -t org --wrap=none"
+                                     (current-buffer) t) ; t to replace
+            (buffer-string)))
+
+    (if (or (null org-output) (string-empty-p org-output))
+        (error "Pandoc conversion resulted in empty output for %s" page-title)
+      (setq org-buffer-name (format "*Wikipedia: %s (Org)*" page-title))
+      (with-current-buffer (get-buffer-create org-buffer-name)
+        (erase-buffer)
+        (insert org-output)
+        (when (fboundp 'org-mode) (org-mode))
+        (goto-char (point-min)))
+      (switch-to-buffer-other-window org-buffer-name)
+      (message "Wikipedia page '%s' rendered as Org." page-title))))
+
+(defun my/org-refile-to-new-file ()
+  "Refile current heading to a new file named after the heading."
+  (interactive)
+  (let* ((heading (nth 4 (org-heading-components)))
+         (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
+         (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
+    (when (y-or-n-p (format "Create and refile to %s? " new-file))
+      (with-temp-buffer
+        (write-file new-file))
+      (org-refile nil nil (list heading new-file nil nil)))))
+
+(defun my/open-pr-url-at-point ()
+  "Open the PR_URL property of the current org agenda item."
+  (interactive)
+  (let* ((marker (or (org-get-at-bol 'org-marker)
+                     (org-agenda-error)))
+         (buffer (marker-buffer marker))
+         (pos (marker-position marker))
+         url)
+    (with-current-buffer buffer
+      (save-excursion
+        (goto-char pos)
+        (setq url (org-entry-get (point) "PR_URL"))))
+    (when url
+      (browse-url url))))
+
+;; Bind it to a key in org-agenda-mode-map
+(define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
+#+end_src
 #+RESULTS:
 
 * Provide Init
@@ -2282,6 +2597,6 @@ creates a new window if needed or reuses an existing one."
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-		  ;;; init.el ends here
+		    ;;; init.el ends here
 #+end_src
 
