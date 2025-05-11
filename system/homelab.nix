@@ -26,6 +26,9 @@
 in {
   imports = [
     ./raspberrypiimage.nix
+    ./with/trait/has-swapfile.nix
+    ./with/user/with/secret/freshrss.nix
+    {has-swapfile.sizeGb = 2;}
   ];
 
   fileSystems = {
@@ -42,18 +45,20 @@ in {
     hostName = "homelab";
 
     /*
-      Untoggle this if you ever get DHCP working
+    Untoggle this if you ever get DHCP working
     */
     interfaces.end0 = {
       useDHCP = false;
-      ipv4.addresses = [{
-        address = "192.168.1.45";
-        prefixLength = 24;
-      }];
+      ipv4.addresses = [
+        {
+          address = "192.168.1.45";
+          prefixLength = 24;
+        }
+      ];
     };
 
-    defaultGateway = "192.168.1.1"; 
-    nameservers = ["127.0.0.1"];     
+    defaultGateway = "192.168.1.1";
+    nameservers = ["127.0.0.1"];
     firewall.allowedTCPPorts = [
       53 # DNS
       #67 # DHCP server
@@ -66,7 +71,7 @@ in {
     ];
 
     firewall.allowedUDPPorts = [
-      53  # DNS
+      53 # DNS
       #67  # DHCP server
       #68  # DHCP client
     ];
@@ -85,43 +90,51 @@ in {
     useRoutingFeatures = "client";
   };
 
-
-systemd.services.tailscale-cert = {
-  description = "Tailscale certificate renewal";
-  wantedBy = [ "multi-user.target" ];
-  after = [ "tailscaled.service" "network-online.target" ];
-  before = [ "nginx.service" ];
-  path = [ pkgs.bash pkgs.coreutils pkgs.tailscale ];
-  
-  script = ''
-    # Generate the Tailscale certificate
-    tailscale cert homelab.tail357e32.ts.net
-    
-    # Copy to nginx directory with proper permissions
-    cp /var/lib/tailscale/certs/homelab.tail357e32.ts.net.crt /etc/nginx/ssl/
-    cp /var/lib/tailscale/certs/homelab.tail357e32.ts.net.key /etc/nginx/ssl/
-    
-    # Set proper ownership and permissions
-    chown nginx:nginx /etc/nginx/ssl/homelab.tail357e32.ts.net.*
-    chmod 644 /etc/nginx/ssl/homelab.tail357e32.ts.net.crt
-    chmod 600 /etc/nginx/ssl/homelab.tail357e32.ts.net.key
-  '';
-  
-  serviceConfig = {
-    Type = "oneshot";
-    RemainAfterExit = true;
-  };
+services.freshrss = {
+  enable = true;
+  defaultUser = "me";
+  passwordFile = config.age.secrets.freshrss.path;
+  baseUrl = "https://homelab.tail357e32.ts.net/rss";
+  virtualHost = "homelab-server";
+  extensions = [pkgs.freshrss-extensions.youtube];
 };
 
-systemd.timers.tailscale-cert = {
-  description = "Regularly renew Tailscale certificate";
-  wantedBy = [ "timers.target" ];
-  timerConfig = {
-    OnBootSec = "1m"; 
-    OnUnitActiveSec = "30d"; 
-    Unit = "tailscale-cert.service";
+  systemd.services.tailscale-cert = {
+    description = "Tailscale certificate renewal";
+    wantedBy = ["multi-user.target"];
+    after = ["tailscaled.service" "network-online.target"];
+    before = ["nginx.service"];
+    path = [pkgs.bash pkgs.coreutils pkgs.tailscale];
+
+    script = ''
+      # Generate the Tailscale certificate
+      tailscale cert homelab.tail357e32.ts.net
+
+      # Copy to nginx directory with proper permissions
+      cp /var/lib/tailscale/certs/homelab.tail357e32.ts.net.crt /etc/nginx/ssl/
+      cp /var/lib/tailscale/certs/homelab.tail357e32.ts.net.key /etc/nginx/ssl/
+
+      # Set proper ownership and permissions
+      chown nginx:nginx /etc/nginx/ssl/homelab.tail357e32.ts.net.*
+      chmod 644 /etc/nginx/ssl/homelab.tail357e32.ts.net.crt
+      chmod 600 /etc/nginx/ssl/homelab.tail357e32.ts.net.key
+    '';
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
   };
-};
+
+  systemd.timers.tailscale-cert = {
+    description = "Regularly renew Tailscale certificate";
+    wantedBy = ["timers.target"];
+    timerConfig = {
+      OnBootSec = "1m";
+      OnUnitActiveSec = "30d";
+      Unit = "tailscale-cert.service";
+    };
+  };
 
   services.adguardhome = {
     enable = true;
@@ -358,7 +371,7 @@ systemd.timers.tailscale-cert = {
   systemd.services.nginx-init = {
     description = "Initialize Nginx SSL certificates";
     wantedBy = ["multi-user.target"];
-    before = ["nginx.service"]; # 
+    before = ["nginx.service"]; #
     script = ''
       if [ ! -f /etc/nginx/ssl/homelab.key ]; then
         ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 \
@@ -382,12 +395,12 @@ systemd.timers.tailscale-cert = {
 
     environmentFile = config.age.secrets.homelab-vaultwarden-env-file.path;
     config = {
-      ROCKET_ADDRESS = "127.0.0.1"; 
-      ROCKET_PORT = 8222;           
-      WEBSOCKET_ENABLED = true; 
+      ROCKET_ADDRESS = "127.0.0.1";
+      ROCKET_PORT = 8222;
+      WEBSOCKET_ENABLED = true;
       # SIGNUPS_ALLOWED = false;
       # SIGNUPS_VERIFY = false;
-      DOMAIN = "https://homelab.tail357e32.ts.net/vaultwarden/"; 
+      DOMAIN = "https://homelab.tail357e32.ts.net/vaultwarden/";
       WEB_VAULT_ENABLED = true;
       SMTP_HOST = "box.addisonbeck.com";
       SMTP_FROM = "vaultwarden@addisonbeck.com";
@@ -441,6 +454,26 @@ systemd.timers.tailscale-cert = {
               #proxy_redirect off;
             '';
           };
+
+"/rss/" = {
+  root = "${pkgs.freshrss}/p";
+  index = "index.php index.html index.htm";
+  tryFiles = "$uri $uri/ index.php";
+};
+
+"~ ^/rss/(.+\\.php)(/.*)?$" = { 
+  root = "${pkgs.freshrss}/p";
+  extraConfig = ''
+    fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
+    fastcgi_split_path_info ^(/rss/.+\.php)(/.*)$;
+    # By default, the variable PATH_INFO is not set under PHP-FPM
+    # But FreshRSS API greader.php need it. If you have a "Bad Request" error, double check this var!
+    set $path_info $fastcgi_path_info;
+    fastcgi_param PATH_INFO $path_info;
+    include ${pkgs.nginx}/conf/fastcgi_params;
+    include ${pkgs.nginx}/conf/fastcgi.conf;
+  '';
+};
           "/grafana/" = {
             proxyWebsockets = true;
             extraConfig = ''
@@ -451,13 +484,6 @@ systemd.timers.tailscale-cert = {
             '';
           };
 
-          "/vaultwarden" = {
-            proxyPass = "http://127.0.0.1:8222";
-            proxyWebsockets = true;
-            extraConfig = ''
-            add_header X-Robots-Tag "none";
-            '';
-          };
           "/" = {
             return = ''
               200 '<!DOCTYPE html>
@@ -480,6 +506,7 @@ systemd.timers.tailscale-cert = {
                   <div class="service"><a href="/adguard/">AdGuard Home</a></div>
                   <div class="service"><a href="/grafana/">Grafana</a></div>
                   <div class="service"><a href="/prometheus/">Prometheus</a></div>
+                  <div class="service"><a href="/rss/">FreshRSS</a></div>
                 </div>
               </body>
               </html>'
@@ -493,10 +520,10 @@ systemd.timers.tailscale-cert = {
     };
   };
 
-systemd.services.nginx = {
-  requires = [ "tailscale-cert.service" ];
-  after = [ "tailscale-cert.service" ];
-};
+  systemd.services.nginx = {
+    requires = ["tailscale-cert.service"];
+    after = ["tailscale-cert.service"];
+  };
 
   system.stateVersion = "24.11";
 }

@@ -10,7 +10,7 @@ in {
   "bw-mail-password.age".publicKeys = [me_key];
   "gmail-password.age".publicKeys = [me_key];
   "weechat-plugins-config.age".publicKeys = [me_key];
-  "freshrss.age".publicKeys = [me_key rss_key];
+  "freshrss.age".publicKeys = [me_key rss_key homelab_key];
   "authinfo.age".publicKeys = [me_key];
   "homelab-grafana-admin-password.age".publicKeys = [me_key homelab_key];
   "homelab-adguard-admin-password.age".publicKeys = [me_key homelab_key];

@@ -680,131 +680,131 @@ I'm not using these right now, but might revist in the future.
 
 * Agenda Configuration
 #+begin_src emacs-lisp
-(setq org-agenda-block-separator nil)
-(setq org-agenda-window-setup 'current-window)
-(setq org-agenda-timegrid-use-ampm t)
-(setq org-agenda-time-leading-zero t)
-(setq org-agenda-todo-keyword-format "%s")
-(setq org-agenda-include-diary t)
-(setq org-refile-targets '((nil :maxlevel . 8)
-		     (org-agenda-files :maxlevel . 2)))
-(setq org-agenda-hide-tags-regexp ".")
+  (setq org-agenda-block-separator nil)
+  (setq org-agenda-window-setup 'current-window)
+  (setq org-agenda-timegrid-use-ampm t)
+  (setq org-agenda-time-leading-zero t)
+  (setq org-agenda-todo-keyword-format "%s")
+  (setq org-agenda-include-diary t)
+  (setq org-refile-targets '((nil :maxlevel . 8)
+			     (org-agenda-files :maxlevel . 2)))
+  (setq org-agenda-hide-tags-regexp ".")
 
-;; Allow creating new nodes (including new files) when refiling
-(setq org-refile-allow-creating-parent-nodes 'confirm)
+  ;; Allow creating new nodes (including new files) when refiling
+  (setq org-refile-allow-creating-parent-nodes 'confirm)
 
-;; Use the full outline paths for refile targets
-(setq org-refile-use-outline-path nil)
+  ;; Use the full outline paths for refile targets
+  (setq org-refile-use-outline-path nil)
 
-;; Completes in steps so you can select a heading after selecting the file
-(setq org-outline-path-complete-in-steps nil)
+  ;; Completes in steps so you can select a heading after selecting the file
+  (setq org-outline-path-complete-in-steps nil)
 
-(require 'diary-lib)
+  (require 'diary-lib)
 
-(use-package org-super-agenda
-  :after org-agenda
-  :config
-  (setq org-super-agenda-header-map nil)  
-  (setq org-super-agenda-header-properties nil)
-  (org-super-agenda-mode))
+  (use-package org-super-agenda
+    :after org-agenda
+    :config
+    (setq org-super-agenda-header-map nil)  
+    (setq org-super-agenda-header-properties nil)
+    (org-super-agenda-mode))
 
-(setq warning-suppress-types '((org-element)))
+  (setq warning-suppress-types '((org-element)))
 
-(defun my/inherit-meeting-times ()
-  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
-  (interactive)
-  (org-map-entries
-   (lambda ()
-     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
-	  (org-get-todo-state))
- (let ((timestamp nil))
-   (save-excursion
-     (when (org-up-heading-safe)
-       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
-   (when timestamp
-     (org-schedule nil timestamp)))))
-   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
+  (defun my/inherit-meeting-times ()
+    "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
+    (interactive)
+    (org-map-entries
+     (lambda ()
+       (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
+		  (org-get-todo-state))
+	 (let ((timestamp nil))
+	   (save-excursion
+	     (when (org-up-heading-safe)
+	       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+	   (when timestamp
+	     (org-schedule nil timestamp)))))
+     "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
 
-(setq org-agenda-custom-commands
-'(("d" "daily dashboard"
-   (
-    (tags "+CATEGORY=\"inbox\"" 
-	  ((org-agenda-overriding-header "Inbox")))
-    (agenda "Schedule and Habits"
-	    ((org-agenda-span 'day)
-	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-	     (org-agenda-overriding-header " ")
-	     (org-super-agenda-groups
-	      '(
-		(:name "Happening today" 
-		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-		(:name "Today's Meeting Notes" :category "meeting-notes")
-		(:name "Today's Schedule"
-		       :time-grid t)
-		(:name "Overdue" :deadline past)
-		(:name "Due Today" :deadline today)
-		(:name "High Priority" :priority "A")
-		(:name "Code Review Queue" :category "code review")
-		(:name "Code Review Bunker" :category "code review bunker")
-		(:name "Active Bugs" :category "bug")
-		(:name "Active Epics" :category "epic")
-    (:name "Easy" :tag ("easy"))
-    ;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
-		;;(:name "Inbox" :category "inbox")
-		(:name "Due Soon" :deadline future)
-		(:name "Poetry" :category "my poems")
-		(:name "Family Stuff" :category "family")
-		(:name "Holidays" :category "holiday")
-		(:name "The Garden" :category "the-garden")
-		(:name "Logs" :category "log")
-		(:name "Re: Me" :category "me")
-		(:name "Re: Emily" :category "emily")
-		(:name "Re: Lincoln" :category "lincoln")
-		(:name "Re: Nora" :category "nora")
-		(:name "Re: Fern" :category "fern")
-		(:name "Re: Harry" :category "harry")
-		(:name "AM Habits" :category "personal habits am")
-		(:name "Midday Habits" :category "personal habits midday")
-		(:name "PM Habits" :category "personal habits pm")
-		(:name "Any Time Habits" :category "personal habits any time")
-		(:name "Work Habits" :category "work habits")
-		(:auto-category t)
-		))))))
-  ("w" "Weekly overview with super-agenda"
-   ((agenda ""
-	    ((org-agenda-span 7)                      ;; Show 7 days
-	     (org-agenda-start-on-weekday nil)        ;; Start from current day
-	     (org-agenda-time-grid '((daily today require-timed)
-				     (800 1000 1200 1400 1600 1800 2000)
-				     "......" "----------------"))  ;; Time grid config
-	     (org-agenda-include-deadlines nil)       ;; No deadlines
-	     (org-agenda-skip-scheduled-if-done t)     
-	     (org-agenda-skip-deadline-if-done t)
-	     (org-agenda-skip-scheduled-delay-if-done t)
-	     (org-agenda-skip-function                ;; Skip scheduled items
-	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
-	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-	     (org-agenda-todo-keyword-format "")
-	     (org-agenda-show-all-dates t)
-	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-	     (org-agenda-format-date "%A %Y-%m-%d")
-	     ;; Super agenda groups
-	     (org-super-agenda-groups
-	      '(
-		(:name "Happening today" 
-		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-		(:name "Today's Schedule"
-		       :time-grid t)
-		))))))
-  ))
+  (setq org-agenda-custom-commands
+	'(("d" "daily dashboard"
+	   (
+	    (tags "+CATEGORY=\"inbox\"" 
+		  ((org-agenda-overriding-header "Inbox")))
+	    (agenda "Schedule and Habits"
+		    ((org-agenda-span 'day)
+		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+		     (org-agenda-overriding-header " ")
+		     (org-super-agenda-groups
+		      '(
+			(:name "Happening today" 
+			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+			(:name "Today's Meeting Notes" :category "meeting-notes")
+			(:name "Today's Schedule"
+			       :time-grid t)
+			(:name "Overdue" :deadline past)
+			(:name "Due Today" :deadline today)
+			(:name "High Priority" :priority "A")
+			(:name "Code Review Queue" :category "code review")
+			(:name "Code Review Bunker" :category "code review bunker")
+			(:name "Active Bugs" :category "bug")
+			(:name "Active Epics" :category "epic")
+			(:name "Easy" :tag ("easy"))
+			;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
+			;;(:name "Inbox" :category "inbox")
+			(:name "Due Soon" :deadline future)
+			(:name "Poetry" :category "my poems")
+			(:name "Family Stuff" :category "family")
+			(:name "Holidays" :category "holiday")
+			(:name "The Garden" :category "the-garden")
+			(:name "Logs" :category "log")
+			(:name "Re: Me" :category "me")
+			(:name "Re: Emily" :category "emily")
+			(:name "Re: Lincoln" :category "lincoln")
+			(:name "Re: Nora" :category "nora")
+			(:name "Re: Fern" :category "fern")
+			(:name "Re: Harry" :category "harry")
+			(:name "AM Habits" :category "personal habits am")
+			(:name "Midday Habits" :category "personal habits midday")
+			(:name "PM Habits" :category "personal habits pm")
+			(:name "Any Time Habits" :category "personal habits any time")
+			(:name "Work Habits" :category "work habits")
+			(:auto-category t)
+			))))))
+	  ("w" "Weekly overview with super-agenda"
+	   ((agenda ""
+		    ((org-agenda-span 7)                      ;; Show 7 days
+		     (org-agenda-start-on-weekday nil)        ;; Start from current day
+		     (org-agenda-time-grid '((daily today require-timed)
+					     (800 1000 1200 1400 1600 1800 2000)
+					     "......" "----------------"))  ;; Time grid config
+		     (org-agenda-include-deadlines nil)       ;; No deadlines
+		     (org-agenda-skip-scheduled-if-done t)     
+		     (org-agenda-skip-deadline-if-done t)
+		     (org-agenda-skip-scheduled-delay-if-done t)
+		     (org-agenda-skip-function                ;; Skip scheduled items
+		      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+		     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+		     (org-agenda-todo-keyword-format "")
+		     (org-agenda-show-all-dates t)
+		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+		     (org-agenda-format-date "%A %Y-%m-%d")
+		     ;; Super agenda groups
+		     (org-super-agenda-groups
+		      '(
+			(:name "Happening today" 
+			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+			(:name "Today's Schedule"
+			       :time-grid t)
+			))))))
+	  ))
 
-(setq org-agenda-time-grid-use-ampm t)
-(setq org-agenda-with-times t)
-(setq org-agenda-time-format "%I:%M%p")
-(setq org-agenda-prefix-format
-'((agenda . " ○ %t ")
-  (tags   . "○ ")
-  (todo   . "○ ")))
+  (setq org-agenda-time-grid-use-ampm t)
+  (setq org-agenda-with-times t)
+  (setq org-agenda-time-format "%I:%M%p")
+  (setq org-agenda-prefix-format
+	'((agenda . " ○ %t ")
+	  (tags   . "○ ")
+	  (todo   . "○ ")))
 #+end_src
 
 * Calfw
@@ -889,23 +889,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-						      search(query: $query, type: ISSUE, first: 100) {
-							nodes {
-							  ... on PullRequest {
-							    title
-							    url
-							    repository {
-							      nameWithOwner
+							search(query: $query, type: ISSUE, first: 100) {
+							  nodes {
+							    ... on PullRequest {
+							      title
+							      url
+							      repository {
+								nameWithOwner
+							      }
+							      author {
+								login
+							      }
+							      updatedAt
+							      state
 							    }
-							    author {
-							      login
-							    }
-							    updatedAt
-							    state
 							  }
 							}
-						      }
-						    }"
+						      }"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -1420,8 +1420,8 @@ This block contains helper functions and variables used by multiple tools. These
    :name "repomix"
    :function #'my/run-repomix
    :description "Run repomix on a directory to analyze and summarize code for context.
-  This generates a well-structured overview of the codebase including directory structure,
-  key files, important functions, and insights about the project architecture."
+    This generates a well-structured overview of the codebase including directory structure,
+    key files, important functions, and insights about the project architecture."
    :args '((:name "directory"
 		  :type string
 		  :description "Directory path to analyze with repomix"))
@@ -1437,7 +1437,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp :tangle no
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-		  FILE-ID can be a bookmark name or full path."
+		    FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1454,8 +1454,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-		      - 'emacs config' for my emacs configuration
-		      - 'inbox' for my org mode inbox file")
+			- 'emacs config' for my emacs configuration
+			- 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1491,8 +1491,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
   (defun my/write-file (file-id content)
     "Write file with changes in search/replace block format.
-	    FILE-ID can be a bookmark name or full path.
-	    CONTENT must contain search/replace blocks showing what to change."
+	      FILE-ID can be a bookmark name or full path.
+	      CONTENT must contain search/replace blocks showing what to change."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1542,24 +1542,24 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-	      - 'emacs config' for my emacs configuration
-	      - 'inbox' for my org mode inbox file")
+		- 'emacs config' for my emacs configuration
+		- 'inbox' for my org mode inbox file")
 	   (:name "content"
 		  :type string
 		  :description "search/replace blocks showing what to change
 
-  The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
+    The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
 
-  <<<<<<< SEARCH
-  {text to find and replace}
-  =======
-  {new text to insert}
-  >>>>>>> REPLACE
+    <<<<<<< SEARCH
+    {text to find and replace}
+    =======
+    {new text to insert}
+    >>>>>>> REPLACE
 
-  - Do NOT include lines meant to call write_file in the CONTENT arguement!
-  - You can include multiple search/replace blocks to make multiple changes.
-  - The search text must match exactly what is in the file.
-  ")))
+    - Do NOT include lines meant to call write_file in the CONTENT arguement!
+    - You can include multiple search/replace blocks to make multiple changes.
+    - The search text must match exactly what is in the file.
+    ")))
 
   (register-gptel-tool "write_file")
 #+end_src
@@ -1666,8 +1666,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 #+begin_src emacs-lisp :tangle no
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
-		PROJECT-ROOT is the directory to analyze.
-		SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+		  PROJECT-ROOT is the directory to analyze.
+		  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
     (let* ((project-root (expand-file-name project-root))
 	   (default-directory project-root)
 	   (context-parts '()))
@@ -1965,16 +1965,16 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/nx/serve (target)
-  "Serve the NX poc using NX for TARGET"
-  (interactive
-   (list (completing-read "Target to build: " 
-                         '("web" "desktop" "browser")
-                         nil nil nil nil "web")))
-  (let* ((default-directory (my/get-project-path "nx-poc"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
-    (compile (format "npx nx serve %s" target) t)))
+  (defun bitwarden/nx/serve (target)
+    "Serve the NX poc using NX for TARGET"
+    (interactive
+     (list (completing-read "Target to build: " 
+			    '("web" "desktop" "browser")
+			    nil nil nil nil "web")))
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
+      (compile (format "npx nx serve %s" target) t)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1991,13 +1991,13 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun bitwarden/nx/cleanup ()
-  "Clean up the nx poc project"
-  (interactive)
-  (let* ((default-directory (my/get-project-path "nx-poc"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nx-poc-cleanup*"))))
-    (compile "rm -rf node_modules ; rm -rf .nx" t)))
+  (defun bitwarden/nx/cleanup ()
+    "Clean up the nx poc project"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-cleanup*"))))
+      (compile "rm -rf node_modules ; rm -rf .nx" t)))
 #+end_src
 
 ** My Nix Systems Configuration
@@ -2019,13 +2019,13 @@ I use this space to write a bunch of custom commands for interacting with projec
 : my/nix-rebuild
 
 #+begin_src emacs-lisp
-(defun my/nix/format ()
-  "Run the formatters in my nix systems configuration"
-  (interactive)
-  (let* ((default-directory (my/get-project-path "nix"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*nix-systems-format*"))))
-    (compile "nix develop --command apply formatting" t)))
+  (defun my/nix/format ()
+    "Run the formatters in my nix systems configuration"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-format*"))))
+      (compile "nix develop --command apply formatting" t)))
 #+end_src
 
 #+RESULTS:
@@ -2176,7 +2176,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp 
   (defun bitwarden/clients/run-tests (&optional test-pattern)
     "Run Jest tests for the clients monorepo.
-  If TEST-PATTERN is provided, filter tests using the -t option."
+    If TEST-PATTERN is provided, filter tests using the -t option."
     (interactive "sTest pattern (optional): ")
     (let* ((default-directory (my/get-project-path "clients"))
 	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
@@ -2195,397 +2195,397 @@ I use this space to write a bunch of custom commands for interacting with projec
 * Custom Keymaps
 
 #+begin_src emacs-lisp
-(define-prefix-command 'my-custom-prefix)
-(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
-(which-key-add-key-based-replacements "C-a" "my commands")
+  (define-prefix-command 'my-custom-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
+  (which-key-add-key-based-replacements "C-a" "my commands")
 
-;; create "go" prefix map
-(define-prefix-command 'my-go-prefix)
-(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
-(which-key-add-key-based-replacements "C-a g" "go")
+  ;; create "go" prefix map
+  (define-prefix-command 'my-go-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
+  (which-key-add-key-based-replacements "C-a g" "go")
 
-(defun my/open-compilation-file-in-other-window ()
-  "open the current compilation match in another window.
-creates a new window if needed or reuses an existing one."
-  (interactive)
-  (let ((window-count (length (window-list))))
-    (condition-case err
-        (if (= window-count 1)
-            ;; only one window, use built-in function that creates a new window
-            (compilation-display-error)
-          ;; multiple windows exist, use the next window
-          (let ((this-window (selected-window)))
-            (other-window 1)
-            (let ((target-window (selected-window)))
-              (select-window this-window)
-              ;; use next-error-no-select to get location without changing windows
-              (let ((location (next-error-no-select)))
-                (select-window target-window)
-                (switch-to-buffer (marker-buffer (car location)))
-                (goto-char (marker-position (car location)))))))
-      ;; catch any errors silently
-      (error (message "no valid location found at point")))))
-
-(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
-(which-key-add-key-based-replacements "C-a g f" "go to file")
-
-(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
-(which-key-add-key-based-replacements "C-a g d" "go to definition")
-(evil-define-key 'normal 'global (kbd "C-a g e") (lambda () (interactive) (find-file "/users/me/nix/system/with/user/with/program/emacs.org")))
-(which-key-add-key-based-replacements "C-a g e" "emacs config")
-
-(define-prefix-command 'my-compile-prefix)
-(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
-(which-key-add-key-based-replacements "C-a c" "compile")
-
-(define-prefix-command 'my-nix-compile-prefix)
-(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
-(which-key-add-key-based-replacements "C-a c n" "nix")
-
-(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
-(which-key-add-key-based-replacements "C-a c n r" "rebuild")
-
-(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
-(which-key-add-key-based-replacements "C-a c n f" "format")
-
-(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
-(which-key-add-key-based-replacements "C-a c n c" "commit")
-
-;; create "find" prefix map
-(define-prefix-command 'my-find-prefix)
-(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
-(which-key-add-key-based-replacements "C-a f" "find")
-
-(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
-(which-key-add-key-based-replacements "C-a f g" "ripgrep")
-
-(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
-(which-key-add-key-based-replacements "C-a f p" "project")
-
-(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
-(which-key-add-key-based-replacements "C-a f f" "file in directory")
-
-(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
-(which-key-add-key-based-replacements "C-a f F" "file in project")
-
-(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
-(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
-(evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
-  "Select an org source block, excluding the begin/end lines."
-  (when (org-in-src-block-p)
-    (save-excursion
-      (let* ((element (org-element-at-point))
-             (begin (org-element-property :begin element))
-             (end (org-element-property :end element))
-             (begin-adjusted (progn
-                               (goto-char begin)
-                               (forward-line 1)
-                               (point))))
-        (goto-char begin)
-        (re-search-forward "^[ \t]*#\\+end_src" end t)
-        (forward-line -1)
-        (let ((end-adjusted (line-end-position)))
-          (evil-range begin-adjusted end-adjusted 'line))))))
-
-(evil-define-text-object evil-a-org-src-block (count &optional beg end type)
-  "Select an org source block, including the begin/end lines."
-  (when (org-in-src-block-p)
-    (save-excursion
-      (let* ((element (org-element-at-point))
-             (begin (org-element-property :begin element))
-             (end (org-element-property :end element)))
-        (evil-range begin end 'line)))))
-
-(evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
-(evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
-(which-key-add-key-based-replacements "is" "inside src block")
-(which-key-add-key-based-replacements "as" "around src block")
-
-(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
-(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
-
-(defun my/org-agenda-daily-dashboard ()
-  "Open the custom 'daily dashboard' org-agenda view."
-  (interactive)
-  (org-agenda nil "d"))
-
-(evil-define-key 'normal 'global (kbd "C-o") 'my/org-agenda-daily-dashboard)
-(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
-(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
-
-(evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
-(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
-
-(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
-
-(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
-
-(with-eval-after-load 'elfeed-show
-  (require 'hnreader)
-  (require 'evil)
-
-  (defun my/elfeed-show-hn-comments ()
-    "Open Hacker News comments for the link at point in elfeed-show-mode."
+  (defun my/open-compilation-file-in-other-window ()
+    "open the current compilation match in another window.
+  creates a new window if needed or reuses an existing one."
     (interactive)
-    (message "my/elfeed-show-hn-comments invoked.")
-    (let ((link (elfeed-get-link-at-point)))
-      (message "Link at point: %s" link)
-      ;; Check if it's a valid HN item link
-      (if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
-          (progn ;; Use progn to execute multiple forms
-            (message "Found HN link: %s. Calling hnreader-comment..." link)
-            ;; Pass the full link URL to hnreader-comment
-            (hnreader-comment link)
-            (message "hnreader-comment called with URL."))
-        (message "No Hacker News item link found at point or link doesn't match pattern."))))
+    (let ((window-count (length (window-list))))
+      (condition-case err
+	  (if (= window-count 1)
+	      ;; only one window, use built-in function that creates a new window
+	      (compilation-display-error)
+	    ;; multiple windows exist, use the next window
+	    (let ((this-window (selected-window)))
+	      (other-window 1)
+	      (let ((target-window (selected-window)))
+		(select-window this-window)
+		;; use next-error-no-select to get location without changing windows
+		(let ((location (next-error-no-select)))
+		  (select-window target-window)
+		  (switch-to-buffer (marker-buffer (car location)))
+		  (goto-char (marker-position (car location)))))))
+	;; catch any errors silently
+	(error (message "no valid location found at point")))))
 
-  (evil-define-key 'normal elfeed-show-mode-map
-    (kbd "c") #'my/elfeed-show-hn-comments))
+  (evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
+  (which-key-add-key-based-replacements "C-a g f" "go to file")
 
-;;(defun my/open-ripgrep-result-in-split ()
- ;; "Open the ripgrep result at point in a vertical split."
+  (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
+  (which-key-add-key-based-replacements "C-a g d" "go to definition")
+  (evil-define-key 'normal 'global (kbd "C-a g e") (lambda () (interactive) (find-file "/users/me/nix/system/with/user/with/program/emacs.org")))
+  (which-key-add-key-based-replacements "C-a g e" "emacs config")
+
+  (define-prefix-command 'my-compile-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
+  (which-key-add-key-based-replacements "C-a c" "compile")
+
+  (define-prefix-command 'my-nix-compile-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
+  (which-key-add-key-based-replacements "C-a c n" "nix")
+
+  (evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
+  (which-key-add-key-based-replacements "C-a c n r" "rebuild")
+
+  (evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
+  (which-key-add-key-based-replacements "C-a c n f" "format")
+
+  (evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
+  (which-key-add-key-based-replacements "C-a c n c" "commit")
+
+  ;; create "find" prefix map
+  (define-prefix-command 'my-find-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+  (which-key-add-key-based-replacements "C-a f" "find")
+
+  (evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+  (which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+  (evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+  (which-key-add-key-based-replacements "C-a f p" "project")
+
+  (evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+  (which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+  (evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+  (which-key-add-key-based-replacements "C-a f F" "file in project")
+
+  (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+  (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+  (evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
+			   "Select an org source block, excluding the begin/end lines."
+			   (when (org-in-src-block-p)
+			     (save-excursion
+			       (let* ((element (org-element-at-point))
+				      (begin (org-element-property :begin element))
+				      (end (org-element-property :end element))
+				      (begin-adjusted (progn
+							(goto-char begin)
+							(forward-line 1)
+							(point))))
+				 (goto-char begin)
+				 (re-search-forward "^[ \t]*#\\+end_src" end t)
+				 (forward-line -1)
+				 (let ((end-adjusted (line-end-position)))
+				   (evil-range begin-adjusted end-adjusted 'line))))))
+
+  (evil-define-text-object evil-a-org-src-block (count &optional beg end type)
+			   "Select an org source block, including the begin/end lines."
+			   (when (org-in-src-block-p)
+			     (save-excursion
+			       (let* ((element (org-element-at-point))
+				      (begin (org-element-property :begin element))
+				      (end (org-element-property :end element)))
+				 (evil-range begin end 'line)))))
+
+  (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
+  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
+  (which-key-add-key-based-replacements "is" "inside src block")
+  (which-key-add-key-based-replacements "as" "around src block")
+
+  (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+  (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+  (defun my/org-agenda-daily-dashboard ()
+    "Open the custom 'daily dashboard' org-agenda view."
+    (interactive)
+    (org-agenda nil "d"))
+
+  (evil-define-key 'normal 'global (kbd "C-o") 'my/org-agenda-daily-dashboard)
+  (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+  (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
+
+  (evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+  (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+  (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+
+  (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+  (with-eval-after-load 'elfeed-show
+    (require 'hnreader)
+    (require 'evil)
+
+    (defun my/elfeed-show-hn-comments ()
+      "Open Hacker News comments for the link at point in elfeed-show-mode."
+      (interactive)
+      (message "my/elfeed-show-hn-comments invoked.")
+      (let ((link (elfeed-get-link-at-point)))
+	(message "Link at point: %s" link)
+	;; Check if it's a valid HN item link
+	(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+	    (progn ;; Use progn to execute multiple forms
+	      (message "Found HN link: %s. Calling hnreader-comment..." link)
+	      ;; Pass the full link URL to hnreader-comment
+	      (hnreader-comment link)
+	      (message "hnreader-comment called with URL."))
+	  (message "No Hacker News item link found at point or link doesn't match pattern."))))
+
+    (evil-define-key 'normal elfeed-show-mode-map
+		     (kbd "c") #'my/elfeed-show-hn-comments))
+
+  ;;(defun my/open-ripgrep-result-in-split ()
+  ;; "Open the ripgrep result at point in a vertical split."
   ;;(interactive)
   ;;(let ((window-count (length (window-list))))
-   ;; (when (= window-count 1)
-    ;;  (split-window-right))
-    ;;(other-window 1)
-    ;;(compile-goto-error)))
+  ;; (when (= window-count 1)
+  ;;  (split-window-right))
+  ;;(other-window 1)
+  ;;(compile-goto-error)))
 
-;;(with-eval-after-load 'rg
+  ;;(with-eval-after-load 'rg
   ;;(evil-define-key 'normal rg-mode-map (kbd "RET") 'my/open-ripgrep-result-in-split))
 
-;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
-;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
-;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
-;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
-;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+  ;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
+  ;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
+  ;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
+  ;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+  ;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+  ;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
 
-(evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
-(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
-(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
-(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
-(evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
-(evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
+  (evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
+  (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+  (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+  (evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+  (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+  (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+  (evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+  (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
+  (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
 
-(defun clean-notes-buffer ()
-  "Clean up a notes buffer by:
-  1. Deleting lines starting with '- State'
-  2. Removing extra blank lines
-  3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
-  4. Removing all indentation from the buffer"
-  (interactive)
-  (save-excursion
-    ;; Go to beginning of buffer
-    (goto-char (point-min))
-    
-    ;; Delete lines starting with "- State"
-    (while (re-search-forward "^- State.*$" nil t)
-      (replace-match ""))
-    
-    ;; Clean up consecutive blank lines
-    (goto-char (point-min))
-    (while (re-search-forward "^\n\\s-*\n" nil t)
-      (replace-match "\n"))
-    
-    ;; Convert note lines to new format (fixed to handle backslashes properly)
-    (goto-char (point-min))
-    (while (re-search-forward "^- Note taken on \\(\\[[0-9-]+ [A-Za-z]+\\( [0-9:]+\\)?\\]\\)\\s-*\\\\\\\\.*$" nil t)
-      (replace-match "** \\1"))
-    
-    ;; Remove all indentation (leading spaces/tabs) from all lines
-    (goto-char (point-min))
-    (while (re-search-forward "^[ \t]+" nil t)
-      (replace-match "")))
-  (message "Notes cleanup completed!"))
-
-(defun my/add-tag-to-headings-in-region (tag)
-  "Add TAG to all org headings in the selected region."
-  (interactive "sTag to add: ")
-  (save-excursion
-    (let ((end-marker (copy-marker (region-end)))
-          (pos (region-beginning)))
-      (goto-char pos)
-      (while (and (< (point) end-marker)
-                  (re-search-forward "^\\*+ " end-marker t))
-        (org-set-tags (cons tag (org-get-tags)))
-        (outline-next-heading)))))
-
-(defun my/projectile-find-file-in-all-projects ()
-  "Find file across all registered Projectile projects with improved performance."
-  (interactive)
-  (let* ((projects (projectile-relevant-known-projects))
-         (file-cache-var 'my/projectile-all-files-cache)
-         (cache-validity-seconds 300) ;; 5 minute cache validity
-         (current-time (current-time))
-         (use-cache (and (boundp file-cache-var)
-                         (< (float-time (time-subtract 
-                                         current-time
-                                         (get file-cache-var 'timestamp)))
-                            cache-validity-seconds)))
-         (cached-files (and use-cache (symbol-value file-cache-var))))
-    
-    (if use-cache
-        (message "Using cached file list (%d files)" (length cached-files))
-      ;; Build cache using external commands for speed
-      (message "Building file list from %d projects..." (length projects))
-      (let ((all-files '())
-            (temp-file (make-temp-file "projectile-files-")))
-        ;; Using external find/sort is much faster than pure elisp
-        (with-temp-file temp-file
-          (dolist (project projects)
-            (when (file-exists-p project)
-              (let* ((project-name (file-name-nondirectory 
-                                    (directory-file-name project)))
-                     ;; Add project name prefix to each file for context
-                     (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
-                                  (shell-quote-argument project)
-                                  project-name)))
-                (call-process-shell-command cmd nil t)))))
-        
-        ;; Read results back and build alist of (display . filepath)
-        (with-temp-buffer
-          (insert-file-contents temp-file)
-          (goto-char (point-min))
-          (while (not (eobp))
-            (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
-                   ;; Fix: Only split on the first colon
-                   (split-pos (string-match ":" line))
-                   (project-name (when split-pos (substring line 0 split-pos)))
-                   (rel-file (when split-pos (substring line (1+ split-pos))))
-                   (full-path (when (and project-name rel-file)
-                                (expand-file-name
-                                 (string-remove-prefix "./" rel-file)
-                                 (car (seq-filter (lambda (p) 
-                                                    (string-suffix-p project-name p))
-                                                  projects))))))
-              (when (and project-name rel-file full-path)
-                (push (cons (concat project-name ":" rel-file) full-path) all-files)))
-            (forward-line 1)))
-        
-        (delete-file temp-file)
-        ;; Save and timestamp the cache
-        (set file-cache-var all-files)
-        (put file-cache-var 'timestamp current-time)
-        (message "Found %d files across projects" (length all-files))))
-    
-    ;; Use the cached or newly-built list
-    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
-      (if file-list
-          ;; Use completing-read for the selection interface
-          (let* ((chosen (completing-read "Find file in projects: " 
-                                         (mapcar #'car file-list) nil t))
-                 (file-path (cdr (assoc chosen file-list))))
-            (when file-path
-              (find-file file-path)))
-        (message "No files found across projects")))))
-
-(defun my/wikipedia-search-to-org (search-term)
-  "Search Wikipedia for SEARCH-TERM, fetch the first result,
-and display its content converted to Org format in a new buffer.
-Requires `pandoc` to be installed."
-  (interactive "sSearch Wikipedia for: ")
-  (unless (executable-find "pandoc")
-    (error "pandoc executable not found. Please install pandoc."))
-
-  (require 'json)
-  (require 'url)
-
-  (let* ((encoded-search-term (url-hexify-string search-term))
-         (search-api-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json"
-                                 encoded-search-term))
-         search-json-string search-data page-title page-url html-content org-output org-buffer-name)
-
-    (with-current-buffer (url-retrieve-synchronously search-api-url)
+  (defun clean-notes-buffer ()
+    "Clean up a notes buffer by:
+    1. Deleting lines starting with '- State'
+    2. Removing extra blank lines
+    3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
+    4. Removing all indentation from the buffer"
+    (interactive)
+    (save-excursion
+      ;; Go to beginning of buffer
       (goto-char (point-min))
-      (unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
-        (kill-buffer (current-buffer))
-        (error "Could not find HTTP headers in Wikipedia API response"))
-      (setq search-json-string (buffer-substring-no-properties (point) (point-max)))
-      (kill-buffer (current-buffer)))
 
-    (unless (and search-json-string (not (string-empty-p search-json-string)))
-      (error "Failed to fetch or empty search results from Wikipedia API for: %s" search-term))
+      ;; Delete lines starting with "- State"
+      (while (re-search-forward "^- State.*$" nil t)
+	(replace-match ""))
 
-    (condition-case err
-        ;; Explicitly use :array-type 'list to ensure lists are returned
-        (setq search-data (json-parse-string search-json-string :array-type 'list))
-      (error (error "Failed to parse JSON: %s. JSON was: %s" (error-message-string err) search-json-string)))
-
-    ;; Now the checks should work as expected with lists
-    (unless (and (listp search-data)
-                 (>= (length search-data) 4)
-                 (listp (nth 1 search-data)) (consp (nth 1 search-data)) ; Ensure titles list is non-empty
-                 (stringp (car (nth 1 search-data))) ; Ensure first title is a string
-                 (listp (nth 3 search-data)) (consp (nth 3 search-data)) ; Ensure URLs list is non-empty
-                 (stringp (car (nth 3 search-data)))) ; Ensure first URL is a string
-      (error "Unexpected JSON structure, empty result, or non-string title/URL from Wikipedia API. Data: %S" search-data))
-
-    (setq page-title (car (nth 1 search-data)))
-    (setq page-url (car (nth 3 search-data)))
-
-    (with-current-buffer (url-retrieve-synchronously page-url)
+      ;; Clean up consecutive blank lines
       (goto-char (point-min))
-      (unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
-        (kill-buffer (current-buffer))
-        (error "Could not find HTTP headers in Wikipedia page response for %s" page-url))
-      (setq html-content (buffer-substring-no-properties (point) (point-max)))
-      (kill-buffer (current-buffer)))
+      (while (re-search-forward "^\n\\s-*\n" nil t)
+	(replace-match "\n"))
 
-    (unless (and html-content (not (string-empty-p html-content)))
-      (error "Failed to fetch or empty page content from URL: %s" page-url))
+      ;; Convert note lines to new format (fixed to handle backslashes properly)
+      (goto-char (point-min))
+      (while (re-search-forward "^- Note taken on \\(\\[[0-9-]+ [A-Za-z]+\\( [0-9:]+\\)?\\]\\)\\s-*\\\\\\\\.*$" nil t)
+	(replace-match "** \\1"))
 
-    (setq org-output
-          (with-temp-buffer
-            (insert html-content)
-            (shell-command-on-region (point-min) (point-max)
-                                     "pandoc -f html -t org --wrap=none"
-                                     (current-buffer) t) ; t to replace
-            (buffer-string)))
+      ;; Remove all indentation (leading spaces/tabs) from all lines
+      (goto-char (point-min))
+      (while (re-search-forward "^[ \t]+" nil t)
+	(replace-match "")))
+    (message "Notes cleanup completed!"))
 
-    (if (or (null org-output) (string-empty-p org-output))
-        (error "Pandoc conversion resulted in empty output for %s" page-title)
-      (setq org-buffer-name (format "*Wikipedia: %s (Org)*" page-title))
-      (with-current-buffer (get-buffer-create org-buffer-name)
-        (erase-buffer)
-        (insert org-output)
-        (when (fboundp 'org-mode) (org-mode))
-        (goto-char (point-min)))
-      (switch-to-buffer-other-window org-buffer-name)
-      (message "Wikipedia page '%s' rendered as Org." page-title))))
+  (defun my/add-tag-to-headings-in-region (tag)
+    "Add TAG to all org headings in the selected region."
+    (interactive "sTag to add: ")
+    (save-excursion
+      (let ((end-marker (copy-marker (region-end)))
+	    (pos (region-beginning)))
+	(goto-char pos)
+	(while (and (< (point) end-marker)
+		    (re-search-forward "^\\*+ " end-marker t))
+	  (org-set-tags (cons tag (org-get-tags)))
+	  (outline-next-heading)))))
 
-(defun my/org-refile-to-new-file ()
-  "Refile current heading to a new file named after the heading."
-  (interactive)
-  (let* ((heading (nth 4 (org-heading-components)))
-         (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
-         (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
-    (when (y-or-n-p (format "Create and refile to %s? " new-file))
-      (with-temp-buffer
-        (write-file new-file))
-      (org-refile nil nil (list heading new-file nil nil)))))
+  (defun my/projectile-find-file-in-all-projects ()
+    "Find file across all registered Projectile projects with improved performance."
+    (interactive)
+    (let* ((projects (projectile-relevant-known-projects))
+	   (file-cache-var 'my/projectile-all-files-cache)
+	   (cache-validity-seconds 300) ;; 5 minute cache validity
+	   (current-time (current-time))
+	   (use-cache (and (boundp file-cache-var)
+			   (< (float-time (time-subtract 
+					   current-time
+					   (get file-cache-var 'timestamp)))
+			      cache-validity-seconds)))
+	   (cached-files (and use-cache (symbol-value file-cache-var))))
 
-(defun my/open-pr-url-at-point ()
-  "Open the PR_URL property of the current org agenda item."
-  (interactive)
-  (let* ((marker (or (org-get-at-bol 'org-marker)
-                     (org-agenda-error)))
-         (buffer (marker-buffer marker))
-         (pos (marker-position marker))
-         url)
-    (with-current-buffer buffer
-      (save-excursion
-        (goto-char pos)
-        (setq url (org-entry-get (point) "PR_URL"))))
-    (when url
-      (browse-url url))))
+      (if use-cache
+	  (message "Using cached file list (%d files)" (length cached-files))
+	;; Build cache using external commands for speed
+	(message "Building file list from %d projects..." (length projects))
+	(let ((all-files '())
+	      (temp-file (make-temp-file "projectile-files-")))
+	  ;; Using external find/sort is much faster than pure elisp
+	  (with-temp-file temp-file
+	    (dolist (project projects)
+	      (when (file-exists-p project)
+		(let* ((project-name (file-name-nondirectory 
+				      (directory-file-name project)))
+		       ;; Add project name prefix to each file for context
+		       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+				    (shell-quote-argument project)
+				    project-name)))
+		  (call-process-shell-command cmd nil t)))))
 
-;; Bind it to a key in org-agenda-mode-map
-(define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
+	  ;; Read results back and build alist of (display . filepath)
+	  (with-temp-buffer
+	    (insert-file-contents temp-file)
+	    (goto-char (point-min))
+	    (while (not (eobp))
+	      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+		     ;; Fix: Only split on the first colon
+		     (split-pos (string-match ":" line))
+		     (project-name (when split-pos (substring line 0 split-pos)))
+		     (rel-file (when split-pos (substring line (1+ split-pos))))
+		     (full-path (when (and project-name rel-file)
+				  (expand-file-name
+				   (string-remove-prefix "./" rel-file)
+				   (car (seq-filter (lambda (p) 
+						      (string-suffix-p project-name p))
+						    projects))))))
+		(when (and project-name rel-file full-path)
+		  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+	      (forward-line 1)))
+
+	  (delete-file temp-file)
+	  ;; Save and timestamp the cache
+	  (set file-cache-var all-files)
+	  (put file-cache-var 'timestamp current-time)
+	  (message "Found %d files across projects" (length all-files))))
+
+      ;; Use the cached or newly-built list
+      (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+	(if file-list
+	    ;; Use completing-read for the selection interface
+	    (let* ((chosen (completing-read "Find file in projects: " 
+					    (mapcar #'car file-list) nil t))
+		   (file-path (cdr (assoc chosen file-list))))
+	      (when file-path
+		(find-file file-path)))
+	  (message "No files found across projects")))))
+
+  (defun my/wikipedia-search-to-org (search-term)
+    "Search Wikipedia for SEARCH-TERM, fetch the first result,
+  and display its content converted to Org format in a new buffer.
+  Requires `pandoc` to be installed."
+    (interactive "sSearch Wikipedia for: ")
+    (unless (executable-find "pandoc")
+      (error "pandoc executable not found. Please install pandoc."))
+
+    (require 'json)
+    (require 'url)
+
+    (let* ((encoded-search-term (url-hexify-string search-term))
+	   (search-api-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json"
+				   encoded-search-term))
+	   search-json-string search-data page-title page-url html-content org-output org-buffer-name)
+
+      (with-current-buffer (url-retrieve-synchronously search-api-url)
+	(goto-char (point-min))
+	(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+	  (kill-buffer (current-buffer))
+	  (error "Could not find HTTP headers in Wikipedia API response"))
+	(setq search-json-string (buffer-substring-no-properties (point) (point-max)))
+	(kill-buffer (current-buffer)))
+
+      (unless (and search-json-string (not (string-empty-p search-json-string)))
+	(error "Failed to fetch or empty search results from Wikipedia API for: %s" search-term))
+
+      (condition-case err
+	  ;; Explicitly use :array-type 'list to ensure lists are returned
+	  (setq search-data (json-parse-string search-json-string :array-type 'list))
+	(error (error "Failed to parse JSON: %s. JSON was: %s" (error-message-string err) search-json-string)))
+
+      ;; Now the checks should work as expected with lists
+      (unless (and (listp search-data)
+		   (>= (length search-data) 4)
+		   (listp (nth 1 search-data)) (consp (nth 1 search-data)) ; Ensure titles list is non-empty
+		   (stringp (car (nth 1 search-data))) ; Ensure first title is a string
+		   (listp (nth 3 search-data)) (consp (nth 3 search-data)) ; Ensure URLs list is non-empty
+		   (stringp (car (nth 3 search-data)))) ; Ensure first URL is a string
+	(error "Unexpected JSON structure, empty result, or non-string title/URL from Wikipedia API. Data: %S" search-data))
+
+      (setq page-title (car (nth 1 search-data)))
+      (setq page-url (car (nth 3 search-data)))
+
+      (with-current-buffer (url-retrieve-synchronously page-url)
+	(goto-char (point-min))
+	(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+	  (kill-buffer (current-buffer))
+	  (error "Could not find HTTP headers in Wikipedia page response for %s" page-url))
+	(setq html-content (buffer-substring-no-properties (point) (point-max)))
+	(kill-buffer (current-buffer)))
+
+      (unless (and html-content (not (string-empty-p html-content)))
+	(error "Failed to fetch or empty page content from URL: %s" page-url))
+
+      (setq org-output
+	    (with-temp-buffer
+	      (insert html-content)
+	      (shell-command-on-region (point-min) (point-max)
+				       "pandoc -f html -t org --wrap=none"
+				       (current-buffer) t) ; t to replace
+	      (buffer-string)))
+
+      (if (or (null org-output) (string-empty-p org-output))
+	  (error "Pandoc conversion resulted in empty output for %s" page-title)
+	(setq org-buffer-name (format "*Wikipedia: %s (Org)*" page-title))
+	(with-current-buffer (get-buffer-create org-buffer-name)
+	  (erase-buffer)
+	  (insert org-output)
+	  (when (fboundp 'org-mode) (org-mode))
+	  (goto-char (point-min)))
+	(switch-to-buffer-other-window org-buffer-name)
+	(message "Wikipedia page '%s' rendered as Org." page-title))))
+
+  (defun my/org-refile-to-new-file ()
+    "Refile current heading to a new file named after the heading."
+    (interactive)
+    (let* ((heading (nth 4 (org-heading-components)))
+	   (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
+	   (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
+      (when (y-or-n-p (format "Create and refile to %s? " new-file))
+	(with-temp-buffer
+	  (write-file new-file))
+	(org-refile nil nil (list heading new-file nil nil)))))
+
+  (defun my/open-pr-url-at-point ()
+    "Open the PR_URL property of the current org agenda item."
+    (interactive)
+    (let* ((marker (or (org-get-at-bol 'org-marker)
+		       (org-agenda-error)))
+	   (buffer (marker-buffer marker))
+	   (pos (marker-position marker))
+	   url)
+      (with-current-buffer buffer
+	(save-excursion
+	  (goto-char pos)
+	  (setq url (org-entry-get (point) "PR_URL"))))
+      (when url
+	(browse-url url))))
+
+  ;; Bind it to a key in org-agenda-mode-map
+  (define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
 #+end_src
 #+RESULTS:
 
