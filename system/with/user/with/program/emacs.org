@@ -595,7 +595,7 @@ For some reason this keeps getting set wrong by something.
 	   "* %U %^{Title}\n%?")
 	  ("e" "Event" entry
 	   (file "~/notes/inbox.org")
-	   "* %^{Title}\n%^T{Date and Time}\n%?")
+	   "* %^{Title}\n%^T\n%?")
 	  ("t" "Todo" entry
 	   (file "~/notes/inbox.org")
 	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")
@@ -889,23 +889,23 @@ I'm not using these right now, but might revist in the future.
 	      (message "Processing query: %s" section-name)
 	      (let ((response (ghub-graphql
 			       "query($query: String!) {
-							search(query: $query, type: ISSUE, first: 100) {
-							  nodes {
-							    ... on PullRequest {
-							      title
-							      url
-							      repository {
-								nameWithOwner
+							  search(query: $query, type: ISSUE, first: 100) {
+							    nodes {
+							      ... on PullRequest {
+								title
+								url
+								repository {
+								  nameWithOwner
+								}
+								author {
+								  login
+								}
+								updatedAt
+								state
 							      }
-							      author {
-								login
-							      }
-							      updatedAt
-							      state
 							    }
 							  }
-							}
-						      }"
+							}"
 			       `((query . ,query)))))
 		(message "Got GraphQL response")
 		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -1420,8 +1420,8 @@ This block contains helper functions and variables used by multiple tools. These
    :name "repomix"
    :function #'my/run-repomix
    :description "Run repomix on a directory to analyze and summarize code for context.
-    This generates a well-structured overview of the codebase including directory structure,
-    key files, important functions, and insights about the project architecture."
+      This generates a well-structured overview of the codebase including directory structure,
+      key files, important functions, and insights about the project architecture."
    :args '((:name "directory"
 		  :type string
 		  :description "Directory path to analyze with repomix"))
@@ -1437,7 +1437,7 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
 #+begin_src emacs-lisp :tangle no
   (defun my/read-file (file-id)
     "Read complete contents of a file.
-		    FILE-ID can be a bookmark name or full path."
+		      FILE-ID can be a bookmark name or full path."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1454,8 +1454,8 @@ This tool hooks in to my file reading function and bookmarks list to enable LLMs
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-			- 'emacs config' for my emacs configuration
-			- 'inbox' for my org mode inbox file")
+			  - 'emacs config' for my emacs configuration
+			  - 'inbox' for my org mode inbox file")
 	   ))
   (register-gptel-tool "read_file")
 #+end_src
@@ -1491,8 +1491,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
   (defun my/write-file (file-id content)
     "Write file with changes in search/replace block format.
-	      FILE-ID can be a bookmark name or full path.
-	      CONTENT must contain search/replace blocks showing what to change."
+		FILE-ID can be a bookmark name or full path.
+		CONTENT must contain search/replace blocks showing what to change."
     (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
 	   (file-path (expand-file-name
 		       (if bookmark 
@@ -1542,24 +1542,24 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
    :args '((:name "file-id"
 		  :type string
 		  :description "can be a full path or one of the following bookmarks:
-		- 'emacs config' for my emacs configuration
-		- 'inbox' for my org mode inbox file")
+		  - 'emacs config' for my emacs configuration
+		  - 'inbox' for my org mode inbox file")
 	   (:name "content"
 		  :type string
 		  :description "search/replace blocks showing what to change
 
-    The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
+      The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
 
-    <<<<<<< SEARCH
-    {text to find and replace}
-    =======
-    {new text to insert}
-    >>>>>>> REPLACE
+      <<<<<<< SEARCH
+      {text to find and replace}
+      =======
+      {new text to insert}
+      >>>>>>> REPLACE
 
-    - Do NOT include lines meant to call write_file in the CONTENT arguement!
-    - You can include multiple search/replace blocks to make multiple changes.
-    - The search text must match exactly what is in the file.
-    ")))
+      - Do NOT include lines meant to call write_file in the CONTENT arguement!
+      - You can include multiple search/replace blocks to make multiple changes.
+      - The search text must match exactly what is in the file.
+      ")))
 
   (register-gptel-tool "write_file")
 #+end_src
@@ -1666,8 +1666,8 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 #+begin_src emacs-lisp :tangle no
   (defun my/project-context-for-llm (project-root &optional scope)
     "Generate project context for LLM consumption.
-		  PROJECT-ROOT is the directory to analyze.
-		  SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+		    PROJECT-ROOT is the directory to analyze.
+		    SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
     (let* ((project-root (expand-file-name project-root))
 	   (default-directory project-root)
 	   (context-parts '()))
@@ -2176,7 +2176,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp 
   (defun bitwarden/clients/run-tests (&optional test-pattern)
     "Run Jest tests for the clients monorepo.
-    If TEST-PATTERN is provided, filter tests using the -t option."
+      If TEST-PATTERN is provided, filter tests using the -t option."
     (interactive "sTest pattern (optional): ")
     (let* ((default-directory (my/get-project-path "clients"))
 	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
@@ -2206,7 +2206,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 
   (defun my/open-compilation-file-in-other-window ()
     "open the current compilation match in another window.
-  creates a new window if needed or reuses an existing one."
+    creates a new window if needed or reuses an existing one."
     (interactive)
     (let ((window-count (length (window-list))))
       (condition-case err
@@ -2355,7 +2355,7 @@ I use this space to write a bunch of custom commands for interacting with projec
   ;;(with-eval-after-load 'rg
   ;;(evil-define-key 'normal rg-mode-map (kbd "RET") 'my/open-ripgrep-result-in-split))
 
-  ;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
+    ;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
   ;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
   ;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
   ;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
@@ -2374,10 +2374,10 @@ I use this space to write a bunch of custom commands for interacting with projec
 
   (defun clean-notes-buffer ()
     "Clean up a notes buffer by:
-    1. Deleting lines starting with '- State'
-    2. Removing extra blank lines
-    3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
-    4. Removing all indentation from the buffer"
+      1. Deleting lines starting with '- State'
+      2. Removing extra blank lines
+      3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
+      4. Removing all indentation from the buffer"
     (interactive)
     (save-excursion
       ;; Go to beginning of buffer
@@ -2486,8 +2486,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 
   (defun my/wikipedia-search-to-org (search-term)
     "Search Wikipedia for SEARCH-TERM, fetch the first result,
-  and display its content converted to Org format in a new buffer.
-  Requires `pandoc` to be installed."
+    and display its content converted to Org format in a new buffer.
+    Requires `pandoc` to be installed."
     (interactive "sSearch Wikipedia for: ")
     (unless (executable-find "pandoc")
       (error "pandoc executable not found. Please install pandoc."))
@@ -2597,6 +2597,6 @@ I use this space to write a bunch of custom commands for interacting with projec
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-		    ;;; init.el ends here
+		      ;;; init.el ends here
 #+end_src
 

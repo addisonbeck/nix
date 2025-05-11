@@ -90,14 +90,14 @@ in {
     useRoutingFeatures = "client";
   };
 
-services.freshrss = {
-  enable = true;
-  defaultUser = "me";
-  passwordFile = config.age.secrets.freshrss.path;
-  baseUrl = "https://homelab.tail357e32.ts.net/rss";
-  virtualHost = "homelab-server";
-  extensions = [pkgs.freshrss-extensions.youtube];
-};
+  services.freshrss = {
+    enable = true;
+    defaultUser = "me";
+    passwordFile = config.age.secrets.freshrss.path;
+    baseUrl = "https://homelab/rss/";
+    virtualHost = "homelab";
+    extensions = [pkgs.freshrss-extensions.youtube];
+  };
 
   systemd.services.tailscale-cert = {
     description = "Tailscale certificate renewal";
@@ -454,26 +454,34 @@ services.freshrss = {
               #proxy_redirect off;
             '';
           };
+          "/vaultwarden" = {
+            proxyPass = "http://127.0.0.1:8222";
+            proxyWebsockets = true;
+            extraConfig = ''
+              add_header X-Robots-Tag "none";
+            '';
+          };
 
-"/rss/" = {
-  root = "${pkgs.freshrss}/p";
-  index = "index.php index.html index.htm";
-  tryFiles = "$uri $uri/ index.php";
-};
+          "/rss/" = {
+            alias = "${pkgs.freshrss}/p/";
+            index = "index.php";
+            tryFiles = "$uri $uri/ /rss/index.php$is_args$args";
+          };
 
-"~ ^/rss/(.+\\.php)(/.*)?$" = { 
-  root = "${pkgs.freshrss}/p";
-  extraConfig = ''
-    fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
-    fastcgi_split_path_info ^(/rss/.+\.php)(/.*)$;
-    # By default, the variable PATH_INFO is not set under PHP-FPM
-    # But FreshRSS API greader.php need it. If you have a "Bad Request" error, double check this var!
-    set $path_info $fastcgi_path_info;
-    fastcgi_param PATH_INFO $path_info;
-    include ${pkgs.nginx}/conf/fastcgi_params;
-    include ${pkgs.nginx}/conf/fastcgi.conf;
-  '';
-};
+          "~ ^/rss/(.+\.php)(/.*)?$" = {
+            extraConfig = ''
+              fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
+              include ${pkgs.nginx}/conf/fastcgi_params;
+              include ${pkgs.nginx}/conf/fastcgi.conf;
+
+              # Critical fix: Set the proper script filename with full path
+              fastcgi_param SCRIPT_FILENAME ${pkgs.freshrss}/p/$1;
+
+              # Handle path info correctly for API endpoints
+              fastcgi_split_path_info ^/rss/(.+\.php)(/.*)?$;
+              fastcgi_param PATH_INFO $fastcgi_path_info;
+            '';
+          };
           "/grafana/" = {
             proxyWebsockets = true;
             extraConfig = ''
