@@ -1039,8 +1039,8 @@ I'm not using these right now, but might revist in the future.
     (setq elfeed-protocol-log-trace t)
     (elfeed-protocol-fever-update-unread-only t)
     (elfeed-protocol-fever-fetch-category-as-tag t)
-    (elfeed-protocol-feeds '(("fever+https://me@rss.addisonbeck.dev"
-			      :api-url "https://rss.addisonbeck.dev/api/fever.php"
+    (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
+			      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
 			      :use-authinfo t)))
     (elfeed-protocol-enabled-protocols '(fever))
     :config
@@ -1855,6 +1855,96 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 	  (revert-buffer t t t)
 	  (message "File reset to %s" revision)))))
 #+end_src
+** View PR Check
+
+#+begin_src emacs-lisp
+(defun my/run-gh-pr-checks ()
+  "Run 'gh pr checks' for the current PR with better formatting."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
+           (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
+      (with-current-buffer (get-buffer-create buffer-name)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (shell-command cmd (current-buffer))
+          (goto-char (point-min))
+          (let* ((json-data (json-read))
+                 (checks (append json-data nil))
+                 (passed 0)
+                 (failed 0)
+                 (pending 0)
+                 (failed-jobs '()))
+            
+            ;; Count statuses and collect failed jobs
+            (dolist (check checks)
+              (let ((state (cdr (assoc 'state check))))
+                (cond
+                 ((string= state "SUCCESS") (cl-incf passed))
+                 ((string= state "FAILURE") 
+                  (cl-incf failed)
+                  (push check failed-jobs))
+                 (t (cl-incf pending)))))
+            
+            ;; Clear and format buffer
+            (erase-buffer)
+            (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
+                               'face '(:weight bold :height 1.2)))
+            (insert (format "Total: %d | " (length checks)))
+            (insert (propertize (format "Passed: %d | " passed)
+                               'face '(:foreground "green")))
+            (insert (propertize (format "Failed: %d | " failed)
+                               'face '(:foreground "red" :weight bold)))
+            (insert (propertize (format "Pending: %d\n\n" pending)
+                               'face '(:foreground "orange")))
+            
+            ;; Add detailed listing
+            (insert (propertize "All Checks:\n" 'face '(:weight bold)))
+            (dolist (check checks)
+              (let* ((name (cdr (assoc 'name check)))
+                     (state (cdr (assoc 'state check)))
+                     (link (cdr (assoc 'link check)))
+                     (state-face (cond
+                                 ((string= state "SUCCESS") '(:foreground "green"))
+                                 ((string= state "FAILURE") '(:foreground "red"))
+                                 (t '(:foreground "orange")))))
+                (insert "• ")
+                (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
+                                   'face '(:weight bold)))
+                (insert " - ")
+                (insert (propertize state 'face state-face))
+                (when link
+                  (insert " [")
+                  (insert-text-button "Link"
+                                     'action (lambda (_) (browse-url link))
+                                     'follow-link t)
+                  (insert "]"))
+                (insert "\n")))
+            
+            ;; Add failed jobs section
+            (when failed-jobs
+              (insert "\n")
+              (insert (propertize "Failed Jobs:\n" 
+                                 'face '(:foreground "red" :weight bold)))
+              (dolist (job failed-jobs)
+                (let ((name (cdr (assoc 'name job)))
+                      (link (cdr (assoc 'link job))))
+                  (insert "• ")
+                  (insert (propertize name 'face '(:foreground "red")))
+                  (when link
+                    (insert " → ")
+                    (insert-text-button "Open in Browser"
+                                      'action (lambda (_) (browse-url link))
+                                      'follow-link t))
+                  (insert "\n")))))
+          
+          (special-mode)
+          (goto-char (point-min))
+          (display-buffer (current-buffer)))))))
+#+end_src
+
 * Custom Commands For Projects
 
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
@@ -2174,20 +2264,44 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp 
-  (defun bitwarden/clients/run-tests (&optional test-pattern)
-    "Run Jest tests for the clients monorepo.
-      If TEST-PATTERN is provided, filter tests using the -t option."
-    (interactive "sTest pattern (optional): ")
-    (let* ((default-directory (my/get-project-path "clients"))
-	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
-			(format "npm run test:watch -- -t '%s'" test-pattern)
-		      "npm run test:watch"))
-	   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
-			    (format "*clients-jest-%s*" test-pattern)
-			  "*clients-jest*"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) buffer-name)))
-      (compile command t)))
+(defun bitwarden/clients/run-tests (&optional test-pattern)
+  "Run Jest tests for the clients monorepo.
+    If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((default-directory (my/get-project-path "clients"))
+   (command (if (and test-pattern (not (string-empty-p test-pattern)))
+		(format "npm run test -- -t '%s'" test-pattern)
+	      "npm run test"))
+   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+		    (format "*clients-jest-%s*" test-pattern)
+		  "*clients-jest*"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) buffer-name)))
+    (compile command t)))
+
+(setq ring-bell-function 'ignore)
+(defun bitwarden/clients/run-tests-interactive (&optional test-pattern)
+  "Run Jest tests for the clients monorepo in interactive mode.
+If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((default-directory (my/get-project-path "clients"))
+         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+                       (format "*clients-jest-watch-%s*" test-pattern)
+                     "*clients-jest-watch*"))
+         (command (if (and test-pattern (not (string-empty-p test-pattern)))
+                    (format "npm run test:watch -- -t '%s'" test-pattern)
+                  "npm run test:watch")))
+    
+    ;; Create or switch to the terminal buffer
+    (let ((buf (get-buffer buffer-name)))
+      (if buf
+          (switch-to-buffer buf)
+        (ansi-term (getenv "SHELL") buffer-name)))
+    
+    ;; Change to project directory and run command
+    (term-send-string 
+     (get-buffer-process buffer-name)
+     (format "cd %s && %s\n" default-directory command))))
 #+end_src
 
 *** Run typechecking
