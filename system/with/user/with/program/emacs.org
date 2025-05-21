@@ -598,7 +598,7 @@ For some reason this keeps getting set wrong by something.
 	   "* %^{Title}\n%^T\n%?")
 	  ("t" "Todo" entry
 	   (file "~/notes/inbox.org")
-	   "* TODO %^{Title}\nSCHEDULED: %t\n%?")
+	   "* TODO [#A] %^{Title}\nSCHEDULED: %t\n%?")
 	  ))
 #+end_src
 
@@ -1800,6 +1800,19 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 	      tools)))
 #+end_src
 
+* Aidermacs
+
+#+begin_src emacs-lisp
+(use-package aidermacs
+  :bind (("C-c a" . aidermacs-transient-menu))
+  :config
+  (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
+  :custom
+  ; See the Configuration section below
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "sonnet"))
+#+end_src
+
 * Path Copying Functions
 
 #+begin_src emacs-lisp
@@ -1837,112 +1850,6 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 * rg
 #+begin_src emacs-lisp
   (require 'rg)
-#+end_src
-
-* Custom magit functions
-** Reset current buffer
-#+begin_src emacs-lisp
-  (defun reset-file-to-revision ()
-    "Reset the current buffer's file to a specified revision using Magit."
-    (interactive)
-    (require 'magit)
-    (let* ((file-path (buffer-file-name))
-	   (default-directory (magit-toplevel))
-	   (revision (magit-read-branch-or-commit "Reset file to revision")))
-      (when (and file-path revision)
-	(let ((relative-file-path (file-relative-name file-path default-directory)))
-	  (magit-run-git "checkout" revision "--" relative-file-path)
-	  (revert-buffer t t t)
-	  (message "File reset to %s" revision)))))
-#+end_src
-** View PR Check
-
-#+begin_src emacs-lisp
-(defun my/run-gh-pr-checks ()
-  "Run 'gh pr checks' for the current PR with better formatting."
-  (interactive)
-  (when (eq major-mode 'forge-pullreq-mode)
-    (let* ((pr (forge-current-topic))
-           (pr-number (oref pr number))
-           (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
-           (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
-      (with-current-buffer (get-buffer-create buffer-name)
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (shell-command cmd (current-buffer))
-          (goto-char (point-min))
-          (let* ((json-data (json-read))
-                 (checks (append json-data nil))
-                 (passed 0)
-                 (failed 0)
-                 (pending 0)
-                 (failed-jobs '()))
-            
-            ;; Count statuses and collect failed jobs
-            (dolist (check checks)
-              (let ((state (cdr (assoc 'state check))))
-                (cond
-                 ((string= state "SUCCESS") (cl-incf passed))
-                 ((string= state "FAILURE") 
-                  (cl-incf failed)
-                  (push check failed-jobs))
-                 (t (cl-incf pending)))))
-            
-            ;; Clear and format buffer
-            (erase-buffer)
-            (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
-                               'face '(:weight bold :height 1.2)))
-            (insert (format "Total: %d | " (length checks)))
-            (insert (propertize (format "Passed: %d | " passed)
-                               'face '(:foreground "green")))
-            (insert (propertize (format "Failed: %d | " failed)
-                               'face '(:foreground "red" :weight bold)))
-            (insert (propertize (format "Pending: %d\n\n" pending)
-                               'face '(:foreground "orange")))
-            
-            ;; Add detailed listing
-            (insert (propertize "All Checks:\n" 'face '(:weight bold)))
-            (dolist (check checks)
-              (let* ((name (cdr (assoc 'name check)))
-                     (state (cdr (assoc 'state check)))
-                     (link (cdr (assoc 'link check)))
-                     (state-face (cond
-                                 ((string= state "SUCCESS") '(:foreground "green"))
-                                 ((string= state "FAILURE") '(:foreground "red"))
-                                 (t '(:foreground "orange")))))
-                (insert "• ")
-                (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
-                                   'face '(:weight bold)))
-                (insert " - ")
-                (insert (propertize state 'face state-face))
-                (when link
-                  (insert " [")
-                  (insert-text-button "Link"
-                                     'action (lambda (_) (browse-url link))
-                                     'follow-link t)
-                  (insert "]"))
-                (insert "\n")))
-            
-            ;; Add failed jobs section
-            (when failed-jobs
-              (insert "\n")
-              (insert (propertize "Failed Jobs:\n" 
-                                 'face '(:foreground "red" :weight bold)))
-              (dolist (job failed-jobs)
-                (let ((name (cdr (assoc 'name job)))
-                      (link (cdr (assoc 'link job))))
-                  (insert "• ")
-                  (insert (propertize name 'face '(:foreground "red")))
-                  (when link
-                    (insert " → ")
-                    (insert-text-button "Open in Browser"
-                                      'action (lambda (_) (browse-url link))
-                                      'follow-link t))
-                  (insert "\n")))))
-          
-          (special-mode)
-          (goto-char (point-min))
-          (display-buffer (current-buffer)))))))
 #+end_src
 
 * Custom Commands For Projects
@@ -2304,8 +2211,133 @@ If TEST-PATTERN is provided, filter tests using the -t option."
      (format "cd %s && %s\n" default-directory command))))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun bitwarden/clients/lint/run ()
+  "Run linter for the clients monorepo"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "clients"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-lint*"))))
+    (compile "npm run lint" t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun scan-worktree-projects ()
+  "Scan for all worktree directories and add them to Projectile."
+  (interactive)
+  (let ((base-dir (expand-file-name "~/binwarden/")))
+    (dolist (owner-repo (directory-files base-dir t "^[^.]"))
+      (when (file-directory-p owner-repo)
+        (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
+          (when (and (file-directory-p branch-dir)
+                     (file-exists-p (expand-file-name ".git" branch-dir)))
+            (projectile-add-known-project branch-dir)))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun bitwarden/scan-worktrees (project-type)
+  "Scan for worktrees of PROJECT-TYPE (e.g., 'clients' or 'server')."
+  (let ((worktrees '())
+        (base-dir (expand-file-name "~/binwarden/")))
+    (dolist (dir (directory-files base-dir t "^[^.]"))
+      (when (and (file-directory-p dir)
+                 (string-match-p project-type (file-name-nondirectory dir)))
+        (dolist (branch-dir (directory-files dir t "^[^.]"))
+          (when (and (file-directory-p branch-dir)
+                     (file-exists-p (expand-file-name ".git" branch-dir)))
+            (push (cons (format "%s:%s" 
+                                (file-name-nondirectory dir) 
+                                (file-name-nondirectory branch-dir))
+                        branch-dir)
+                  worktrees)))))
+    worktrees))
+
+(defun bitwarden/select-worktree (project-type)
+  "Select a worktree of PROJECT-TYPE with completion."
+  (let* ((worktrees (bitwarden/scan-worktrees project-type))
+         (selection (completing-read 
+                     (format "Select %s worktree: " project-type)
+                     (mapcar #'car worktrees))))
+    (cdr (assoc selection worktrees))))
+
+(defun bitwarden/clients/browser/chrome/run-in-worktree ()
+  "Run Chrome extension build in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory (concat worktree-dir "/apps/browser"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-browser-chrome-run*"))))
+    (compile "pnpm run build:watch:chrome" t)))
+
+(defun bitwarden/clients/typechecker/run-in-worktree ()
+  "Run typechecker in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-typechecker*"))))
+    (compile "pnpm run test:types" t)))
+
+;; Template for other commands
+(defun bitwarden/clients/run-tests-in-worktree (&optional test-pattern)
+  "Run Jest tests in a selected clients worktree.
+If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (command (if (and test-pattern (not (string-empty-p test-pattern)))
+                    (format "npm run test -- -t '%s'" test-pattern)
+                  "npm run test"))
+         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+                         (format "*clients-jest-%s*" test-pattern)
+                       "*clients-jest*"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) buffer-name)))
+    (compile command t)))
+
+(defun bitwarden/clients/npm/ci-run-in-worktree ()
+  "Run pnpm ci in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-npm-ci*"))))
+    (compile "npm ci" t)))
+
+(defun bitwarden/clients/lint/worktree ()
+  "Run linting in a specific clients worktree"
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-npm-lint*"))))
+    (compile "npm run lint" t)))
+
+(direnv-mode)
+#+end_src
+
+
+#+RESULTS:
+: bitwarden/clients/pnpm/ci-run-in-worktree
+
+
 *** Run typechecking
 
+** Workspace
+
+#+begin_src emacs-lisp
+(defun my/worktree-build ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "BUILD_CMD") "make"))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/worktree-test ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "TEST_CMD") "make test"))))
+#+end_src
 * Custom Keymaps
 
 #+begin_src emacs-lisp
@@ -2702,6 +2734,316 @@ If TEST-PATTERN is provided, filter tests using the -t option."
   (define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
 #+end_src
 #+RESULTS:
+
+* Custom magit functions
+** Reset current buffer
+#+begin_src emacs-lisp
+  (defun reset-file-to-revision ()
+    "Reset the current buffer's file to a specified revision using Magit."
+    (interactive)
+    (require 'magit)
+    (let* ((file-path (buffer-file-name))
+	   (default-directory (magit-toplevel))
+	   (revision (magit-read-branch-or-commit "Reset file to revision")))
+      (when (and file-path revision)
+	(let ((relative-file-path (file-relative-name file-path default-directory)))
+	  (magit-run-git "checkout" revision "--" relative-file-path)
+	  (revert-buffer t t t)
+	  (message "File reset to %s" revision)))))
+#+end_src
+** View PR Check
+
+#+begin_src emacs-lisp
+(defun my/run-gh-pr-checks ()
+  "Run 'gh pr checks' for the current PR with better formatting."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
+           (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
+      (with-current-buffer (get-buffer-create buffer-name)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (shell-command cmd (current-buffer))
+          (goto-char (point-min))
+          (let* ((json-data (json-read))
+                 (checks (append json-data nil))
+                 (passed 0)
+                 (failed 0)
+                 (pending 0)
+                 (failed-jobs '()))
+            
+            ;; Count statuses and collect failed jobs
+            (dolist (check checks)
+              (let ((state (cdr (assoc 'state check))))
+                (cond
+                 ((string= state "SUCCESS") (cl-incf passed))
+                 ((string= state "FAILURE") 
+                  (cl-incf failed)
+                  (push check failed-jobs))
+                 (t (cl-incf pending)))))
+            
+            ;; Clear and format buffer
+            (erase-buffer)
+            (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
+                               'face '(:weight bold :height 1.2)))
+            (insert (format "Total: %d | " (length checks)))
+            (insert (propertize (format "Passed: %d | " passed)
+                               'face '(:foreground "green")))
+            (insert (propertize (format "Failed: %d | " failed)
+                               'face '(:foreground "red" :weight bold)))
+            (insert (propertize (format "Pending: %d\n\n" pending)
+                               'face '(:foreground "orange")))
+            
+            ;; Add detailed listing
+            (insert (propertize "All Checks:\n" 'face '(:weight bold)))
+            (dolist (check checks)
+              (let* ((name (cdr (assoc 'name check)))
+                     (state (cdr (assoc 'state check)))
+                     (link (cdr (assoc 'link check)))
+                     (state-face (cond
+                                 ((string= state "SUCCESS") '(:foreground "green"))
+                                 ((string= state "FAILURE") '(:foreground "red"))
+                                 (t '(:foreground "orange")))))
+                (insert "• ")
+                (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
+                                   'face '(:weight bold)))
+                (insert " - ")
+                (insert (propertize state 'face state-face))
+                (when link
+                  (insert " [")
+                  (insert-text-button "Link"
+                                     'action (lambda (_) (browse-url link))
+                                     'follow-link t)
+                  (insert "]"))
+                (insert "\n")))
+            
+            ;; Add failed jobs section
+            (when failed-jobs
+              (insert "\n")
+              (insert (propertize "Failed Jobs:\n" 
+                                 'face '(:foreground "red" :weight bold)))
+              (dolist (job failed-jobs)
+                (let ((name (cdr (assoc 'name job)))
+                      (link (cdr (assoc 'link job))))
+                  (insert "• ")
+                  (insert (propertize name 'face '(:foreground "red")))
+                  (when link
+                    (insert " → ")
+                    (insert-text-button "Open in Browser"
+                                      'action (lambda (_) (browse-url link))
+                                      'follow-link t))
+                  (insert "\n")))))
+          
+          (special-mode)
+          (goto-char (point-min))
+          (display-buffer (current-buffer)))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/rerun-failed-gh-pr-checks ()
+  "Rerun failed checks for the current PR using GitHub CLI."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           ;; Use the JSON format that matches what gh pr checks outputs
+           (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
+           failed-jobs)
+      
+      ;; Get failed jobs
+      (message "Fetching checks for PR #%s..." pr-number)
+      (let ((json-output (shell-command-to-string cmd)))
+        (condition-case err
+            (let ((json-object (json-read-from-string json-output)))
+              (setq failed-jobs
+                    (seq-filter (lambda (job)
+                                  (and (alist-get 'conclusion job nil nil #'equal)
+                                       (string= (alist-get 'conclusion job) "failure")))
+                                json-object)))
+          (error
+           (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
+           (setq failed-jobs nil))))
+      
+      (if (null failed-jobs)
+          (message "No failed jobs to rerun!")
+        (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
+          (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
+                (counter 0))
+            (with-current-buffer rerun-buffer
+              (let ((inhibit-read-only t))
+                (erase-buffer)
+                (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
+                
+                (dolist (job failed-jobs)
+                  (let* ((name (alist-get 'name job))
+                         (id (alist-get 'databaseId job))
+                         (rerun-cmd (format "gh run rerun %s" id)))
+                    (insert (format "• Rerunning: %s (ID: %s)..." name id))
+                    (let ((result (shell-command-to-string rerun-cmd)))
+                      (if (string-match-p "Failed\\|Error" result)
+                          (insert (propertize " Failed\n" 'face '(:foreground "red")))
+                        (progn
+                          (cl-incf counter)
+                          (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
+                
+                (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
+                                           counter (length failed-jobs))
+                                   'face '(:weight bold)))
+                (special-mode)
+                (goto-char (point-min))
+                (display-buffer (current-buffer)))))))))))
+#+end_src
+
+** Speed up magit
+Supposedly this helps speed up git on large repos
+
+#+begin_src emacs-lisp
+(setq magit-git-global-arguments
+        (append magit-git-global-arguments '("-c" "core.preloadindex=true")))
+#+end_src
+
+** View reviews for PR
+
+#+begin_src elisp
+(defun my/gh-pr-reviewers ()
+  "Fetch and display reviewers for the current PR using GitHub CLI."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           (buffer-name (format "*gh-pr-reviewers:#%s*" pr-number))
+           (cmd-reviews (format "gh pr view %s --json reviews,reviewRequests,latestReviews" pr-number))
+           (cmd-raw (format "gh pr view %s --json isDraft,title" pr-number)))
+      (with-current-buffer (get-buffer-create buffer-name)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          
+          ;; Get basic PR data first
+          (shell-command cmd-raw (current-buffer))
+          (goto-char (point-min))
+          
+          (condition-case raw-err
+              (let* ((raw-data (json-read))
+                     (is-draft (cdr (assoc 'isDraft raw-data)))
+                     (title (cdr (assoc 'title raw-data))))
+                
+                ;; Get review data
+                (erase-buffer)
+                (shell-command cmd-reviews (current-buffer))
+                (goto-char (point-min))
+                
+                (condition-case review-err
+                    (let* ((json-data (json-read))
+                           (reviews (or (cdr (assoc 'reviews json-data)) []))
+                           (latest-reviews (or (cdr (assoc 'latestReviews json-data)) []))
+                           (review-requests (or (cdr (assoc 'reviewRequests json-data)) []))
+                           (approved 0)
+                           (changes-requested 0)
+                           (commented 0)
+                           (pending (length review-requests)))
+                      
+                      ;; Count latest review statuses
+                      (dotimes (i (length latest-reviews))
+                        (let* ((review (aref latest-reviews i))
+                               (state (cdr (assoc 'state review))))
+                          (cond
+                           ((string= state "APPROVED") (cl-incf approved))
+                           ((string= state "CHANGES_REQUESTED") (cl-incf changes-requested))
+                           ((string= state "COMMENTED") (cl-incf commented)))))
+                      
+                      ;; Clear and format buffer
+                      (erase-buffer)
+                      (insert (propertize (format "PR #%s Reviewers Summary %s\n\n" 
+                                                 pr-number 
+                                                 (if is-draft "[DRAFT]" ""))
+                                         'face '(:weight bold :height 1.2)))
+                      (insert (format "Title: %s\n\n" title))
+                      (insert (format "Total Reviews: %d | " (length reviews)))
+                      (insert (propertize (format "Approved: %d | " approved)
+                                         'face '(:foreground "green" :weight bold)))
+                      (insert (propertize (format "Changes Requested: %d | " changes-requested)
+                                         'face '(:foreground "red" :weight bold)))
+                      (insert (propertize (format "Commented: %d\n" commented)
+                                         'face '(:foreground "blue")))
+                      (insert (propertize (format "Requested Reviews: %d\n" pending)
+                                         'face '(:foreground "orange")))
+                      
+                      ;; Add latest reviews section
+                      (when (> (length latest-reviews) 0)
+                        (insert "\n")
+                        (insert (propertize "Latest Reviews by Reviewer:\n" 'face '(:weight bold)))
+                        (dotimes (i (length latest-reviews))
+                          (let* ((review (aref latest-reviews i))
+                                 (author (cdr (assoc 'author review)))
+                                 (login (cdr (assoc 'login author)))
+                                 (state (cdr (assoc 'state review)))
+                                 (submitted-at (cdr (assoc 'submittedAt review)))
+                                 (body (cdr (assoc 'body review)))
+                                 (state-face (cond
+                                              ((string= state "APPROVED") '(:foreground "green"))
+                                              ((string= state "CHANGES_REQUESTED") '(:foreground "red"))
+                                              (t '(:foreground "blue")))))
+                            (insert "• ")
+                            (insert (propertize (format "%-20s" login)
+                                               'face '(:weight bold)))
+                            (insert " - ")
+                            (insert (propertize 
+                                     (format "%-15s" 
+                                            (cond
+                                             ((string= state "APPROVED") "Approved")
+                                             ((string= state "CHANGES_REQUESTED") "Changes Requested")
+                                             (t "Commented")))
+                                     'face state-face))
+                            (insert " - ")
+                            (insert (format "%s" (format-time-string "%Y-%m-%d" 
+                                                                    (date-to-time submitted-at))))
+                            (when (and body (not (string= body "")))
+                              (insert "\n    ")
+                              (insert (propertize (truncate-string-to-width 
+                                                  (replace-regexp-in-string "\n" " " body) 70)
+                                                 'face '(:slant italic))))
+                            (insert "\n"))))
+                      
+                      ;; Add pending/requested reviewers section
+                      (when (> pending 0)
+                        (insert "\n")
+                        (insert (propertize (if is-draft 
+                                              "Assigned Reviewers (will be notified when ready):\n" 
+                                             "Requested Reviewers:\n")
+                                           'face '(:foreground "orange" :weight bold)))
+                        
+                        (dotimes (i (length review-requests))
+                          (let* ((request (aref review-requests i))
+                                 (requestee (cdr (assoc 'requestedReviewer request))))
+                            (when requestee
+                              (let ((login (cdr (assoc 'login requestee)))
+                                    (team-slug (and (assoc 'slug requestee) (cdr (assoc 'slug requestee)))))
+                                (when (or login team-slug)
+                                  (insert "• ")
+                                  (insert (propertize (or login (concat "Team: " team-slug))
+                                                     'face '(:foreground "orange")))
+                                  (insert "\n")))))))
+                      
+                      (special-mode)
+                      (goto-char (point-min)))
+                  (error
+                   (erase-buffer)
+                   (insert (format "Error parsing review data: %s\n\n" review-err))
+                   (insert "Raw output from gh command:\n\n")
+                   (insert (shell-command-to-string cmd-reviews)))))
+            (error
+             (erase-buffer)
+             (insert (format "Error parsing basic PR data: %s\n\n" raw-err))
+             (insert "Raw output from gh command:\n\n")
+             (insert (shell-command-to-string cmd-raw)))))
+          
+        (display-buffer (current-buffer))))))
+#+end_src
+
+#+RESULTS:
+: my/gh-pr-reviewers
 
 * Provide Init
 

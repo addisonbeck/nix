@@ -6,3 +6,4 @@
 /result
 *.rej
 repomix-output.txt
+.aider*

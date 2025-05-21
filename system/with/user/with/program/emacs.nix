@@ -152,6 +152,8 @@ in {
           elfeed-tube
           elfeed-tube-mpv
           mpv
+          direnv
+          aidermacs
         ];
     };
   };
