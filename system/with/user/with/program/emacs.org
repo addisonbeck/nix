@@ -1208,7 +1208,7 @@ I'm not using these right now, but might revist in the future.
       (olivetti-mode -1)
     (progn
       (olivetti-mode)
-      (olivetti-set-width 0.7))))
+      (olivetti-set-width 120))))
 
 (defun my/update-olivetti-fringe-face ()
     "Update olivetti-fringe face based on current theme."
@@ -2010,15 +2010,24 @@ This works but I'm using the fetch mcp server
     (let ((token (plist-get auth :secret)))
       (if (functionp token) (funcall token) token))))
 
+(defun my/get-brave-token ()
+  (interactive)
+  (when-let ((auth (car (auth-source-search :host "api.brave.com" :require '(:secret)))))
+    (let ((token (plist-get auth :secret)))
+      (if (functionp token) (funcall token) token))))
+
 ;; Configure the GitHub MCP server (using Docker)
 (setq mcp-hub-servers
       `(
-        ;("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
        ("filesystem" . (:command "npx"
                                        :args
                                        ("-y" "@modelcontextprotocol/server-filesystem" "/Users/me/nix" "/Users/me/binwarden" "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes")))
         ;; https://github.com/bhouston/mcp-server-text-editor - same functionality as Claude's text editor
         ;; PSA: this service requires absolute paths to be used by the LLM
+
+        ("brave-search" . (:command "npx"
+                                         :args ("-y" "@modelcontextprotocol/server-brave-search")
+                                         :env (:BRAVE_API_KEY ,(my/get-brave-token))))
         ("mcp-server-text-editor" . (:command "npx"
                                             :args ("-y" "mcp-server-text-editor")))
         ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
