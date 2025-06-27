@@ -154,6 +154,13 @@ in {
           mpv
           direnv
           aidermacs
+          olivetti
+          org-modern
+          breadcrumb
+          oauth2
+          smtpmail-multi
+          rustic
+          ledger-mode
         ];
     };
   };
@@ -186,6 +193,8 @@ in {
     mpv-unwrapped
     yt-dlp
     ffmpeg
+    ledger
+    hledger
   ];
 
   home.file.".emacs.d/diary".text = ''

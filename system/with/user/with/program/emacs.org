@@ -16,6 +16,12 @@
 
 Here I'll define some key data structures used throughout the rest of the configuration
 
+** Auth Sources
+
+#+begin_src emacs-lisp
+(setq auth-sources '("~/.authinfo"))
+#+end_src
+
 ** Projects
 
 *** The Projects Data Structure
@@ -153,6 +159,77 @@ Here I'll define some key data structures used throughout the rest of the config
 		 ))
 #+end_src
 
+* Font Configuration
+#+begin_src emacs-lisp
+;; Define your custom face settings in a function
+(defun my/apply-custom-faces ()
+  "Apply all my custom face settings."
+  ;; Basic font settings
+  (set-face-attribute 'default nil :family "Iosevka" :height 140)
+  (set-face-attribute 'variable-pitch nil :family "Iosevka Etoile" :height 140)
+  (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140)
+  
+  ;; Org faces
+  (with-eval-after-load 'org
+    (custom-set-faces
+     '(org-document-info-keyword ((t (:inherit variable-pitch :height 1.0))))
+     '(org-document-title ((t (:inherit variable-pitch :height 1.3))))
+     '(org-level-1 ((t (:inherit variable-pitch :height 1.3))))
+     '(org-level-2 ((t (:inherit variable-pitch :height 1.2))))
+     '(org-level-3 ((t (:inherit variable-pitch :height 1.1))))
+     '(org-level-4 ((t (:inherit variable-pitch :height 1.0))))
+     '(org-level-5 ((t (:inherit variable-pitch :height 1.0))))
+     '(org-level-6 ((t (:inherit variable-pitch :height 1.0))))
+     '(org-level-7 ((t (:inherit variable-pitch :height 1.0))))
+     '(org-level-8 ((t (:inherit variable-pitch :height 1.0))))
+     '(org-agenda-date-today ((t (:inherit variable-pitch :height 1.3))))
+     '(org-super-agenda-header ((t (:inherit variable-pitch :height 1.2))))
+     
+     ;; Keep these elements as fixed-pitch even in variable-pitch-mode
+     '(org-block ((t (:inherit fixed-pitch))))
+     '(org-code ((t (:inherit fixed-pitch))))
+     '(org-table ((t (:inherit fixed-pitch))))
+     '(org-verbatim ((t (:inherit fixed-pitch))))
+     '(org-special-keyword ((t (:inherit fixed-pitch :height 140))))
+     '(org-drawer ((t (:inherit fixed-pitch :height 140))))
+     '(org-property-value ((t (:inherit fixed-pitch :height 140))))
+     '(org-modern-label ((t (:inherit fixed-pitch :height 140))))
+     '(org-modern-statistics ((t (:inherit fixed-pitch :height 140))))
+     '(org-modern-tag ((t (:inherit fixed-pitch :height 140)))))))
+
+;; Apply custom faces when Emacs starts
+(add-hook 'after-init-hook 'my/apply-custom-faces)
+
+(setq org-modern-hide-stars nil)
+(setq org-modern-star nil)
+
+(defun my/set-line-spacing-for-text ()
+  "Set custom line spacing for text-heavy modes."
+  (interactive)
+  (setq-local line-spacing 0.3)) 
+
+(with-eval-after-load 'org
+(add-hook 'org-mode-hook 'my/set-line-spacing-for-text))
+(add-hook 'markdown-mode-hook 'my/set-line-spacing-for-text)
+
+(with-eval-after-load 'org
+(add-hook 'org-mode-hook 'breadcrumb-local-mode)
+(add-hook 'org-agenda-mode-hook 'variable-pitch-mode)
+(add-hook 'org-mode-hook 'variable-pitch-mode))
+
+(add-hook 'markdown-mode-hook (lambda ()
+  (breadcrumb-local-mode 1)
+  (variable-pitch-mode 1)
+  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
+
+(add-hook 'prog-mode (lambda ()
+  (breadcrumb-local-mode 1)
+  (variable-pitch-mode 1)
+  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
+#+end_src
+
 * Basic Settings
 #+begin_src emacs-lisp
   ;; Disable backup files and configure indentation
@@ -229,12 +306,6 @@ Here I'll define some key data structures used throughout the rest of the config
     (setq dashboard-heading-icons '((recents   . "nf-oct-history")
 				    (bookmarks . "nf-oct-bookmark")
 				    (projects  . "nf-oct-project"))))
-#+end_src
-
-* Font Configuration
-#+begin_src emacs-lisp
-  (set-face-attribute 'default nil :family "Iosevka" :height 140)
-  (set-face-attribute 'variable-pitch nil :family "Iosevka Etoile" :height 100)
 #+end_src
 
 * Evil Mode Configuration
@@ -381,11 +452,10 @@ Here I'll define some key data structures used throughout the rest of the config
 * Tree-sitter Configuration
 #+begin_src emacs-lisp
   (use-package treesit-auto
-    :ensure t
     :config
     (global-treesit-auto-mode)
     (setq treesit-auto-install 'prompt)
-    (setq treesit-auto-langs '(typescript javascript tsx jsx)))
+    (setq treesit-auto-langs '(typescript javascript tsx jsx yaml)))
 
   (use-package typescript-ts-mode
     :ensure t
@@ -494,7 +564,6 @@ Here I'll define some key data structures used throughout the rest of the config
     :config
     (setq org-directory "~/notes")
     (setq org-startup-truncated nil)
-    (setq org-agenda-files (list org-directory))
     (setq org-log-done 'time)
     (setq org-log-into-drawer t)
     (setq org-startup-folded 'overview)
@@ -577,7 +646,13 @@ Here I'll define some key data structures used throughout the rest of the config
 For some reason this keeps getting set wrong by something.
 
 #+begin_src emacs-lisp
-  (setq org-agenda-files (list org-directory))
+(defun my/set-org-agenda-files ()
+(interactive)
+(setq org-agenda-files
+      (seq-filter (lambda (f) (not (string-match-p "/\\." f)))
+                  (directory-files-recursively "~/notes/" "\\.org$")))
+)
+(add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
 #+end_src
 
 * Org To Jira
@@ -588,18 +663,103 @@ For some reason this keeps getting set wrong by something.
 #+end_src
 * Org Capture Templates and Functions
 #+begin_src emacs-lisp
-  (setq org-capture-templates
-	'(
-	  ("l" "Log" entry
-	   (file "~/notes/inbox.org")
-	   "* %U %^{Title}\n%?")
-	  ("e" "Event" entry
-	   (file "~/notes/inbox.org")
-	   "* %^{Title}\n%^T\n%?")
-	  ("t" "Todo" entry
-	   (file "~/notes/inbox.org")
-	   "* TODO [#A] %^{Title}\nSCHEDULED: %t\n%?")
-	  ))
+(setq org-capture-templates
+'(
+  ("l" "Log" entry
+   (file "~/notes/inbox.org")
+   "* %U %^{Title}\n%?")
+  ("e" "Event" entry
+   (file "~/notes/inbox.org")
+   "* %^{Title}\n%^T\n%?")
+  ("t" "Todo" entry
+   (file "~/notes/inbox.org")
+   "* TODO [#A] %^{Title}\nSCHEDULED: %t\n%?")
+  ))
+
+(setq budget-payees '(
+  "Walmart"
+  "Amazon"
+  "Target"
+  "Costco"
+  "Grocery Store"
+  "Gas Station"
+  "Apple"
+  "Playstation"
+  "Roblox"
+  "Fortnite"
+))
+(setq budget-accounts '(
+  "Assets:Checking"
+  "Assets:HSA"
+  "Liabilities:CreditCard:AppleCard"
+  "Liabilities:CreditCard:PrimeStoreCard"
+))
+(setq budget-categories '(
+  "Expenses:Groceries"
+  "Expenses:Dining"
+  "Expenses:Transportation"
+  "Bills:Rent"
+  "Bills:Utilities"
+))
+
+(defun org-capture-select-payee ()
+  (org-completing-read "Payee: " budget-payees))
+
+(defun org-capture-select-account ()
+  (org-completing-read "Account: " budget-accounts))
+
+(defun org-capture-select-category ()
+  (org-completing-read "Category: " budget-categories))
+
+(add-to-list 'org-capture-templates
+             '("b" "Budget transaction" entry
+               (file+headline "~/notes/budget.org" "Transactions")
+               "** [PENDING] %(progn (setq transaction-date (org-read-date nil nil nil \"Date: \")) transaction-date): $%(progn (setq transaction-amount (read-string \"Amount: \")) transaction-amount) @ %(progn (setq transaction-payee (org-capture-select-payee)) transaction-payee) on %(progn (setq transaction-account (org-capture-select-account)) transaction-account)
+%^{Description}
+,#+begin_src ledger
+%(progn transaction-date) ! %(progn transaction-payee) 
+    %(progn (setq transaction-category (org-capture-select-category)) transaction-category)  $%(progn transaction-amount)
+    %(progn transaction-account)
+,#+end_src
+" :empty-lines 1))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun finalize-transaction-under-cursor ()
+  "Finalizes a pending transaction by:
+   1. Removing '[PENDING]' from the heading
+   2. Converting '!' to '*' in the ledger transaction"
+  (interactive)
+  (save-excursion
+    ;; Find the heading containing the transaction
+    (while (and (not (org-at-heading-p)) 
+                (not (bobp)))
+      (org-backward-heading-same-level 1 t))
+    
+    ;; Remove [PENDING] from the heading
+    (when (org-at-heading-p)
+      (let ((case-fold-search nil))
+        (beginning-of-line)
+        (when (re-search-forward "\\(\\*+\\s-+\\)\\(\\[PENDING\\]\\s-+\\)" (line-end-position) t)
+          (replace-match "\\1"))))
+    
+    ;; Find the ledger source block
+    (let ((end-of-section (save-excursion
+                            (or (org-get-next-sibling)
+                                (point-max)))))
+      (forward-line)
+      (while (and (< (point) end-of-section)
+                  (not (looking-at "^#\\+begin_src ledger")))
+        (forward-line))
+      
+      ;; If we found a ledger block, change ! to *
+      (when (looking-at "^#\\+begin_src ledger")
+        (forward-line)
+        (when (re-search-forward "^\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) !" 
+                                 (save-excursion 
+                                   (re-search-forward "^#\\+end_src" end-of-section t))
+                                 t)
+          (replace-match "\\1 *"))))))
 #+end_src
 
 * Date Tracking Functions
@@ -680,131 +840,144 @@ I'm not using these right now, but might revist in the future.
 
 * Agenda Configuration
 #+begin_src emacs-lisp
-  (setq org-agenda-block-separator nil)
-  (setq org-agenda-window-setup 'current-window)
-  (setq org-agenda-timegrid-use-ampm t)
-  (setq org-agenda-time-leading-zero t)
-  (setq org-agenda-todo-keyword-format "%s")
-  (setq org-agenda-include-diary t)
-  (setq org-refile-targets '((nil :maxlevel . 8)
-			     (org-agenda-files :maxlevel . 2)))
-  (setq org-agenda-hide-tags-regexp ".")
+(setq org-agenda-block-separator nil)
+(setq org-agenda-window-setup 'current-window)
+(setq org-agenda-timegrid-use-ampm t)
+(setq org-agenda-time-leading-zero t)
+(setq org-agenda-todo-keyword-format "%s")
+(setq org-agenda-include-diary t)
+(setq org-refile-targets '((nil :maxlevel . 8)
+		     (org-agenda-files :maxlevel . 2)))
+(setq org-agenda-hide-tags-regexp ".")
 
-  ;; Allow creating new nodes (including new files) when refiling
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
+;; Allow creating new nodes (including new files) when refiling
+(setq org-refile-allow-creating-parent-nodes 'confirm)
 
-  ;; Use the full outline paths for refile targets
-  (setq org-refile-use-outline-path nil)
+;; Use the full outline paths for refile targets
+(setq org-refile-use-outline-path nil)
 
-  ;; Completes in steps so you can select a heading after selecting the file
-  (setq org-outline-path-complete-in-steps nil)
+;; Completes in steps so you can select a heading after selecting the file
+(setq org-outline-path-complete-in-steps nil)
 
-  (require 'diary-lib)
+(require 'diary-lib)
 
-  (use-package org-super-agenda
-    :after org-agenda
-    :config
-    (setq org-super-agenda-header-map nil)  
-    (setq org-super-agenda-header-properties nil)
-    (org-super-agenda-mode))
+(use-package org-super-agenda
+  :after org-agenda
+  :config
+  (setq org-super-agenda-header-map nil)  
+  (setq org-super-agenda-header-properties nil)
+  (org-super-agenda-mode))
 
-  (setq warning-suppress-types '((org-element)))
+(setq warning-suppress-types '((org-element)))
 
-  (defun my/inherit-meeting-times ()
-    "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
-    (interactive)
-    (org-map-entries
-     (lambda ()
-       (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
-		  (org-get-todo-state))
-	 (let ((timestamp nil))
-	   (save-excursion
-	     (when (org-up-heading-safe)
-	       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
-	   (when timestamp
-	     (org-schedule nil timestamp)))))
-     "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
+(defun my/inherit-meeting-times ()
+  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
+	  (org-get-todo-state))
+ (let ((timestamp nil))
+   (save-excursion
+     (when (org-up-heading-safe)
+       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+   (when timestamp
+     (org-schedule nil timestamp)))))
+   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
 
-  (setq org-agenda-custom-commands
-	'(("d" "daily dashboard"
-	   (
-	    (tags "+CATEGORY=\"inbox\"" 
-		  ((org-agenda-overriding-header "Inbox")))
-	    (agenda "Schedule and Habits"
-		    ((org-agenda-span 'day)
-		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-		     (org-agenda-overriding-header " ")
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Meeting Notes" :category "meeting-notes")
-			(:name "Today's Schedule"
-			       :time-grid t)
-			(:name "Overdue" :deadline past)
-			(:name "Due Today" :deadline today)
-			(:name "High Priority" :priority "A")
-			(:name "Code Review Queue" :category "code review")
-			(:name "Code Review Bunker" :category "code review bunker")
-			(:name "Active Bugs" :category "bug")
-			(:name "Active Epics" :category "epic")
-			(:name "Easy" :tag ("easy"))
-			;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
-			;;(:name "Inbox" :category "inbox")
-			(:name "Due Soon" :deadline future)
-			(:name "Poetry" :category "my poems")
-			(:name "Family Stuff" :category "family")
-			(:name "Holidays" :category "holiday")
-			(:name "The Garden" :category "the-garden")
-			(:name "Logs" :category "log")
-			(:name "Re: Me" :category "me")
-			(:name "Re: Emily" :category "emily")
-			(:name "Re: Lincoln" :category "lincoln")
-			(:name "Re: Nora" :category "nora")
-			(:name "Re: Fern" :category "fern")
-			(:name "Re: Harry" :category "harry")
-			(:name "AM Habits" :category "personal habits am")
-			(:name "Midday Habits" :category "personal habits midday")
-			(:name "PM Habits" :category "personal habits pm")
-			(:name "Any Time Habits" :category "personal habits any time")
-			(:name "Work Habits" :category "work habits")
-			(:auto-category t)
-			))))))
-	  ("w" "Weekly overview with super-agenda"
-	   ((agenda ""
-		    ((org-agenda-span 7)                      ;; Show 7 days
-		     (org-agenda-start-on-weekday nil)        ;; Start from current day
-		     (org-agenda-time-grid '((daily today require-timed)
-					     (800 1000 1200 1400 1600 1800 2000)
-					     "......" "----------------"))  ;; Time grid config
-		     (org-agenda-include-deadlines nil)       ;; No deadlines
-		     (org-agenda-skip-scheduled-if-done t)     
-		     (org-agenda-skip-deadline-if-done t)
-		     (org-agenda-skip-scheduled-delay-if-done t)
-		     (org-agenda-skip-function                ;; Skip scheduled items
-		      '(org-agenda-skip-entry-if 'scheduled 'deadline))
-		     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-		     (org-agenda-todo-keyword-format "")
-		     (org-agenda-show-all-dates t)
-		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-		     (org-agenda-format-date "%A %Y-%m-%d")
-		     ;; Super agenda groups
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Schedule"
-			       :time-grid t)
-			))))))
-	  ))
+(setq org-agenda-custom-commands
+'(("d" "daily dashboard"
+   (
+    (tags "+CATEGORY=\"inbox\"" 
+	  ((org-agenda-overriding-header "Inbox")))
+    (agenda "Schedule and Habits"
+	    ((org-agenda-span 'day)
+	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+	     (org-agenda-overriding-header " ")
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Meeting Notes" :category "meeting-notes")
+		(:name "Today's Schedule"
+		       :time-grid t)
+		(:name "Overdue" :deadline past)
+	  (:name "Cooking" :and (:deadline today :tag "cooking"))
+	  (:name "Hard" :and (:deadline today :tag "hard"))
+		(:name "Quick" :and (:deadline today :tag "quick"))
+		(:name "Easy" :and (:deadline today :tag "easy"))
+	  (:name "Cleaning" :and (:deadline today :tag "cleaning"))
+		(:name "Code Review" :and (:category "code review" :deadline today))
+		(:name "Code Review Bunker" :and (:category "code review bunker" :deadline today))
+		(:name "Work" :and (:deadline today :tag "work"))
+		(:name "Due Today" :deadline today)
+		(:name "High Priority" :priority "A")
+		(:name "Easy" :tag ("easy"))
+		(:name "Due Soon" :deadline future)
+		(:name "Active Bugs" :category "bug")
+		(:name "Active Epics" :category "epic")
+		;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
+		;;(:name "Inbox" :category "inbox")
+		;;(:name "Poetry" :category "my poems")
+		(:name "Family Stuff" :category "family")
+		(:name "Holidays" :category "holiday")
+		(:name "The Garden" :category "the-garden")
+		(:name "Logs" :category "log")
+		(:name "Re: Me" :category "me")
+		(:name "Re: Emily" :category "emily")
+		(:name "Re: Lincoln" :category "lincoln")
+		(:name "Re: Nora" :category "nora")
+		(:name "Re: Fern" :category "fern")
+		(:name "Re: Harry" :category "harry")
+		(:name "AM Habits" :category "personal habits am")
+		(:name "Midday Habits" :category "personal habits midday")
+		(:name "PM Habits" :category "personal habits pm")
+		(:name "Any Time Habits" :category "personal habits any time")
+		(:name "Work Habits" :category "work habits")
+		(:auto-category t)
+		))))))
+  ("w" "Weekly overview with super-agenda"
+   ((agenda ""
+	    ((org-agenda-span 7)                      ;; Show 7 days
+	     (org-agenda-start-on-weekday nil)        ;; Start from current day
+	     (org-agenda-time-grid '((daily today require-timed)
+				     (800 1000 1200 1400 1600 1800 2000)
+				     "......" "----------------"))  ;; Time grid config
+	     (org-agenda-include-deadlines nil)       ;; No deadlines
+	     (org-agenda-skip-scheduled-if-done t)     
+	     (org-agenda-skip-deadline-if-done t)
+	     (org-agenda-skip-scheduled-delay-if-done t)
+	     (org-agenda-skip-function                ;; Skip scheduled items
+	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+	     (org-agenda-todo-keyword-format "")
+	     (org-agenda-show-all-dates t)
+	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+	     (org-agenda-format-date "%A %Y-%m-%d")
+	     ;; Super agenda groups
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Schedule"
+		       :time-grid t)
+		))))))
+  ))
 
-  (setq org-agenda-time-grid-use-ampm t)
-  (setq org-agenda-with-times t)
-  (setq org-agenda-time-format "%I:%M%p")
-  (setq org-agenda-prefix-format
-	'((agenda . " ○ %t ")
-	  (tags   . "○ ")
-	  (todo   . "○ ")))
+(setq org-agenda-time-grid-use-ampm t)
+(setq org-agenda-with-times t)
+(setq org-agenda-time-format "%I:%M%p")
+
+; used with %i
+;(setq org-agenda-category-icon-alist 
+;      `(("bread"  ,(list (propertize "‍🥖")))
+;        ("Music" ,(list (propertize "🎶" )))
+;        ("Home"  ,(list (propertize"🏡" )))))
+
+(setq org-agenda-prefix-format
+'((agenda . "  - %t ")
+  (tags   . "○ ")
+  (todo   . "○ ")))
 #+end_src
 
 * Calfw
@@ -824,125 +997,125 @@ I'm not using these right now, but might revist in the future.
 #+end_src
 
 * Org Face Customizations
+
 #+begin_src emacs-lisp
-  ;; Face customizations for org mode
-  (custom-set-faces
-   '(org-document-info-keyword ((t (:height 1.0))))
-   '(org-document-title ((t (:height 140))))
-   '(org-level-1 ((t (:height 140))))
-   '(org-level-2 ((t (:height 140))))
-   '(org-level-3 ((t (:height 140))))
-   '(org-level-4 ((t (:height 140))))
-   '(org-level-5 ((t (:height 140))))
-   '(org-level-6 ((t (:height 140))))
-   '(org-level-7 ((t (:height 140))))
-   '(org-level-8 ((t (:height 140))))
-   '(org-modern-label ((t (:height 140))))
-   '(org-modern-statistics ((t (:height 140))))
-   '(org-modern-tag ((t (:height 140))))
-   '(org-drawer ((t (:height 140))))
-   '(org-drawer-content ((t (:height 140))))
-   '(variable-pitch-text ((t (:height 140))))
-   '(variable-pitch ((t (:height 140))))
-   '(org-property-value ((t (:height 140))))
-   '(org-special-keyword ((t (:height 140)))))
+(use-package org-modern)
+
+;; Face customizations for org mode
+(defun my/toggle-org-modern ()
+  "Toggle org-modern-mode on and off."
+  (interactive)
+  (if (bound-and-true-p org-modern-mode)
+      (progn
+        (org-modern-mode -1)
+        (message "org-modern-mode disabled"))
+    (progn
+      (org-modern-mode)
+      (message "org-modern-mode enabled"))))
+
+(global-set-key (kbd "<f2>") 'my/toggle-org-modern)
 #+end_src
 
 * GitHub Integration
 #+begin_src emacs-lisp
-  (require 'ghub)
+(require 'ghub)
 
-  (defvar my/github-pr-file "~/notes/code-reviews.org"
-    "File to store GitHub PR todos.")
+(defvar my/github-pr-file "~/notes/code-reviews.org"
+  "File to store GitHub PR todos.")
 
-  (defvar my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
+(defvar my/github-pr-queries
+  '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
 
-  (defun my/pr-exists-p (url)
-    "Check if PR with URL already exists in the org file."
-    (message "Checking for existing PR: %s" url)
-    (when (file-exists-p my/github-pr-file)
-      (message "File exists, checking content")
-      (with-temp-buffer
-	(insert-file-contents my/github-pr-file)
-	(message "File contents loaded")
-	;; Instead of using buffer positions, just check if the string exists
-	(string-match-p (regexp-quote url) (buffer-string)))))
+(defun my/pr-exists-p (url)
+  "Check if PR with URL already exists in the org file."
+  ;;(message "Checking for existing PR: %s" url)
+  (when (file-exists-p my/github-pr-file)
+    ;;(message "File exists, checking content")
+    (with-temp-buffer
+(insert-file-contents my/github-pr-file)
+;;(message "File contents loaded")
+;; Instead of using buffer positions, just check if the string exists
+(string-match-p (regexp-quote url) (buffer-string)))))
 
-  (defun my/fetch-github-prs ()
-    "Fetch PRs and create new org entries if they don't exist."
-    (interactive)
-    (message "Starting PR fetch")
-    (let ((buf (find-file-noselect my/github-pr-file)))
-      (message "Buffer created: %S" buf)
-      (with-current-buffer buf
-	(message "In buffer")
-	(org-mode)
-	(message "Org mode enabled")
-	(let ((max-point (point-max)))
-	  (message "Max point: %S" max-point)
-	  (goto-char max-point)
-	  (message "Moved to end of buffer")
-	  (dolist (query-pair my/github-pr-queries)
-	    (let* ((section-name (car query-pair))
-		   (query (cdr query-pair)))
-	      (message "Processing query: %s" section-name)
-	      (let ((response (ghub-graphql
-			       "query($query: String!) {
-							  search(query: $query, type: ISSUE, first: 100) {
-							    nodes {
-							      ... on PullRequest {
-								title
-								url
-								repository {
-								  nameWithOwner
-								}
-								author {
-								  login
-								}
-								updatedAt
-								state
-							      }
-							    }
-							  }
-							}"
-			       `((query . ,query)))))
-		(message "Got GraphQL response")
-		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
-		  (message "Found %d PRs" (length prs))
-		  (dolist (pr prs)
-		    (message "Processing PR: %S" pr)
-		    (let-alist pr
-		      (message "Checking if PR exists: %s" .url)
-		      (let ((exists-result (my/pr-exists-p .url)))
-			(message "PR exists check returned: %S" exists-result)
-			(unless exists-result
-			  (message "PR doesn't exist, inserting")
-			  (let ((insert-point (point)))
-			    (message "Current point before insert: %S" insert-point)
-			    (insert (format "* TODO %s\nSCHEDULED: <%s>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
-					    .title
-					    (format-time-string "%Y-%m-%d")
-					    .url
-					    .repository.nameWithOwner
-					    .author.login))
-			    (message "Insert completed"))))))))))))
-      (message "Saving buffer")
-      (save-buffer)
-      (message "PR fetch completed")))
+(defun my/fetch-github-prs ()
+  "Fetch PRs and create new org entries if they don't exist."
+  (interactive)
+  (message "[%s] Fetching PRs to review..." 
+           (format-time-string "%H:%M:%S"))
+  (let ((buf (find-file-noselect my/github-pr-file)))
+    ;;(message "Buffer created: %S" buf)
+    (with-current-buffer buf
+;;(message "In buffer")
+(org-mode)
+;;(message "Org mode enabled")
+(let ((max-point (point-max)))
+  ;;(message "Max point: %S" max-point)
+  (goto-char max-point)
+  ;;(message "Moved to end of buffer")
+  (dolist (query-pair my/github-pr-queries)
+    (let* ((section-name (car query-pair))
+	   (query (cdr query-pair)))
+      ;;(message "Processing query: %s" section-name)
+      (let ((response (ghub-graphql
+		       "query($query: String!) {
+						  search(query: $query, type: ISSUE, first: 100) {
+						    nodes {
+						      ... on PullRequest {
+							title
+							url
+							repository {
+							  nameWithOwner
+							}
+							author {
+							  login
+							}
+							updatedAt
+							state
+						      }
+						    }
+						  }
+						}"
+		       `((query . ,query)))))
+	;;(message "Got GraphQL response")
+	(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
+	  ;;(message "Found %d PRs" (length prs))
+	  (dolist (pr prs)
+	    ;;(message "Processing PR: %S" pr)
+	    (let-alist pr
+	      ;;(message "Checking if PR exists: %s" .url)
+	      (let ((exists-result (my/pr-exists-p .url)))
+		;;(message "PR exists check returned: %S" exists-result)
+		(unless exists-result
+		  ;;(message "PR doesn't exist, inserting")
+		  (let ((insert-point (point)))
+		    ;;(message "Current point before insert: %S" insert-point)
+		    (insert (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
+				    .title
+				    (format-time-string "%Y-%m-%d")
+				    .url
+				    .repository.nameWithOwner
+				    .author.login))
+		    ;;(message "Insert completed")
+        )))))))))))
+    ;;(message "Saving buffer")
+    (with-current-buffer buf
+      (save-buffer))))
+    ;;(message "PR fetch completed")))
 
-  (global-set-key (kbd "C-c g p") #'my/fetch-github-prs)
+(global-set-key (kbd "C-c g p") #'my/fetch-github-prs)
 
-  (defun remove-duplicate-org-entries ()
-    (interactive)
-    (let ((seen-urls (make-hash-table :test 'equal)))
-      (org-map-entries
-       (lambda ()
-	 (let ((pr-url (org-entry-get nil "PR_URL")))
-	   (if (and pr-url (gethash pr-url seen-urls))
-	       (org-cut-subtree)
-	     (when pr-url
-	       (puthash pr-url t seen-urls))))))))
+(defun remove-duplicate-org-entries ()
+  (interactive)
+  (let ((seen-urls (make-hash-table :test 'equal)))
+    (org-map-entries
+     (lambda ()
+ (let ((pr-url (org-entry-get nil "PR_URL")))
+   (if (and pr-url (gethash pr-url seen-urls))
+       (org-cut-subtree)
+     (when pr-url
+       (puthash pr-url t seen-urls))))))))
+
+(run-with-timer 0 (* 10 60) #'my/fetch-github-prs)
 #+end_src
 
 * Which Key Configuration
@@ -965,19 +1138,33 @@ I'm not using these right now, but might revist in the future.
     :config
     (load-theme 'gruvbox-light-hard t))
 
-  (defun my/toggle-theme ()
-    "Toggle between gruvbox light and dark themes."
-    (interactive)
-    (if (eq (car custom-enabled-themes) 'gruvbox-light-hard)
-	(progn
-	  (disable-theme 'gruvbox-light-hard)
-	  (load-theme 'gruvbox-dark-hard t)
-	  (message "Switched to dark theme"))
-      (progn
-	(disable-theme 'gruvbox-dark-hard)
-	(load-theme 'gruvbox-light-hard t)
-	(message "Switched to light theme"))))
 
+(defvar my/current-theme 'gruvbox-light-hard
+  "Current theme state, either 'gruvbox-dark-hard or 'gruvbox-light-hard.")
+
+(defun my/toggle-theme ()
+  "Toggle between gruvbox light and dark themes."
+  (interactive)
+  ;; First disable all custom-enabled themes to start fresh
+  (mapc #'disable-theme custom-enabled-themes)
+  
+  ;; Toggle and load the appropriate theme
+  (if (eq my/current-theme 'gruvbox-light-hard)
+      (progn
+        (setq my/current-theme 'gruvbox-dark-hard)
+        (load-theme 'gruvbox-dark-hard t)
+        (message "Switched to dark theme"))
+    (progn
+      (setq my/current-theme 'gruvbox-light-hard)
+      (load-theme 'gruvbox-light-hard t)
+      (message "Switched to light theme")))
+  
+  ;; Reapply all custom face settings
+  (my/apply-custom-faces))
+
+;; Make sure custom faces are applied after any theme is loaded
+(advice-add 'load-theme :after
+            (lambda (&rest _) (my/apply-custom-faces)))
 
   (custom-set-faces
    `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
@@ -1004,6 +1191,45 @@ I'm not using these right now, but might revist in the future.
     :config
     (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
 #+end_src
+* Olivetti
+#+begin_src emacs-lisp
+(use-package olivetti
+  :config
+  ;; Use both margins and fringes for fancy "page" look
+  (setq olivetti-style 'fancy)
+  
+  ;; Define custom fringe face that works with both light/dark themes
+  )
+
+(defun my/toggle-olivetti ()
+  "Toggle olivetti mode with my preferred settings."
+  (interactive)
+  (if (bound-and-true-p olivetti-mode)
+      (olivetti-mode -1)
+    (progn
+      (olivetti-mode)
+      (olivetti-set-width 0.7))))
+
+(defun my/update-olivetti-fringe-face ()
+    "Update olivetti-fringe face based on current theme."
+    (let ((bg-color (if (eq my/current-theme 'gruvbox-light-hard)
+                        "#f0ead8"  
+                      "#161819"))) 
+      (set-face-attribute 'olivetti-fringe nil :background bg-color)))
+
+(add-hook 'org-mode-hook 'my/toggle-olivetti)
+(add-hook 'org-agenda-mode-hook 'my/toggle-olivetti)
+
+(advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
+
+(defun my/olivetti-mode-hook ()
+  (my/update-olivetti-fringe-face))
+(add-hook 'olivetti-mode-hook 'my/olivetti-mode-hook)
+#+end_src
+
+(global-set-key (kbd "<f1>") 'my/toggle-olivetti)
+#+end_src
+
 * Elfeed Configuration
 #+begin_src emacs-lisp
   (use-package elfeed
@@ -1108,192 +1334,218 @@ I'm not using these right now, but might revist in the future.
 
 * GPTel Configuration
 #+begin_src emacs-lisp
-  (use-package gptel
-    :config
-    ;; Enable debug logging
-    ;; Token access for GitHub Copilot
-    (defvar gptel-github-api-key
-      (lambda ()
-	(when-let ((auth (car (auth-source-search
-			       :host "github.copilot"
-			       :require '(:secret)))))
-	  (let ((token (plist-get auth :secret)))
-	    (if (functionp token)
-		(funcall token)
-	      token)))))
+(use-package gptel
+  :config
+  ;; Enable debug logging
+  ;; Token access for GitHub Copilot
+  (defvar gptel-github-api-key
+    (lambda ()
+(when-let ((auth (car (auth-source-search
+		       :host "github.copilot"
+		       :require '(:secret)))))
+  (let ((token (plist-get auth :secret)))
+    (if (functionp token)
+	(funcall token)
+      token)))))
 
-    (defun gptel-copilot--exchange-token ()
-      (let* ((github-token (if (functionp gptel-github-api-key)
-			       (funcall gptel-github-api-key)
-			     gptel-github-api-key))
-	     (url-request-method "GET")
-	     (url-request-extra-headers
-	      `(("Authorization" . ,(format "Bearer %s" github-token))
-		("Accept" . "application/json")))
-	     response-buffer token-str)
-	(setq response-buffer
-	      (url-retrieve-synchronously
-	       "https://api.github.com/copilot_internal/v2/token"
-	       t nil 30))
-	(when response-buffer
-	  (with-current-buffer response-buffer
-	    (goto-char (point-min))
-	    (when (re-search-forward "^$" nil t)
-	      (forward-char)
-	      (condition-case nil
-		  (let ((json-response (json-read)))
-		    (setq token-str (cdr (assoc 'token json-response))))
-		(error nil)))
-	    (kill-buffer response-buffer)))
-	token-str))
+  (defun gptel-copilot--exchange-token ()
+    (let* ((github-token (if (functionp gptel-github-api-key)
+		       (funcall gptel-github-api-key)
+		     gptel-github-api-key))
+     (url-request-method "GET")
+     (url-request-extra-headers
+      `(("Authorization" . ,(format "Bearer %s" github-token))
+	("Accept" . "application/json")))
+     response-buffer token-str)
+(setq response-buffer
+      (url-retrieve-synchronously
+       "https://api.github.com/copilot_internal/v2/token"
+       t nil 30))
+(when response-buffer
+  (with-current-buffer response-buffer
+    (goto-char (point-min))
+    (when (re-search-forward "^$" nil t)
+      (forward-char)
+      (condition-case nil
+	  (let ((json-response (json-read)))
+	    (setq token-str (cdr (assoc 'token json-response))))
+	(error nil)))
+    (kill-buffer response-buffer)))
+token-str))
 
-    ;; Store the exchanged token
-    (defvar gptel-copilot--exchanged-token nil)
-    (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
+  ;; Store the exchanged token
+  (defvar gptel-copilot--exchanged-token nil)
+  (setq gptel-copilot--exchanged-token (gptel-copilot--exchange-token))
 
-    ;; Update gptel-api-key to use the exchanged token
-    (setq gptel-api-key
-	  (lambda ()
-	    (or gptel-copilot--exchanged-token
-		(setq gptel-copilot--exchanged-token
-		      (gptel-copilot--exchange-token)))))
+  ;; Update gptel-api-key to use the exchanged token
+  (setq gptel-api-key
+  (lambda ()
+    (or gptel-copilot--exchanged-token
+	(setq gptel-copilot--exchanged-token
+	      (gptel-copilot--exchange-token)))))
 
-    ;; Advice to include full path in message
-    (defun gptel--insert-at-beginning-with-path (initial-point)
-      "Include full path when showing buffer contents."
-      (let ((full-path (buffer-file-name)))
-	(goto-char initial-point)
-	(insert
-	 (format "In file %s:\n\n"
-		 (if full-path
-		     (expand-file-name full-path)
-		   (buffer-name))))))
+  ;; Advice to include full path in message
+  (defun gptel--insert-at-beginning-with-path (initial-point)
+    "Include full path when showing buffer contents."
+    (let ((full-path (buffer-file-name)))
+(goto-char initial-point)
+(insert
+ (format "In file %s:\n\n"
+	 (if full-path
+	     (expand-file-name full-path)
+	   (buffer-name))))))
 
-    (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
+  (advice-add 'gptel--insert-at-beginning :override #'gptel--insert-at-beginning-with-path)
 
-    ;; Create custom backend for GitHub Copilot
-    (setq gptel-copilot-backend
-	  (gptel-make-openai
-	   "github-copilot"
-	   :host "api.githubcopilot.com/"
-	   :endpoint "chat/completions"
-	   :key 'gptel-api-key
-	   :stream t
-	   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
-		     (claude-3.5-sonnet :name "claude-3.5-sonnet")
-		     (claude-3.7-sonnet :name "claude-3.7-sonnet")
-		     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
-		     (o1-2024-12-17 :name "o1-2024-12-17")
-		     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
-	   :header (lambda ()
-		     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
-		       ("Content-Type" . "application/json")
-		       ("Accept" . "application/json")
-		       ("Copilot-Integration-Id" . "vscode-chat")
-		       ("editor-version" . "vscode/1.84.2")
-		       ("editor-plugin-version" . "1.138.0")
-		       ("user-agent" . "GithubCopilot/1.138.0")))))
+  ;; Create custom backend for GitHub Copilot
+  (setq gptel-copilot-backend
+  (gptel-make-openai
+   "github-copilot"
+   :host "api.githubcopilot.com/"
+   :endpoint "chat/completions"
+   :key 'gptel-api-key
+   :stream t
+   :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
+	     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+	     (claude-3.7-sonnet :name "claude-3.7-sonnet")
+	     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
+	     (o1-2024-12-17 :name "o1-2024-12-17")
+	     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
+   :header (lambda ()
+	     `(("Authorization" . ,(format "Bearer %s" (funcall gptel-api-key)))
+	       ("Content-Type" . "application/json")
+	       ("Accept" . "application/json")
+	       ("Copilot-Integration-Id" . "vscode-chat")
+	       ("editor-version" . "vscode/1.84.2")
+	       ("editor-plugin-version" . "1.138.0")
+	       ("user-agent" . "GithubCopilot/1.138.0")))))
 
-    (advice-add 'gptel--url-parse-response :around
-		(lambda (orig-fun backend proc-info)
-		  (let ((result (funcall orig-fun backend proc-info)))
-		    (when (and (stringp (cadr result))
-			       (string-match-p "HTTP/2 401" (cadr result)))
-		      (message "Token expired, refreshing and retrying...")
-		      (setq gptel-copilot--exchanged-token nil)
-		      ;; Get new token
-		      (funcall gptel-api-key)
-		      ;; Retry the request
-		      (let ((request-data (plist-get proc-info :request-data)))
-			(when request-data
-			  (gptel-request request-data))))
-		    result)))
+  (advice-add 'gptel--url-parse-response :around
+	(lambda (orig-fun backend proc-info)
+	  (let ((result (funcall orig-fun backend proc-info)))
+	    (when (and (stringp (cadr result))
+		       (string-match-p "HTTP/2 401" (cadr result)))
+	      (message "Token expired, refreshing and retrying...")
+	      (setq gptel-copilot--exchanged-token nil)
+	      ;; Get new token
+	      (funcall gptel-api-key)
+	      ;; Retry the request
+	      (let ((request-data (plist-get proc-info :request-data)))
+		(when request-data
+		  (gptel-request request-data))))
+	    result)))
 
-    (defun test-gptel-token-refresh ()
-      "Test gptel token refresh logic."
-      (interactive)
-      (message "=== Starting Token Test ===")
-      (message "Current token (first 50 chars): %s..."
-	       (substring gptel-copilot--exchanged-token 0 50))
-      ;; Force token refresh by setting to nil
-      (setq gptel-copilot--exchanged-token nil)
-      ;;(message "Cleared token, making request...")
-      ;; Make request that should trigger token refresh
-      ;;(gptel-request
-      ;;"Test message"
-      ;;:callback (lambda (response info)
-      ;;(message "=== Request completed ===")
-      ;;(message "New token (first 50 chars): %s..."
-      ;;(substring gptel-copilot--exchanged-token 0 50))
-      ;;(message "Response status: %s" (plist-get info :status))
-      ;;(message "Got response: %s" response)))
-      )
+  (defun test-gptel-token-refresh ()
+    "Test gptel token refresh logic."
+    (interactive)
+    (message "=== Starting Token Test ===")
+    (message "Current token (first 50 chars): %s..."
+       (substring gptel-copilot--exchanged-token 0 50))
+    ;; Force token refresh by setting to nil
+    (setq gptel-copilot--exchanged-token nil)
+    ;;(message "Cleared token, making request...")
+    ;; Make request that should trigger token refresh
+    ;;(gptel-request
+    ;;"Test message"
+    ;;:callback (lambda (response info)
+    ;;(message "=== Request completed ===")
+    ;;(message "New token (first 50 chars): %s..."
+    ;;(substring gptel-copilot--exchanged-token 0 50))
+    ;;(message "Response status: %s" (plist-get info :status))
+    ;;(message "Got response: %s" response)))
+    )
 
-    (defun get-anthropic-api-key ()
-      (when-let ((auth (car (auth-source-search
-			     :host "api.anthropic.com"
-			     :require '(:secret)))))
-	(let ((token (plist-get auth :secret)))
-	  (if (functionp token)
-	      (funcall token)
-	    token))))
+  (defun get-anthropic-api-key ()
+    (when-let ((auth (car (auth-source-search
+		     :host "api.anthropic.com"
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
 
-    (defun get-gemini-api-key ()
-      (when-let ((auth (car (auth-source-search
-			     :host "api.gemini.com"
-			     :require '(:secret)))))
-	(let ((token (plist-get auth :secret)))
-	  (if (functionp token)
-	      (funcall token)
-	    token))))
+  (defun get-gemini-api-key ()
+    (when-let ((auth (car (auth-source-search
+		     :host "api.gemini.com"
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
 
-    (gptel-make-anthropic "Claude"          
-			  :stream t
-			  :key #'get-anthropic-api-key)
+  (gptel-make-anthropic "Claude"          
+		  :stream t
+		  :key #'get-anthropic-api-key)
 
-    (gptel-make-gemini "Gemini"          
-		       :key #'get-gemini-api-key)
+  (gptel-make-gemini "Gemini"          
+	       :key #'get-gemini-api-key)
 
-    ;;(gptel-make-anthropic "claude" 
-    ;;:key #'get-anthropic-api-key
-    ;;:stream t
-    ;;:models '(claude-3-7-sonnet-20250219)
-    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-    ;;`(("x-api-key" . ,key)
-    ;;("anthropic-version" . "2023-06-01")
-    ;;("anthropic-beta" . "pdfs-2024-09-25")
-    ;;("anthropic-beta" . "output-128k-2025-02-19")
-    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-    ;;:request-params '(:max_tokens 4096))
+  ;;(gptel-make-anthropic "claude" 
+  ;;:key #'get-anthropic-api-key
+  ;;:stream t
+  ;;:models '(claude-3-7-sonnet-20250219)
+  ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+  ;;`(("x-api-key" . ,key)
+  ;;("anthropic-version" . "2023-06-01")
+  ;;("anthropic-beta" . "pdfs-2024-09-25")
+  ;;("anthropic-beta" . "output-128k-2025-02-19")
+  ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+  ;;:request-params '(:max_tokens 4096))
 
-    ;;(gptel-make-anthropic "claude-thinking" 
-    ;;:key #'get-anthropic-api-key
-    ;;:stream t
-    ;;:models '(claude-3-7-sonnet-20250219)
-    ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
-    ;;`(("x-api-key" . ,key)
-    ;;("anthropic-version" . "2023-06-01")
-    ;;("anthropic-beta" . "pdfs-2024-09-25")
-    ;;("anthropic-beta" . "output-128k-2025-02-19")
-    ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
-    ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
-    ;;:max_tokens 4096))
+  ;;(gptel-make-anthropic "claude-thinking" 
+  ;;:key #'get-anthropic-api-key
+  ;;:stream t
+  ;;:models '(claude-3-7-sonnet-20250219)
+  ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+  ;;`(("x-api-key" . ,key)
+  ;;("anthropic-version" . "2023-06-01")
+  ;;("anthropic-beta" . "pdfs-2024-09-25")
+  ;;("anthropic-beta" . "output-128k-2025-02-19")
+  ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+  ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+  ;;:max_tokens 4096))
 
-    (setq gptel-log-level 'debug)
-    ;; Use org-mode for gptel buffers
-    (setq gptel-default-mode 'org-mode)
-    ;; Enable branching conversations in org-mode
-    (setq gptel-org-branching-context t)
-    (setq gptel-confirm-tool-calls t)
-    (setq gptel-include-tool-results t)
+  (setq gptel-log-level 'debug)
+  ;; Use org-mode for gptel buffers
+  (setq gptel-default-mode 'org-mode)
+  ;; Enable branching conversations in org-mode
+  (setq gptel-org-branching-context t)
+  (setq gptel-confirm-tool-calls t)
+  (setq gptel-include-tool-results t)
 
-    ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-    (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+  ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
 
-    (setq gptel-backend gptel-copilot-backend)
-    (setq gptel-model 'claude-3.7-sonnet)
-    (setq gptel-default-mode 'org-mode))
+  (setq gptel-backend gptel-copilot-backend)
+  (setq gptel-model 'claude-3.7-sonnet)
+  (setq gptel-default-mode 'org-mode)
+(gptel-make-preset 'recipe-assistant
+  :description "Recipe assistant"
+  :system "You are a Recipe Assistant for a competent home cook with a family of 6 (including 4 young children). Your goal is to provide flexible cooking frameworks rather than rigid recipes, offering ingredient substitutions and adaptations while keeping meals budget-friendly and reasonably healthy.
+
+When responding:
+- Speak as if you are simply outputting text that can be used as a tutorial for a framework for the dish being discussed. Do not address the user. Your output should be the perfect guide based on the dish being discussed.
+- If asked to make edits only output the modified sections of the guide
+- Focus on adaptable cooking methods that allow for variations based on available ingredients
+- Suggest ways to prep components ahead of time for efficient weeknight cooking
+- Provide substitution options for ingredients, especially expensive ones
+- Consider the user's preferred cooking equipment: cast iron skillet, carbon steel wok, two-burner griddle, dutch ovens, Vitamix, stand mixer, air fryer, Instant Pot, waffle maker, mandolin, pizza steel.
+- Include tips for batch preparation when appropriate
+- Balance kid-friendly flavors with nutritional value
+- Provide guidance for meal planning when requested, including grocery lists
+- Highlight techniques that offer the best return on effort (making things from scratch only when it significantly elevates the dish)
+- Use metric weights"
+  :tools '("mcp-fetch")) 
+(gptel-make-preset 'default
+  :description "Default"
+  :system "You are a large language model living in emacs and a helpful assistant. Responsd concisely."
+  :tools '("mcp-fetch github-mcp")) 
+  )
+
+#+end_src
+
+#+begin_src emacs-lisp
 #+end_src
 
 * GPTel Context Management
@@ -1566,7 +1818,9 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 
 ** Fetch_Webpage
 
-#+begin_src emacs-lisp 
+This works but I'm using the fetch mcp server
+
+#+begin_src emacs-lisp :tangle no
   (gptel-make-tool
    :name "fetch_webpage"
    :function (lambda (url)
@@ -1742,62 +1996,41 @@ This tool hooks in to my file  writing function and bookmarks list to enable LLM
 #+end_src
 
 * MCP Configuration
-#+begin_src emacs-lisp
-  (require 'mcp-hub)
-  (setq mcp-server-start-time 120) 
+#+begin_src emacs-lisp 
+;https://github.com/lizqwerscott/mcp.el
+;https://github.com/karthink/gptel
+;https://github.com/github/github-mcp-server
+(require 'gptel-integrations)
+(require 'mcp-hub)
+(setq mcp-server-start-time 120) 
 
-  (defun my/get-github-mcp-token ()
-    (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
-      (let ((token (plist-get auth :secret)))
-	(if (functionp token) (funcall token) token))))
+(defun my/get-github-mcp-token ()
+  (interactive)
+  (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
+    (let ((token (plist-get auth :secret)))
+      (if (functionp token) (funcall token) token))))
 
-  ;; Configure the GitHub MCP server (using Docker)
-  (setq mcp-hub-servers
-	`(
-	  ("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
-	  ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
-	  ("github-mcp" . (:command "docker"
-				    :args ("run" "-i" "--rm"
-					   "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
-					   "ghcr.io/github/github-mcp-server")
-				    :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
-	  ))
+;; Configure the GitHub MCP server (using Docker)
+(setq mcp-hub-servers
+      `(
+        ;("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
+       ("filesystem" . (:command "npx"
+                                       :args
+                                       ("-y" "@modelcontextprotocol/server-filesystem" "/Users/me/nix" "/Users/me/binwarden" "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes")))
+        ;; https://github.com/bhouston/mcp-server-text-editor - same functionality as Claude's text editor
+        ;; PSA: this service requires absolute paths to be used by the LLM
+        ("mcp-server-text-editor" . (:command "npx"
+                                            :args ("-y" "mcp-server-text-editor")))
+        ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+        ("github-mcp" . (:command "docker"
+                         :args ("run" "-i" "--rm"
+                                "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+                                "ghcr.io/github/github-mcp-server")
+                         :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+        ))
 
-
-  (add-hook 'after-init-hook #'mcp-hub-start-all-server)
-
-  (defun gptel-mcp-register-tool ()
-    (interactive)
-    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-      (mapcar #'(lambda (tool)
-		  (apply #'gptel-make-tool
-			 tool))
-	      tools)))
-
-  (defun gptel-mcp-use-tool ()
-    "Activate all MCP tools for gptel."
-    (interactive)
-    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-      (mapcar #'(lambda (tool)
-		  (let ((path (list (plist-get tool :category)
-				    (plist-get tool :name))))
-		    (add-to-list 'gptel-tools (gptel-get-tool path))))
-	      tools)))
-
-  (defun gptel-mcp-close-use-tool ()
-    "Deactivate all MCP tools for gptel."
-    (interactive)
-    (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
-      (mapcar #'(lambda (tool)
-		  (let ((path (list (plist-get tool :category)
-				    (plist-get tool :name))))
-		    (setq gptel-tools
-			  (cl-remove-if #'(lambda (tool-item)
-					    (equal path
-						   (list (gptel-tool-category tool-item)
-							 (gptel-tool-name tool-item))))
-					gptel-tools))))
-	      tools)))
+;; Start MCP servers after Emacs initializes
+(add-hook 'after-init-hook #'mcp-hub-start-all-server)
 #+end_src
 
 * Aidermacs
@@ -2232,6 +2465,9 @@ If TEST-PATTERN is provided, filter tests using the -t option."
           (when (and (file-directory-p branch-dir)
                      (file-exists-p (expand-file-name ".git" branch-dir)))
             (projectile-add-known-project branch-dir)))))))
+
+(with-eval-after-load 'projectile
+  (scan-worktree-projects))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2338,6 +2574,59 @@ If TEST-PATTERN is provided, filter tests using the -t option."
   (let ((default-directory (projectile-project-root)))
     (compile (or (getenv "TEST_CMD") "make test"))))
 #+end_src
+** Binwarden
+
+#+begin_src emacs-lisp
+(defun binwarden/create-worktree ()
+  "Create a new worktree in the binwarden directory.
+  1. Select a repository from binwarden directory
+  2. Enter a name for the new worktree
+  3. Optionally select a source branch (sorted by recent commit date)
+  4. Run \'just create-worktree\' with those parameters"
+  (interactive)
+  (let* ((binwarden-dir (expand-file-name "~/binwarden/"))
+         (repos (directory-files binwarden-dir nil "^[^.]"))
+         (selected-repo (completing-read "Select repository: " repos))
+         (worktree-name (read-string "Worktree name: "))
+         ;; Parse the repo name to find the primary branch from .env file
+         (owner (car (split-string selected-repo "-")))
+         (repo (cadr (split-string selected-repo "-")))
+         (env-var-name (format "PRIMARY_%s_%s_WORKTREE" 
+                               (upcase owner) (upcase repo)))
+         (env-file (expand-file-name ".env" binwarden-dir))
+         (primary-branch 
+          (when (file-exists-p env-file)
+            (with-temp-buffer
+              (insert-file-contents env-file)
+              (when (re-search-forward (concat "^" env-var-name "=\\(.*\\)$") nil t)
+                (match-string 1)))))
+         ;; Set directory to the primary branch worktree for getting branch list
+         (primary-worktree-dir 
+          (expand-file-name (concat selected-repo "/" (or primary-branch "main")) 
+                           binwarden-dir))
+         ;; Get branches sorted by commit date from the primary worktree
+         (default-directory primary-worktree-dir)
+         (branches-raw (shell-command-to-string "git branch --sort=-committerdate"))
+         ;; Clean up branch names - remove any leading symbols (*, +, etc) and whitespace
+         (branches (mapcar (lambda (branch) 
+                            (string-trim (replace-regexp-in-string "^[\\*\\+ ]+" "" branch)))
+                          (split-string branches-raw "\n" t)))
+         ;; Prompt for optional source branch
+         (from-branch (completing-read "Source branch (optional, empty for default): " 
+                                      branches nil nil nil nil ""))
+         (from-branch-arg (if (string-empty-p from-branch)
+                             ""
+                           (format " %s" from-branch)))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
+    (compile (format "cd %s && just create-worktree %s %s%s" 
+                    (shell-quote-argument binwarden-dir)
+                    selected-repo worktree-name from-branch-arg) t)))
+#+end_src
+
+#+RESULTS:
+: binwarden/create-worktree
+
 * Custom Keymaps
 
 #+begin_src emacs-lisp
@@ -2464,6 +2753,8 @@ If TEST-PATTERN is provided, filter tests using the -t option."
   (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
 
   (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+  (with-eval-after-load 'org-agenda
+    (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
 
   (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
 
@@ -2899,10 +3190,12 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 ** Speed up magit
 Supposedly this helps speed up git on large repos
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq magit-git-global-arguments
         (append magit-git-global-arguments '("-c" "core.preloadindex=true")))
 #+end_src
+
+It actually doesn't work lol
 
 ** View reviews for PR
 
@@ -3044,6 +3337,228 @@ Supposedly this helps speed up git on large repos
 
 #+RESULTS:
 : my/gh-pr-reviewers
+
+* Rustis
+
+#+begin_src
+(use-package rust-mode
+  :init
+  (setq rust-mode-treesitter-derive t))
+#+end_src
+* Ledger
+#+begin_src elisp
+(require 'ledger-mode)
+(add-to-list 'auto-mode-alist '("\\.ledger\\'" . ledger-mode))
+(setq ledger-default-date-format "%Y-%m-%d")
+(add-hook 'ledger-mode-hook
+          (lambda ()
+            (setq-local completion-cycle-threshold t)
+            (setq-local tab-always-indent 'complete)))
+#+end_src
+
+* gnus
+#+begin_src emacs-lisp
+(require 'gnus)
+(require 'smtpmail)
+(require 'message)
+(require 'oauth2) ;; For OAuth2 support with Gmail
+
+(setq user-full-name "Addison Beck")
+(setq user-mail-address "me@addisonbeck.com")
+
+;; Show all messages in all groups
+(setq gnus-parameters
+      '((".*" (display . all))))  
+
+;; Show all groups, including empty ones
+(setq gnus-permanently-visible-groups ".*")
+
+;; This shows all kinds of neat but verbose and annoying header information
+;;(setq gnus-show-all-headers t)
+
+;; Make 'A r' (gnus-summary-refer-article) the default listing function
+(setq gnus-summary-goto-unread nil)
+
+;; Always start with 'A A' behavior (show all articles)
+(add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
+
+  ;;; Main Select Method (Primary Account)
+(setq gnus-select-method
+      '(nnimap "primary-account"
+        (nnimap-address "box.addisonbeck.com")
+        (nnimap-server-port 993)
+        (nnimap-stream ssl)
+        (nnmail-expiry-wait immediate)))
+#+end_src
+
+#+begin_src emacs-lisp 
+;;; OAuth2 setup for Gmail
+(defun get-gmail-oauth2-token ()
+  "Get OAuth2 access token for Gmail."
+  (let* ((auth-info (nth 0 (auth-source-search :host "oauth2.googleapis.com" 
+                                              :user "935901585839-b1c4q3mmjb4tuutgpd3aratopq7tf85k.apps.googleusercontent.com" 
+                                              :service "oauth2")))
+         (client-id (plist-get auth-info :user))
+         (client-secret (let ((secret (plist-get auth-info :secret)))
+                         (if (functionp secret)
+                             (funcall secret)
+                           secret)))
+         (token (oauth2-token-access-token
+                (oauth2-refresh-access
+                 (oauth2-auth-and-store
+                  "https://accounts.google.com/o/oauth2/auth"
+                  "https://oauth2.googleapis.com/token"
+                  client-id
+                  client-secret
+                  "https://mail.google.com/" nil)))))
+    token))
+
+;; Override auth function for Gmail accounts
+(defun gmail-oauth2-auth (server)
+  "Return the OAuth2 string for SERVER."
+  (when (string-match "imap.gmail.com" server)
+    (let ((token (get-gmail-oauth2-token)))
+      (when token
+        (concat "user=addison@bitwarden.com\001auth=Bearer " 
+                token "\001\001")))))
+
+;; Register auth function
+;;(add-to-list 'nnimap-authenticator-alist
+             ;;'(gmail-oauth2 gmail-oauth2-auth))
+
+;; Use the OAuth2 authenticator with Gmail
+(setq nnimap-authinfo-file "~/.authinfo")
+;(setq nnimap-authenticator 'gmail-oauth2)
+#+end_src
+
+#+begin_src emacs-lisp 
+(defun nnimap-xoauth2-oauth2-request (user server)
+  "Return the OAuth2 string for USER on SERVER."
+  (when (string-match "imap.gmail.com" server)
+    (let ((token (get-gmail-oauth2-token)))
+      (when token
+        (concat "user=" user "\001auth=Bearer " token "\001\001")))))
+
+;;; Secondary Accounts
+(add-to-list 'gnus-secondary-select-methods
+             '(nnimap "work-gmail"
+               (nnimap-address "imap.gmail.com")
+               (nnimap-server-port 993)
+               (nnimap-authenticator xoauth2)  
+               (nnimap-stream ssl)
+               (nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
+               (nnmail-expiry-wait immediate)))
+
+;;; Add more accounts as needed
+;;(add-to-list 'gnus-secondary-select-methods
+             ;;'(nnimap "personal"
+               ;;(nnimap-address "imap.personal.com")
+               ;;(nnimap-server-port 993)
+               ;;(nnimap-stream ssl)))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; SMTP configuration with account selection
+(require 'smtpmail-multi)
+
+;; Define email accounts
+(setq smtpmail-multi-accounts
+      '((personal . ("me@addisonbeck.com"
+                    "box.addisonbeck.com"
+                    465
+                    "me@addisonbeck.com"
+                    nil
+                    starttls))
+        (work-gmail . ("addison@bitwarden.com"
+                      "smtp.gmail.com" 
+                      587
+                      "addison@bitwarden.com"
+                      nil
+                      starttls))))
+
+;; Set default account
+(setq smtpmail-multi-default-account 'personal)
+
+;; Use smtpmail-multi as the send function
+(setq send-mail-function 'smtpmail-multi-send-it
+      message-send-mail-function 'smtpmail-multi-send-it)
+#+end_src
+
+#+begin_src emacs-lisp 
+;;; Posting Styles - automatically set From, signature, etc. based on context
+(setq gnus-posting-styles
+      '((".*" ;; Default style
+         (name "Addison Beck")
+         (address "me@addisonbeck.com")
+         (signature "Thanks,\nAddison"))
+        ("work-gmail"
+         (name "Addison Beck") 
+         (address "addison@bitwarden.com")
+         (organization "Bitwarden"))
+        ;; Match based on recipient address
+        ((header "to" "client@example\\.com")
+         (address "work@gmail.com")
+         (signature "Professional signature for clients"))
+        ;; Add more context-specific styles as needed
+        ))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Gmail-specific settings
+(setq gnus-parameters
+      '(("work-gmail"
+         (display . all)
+         (posting-style
+          (name "Addison Beck")
+          (address "addison@bitwarden.com")
+          (signature "Thanks,\nAddison")))
+        ("nnimap\\+work-gmail:\\[Gmail\\]/Sent Mail"
+         (gcc-self . none))
+        ("nnimap\\+work-gmail:\\[Gmail\\]/Trash"
+         (expiry-wait . immediate))))
+
+;; Gmail doesn't need to save sent mail (it does this automatically)
+(setq gnus-message-archive-group
+      '((if (string-match "gmail\\.com" (message-sendmail-envelope-from))
+            nil  ;; No need to save for Gmail
+          "sent"))) ;; Archive for other accounts
+#+end_src
+
+#+begin_src emacs-lisp 
+(setq gnus-topic-topology 
+      '(("Gnus" visible)
+        (("Personal" visible)
+         (("personal" visible)))
+        (("Work" visible)
+         (("work-gmail" visible)))))
+
+(setq gnus-topic-alist
+      '(("personal" . ("nnimap+personal:INBOX"))
+        ("work-gmail" . ("nnimap+work-gmail:INBOX"
+                         "nnimap+work-gmail:[Gmail]/Sent Mail"
+                         "nnimap+work-gmail:[Gmail]/All Mail"))
+        ("Gnus" . ("nndraft:drafts"))))
+#+end_src
+
+#+begin_src emacs-lisp
+;; Open articles in a vertical split
+(gnus-add-configuration
+ '(article
+   (horizontal 1.0
+     (summary 0.5 point)
+     (article 1.0))))
+
+;; Sort by reverse number (newest first)
+(setq gnus-thread-sort-functions
+      '((not gnus-thread-sort-by-number)))
+(setq gnus-article-sort-functions
+      '((not gnus-article-sort-by-number)))
+#+end_src
+
+#+begin_src emacs-lisp
+(gnus-demon-add-handler 'gnus-group-get-new-news 5 t)
+(gnus-demon-init)
+#+end_src
 
 * Provide Init
 

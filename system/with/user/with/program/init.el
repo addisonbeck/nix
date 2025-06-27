@@ -6,6 +6,59 @@
 
 ;; Code:
 
+(setq auth-sources '("~/.authinfo"))
+
+(defvar my/projects
+  '(("nix"       . (:path "~/nix"))
+    ("notes" . (:path "~/notes"))
+    ("clients" . (:path "~/bitwarden/clients"))
+    ("server" . (:path "~/bitwarden/server"))
+    ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
+    ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
+    ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
+    ("binwarden" . (:path "~/binwarden"))
+    ("d" . (:path "~/d"))
+    ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
+  "Alist of projects with metadata")
+
+(defun my/get-project-attr (project-name attr)
+  "Get ATTR for PROJECT-NAME."
+  (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
+
+(defun my/get-project-path (project-name)
+  "Get the path for PROJECT-NAME."
+  (my/get-project-attr project-name :path))
+
+(defun my/find-project (project-name)
+  "Open a project's root directory."
+  (interactive
+   (list (completing-read "Project: " (mapcar #'car my/projects))))
+  (find-file (my/get-project-path project-name)))
+
+(defun my/project-dired ()
+  "Open dired in a project directory."
+  (interactive)
+  (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
+    (dired (my/get-project-path project-name))))
+
+(defun my/compile-in-project (project-name command)
+  "Run compilation COMMAND in PROJECT-NAME."
+  (interactive
+   (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
+    (command (read-string "Command: " nil 'compile-history)))
+     (list project command)))
+  (let* ((default-directory (my/get-project-path project-name))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*compile-%s*" project-name))))
+    (compile command t)))
+
+(defun my/terminal-in-project ()
+  "Open terminal in a project directory."
+  (interactive)
+  (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
+   (default-directory (my/get-project-path project-name)))
+    (vterm (format "*vterm-%s*" project-name))))
+
 (require 'package)
 (setq package-archives '(("melpa" . "https://melpa.org/packages/")
 		   ("org" . "https://orgmode.org/elpa/")
@@ -21,6 +74,7 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
+;; Configure frame appearance
 (setq default-frame-alist
 '((menu-bar-lines . 0)
   (tool-bar-lines . 0)
@@ -33,9 +87,42 @@
 
 (setq inhibit-startup-message t)
 (setq initial-frame-alist default-frame-alist)
-(setq-default mode-line-format nil)
+
 (advice-add #'display-startup-echo-area-message :override #'ignore)
 
+(defun my/current-project-name ()
+  "Get the name of the current project from my/projects if there is one."
+  (when-let* ((file-path (buffer-file-name))
+	(abs-path (expand-file-name file-path)))
+    (catch 'found
+(dolist (project my/projects)
+  (let* ((project-name (car project))
+	 (project-path (expand-file-name (my/get-project-path project-name))))
+    (when (string-prefix-p project-path abs-path)
+      (throw 'found project-name))))
+nil)))
+
+(setq-default mode-line-format
+	(list
+	 ;; Current project (if any)
+	 '(:eval (when-let ((project (my/current-project-name)))
+		   (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
+	 ;; Filename
+	 '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
+	 ;; Major mode
+	 '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
+	 ;; Git branch and status using vc-mode
+	 '(:eval (when vc-mode
+		   (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
+		     (concat
+		      (propertize " " 'face 'buffer-file-name)
+		      (propertize (format "%s" branch) 'face 'mode-line-emphasis)
+		      (propertize (if (vc-state buffer-file-name) " ++" "") 'face
+				  (if (vc-state buffer-file-name) 'error 'success))
+		      (propertize " " 'face 'buffer-file-name)))))
+	 ))
+
+;; Disable backup files and configure indentation
 (setq make-backup-files nil)
 (setq-default indent-tabs-mode nil)
 (electric-indent-mode 1)
@@ -80,6 +167,9 @@ create-lockfiles nil)
   (when (memq window-system '(mac ns x))
     (exec-path-from-shell-initialize)))
 
+(when (daemonp)
+  (exec-path-from-shell-initialize))
+
 (use-package dashboard
   :ensure t
   :init
@@ -93,15 +183,68 @@ create-lockfiles nil)
 		    (bookmarks . 5))
   dashboard-set-heading-icons t
   dashboard-set-file-icons t
-  dashboard-show-shortcuts t
-  dashboard-set-navigator t)
+  dashboard-show-shortcuts t)
   (setq dashboard-heading-icons '((recents   . "nf-oct-history")
 			    (bookmarks . "nf-oct-bookmark")
 			    (projects  . "nf-oct-project"))))
 
 (set-face-attribute 'default nil :family "Iosevka" :height 140)
-(set-face-attribute 'variable-pitch nil :family "Iosevka Etoile" :height 100)
+(set-face-attribute 'variable-pitch nil :family "Iosevka Etoile" :height 140)
+(set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140)
+(setq org-modern-hide-stars nil)
+(setq org-modern-star nil)
 
+(defun my/set-line-spacing-for-text ()
+  "Set custom line spacing for text-heavy modes."
+  (interactive)
+  (setq-local line-spacing 0.2)) 
+
+(add-hook 'org-mode-hook 'my/set-line-spacing-for-text)
+(add-hook 'markdown-mode-hook 'my/set-line-spacing-for-text)
+ 
+(custom-set-faces
+ '(org-document-info-keyword ((t (:inherit variable-pitch :height 1.0))))
+ '(org-document-title ((t (:inherit variable-pitch :height 1.3))))
+ '(org-level-1 ((t (:inherit variable-pitch :height 1.3))))
+ '(org-level-2 ((t (:inherit variable-pitch :height 1.2))))
+ '(org-level-3 ((t (:inherit variable-pitch :height 1.1))))
+ '(org-level-4 ((t (:inherit variable-pitch :height 1.0))))
+ '(org-level-5 ((t (:inherit variable-pitch :height 1.0))))
+ '(org-level-6 ((t (:inherit variable-pitch :height 1.0))))
+ '(org-level-7 ((t (:inherit variable-pitch :height 1.0))))
+ '(org-level-8 ((t (:inherit variable-pitch :height 1.0))))
+ '(org-agenda-date-today ((t (:inherit variable-pitch :height 1.3))))
+ '(org-super-agenda-header ((t (:inherit variable-pitch :height 1.2))))
+
+ ;; Keep these elements as fixed-pitch even in variable-pitch-mode
+ '(org-block ((t (:inherit fixed-pitch))))
+ '(org-code ((t (:inherit fixed-pitch))))
+ '(org-table ((t (:inherit fixed-pitch))))
+ '(org-verbatim ((t (:inherit fixed-pitch))))
+ '(org-special-keyword ((t (:inherit fixed-pitch :height 140))))
+ '(org-drawer ((t (:inherit fixed-pitch :height 140))))
+ '(org-property-value ((t (:inherit fixed-pitch :height 140))))
+ '(org-modern-label ((t (:inherit fixed-pitch :height 140))))
+ '(org-modern-statistics ((t (:inherit fixed-pitch :height 140))))
+ '(org-modern-tag ((t (:inherit fixed-pitch :height 140)))))
+
+(add-hook 'org-agenda-mode-hook 'variable-pitch-mode)
+(add-hook 'org-mode-hook 'variable-pitch-mode)
+(add-hook 'org-mode-hook 'breadcrumb-local-mode)
+
+(add-hook 'markdown-mode-hook (lambda ()
+  (breadcrumb-local-mode 1)
+  (variable-pitch-mode 1)
+  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
+
+(add-hook 'prog-mode (lambda ()
+  (breadcrumb-local-mode 1)
+  (variable-pitch-mode 1)
+  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
+
+;; Test
 (setq evil-want-integration t)
 (setq evil-want-keybinding nil)
 (setq evil-want-C-u-scroll t)
@@ -141,12 +284,38 @@ create-lockfiles nil)
 (require 'evil-org-agenda)
 (evil-org-agenda-set-keys)
 (evil-define-key 'motion org-agenda-mode-map
-	     (kbd "<left>") 'org-agenda-earlier
-	     (kbd "<right>") 'org-agenda-later
-	     (kbd "C-c j") 'org-agenda-goto-date
-	     (kbd "gx")  'org-agenda-open-link
-	     (kbd "t") 'org-agenda-todo
-	     (kbd "T") 'org-agenda-todo-yesterday)
+	   (kbd "C-b") 'projectile-switch-to-buffer
+	   (kbd "C-p") 'projectile-switch-project
+	   (kbd "C-f") 'projectile-find-file
+	   (kbd "<left>") 'org-agenda-earlier
+	   (kbd "<right>") 'org-agenda-later
+	   (kbd "C-c j") 'org-agenda-goto-date
+	   (kbd "gx")  'org-agenda-open-link
+	   (kbd "t") 'org-agenda-todo
+	   (kbd "T") 'org-agenda-todo-yesterday)
+
+(defun cycle-line-numbers ()
+  "Cycle through line number modes: off -> relative -> normal -> off."
+  (interactive)
+  (cond
+   ;; If currently off, switch to relative
+   ((not display-line-numbers)
+    (setq display-line-numbers 'relative)
+    (message "Line numbers: RELATIVE"))
+
+   ;; If currently relative, switch to normal
+   ((eq display-line-numbers 'relative)
+    (setq display-line-numbers t)
+    (message "Line numbers: NORMAL"))
+
+   ;; If currently normal, switch to off
+   (t
+    (setq display-line-numbers nil)
+    (message "Line numbers: OFF"))))
+
+;; Bind to "N" in evil normal mode
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
 
 (require 'server)
 (unless (server-running-p)
@@ -156,23 +325,15 @@ create-lockfiles nil)
   :ensure t
   :config
   (projectile-mode +1)
-  ;; Specify known projects
+  (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
+  (define-key projectile-command-map (kbd "P") 'my/projectile-find-file-in-all-projects)
+  (setq projectile-indexing-method 'alien)
+  (setq projectile-git-command "git ls-files -zco -X ~/.gitignore")
   (setq projectile-known-projects
-  (mapcar 'expand-file-name
-	  '("~/notes"
-	    "~/nix"
-	    "~/bitwarden/clients"
-	    "~/bitwarden/server"
-	    "~/bitwarden/sdk"
-	    "~/bitwarden/sdk-internal"
-	    "~/bitwarden/wg-open-source-at-bitwarden"
-	    "~/bitwarden/contributing-docs"
-	    "~/d"
-	    "~/binwarden"
-	    "~/recipes")))
-  ;; Disable auto-discovery
+  (mapcar (lambda (project)
+	    (expand-file-name (my/get-project-path (car project))))
+	  my/projects))
   (setq projectile-auto-discover nil)
-  ;; Save the project list immediately
   (projectile-save-known-projects)
   :bind-keymap
   ("C-c p" . projectile-command-map))
@@ -210,9 +371,29 @@ create-lockfiles nil)
 
 (global-set-key (kbd "C-c d") 'find-from-here)
 
+(use-package treesit-auto
+  :config
+  (global-treesit-auto-mode)
+  (setq treesit-auto-install 'prompt)
+  (setq treesit-auto-langs '(typescript javascript tsx jsx yaml)))
+
+(use-package typescript-ts-mode
+  :ensure t
+  :mode (("\\.ts\\'" . typescript-ts-mode)
+   ("\\.tsx\\'" . tsx-ts-mode))
+  :init
+  (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
+
+;; Ensure typescript grammar is installed
+(unless (treesit-language-available-p 'typescript)
+  (treesit-install-language-grammar 'typescript))
+
 (use-package lsp-mode
   :ensure t
-  :hook ((typescript-mode . lsp)
+  :hook ((typescript-ts-mode . lsp)
+   (tsx-ts-mode . lsp)
+   (typescript-mode . lsp)
    (csharp-mode . lsp)
    (rust-mode . lsp)
    (nix-mode . lsp)
@@ -286,6 +467,7 @@ create-lockfiles nil)
   :ensure t
   :bind
   (("C-c a" . org-agenda)
+   ("C-c h" . consult-org-heading)
    ("C-c c" . org-capture))
   :config
   (setq org-directory "~/notes")
@@ -293,65 +475,96 @@ create-lockfiles nil)
   (setq org-agenda-files (list org-directory))
   (setq org-log-done 'time)
   (setq org-log-into-drawer t)
-  (setq org-global-properties
-  '(("STATUS_ALL" . "Not-Started\\|In-Progress\\|Blocked\\|Done")
-    ("TYPE_ALL" . "Bug\\|Feature\\|Chore\\|Spike\\|Review")))
+  (setq org-startup-folded 'overview)
+  (setq org-auto-align-tags nil)
   (setq org-clock-persist 'history
+  org-export-backends '(html icalendar latex man md org json)
+  org-image-max-width 'window
+  org-startup-with-inline-images t
+  org-cycle-inline-images-display t
+  org-display-remote-inline-images 'download
   org-clock-idle-time 15
+  org-clock-persist-file "~/notes/clock.el"
+  org-clock-auto-clock-resolution 'when-no-clock-is-running
+  org-clock-report-include-clocking-task t
   org-clock-into-drawer t)
   (org-clock-persistence-insinuate))
 
-(defun sanitize-filename (name)
-  "Sanitize a filename NAME."
-  (downcase (replace-regexp-in-string "[^a-zA-Z0-9]" "-" name)))
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (shell . t)
+   (org . t)
+   (mermaid . t)
+   ))
+
+(setq org-babel-sh-command "bash -l -c")
+
+(setenv "PUPPETEER_EXECUTABLE_PATH" 
+  (or (executable-find "google-chrome-stable")
+      (executable-find "google-chrome")))
+
+(setq org-src-preserve-indentation nil
+org-edit-src-content-indentation 0)
+
+(require 'ox-json)
+
+(use-package ob-mermaid
+  :config
+  ;; Set the path to the mermaid CLI using the custom puppeteer-cli
+  (setq ob-mermaid-cli-path (executable-find "mmdc"))
+  ;; If you need to specify the Chrome executable directly:
+  (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
+
+;; Enable automatic display of inline images after executing babel blocks
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+(setq org-redisplay-inline-images t)
+
+;; Allow evaluation of code blocks without confirmation for safe languages
+(defun my/org-confirm-babel-evaluate (lang body)
+  (not (member lang '("emacs-lisp" "shell"))))
+;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+(setq org-confirm-babel-evaluate nil)
+
+;; Ensure pretty fontification of source blocks
+(setq org-src-fontify-natively t)
+(define-key org-mode-map (kbd "RET") 'newline)
+
+;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
+(evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
+(evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
+(defun my-org-evil-open-below ()
+  "Open line below preserving org structure but preventing reformatting."
+  (interactive)
+  ;; Use evil's basic open behavior
+  (evil-open-below 1)
+  ;; Exit insert state then re-enter to avoid auto-formatting
+  (evil-normal-state)
+  (evil-insert-state))
+
+(evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
+
+;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
+
+;; Custom keybinding for executing all source blocks in a subtree
+(define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
+
+(require 'org-make-toc)
+
+(setq org-agenda-files (list org-directory))
 
 (setq org-capture-templates
-'(("p" "Personal habit" entry
-   (file (lambda ()
-	   (let ((name (read-string "File name: ")))
-	     (expand-file-name (concat (sanitize-filename name) ".org")
-			       "~/notes/"))))
-   "* TODO %^{Task description}\nSCHEDULED: <%<%Y-%m-%d> +1d>\n:PROPERTIES:\n:CATEGORIES: personal habit\n:CUSTOM_ID: %^{Custom id}\n:END:")
-
-  ("f" "Family habit" entry
-   (file (lambda ()
-	   (let ((name (read-string "File name: ")))
-	     (expand-file-name (concat (sanitize-filename name) ".org")
-			       "~/notes/"))))
-   "* TODO %^{Task description}\nSCHEDULED: <%<%Y-%m-%d> +1d>\n:PROPERTIES:\n:CATEGORIES: family habit\n:CUSTOM_ID: %^{Custom id}\n:END:")
-
-  ("w" "Work habit" entry
-   (file (lambda ()
-	   (let ((name (read-string "File name: ")))
-	     (expand-file-name (concat (sanitize-filename name) ".org")
-			       "~/notes/"))))
-   "* TODO %^{Task description}\nSCHEDULED: <%<%Y-%m-%d> +1d>\n:PROPERTIES:\n:CATEGORIES: work habit\n:CUSTOM_ID: %^{Custom id}\n:END:")
-
-  ("j" "Journal Entry" plain
-   (function (lambda ()
-	       (let* ((id (completing-read "Choose entry: "
-					   '("me" "emily" "lincoln" "nora" "fern" "harry")))
-		      (file "~/notes/log.org")
-		      (full-id (concat "log-" id)))
-		 (find-file file)
-		 (goto-char (point-min))
-		 (when (re-search-forward (format ":CUSTOM_ID: %s" full-id) nil t)
-		   (org-back-to-heading t)
-		   (re-search-forward ":LOGBOOK:" nil t)
-		   (forward-line 1)))))
-   "- Note taken on %U \\\\\n  %?"
-   :immediate-finish nil)
-
+'(
+  ("l" "Log" entry
+   (file "~/notes/inbox.org")
+   "* %U %^{Title}\n%?")
   ("e" "Event" entry
-   (file "~/notes/events.org")
-   "* %^{Description}\nSCHEDULED: %^T\n:PROPERTIES:\n:CUSTOM_ID: %^{ID}\n:CATEGORIES: %^{Category|personal habit|family habit|work habit|one-off|event|school-function|holiday|birthday|work meeting}\n:END:\n\n  %?"
-   :immediate-finish nil)))
-
-;; Face customization
-(with-eval-after-load 'org
-  (set-face-attribute 'org-scheduled-previously nil
-		:foreground "#d79921"
-		:weight 'bold))
+   (file "~/notes/inbox.org")
+   "* %^{Title}\n%^T\n%?")
+  ("t" "Todo" entry
+   (file "~/notes/inbox.org")
+   "* TODO [#A] %^{Title}\nSCHEDULED: %t\n%?")
+  ))
 
 (defun convert-to-org ()
   "Convert current markdown buffer to org format."
@@ -403,90 +616,124 @@ create-lockfiles nil)
       (message "Moved to %s" new-file))
   (message "No CUSTOM_ID property found!")))))
 
-;; Global agenda settings
 (setq org-agenda-block-separator nil)
-(setq org-agenda-window-setup 'only-window)
+(setq org-agenda-window-setup 'current-window)
 (setq org-agenda-timegrid-use-ampm t)
 (setq org-agenda-time-leading-zero t)
 (setq org-agenda-todo-keyword-format "%s")
 (setq org-agenda-include-diary t)
 (setq org-refile-targets '((nil :maxlevel . 8)
 		     (org-agenda-files :maxlevel . 2)))
+(setq org-agenda-hide-tags-regexp ".")
+
+;; Allow creating new nodes (including new files) when refiling
+(setq org-refile-allow-creating-parent-nodes 'confirm)
+
+;; Use the full outline paths for refile targets
+(setq org-refile-use-outline-path nil)
+
+;; Completes in steps so you can select a heading after selecting the file
+(setq org-outline-path-complete-in-steps nil)
 
 (require 'diary-lib)
 
-;; Super Agenda Configuration
 (use-package org-super-agenda
   :after org-agenda
   :config
-  (setq org-super-agenda-header-map nil)  ; Disable super-agenda keybindings
+  (setq org-super-agenda-header-map nil)  
   (setq org-super-agenda-header-properties nil)
   (org-super-agenda-mode))
 
 (setq warning-suppress-types '((org-element)))
 
-;; Custom agenda commands
+(defun my/inherit-meeting-times ()
+  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
+	  (org-get-todo-state))
+ (let ((timestamp nil))
+   (save-excursion
+     (when (org-up-heading-safe)
+       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+   (when timestamp
+     (org-schedule nil timestamp)))))
+   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
+
 (setq org-agenda-custom-commands
 '(("d" "daily dashboard"
-   ((agenda "Schedule and Habits"
+   (
+    (tags "+CATEGORY=\"inbox\"" 
+	  ((org-agenda-overriding-header "Inbox")))
+    (agenda "Schedule and Habits"
 	    ((org-agenda-span 'day)
 	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-	     (org-agenda-overriding-header "")
+	     (org-agenda-overriding-header " ")
 	     (org-super-agenda-groups
-	      '((:name "Today's Schedule"
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Meeting Notes" :category "meeting-notes")
+		(:name "Today's Schedule"
 		       :time-grid t)
-		(:name "Events Today"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking events: %s" value)
-						 (and value
-						      (string-match-p "event" value)))))
-		(:name "Inbox items"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking inbox: %s" value)
-						 (and value
-						      (string-match-p "inbox" value)))))
-		(:name "Tasks"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking tasks: %s" value)
-						 (and value
-						      (string-match-p "task" value)))))
-		(:name "Code reviews"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking code reviews: %s" value)
-						 (and value
-						      (string-match-p "code-review" value)))))
-		(:name "Personal Habits"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking personal habits: %s" value)
-						 (and value
-						      (string-match-p "habit" value)
-						      (string-match-p "personal" value)))))
-		(:name "Family Habits"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking family habits: %s" value)
-						 (and value
-						      (string-match-p "habit" value)
-						      (string-match-p "family" value)))))
-		(:name "Work Habits"
-		       :property ("CATEGORIES" (lambda (value)
-						 (message "Checking work habits: %s" value)
-						 (and value
-						      (string-match-p "habit" value)
-						      (string-match-p "work" value)))))
-		(:discard (:anything t))))))))))
+		(:name "Overdue" :deadline past)
+		(:name "Due Today" :deadline today)
+		(:name "High Priority" :priority "A")
+		(:name "Code Review Queue" :category "code review")
+		(:name "Code Review Bunker" :category "code review bunker")
+		(:name "Active Bugs" :category "bug")
+		(:name "Active Epics" :category "epic")
+		(:name "Easy" :tag ("easy"))
+		;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
+		;;(:name "Inbox" :category "inbox")
+		(:name "Due Soon" :deadline future)
+		(:name "Poetry" :category "my poems")
+		(:name "Family Stuff" :category "family")
+		(:name "Holidays" :category "holiday")
+		(:name "The Garden" :category "the-garden")
+		(:name "Logs" :category "log")
+		(:name "Re: Me" :category "me")
+		(:name "Re: Emily" :category "emily")
+		(:name "Re: Lincoln" :category "lincoln")
+		(:name "Re: Nora" :category "nora")
+		(:name "Re: Fern" :category "fern")
+		(:name "Re: Harry" :category "harry")
+		(:name "AM Habits" :category "personal habits am")
+		(:name "Midday Habits" :category "personal habits midday")
+		(:name "PM Habits" :category "personal habits pm")
+		(:name "Any Time Habits" :category "personal habits any time")
+		(:name "Work Habits" :category "work habits")
+		(:auto-category t)
+		))))))
+  ("w" "Weekly overview with super-agenda"
+   ((agenda ""
+	    ((org-agenda-span 7)                      ;; Show 7 days
+	     (org-agenda-start-on-weekday nil)        ;; Start from current day
+	     (org-agenda-time-grid '((daily today require-timed)
+				     (800 1000 1200 1400 1600 1800 2000)
+				     "......" "----------------"))  ;; Time grid config
+	     (org-agenda-include-deadlines nil)       ;; No deadlines
+	     (org-agenda-skip-scheduled-if-done t)     
+	     (org-agenda-skip-deadline-if-done t)
+	     (org-agenda-skip-scheduled-delay-if-done t)
+	     (org-agenda-skip-function                ;; Skip scheduled items
+	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+	     (org-agenda-todo-keyword-format "")
+	     (org-agenda-show-all-dates t)
+	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+	     (org-agenda-format-date "%A %Y-%m-%d")
+	     ;; Super agenda groups
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Schedule"
+		       :time-grid t)
+		))))))
+  ))
 
-;; Agenda refresh function
-(defun refresh-org-agenda ()
-  "Refresh org agenda files and rebuild agenda view."
-  (interactive)
-  (setq org-agenda-files (list org-directory))
-  (when (get-buffer "*Org Agenda*")
-    (with-current-buffer "*Org Agenda*"
-(org-agenda-redo t))))
-
-(global-set-key (kbd "C-c r") 'refresh-org-agenda)
-
-;; Agenda appearance settings
 (setq org-agenda-time-grid-use-ampm t)
 (setq org-agenda-with-times t)
 (setq org-agenda-time-format "%I:%M%p")
@@ -495,43 +742,42 @@ create-lockfiles nil)
   (tags   . "○ ")
   (todo   . "○ ")))
 
-;; Auto-save settings for org files
-(defun my-org-auto-save-settings ()
-  (setq-local auto-save-interval 1)
-  (setq-local auto-save-timeout 5))
+(use-package calfw)
+(use-package google-maps)
 
-(add-hook 'org-mode-hook 'my-org-auto-save-settings)
+(use-package calfw-org
+  :config
+  (setq cfw:org-agenda-schedule-args '(:timestamp)))
+
+(defun my/cfw:trim-text (text)
+  "Trim TEXT to fit in WIDTH, without adding ellipsis that breaks formatting."
+  text)
+;; Override the default truncation function
+(advice-add 'cfw:trim :override #'my/cfw:trim-text)
+
+(use-package org-modern)
 
 ;; Face customizations for org mode
-(custom-set-faces
- '(org-document-info-keyword ((t (:height 1.0))))
- '(org-document-title ((t (:height 140))))
- '(org-level-1 ((t (:height 140))))
- '(org-level-2 ((t (:height 140))))
- '(org-level-3 ((t (:height 140))))
- '(org-level-4 ((t (:height 140))))
- '(org-level-5 ((t (:height 140))))
- '(org-level-6 ((t (:height 140))))
- '(org-level-7 ((t (:height 140))))
- '(org-level-8 ((t (:height 140))))
- '(org-modern-label ((t (:height 140))))
- '(org-modern-statistics ((t (:height 140))))
- '(org-modern-tag ((t (:height 140))))
- '(org-drawer ((t (:height 140))))
- '(org-drawer-content ((t (:height 140))))
- '(variable-pitch-text ((t (:height 140))))
- '(variable-pitch ((t (:height 140))))
- '(org-property-value ((t (:height 140))))
- '(org-special-keyword ((t (:height 140)))))
+(defun my/toggle-org-modern ()
+  "Toggle org-modern-mode on and off."
+  (interactive)
+  (if (bound-and-true-p org-modern-mode)
+      (progn
+        (org-modern-mode -1)
+        (message "org-modern-mode disabled"))
+    (progn
+      (org-modern-mode)
+      (message "org-modern-mode enabled"))))
+
+(global-set-key (kbd "<f2>") 'my/toggle-org-modern)
 
 (require 'ghub)
 
-(defvar my/github-pr-file "~/notes/github-prs.org"
+(defvar my/github-pr-file "~/notes/code-reviews.org"
   "File to store GitHub PR todos.")
 
 (defvar my/github-pr-queries
-  '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")
-    ("Renovate PRs" . "is:open is:pr involves:addisonbeck author:app/renovate")))
+  '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
 
 (defun my/pr-exists-p (url)
   "Check if PR with URL already exists in the org file."
@@ -564,23 +810,23 @@ create-lockfiles nil)
       (message "Processing query: %s" section-name)
       (let ((response (ghub-graphql
 		       "query($query: String!) {
-			      search(query: $query, type: ISSUE, first: 100) {
-				nodes {
-				  ... on PullRequest {
-				    title
-				    url
-				    repository {
-				      nameWithOwner
-				    }
-				    author {
-				      login
-				    }
-				    updatedAt
-				    state
-				  }
-				}
-			      }
-			    }"
+						  search(query: $query, type: ISSUE, first: 100) {
+						    nodes {
+						      ... on PullRequest {
+							title
+							url
+							repository {
+							  nameWithOwner
+							}
+							author {
+							  login
+							}
+							updatedAt
+							state
+						      }
+						    }
+						  }
+						}"
 		       `((query . ,query)))))
 	(message "Got GraphQL response")
 	(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
@@ -595,22 +841,12 @@ create-lockfiles nil)
 		  (message "PR doesn't exist, inserting")
 		  (let ((insert-point (point)))
 		    (message "Current point before insert: %S" insert-point)
-		    (insert (format "* TODO %s
-:PROPERTIES:
-:PR_URL: %s
-:REPO: %s
-:AUTHOR: %s
-:CATEGORIES: code-review
-:END:
-
-[[%s][Open in GitHub]]
-
-"
+		    (insert (format "* TODO %s\nSCHEDULED: <%s>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
 				    .title
+				    (format-time-string "%Y-%m-%d")
 				    .url
 				    .repository.nameWithOwner
-				    .author.login
-				    .url))
+				    .author.login))
 		    (message "Insert completed"))))))))))))
     (message "Saving buffer")
     (save-buffer)
@@ -642,7 +878,46 @@ create-lockfiles nil)
 (use-package gruvbox-theme
   :ensure t
   :config
-  (load-theme 'gruvbox-dark-hard t))
+  (load-theme 'gruvbox-light-hard t))
+
+(defun my/toggle-theme ()
+  "Toggle between gruvbox light and dark themes."
+  (interactive)
+  (if (eq (car custom-enabled-themes) 'gruvbox-light-hard)
+(progn
+  (disable-theme 'gruvbox-light-hard)
+  (load-theme 'gruvbox-dark-hard t)
+  (message "Switched to dark theme"))
+    (progn
+(disable-theme 'gruvbox-dark-hard)
+(load-theme 'gruvbox-light-hard t)
+(message "Switched to light theme"))))
+
+
+(custom-set-faces
+ `(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
+			       "#83a598"  ; gruvbox-dark blue
+			     "#076678")  ; gruvbox-light blue
+			  ))))
+ '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
+ '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
+ '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
+ )
+
+(use-package olivetti
+  :ensure t
+  :defer t)
+
+(defun my/toggle-olivetti ()
+  "Toggle olivetti mode with my preferred settings."
+  (interactive)
+  (if (bound-and-true-p olivetti-mode)
+      (olivetti-mode -1)
+    (progn
+      (olivetti-mode)
+      (olivetti-set-width 80))))
+
+(global-set-key (kbd "<f1>") 'my/toggle-olivetti)
 
 (use-package elfeed
   :ensure t
@@ -665,7 +940,7 @@ create-lockfiles nil)
 	     (kbd "p") 'elfeed-show-prev
 	     (kbd "b") 'elfeed-show-visit)
 
-  (setq elfeed-search-filter "+unread or +starred")
+  (setq elfeed-search-filter "+unread")
   (setq elfeed-sort-order 'descending))
 
 (use-package elfeed-protocol
@@ -677,8 +952,8 @@ create-lockfiles nil)
   (setq elfeed-protocol-log-trace t)
   (elfeed-protocol-fever-update-unread-only t)
   (elfeed-protocol-fever-fetch-category-as-tag t)
-  (elfeed-protocol-feeds '(("fever+https://me@rss.addisonbeck.dev"
-		      :api-url "https://rss.addisonbeck.dev/api/fever.php"
+  (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
+		      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
 		      :use-authinfo t)))
   (elfeed-protocol-enabled-protocols '(fever))
   :config
@@ -712,22 +987,40 @@ create-lockfiles nil)
 (elfeed-search-update--force)
 (message "Reset complete"))))
 
-(defun my/reload-config ()
-  "Reload Emacs configuration by tangling and loading init.org."
-  (let ((init-org "~/nix/system/with/user/with/program/init.org")
-        (temp-el "/tmp/init-temp.el"))
-    (with-current-buffer (find-file-noselect init-org)
-      ;; Tangle only emacs-lisp blocks to our temp file
-      (org-babel-tangle-file init-org temp-el "emacs-lisp")
-      ;; Load the tangled config
-      (load temp-el)
-      ;; Clean up
-      (delete-file temp-el)
-      "Configuration reloaded successfully")))
+;; Set elfeed-show-entry-switch to display in a side window
+(setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
+
+;; Define the display function for right split
+(defun elfeed-display-buffer-right (buf)
+  (let ((display-buffer-mark-dedicated t))
+    (display-buffer 
+     buf
+     '((display-buffer-reuse-window display-buffer-in-side-window)
+ (side . right)
+ (window-width . 0.5)))))
+
+;; Optional: Make elfeed respect this two-pane setup when updating
+(defadvice elfeed-search-update (after configure-windows activate)
+  (when (get-buffer "*elfeed-entry*")
+    (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
+
+;; Optional: Return focus to search buffer after showing entry
+(defadvice elfeed-show-entry (after switch-to-search activate)
+  (select-window (get-buffer-window "*elfeed-search*")))
+
+;;(require 'elfeed-tube)
+;;(elfeed-tube-setup)
+;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(require 'elfeed-tube-mpv)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
 
 (use-package gptel
-  :ensure t
   :config
+  ;; Enable debug logging
   ;; Token access for GitHub Copilot
   (defvar gptel-github-api-key
     (lambda ()
@@ -798,6 +1091,8 @@ token-str))
    :stream t
    :models '((gpt-4o-2024-08-06 :name "gpt-4o-2024-08-06")
 	     (claude-3.5-sonnet :name "claude-3.5-sonnet")
+	     (claude-3.7-sonnet :name "claude-3.7-sonnet")
+	     (claude-3.7-sonnet-thought :name "claude-3.7-sonnet-thought")
 	     (o1-2024-12-17 :name "o1-2024-12-17")
 	     (o1-mini-2024-09-12 :name "o1-mini-2024-09-12"))
    :header (lambda ()
@@ -832,30 +1127,170 @@ token-str))
        (substring gptel-copilot--exchanged-token 0 50))
     ;; Force token refresh by setting to nil
     (setq gptel-copilot--exchanged-token nil)
-    (message "Cleared token, making request...")
+    ;;(message "Cleared token, making request...")
     ;; Make request that should trigger token refresh
-    (gptel-request
-     "Test message"
-     :callback (lambda (response info)
-	   (message "=== Request completed ===")
-	   (message "New token (first 50 chars): %s..."
-		    (substring gptel-copilot--exchanged-token 0 50))
-	   (message "Response status: %s" (plist-get info :status))
-	   (message "Got response: %s" response))))
+    ;;(gptel-request
+    ;;"Test message"
+    ;;:callback (lambda (response info)
+    ;;(message "=== Request completed ===")
+    ;;(message "New token (first 50 chars): %s..."
+    ;;(substring gptel-copilot--exchanged-token 0 50))
+    ;;(message "Response status: %s" (plist-get info :status))
+    ;;(message "Got response: %s" response)))
+    )
 
-  (setq gptel-backend gptel-copilot-backend
-  ;;gptel-model 'gpt-4o-2024-08-06
-  gptel-model ' claude-3.5-sonnet
-  gptel-auto-save-directory "~/chats"
-  gptel--mark-prompts-and-responses nil
-  gptel-auto-save-buffers t
-  gptel-prompt-prefix
-  "You are a large language model living in Emacs and a helpful assistant.
-			 You are assisting a software engineer at Bitwarden, an open source password management solution.
-			 When expressing uncertainty, make it clear.
-			 When making assumptions, state them explicitly.
-			 Always respond concisely."
-  gptel-default-mode 'markdown-mode))
+  (defun get-anthropic-api-key ()
+    (when-let ((auth (car (auth-source-search
+		     :host "api.anthropic.com"
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
+
+  (defun get-gemini-api-key ()
+    (when-let ((auth (car (auth-source-search
+		     :host "api.gemini.com"
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
+
+  (gptel-make-anthropic "Claude"          
+		  :stream t
+		  :key #'get-anthropic-api-key)
+
+  (gptel-make-gemini "Gemini"          
+	       :key #'get-gemini-api-key)
+
+  ;;(gptel-make-anthropic "claude" 
+  ;;:key #'get-anthropic-api-key
+  ;;:stream t
+  ;;:models '(claude-3-7-sonnet-20250219)
+  ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+  ;;`(("x-api-key" . ,key)
+  ;;("anthropic-version" . "2023-06-01")
+  ;;("anthropic-beta" . "pdfs-2024-09-25")
+  ;;("anthropic-beta" . "output-128k-2025-02-19")
+  ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+  ;;:request-params '(:max_tokens 4096))
+
+  ;;(gptel-make-anthropic "claude-thinking" 
+  ;;:key #'get-anthropic-api-key
+  ;;:stream t
+  ;;:models '(claude-3-7-sonnet-20250219)
+  ;;:header (lambda () (when-let* ((key (gptel--get-api-key)))
+  ;;`(("x-api-key" . ,key)
+  ;;("anthropic-version" . "2023-06-01")
+  ;;("anthropic-beta" . "pdfs-2024-09-25")
+  ;;("anthropic-beta" . "output-128k-2025-02-19")
+  ;;("anthropic-beta" . "prompt-caching-2024-07-31"))))
+  ;;:request-params '(:thinking (:type "enabled" :budget_tokens 2048)
+  ;;:max_tokens 4096))
+
+  (setq gptel-log-level 'debug)
+  ;; Use org-mode for gptel buffers
+  (setq gptel-default-mode 'org-mode)
+  ;; Enable branching conversations in org-mode
+  (setq gptel-org-branching-context t)
+  (setq gptel-confirm-tool-calls t)
+  (setq gptel-include-tool-results t)
+
+  ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+
+  (setq gptel-backend gptel-copilot-backend)
+  (setq gptel-model 'claude-3.7-sonnet)
+  (setq gptel-default-mode 'org-mode)
+(gptel-make-preset 'recipe-assistant
+  :description "Recipe assistant"
+  :system "You are a Recipe Assistant for a competent home cook with a family of 6 (including 4 young children). Your goal is to provide flexible cooking frameworks rather than rigid recipes, offering ingredient substitutions and adaptations while keeping meals budget-friendly and reasonably healthy.
+
+When responding:
+- Speak as if you are simply outputting text that can be used as a tutorial for a framework for the dish being discussed. Do not address the user. Your output should be the perfect guide based on the dish being discussed.
+- If asked to make edits only output the modified sections of the guide
+- Focus on adaptable cooking methods that allow for variations based on available ingredients
+- Suggest ways to prep components ahead of time for efficient weeknight cooking
+- Provide substitution options for ingredients, especially expensive ones
+- Consider the user's preferred cooking equipment: cast iron skillet, carbon steel wok, two-burner griddle, dutch ovens, Vitamix, stand mixer, air fryer, Instant Pot, waffle maker, mandolin, pizza steel.
+- Include tips for batch preparation when appropriate
+- Balance kid-friendly flavors with nutritional value
+- Provide guidance for meal planning when requested, including grocery lists
+- Highlight techniques that offer the best return on effort (making things from scratch only when it significantly elevates the dish)
+- Use metric weights"
+  :tools '("web")) 
+(gptel-make-preset 'default
+  :description "Default"
+  :system "You are a large language model living in emacs and a helpful assistant. Responsd concisely."
+  :tools '("web")) 
+
+(add-to-list 'gptel-presets 'default)
+(add-to-list 'gptel-presets 'recipe-assistant)
+  )
+
+
+
+;; Context minification function for GPTel
+(defun my/gptel-minify-context ()
+  "Minify the current gptel chat buffer context to reduce tokens."
+  (interactive)
+  (when (derived-mode-p 'gptel-mode)
+    (let ((inhibit-read-only t)
+    (modified (buffer-modified-p)))
+(save-excursion
+  ;; Remove excess blank lines
+  (goto-char (point-min))
+  (while (re-search-forward "\n\n\n+" nil t)
+    (replace-match "\n\n"))
+
+  ;; Collapse code blocks to show minimal context
+  (goto-char (point-min))
+  (while (re-search-forward "```\\([^`\n]*\\)\n\\([^`]*?\\)\n```" nil t)
+    (let* ((lang (match-string 1))
+	   (code (match-string 2))
+	   (lines (split-string code "\n"))
+	   (total-lines (length lines))
+	   (preview-lines 3)
+	   (minified-code
+	    (if (> total-lines (* 2 preview-lines))
+		(concat
+		 (string-join (seq-take lines preview-lines) "\n")
+		 "\n... "
+		 (number-to-string (- total-lines (* 2 preview-lines)))
+		 " lines collapsed ...\n"
+		 (string-join (seq-take-last preview-lines lines) "\n"))
+	      code)))
+      (replace-match (format "```%s\n%s\n```" lang minified-code))))
+
+  ;; Optionally truncate very long responses
+  (goto-char (point-min))
+  (while (re-search-forward "^Assistant: \\([^\n]*\\(?:\n[^\n]+\\)*\\)" nil t)
+    (let* ((response (match-string 1))
+	   (lines (split-string response "\n"))
+	   (max-lines 20))
+      (when (> (length lines) max-lines)
+	(let ((truncated-response
+	       (concat
+		(string-join (seq-take lines (/ max-lines 2)) "\n")
+		"\n... "
+		(number-to-string (- (length lines) max-lines))
+		" lines summarized ...\n"
+		(string-join (seq-take-last (/ max-lines 2) lines) "\n"))))
+	  (replace-match (concat "Assistant: " truncated-response))))))
+
+  ;; Remove trailing whitespace
+  (delete-trailing-whitespace))
+
+;; Restore modification state
+(set-buffer-modified-p modified))
+
+    ;; Provide feedback on reduction
+    (message "Context minified. Use M-x revert-buffer to restore if needed.")))
+
+;; Bind minification function in gptel-mode
+(define-key gptel-mode-map (kbd "C-c C-m") #'my/gptel-minify-context)
 
 (setq gptel-use-tools t
 gptel-tools nil)  
@@ -864,194 +1299,1171 @@ gptel-tools nil)
   "Register a tool with gptel by its NAME."
   (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
 
-(gptel-make-tool
- :name "create_gptel_tool"
- :function (lambda (name description function args category)
-             (message "Running create_gptel_tool with name: %s" name)
-             (message "Debug: Starting tool creation/update process")
-             (let* ((config-file "~/nix/system/with/user/with/program/init.org")
-                    (tool-template (format "
-** %s
+;; Make sure repomix is available
+;;(unless (executable-find "repomix")
+;;(message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
 
-#+begin_src emacs-lisp
-    (gptel-make-tool
-     :name \"%s\"
-     :function %s
-     :description \"%s\"
-     :args '%s
-     :category \"%s\")
 
-    (register-gptel-tool \"%s\")
-#+end_src
-" 
-                                         (capitalize name)
-                                         name
-                                         function
-                                         description
-                                         args
-                                         category
-                                         name))
-                    (success nil))
-
-               (with-current-buffer (find-file-noselect config-file)
-                 (goto-char (point-min))
-                 (when (search-forward "* GPTel Tools" nil t)
-                   (message "Debug: Found GPTel Tools section")
-                   (let ((tools-section-start (point))
-                         (tools-section-end (save-excursion
-                                            (if (re-search-forward "^\\* " nil t)
-                                                (line-beginning-position)
-                                              (point-max))))
-                         (found (save-excursion
-                                (re-search-forward (format "^** %s$" (capitalize name)) nil t))))
-                     (message "Debug: Tool search result: %s" found)
-                     (if found
-                         (progn
-                           (goto-char found)
-                           (let ((begin found)
-                                 (end (save-excursion
-                                       (if (re-search-forward "^\\*\\* \\|^\\* " nil t)
-                                           (point)
-                                         (point-max)))))
-                             (delete-region begin end)
-                             (goto-char begin)
-                             (insert tool-template)
-                             (setq success 'updated)))
-                       ;; For new tools, find the last tool section
-                       (goto-char tools-section-start)
-                       (let ((last-tool-pos tools-section-start))
-                         (while (re-search-forward "^\\*\\* " tools-section-end t)
-                           (setq last-tool-pos (point)))
-                         (goto-char last-tool-pos)
-                         ;; Move to end of this tool section
-                         (if (re-search-forward "^\\*\\* \\|^\\* " tools-section-end t)
-                             (goto-char (match-beginning 0))
-                           (goto-char tools-section-end))
-                         (insert "\n" tool-template)
-                         (setq success 'created))))
-                   (save-buffer)))
-
-               (pcase success
-                 ('updated (format "Successfully updated existing tool '%s' in %s" name config-file))
-                 ('created (format "Successfully created new tool '%s' in %s" name config-file))
-                 (_ (format "Failed to create/update tool '%s'. Could not find GPTel Tools section in config." name)))))
- :description "Creates or updates a GPTel tool in the Emacs configuration"
- :args '((:name "name"
-          :type string
-          :description "name of the tool to create")
-         (:name "description"
-          :type string
-          :description "description of what the tool does")
-         (:name "function"
-          :type string
-          :description "elisp function implementation as a string")
-         (:name "args"
-          :type string
-          :description "list of argument specifications in elisp format")
-         (:name "category"
-          :type string
-          :description "category for the tool (e.g., 'web', 'file', etc.)"))
- :category "meta")
-
-    (register-gptel-tool "create_gptel_tool")
+(defvar my/file-bookmarks
+  '(("emacs config" . (:path "~/nix/system/with/user/with/program/emacs.org"
+		       :description "My literate org based emacs configuration"))
+    ("inbox" . (:path "~/notes/inbox.org"
+		:description "My inbox for my TODOs and notes"))
+    ))
 
 (gptel-make-tool
-   :name "fetch_webpage"
-   :function (lambda (url)
-              (message "Fetching URL: %s" url)
-              (let ((buffer (url-retrieve-synchronously url t nil 30)))
-                (when buffer
-                  (with-current-buffer buffer
-                    (goto-char (point-min))
-                    (re-search-forward "^$" nil t) ; Skip headers
-                    (forward-char)
-                    ;; Basic HTML cleanup: Convert to plain text
-                    (require 'shr)
-                    (let* ((dom (libxml-parse-html-region (point) (point-max)))
-                           (text-buffer (generate-new-buffer " *temp*")))
-                      (with-current-buffer text-buffer
-                        (shr-insert-document dom)
-                        ;; Clean up the text and ensure it's JSON-safe
-                        (let ((content (replace-regexp-in-string 
-                                      "[\u0000-\u001F\u007F]+" " "
-                                      (buffer-substring-no-properties (point-min) (point-max)))))
-                          (kill-buffer text-buffer)
-                          (kill-buffer buffer)
-                          ;; Ensure we return a proper JSON string
-                          content)))))))
-   :description "fetch the contents of a webpage given its url"
-   :args '((:name "url"
-            :type string
-            :description "url of the webpage to fetch"))
-   :category "web")
+ :name "fetch_webpage"
+ :function (lambda (url)
+       (message "Fetching URL: %s" url)
+       (let ((buffer (url-retrieve-synchronously url t nil 30)))
+	 (when buffer
+	   (with-current-buffer buffer
+	     (goto-char (point-min))
+	     (re-search-forward "^$" nil t) ; Skip headers
+	     (forward-char)
+	     ;; Basic HTML cleanup: Convert to plain text
+	     (require 'shr)
+	     (let* ((dom (libxml-parse-html-region (point) (point-max)))
+		    (text-buffer (generate-new-buffer " *temp*")))
+	       (with-current-buffer text-buffer
+		 (shr-insert-document dom)
+		 ;; Clean up the text and ensure it's JSON-safe
+		 (let ((content (replace-regexp-in-string 
+				 "[\u0000-\u001F\u007F]+" " "
+				 (buffer-substring-no-properties (point-min) (point-max)))))
+		   (kill-buffer text-buffer)
+		   (kill-buffer buffer)
+		   ;; Ensure we return a proper JSON string
+		   content)))))))
+ :description "fetch the contents of a webpage given its url"
+ :args '((:name "url"
+	  :type string
+	  :description "url of the webpage to fetch"))
+ :category "web")
 
 (register-gptel-tool "fetch_webpage")
 
-(gptel-make-tool
- :name "create_file"
- :function (lambda (path content)
-       (let ((dir (file-name-directory path)))
-	 (condition-case err
-	     (cond
-	      ((file-exists-p path)
-	       (error "File already exists: %s" path))
-	      (t
-	       (when dir
-		 (make-directory dir t))
-	       (write-region content nil path)
-	       (format "Successfully created file: %s" path)))
-	   (error
-	    (format "Error creating file: %s" (error-message-string err))))))
- :description "Creates a new file with specified content, creating any necessary parent directories. Will not overwrite existing files."
- :args '((:name "path"
-	  :type string
-	  :description "path to the file to create")
-   (:name "content"
-	  :type string
-	  :description "content to write to the file"))
- :category "file")
+(require 'mcp-hub)
+(setq mcp-server-start-time 120) 
 
-(register-gptel-tool "create_file")
+(defun my/get-github-mcp-token ()
+  (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
+    (let ((token (plist-get auth :secret)))
+(if (functionp token) (funcall token) token))))
 
-(gptel-make-tool
- :name "read_gptel_tools_section"
- :function (lambda (dummy)
-            (let ((file-path "~/nix/system/with/user/with/program/init.org"))
-              (condition-case err
-                  (if (file-exists-p file-path)
-                      (with-temp-buffer
-                        (insert-file-contents file-path)
-                        (org-mode)
-                        (goto-char (point-min))
-                        (if (re-search-forward "^\\* GPTel Tools" nil t)
-                            (let* ((section-start (line-beginning-position))
-                                  (section-end (save-excursion
-                                               (or (re-search-forward "^\\* " nil t)
-                                                   (point-max))))
-                                  (content (buffer-substring-no-properties 
-                                          section-start section-end)))
-                              content)
-                          "GPTel Tools section not found in init.org"))
-                    "File not found: ~/nix/system/with/user/with/program/init.org")
-                (error
-                 (format "Error reading tools section: %s" 
-                        (error-message-string err))))))
- :description "Reads the GPTel Tools section from init.org to provide context about available tools"
- :args '((:name "dummy"
-          :type string
-          :description "dummy argument"))
- :category "file")
+;; Configure the GitHub MCP server (using Docker)
+(setq mcp-hub-servers
+`(
+  ("nix-folder" . (:command "npx" :args ("-y" "@modelcontextprotocol/server-filesystem" "~/nix")))
+  ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+  ("github-mcp" . (:command "docker"
+			    :args ("run" "-i" "--rm"
+				   "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+				   "ghcr.io/github/github-mcp-server")
+			    :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+  ))
 
-(register-gptel-tool "read_gptel_tools_section")
 
-(gptel-make-tool
-   :name "reload_config"
-   :function (lambda (dummy)
-(my/reload-config))
-   :description "Reloads Emacs configuration by tangling and loading init.org"
-   :args '((:name "dummy"
-        :type string
-        :description "dummy argument"))
-   :category "emacs")
+(add-hook 'after-init-hook #'mcp-hub-start-all-server)
 
-  (register-gptel-tool "reload_config")
+(defun gptel-mcp-register-tool ()
+  (interactive)
+  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+    (mapcar #'(lambda (tool)
+	  (apply #'gptel-make-tool
+		 tool))
+      tools)))
+
+(defun gptel-mcp-use-tool ()
+  "Activate all MCP tools for gptel."
+  (interactive)
+  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+    (mapcar #'(lambda (tool)
+	  (let ((path (list (plist-get tool :category)
+			    (plist-get tool :name))))
+	    (add-to-list 'gptel-tools (gptel-get-tool path))))
+      tools)))
+
+(defun gptel-mcp-close-use-tool ()
+  "Deactivate all MCP tools for gptel."
+  (interactive)
+  (let ((tools (mcp-hub-get-all-tool :asyncp t :categoryp t)))
+    (mapcar #'(lambda (tool)
+	  (let ((path (list (plist-get tool :category)
+			    (plist-get tool :name))))
+	    (setq gptel-tools
+		  (cl-remove-if #'(lambda (tool-item)
+				    (equal path
+					   (list (gptel-tool-category tool-item)
+						 (gptel-tool-name tool-item))))
+				gptel-tools))))
+      tools)))
+
+(use-package aidermacs
+  :bind (("C-c a" . aidermacs-transient-menu))
+  :config
+  (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
+  :custom
+  ; See the Configuration section below
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "sonnet"))
+
+(defun copy-file-path ()
+  "Copy the current buffer file path to the kill ring."
+  (interactive)
+  (let ((filepath (buffer-file-name)))
+    (when filepath
+(kill-new filepath)
+(message "Copied: %s" filepath))))
+
+(defun copy-file-name ()
+  "Copy the current buffer file name to the kill ring."
+  (interactive)
+  (let ((filename (file-name-nondirectory (buffer-file-name))))
+    (when filename
+(kill-new filename)
+(message "Copied: %s" filename))))
+
+(defun copy-directory-path ()
+  "Copy the current buffer directory path to the kill ring."
+  (interactive)
+  (let ((dirpath (file-name-directory (buffer-file-name))))
+    (when dirpath
+(kill-new dirpath)
+(message "Copied: %s" dirpath))))
+
+(require 'avy)
+(define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
+
+(require 'rg)
+
+(use-package ansi-color
+  :config
+  (defun my/colorize-compilation ()
+    "Colorize from `compilation-filter-start' to `point'."
+    (let ((inhibit-read-only t))
+(ansi-color-apply-on-region
+ compilation-filter-start (point))))
+
+  (add-hook 'compilation-filter-hook #'my/colorize-compilation)
+
+  (setq ansi-color-for-comint-mode t)
+  (setq comint-terminfo-terminal "xterm-256color"))
+
+(defun bitwarden/nx-poc-npm-i ()
+  "Run npm ci in the nx PoC"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-functionl 
+    (lambda (_mode) (format "*nx-poc-npm-i*"))))
+    (compile "npm i" t)))
+
+(defun bitwarden/run-nx-poc-web ()
+  "Build the web vault of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/web"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-web-build*"))))
+    (compile "npm run build:watch" t)))
+
+(defun bitwarden/run-nx-poc-browser-chrome ()
+  "Build the chrome extension of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-chrome-build*"))))
+    (compile "npm run build:watch:chrome" t)))
+
+(defun bitwarden/run-nx-poc-browser-firefox ()
+  "Build the chrome extension of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-firefox-build*"))))
+    (compile "npm run build:watch:firefox" t)))
+
+(defun bitwarden/run-nx-poc-desktop ()
+  "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/desktop"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-desktop-build*"))))
+    (compile "npm run build:watch" t)))
+
+(defun bitwarden/build-nx-poc-cli ()
+  "Build the cli in the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/cli"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-cli-build*"))))
+    (compile "npm run build" t)))
+
+(defun bitwarden/nx-poc-nx-report ()
+  "Runs nx report in the poc project"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-nx-report*"))))
+    (compile "npx nx report" t)))
+
+(defun bitwarden/nx/build (target)
+  "Build the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+		    '("common" "angular" "web" "cli" "desktop" "browser")
+		    nil nil nil nil "common")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-pox-%s-build*" target))))
+    (compile (format "npx nx build %s" target) t)))
+
+(defun bitwarden/nx/serve (target)
+  "Serve the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+		    '("web" "desktop" "browser")
+		    nil nil nil nil "web")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
+    (compile (format "npx nx serve %s" target) t)))
+
+(defun bitwarden/nx/start (target)
+  "Start the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+		    '("cli")
+		    nil nil nil nil "cli")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-pox-%s-start*" target))))
+    (compile (format "npx nx start %s --verbose" target) t)))
+
+(defun bitwarden/nx/cleanup ()
+  "Clean up the nx poc project"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nx-poc-cleanup*"))))
+    (compile "rm -rf node_modules ; rm -rf .nx" t)))
+
+(defun my/nix/rebuild (system)
+  "Rebuild my nix config for the specified SYSTEM."
+  (interactive
+   (list (completing-read "System to rebuild: " 
+		    '("air" "bw")
+		    nil nil nil nil "air")))
+  (let* ((default-directory (my/get-project-path "nix"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-%s-rebuild*" system))))
+    (compile (format "nix develop --command rebuild %s" system) t)))
+
+(defun my/nix/format ()
+  "Run the formatters in my nix systems configuration"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-systems-format*"))))
+    (compile "nix develop --command apply formatting" t)))
+
+(defun my/nix/commit (message)
+  "Commit all files in my nix config with MESSAGE"
+  (interactive
+   (list (read-string "Commit message: " nil nil nil)))
+  (let* ((default-directory (my/get-project-path "nix"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-systems-commit*"))))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+
+(defun my/nix/update-flake-lock ()
+  "Update flake lock in my nix systems config"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
+    (compile "nix flake update" t)))
+
+(defun my/nix/check-status ()
+  "Check the git status of my nix systems config"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-systems-git-status*"))))
+    (compile "git status" t)))
+
+(defun my/nix/update-minecraft-packwize ()
+  "Update the pacckages for the packwiz server for my kids"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
+    (compile "packwiz " t)))
+
+(defun my/quick-commit (message)
+  "Commit all files in my notes with MESSAGE"
+  (interactive
+   (list (read-string "Commit message: " nil nil nil)))
+  (let* ((default-directory (my/get-project-path "notes"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*notes-commit*"))))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+
+(defun bitwarden/clients/npm/ci-run ()
+  "Run the typeschecker for the clients monorepo"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "clients"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-typechecker*"))))
+    (compile "npm ci" t)))
+
+(defun bitwarden/clients/typechecker/run ()
+  "Run the typeschecker for the clients monorepo"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "clients"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-typechecker*"))))
+    (compile "npm run test:types" t)))
+
+(defun bitwarden/clients/browser/chrome/run ()
+  "Watch a chrome dev build of the extension"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "clients") "/apps/browser"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-browser-chrome-run*"))))
+    (compile "npm run build:watch:chrome" t)))
+
+(defun bitwarden/clients/web/run ()
+  "Watch a build of the web vault"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "clients") "/apps/web"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*clients-web-run*"))))
+    (compile "npm run build:watch" t)))
+
+(defun bitwarden/server/api/run ()
+  "Watch a build of the bitwarden server api"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "server") "/src/Api"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-api-run*"))))
+    (compile "dotnet run" t)))
+
+(defun bitwarden/server/identity/run ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+
+(defun bitwarden/server/identity/run ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+
+(defun bitwarden/server/run-sql ()
+  "Watch a build of the bitwarden server identity"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "server") "/src/dev"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
+    (compile "dotnet run" t)))
+
+(defun bitwarden/clients/run-tests (&optional test-pattern)
+  "Run Jest tests for the clients monorepo.
+    If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((default-directory (my/get-project-path "clients"))
+   (command (if (and test-pattern (not (string-empty-p test-pattern)))
+		(format "npm run test -- -t '%s'" test-pattern)
+	      "npm run test"))
+   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+		    (format "*clients-jest-%s*" test-pattern)
+		  "*clients-jest*"))
+   (compilation-buffer-name-function 
+    (lambda (_mode) buffer-name)))
+    (compile command t)))
+
+(setq ring-bell-function 'ignore)
+(defun bitwarden/clients/run-tests-interactive (&optional test-pattern)
+  "Run Jest tests for the clients monorepo in interactive mode.
+If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((default-directory (my/get-project-path "clients"))
+         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+                       (format "*clients-jest-watch-%s*" test-pattern)
+                     "*clients-jest-watch*"))
+         (command (if (and test-pattern (not (string-empty-p test-pattern)))
+                    (format "npm run test:watch -- -t '%s'" test-pattern)
+                  "npm run test:watch")))
+    
+    ;; Create or switch to the terminal buffer
+    (let ((buf (get-buffer buffer-name)))
+      (if buf
+          (switch-to-buffer buf)
+        (ansi-term (getenv "SHELL") buffer-name)))
+    
+    ;; Change to project directory and run command
+    (term-send-string 
+     (get-buffer-process buffer-name)
+     (format "cd %s && %s\n" default-directory command))))
+
+(defun bitwarden/clients/lint/run ()
+  "Run linter for the clients monorepo"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "clients"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-lint*"))))
+    (compile "npm run lint" t)))
+
+(defun scan-worktree-projects ()
+  "Scan for all worktree directories and add them to Projectile."
+  (interactive)
+  (let ((base-dir (expand-file-name "~/binwarden/")))
+    (dolist (owner-repo (directory-files base-dir t "^[^.]"))
+      (when (file-directory-p owner-repo)
+        (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
+          (when (and (file-directory-p branch-dir)
+                     (file-exists-p (expand-file-name ".git" branch-dir)))
+            (projectile-add-known-project branch-dir)))))))
+
+(with-eval-after-load 'projectile
+  (scan-worktree-projects))
+
+(defun bitwarden/scan-worktrees (project-type)
+  "Scan for worktrees of PROJECT-TYPE (e.g., 'clients' or 'server')."
+  (let ((worktrees '())
+        (base-dir (expand-file-name "~/binwarden/")))
+    (dolist (dir (directory-files base-dir t "^[^.]"))
+      (when (and (file-directory-p dir)
+                 (string-match-p project-type (file-name-nondirectory dir)))
+        (dolist (branch-dir (directory-files dir t "^[^.]"))
+          (when (and (file-directory-p branch-dir)
+                     (file-exists-p (expand-file-name ".git" branch-dir)))
+            (push (cons (format "%s:%s" 
+                                (file-name-nondirectory dir) 
+                                (file-name-nondirectory branch-dir))
+                        branch-dir)
+                  worktrees)))))
+    worktrees))
+
+(defun bitwarden/select-worktree (project-type)
+  "Select a worktree of PROJECT-TYPE with completion."
+  (let* ((worktrees (bitwarden/scan-worktrees project-type))
+         (selection (completing-read 
+                     (format "Select %s worktree: " project-type)
+                     (mapcar #'car worktrees))))
+    (cdr (assoc selection worktrees))))
+
+(defun bitwarden/clients/browser/chrome/run-in-worktree ()
+  "Run Chrome extension build in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory (concat worktree-dir "/apps/browser"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-browser-chrome-run*"))))
+    (compile "pnpm run build:watch:chrome" t)))
+
+(defun bitwarden/clients/typechecker/run-in-worktree ()
+  "Run typechecker in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-typechecker*"))))
+    (compile "pnpm run test:types" t)))
+
+;; Template for other commands
+(defun bitwarden/clients/run-tests-in-worktree (&optional test-pattern)
+  "Run Jest tests in a selected clients worktree.
+If TEST-PATTERN is provided, filter tests using the -t option."
+  (interactive "sTest pattern (optional): ")
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (command (if (and test-pattern (not (string-empty-p test-pattern)))
+                    (format "npm run test -- -t '%s'" test-pattern)
+                  "npm run test"))
+         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
+                         (format "*clients-jest-%s*" test-pattern)
+                       "*clients-jest*"))
+         (compilation-buffer-name-function 
+          (lambda (_mode) buffer-name)))
+    (compile command t)))
+
+(defun bitwarden/clients/npm/ci-run-in-worktree ()
+  "Run pnpm ci in a selected clients worktree."
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-npm-ci*"))))
+    (compile "npm ci" t)))
+
+(defun bitwarden/clients/lint/worktree ()
+  "Run linting in a specific clients worktree"
+  (interactive)
+  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
+         (default-directory worktree-dir)
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*clients-npm-lint*"))))
+    (compile "npm run lint" t)))
+
+(direnv-mode)
+
+(defun my/worktree-build ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "BUILD_CMD") "make"))))
+
+(defun my/worktree-test ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "TEST_CMD") "make test"))))
+
+(defun binwarden/create-worktree ()
+  "Create a new worktree in the binwarden directory.
+  1. Select a repository from binwarden directory
+  2. Enter a name for the new worktree
+  3. Optionally select a source branch (sorted by recent commit date)
+  4. Run \'just create-worktree\' with those parameters"
+  (interactive)
+  (let* ((binwarden-dir (expand-file-name "~/binwarden/"))
+         (repos (directory-files binwarden-dir nil "^[^.]"))
+         (selected-repo (completing-read "Select repository: " repos))
+         (worktree-name (read-string "Worktree name: "))
+         ;; Parse the repo name to find the primary branch from .env file
+         (owner (car (split-string selected-repo "-")))
+         (repo (cadr (split-string selected-repo "-")))
+         (env-var-name (format "PRIMARY_%s_%s_WORKTREE" 
+                               (upcase owner) (upcase repo)))
+         (env-file (expand-file-name ".env" binwarden-dir))
+         (primary-branch 
+          (when (file-exists-p env-file)
+            (with-temp-buffer
+              (insert-file-contents env-file)
+              (when (re-search-forward (concat "^" env-var-name "=\\(.*\\)$") nil t)
+                (match-string 1)))))
+         ;; Set directory to the primary branch worktree for getting branch list
+         (primary-worktree-dir 
+          (expand-file-name (concat selected-repo "/" (or primary-branch "main")) 
+                           binwarden-dir))
+         ;; Get branches sorted by commit date from the primary worktree
+         (default-directory primary-worktree-dir)
+         (branches-raw (shell-command-to-string "git branch --sort=-committerdate"))
+         ;; Clean up branch names - remove any leading symbols (*, +, etc) and whitespace
+         (branches (mapcar (lambda (branch) 
+                            (string-trim (replace-regexp-in-string "^[\\*\\+ ]+" "" branch)))
+                          (split-string branches-raw "\n" t)))
+         ;; Prompt for optional source branch
+         (from-branch (completing-read "Source branch (optional, empty for default): " 
+                                      branches nil nil nil nil ""))
+         (from-branch-arg (if (string-empty-p from-branch)
+                             ""
+                           (format " %s" from-branch)))
+         (compilation-buffer-name-function 
+          (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
+    (compile (format "cd %s && just create-worktree %s %s%s" 
+                    (shell-quote-argument binwarden-dir)
+                    selected-repo worktree-name from-branch-arg) t)))
+
+(define-prefix-command 'my-custom-prefix)
+(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
+(which-key-add-key-based-replacements "C-a" "my commands")
+
+;; create "go" prefix map
+(define-prefix-command 'my-go-prefix)
+(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
+(which-key-add-key-based-replacements "C-a g" "go")
+
+(defun my/open-compilation-file-in-other-window ()
+  "open the current compilation match in another window.
+  creates a new window if needed or reuses an existing one."
+  (interactive)
+  (let ((window-count (length (window-list))))
+    (condition-case err
+  (if (= window-count 1)
+      ;; only one window, use built-in function that creates a new window
+      (compilation-display-error)
+    ;; multiple windows exist, use the next window
+    (let ((this-window (selected-window)))
+      (other-window 1)
+      (let ((target-window (selected-window)))
+	(select-window this-window)
+	;; use next-error-no-select to get location without changing windows
+	(let ((location (next-error-no-select)))
+	  (select-window target-window)
+	  (switch-to-buffer (marker-buffer (car location)))
+	  (goto-char (marker-position (car location)))))))
+;; catch any errors silently
+(error (message "no valid location found at point")))))
+
+(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
+(which-key-add-key-based-replacements "C-a g f" "go to file")
+
+(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
+(which-key-add-key-based-replacements "C-a g d" "go to definition")
+(evil-define-key 'normal 'global (kbd "C-a g e") (lambda () (interactive) (find-file "/users/me/nix/system/with/user/with/program/emacs.org")))
+(which-key-add-key-based-replacements "C-a g e" "emacs config")
+
+(define-prefix-command 'my-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
+(which-key-add-key-based-replacements "C-a c" "compile")
+
+(define-prefix-command 'my-nix-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
+(which-key-add-key-based-replacements "C-a c n" "nix")
+
+(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
+(which-key-add-key-based-replacements "C-a c n r" "rebuild")
+
+(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
+(which-key-add-key-based-replacements "C-a c n f" "format")
+
+(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
+(which-key-add-key-based-replacements "C-a c n c" "commit")
+
+;; create "find" prefix map
+(define-prefix-command 'my-find-prefix)
+(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+(which-key-add-key-based-replacements "C-a f" "find")
+
+(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+(which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+(which-key-add-key-based-replacements "C-a f p" "project")
+
+(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+(which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+(which-key-add-key-based-replacements "C-a f F" "file in project")
+
+(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+(evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
+		   "Select an org source block, excluding the begin/end lines."
+		   (when (org-in-src-block-p)
+		     (save-excursion
+		       (let* ((element (org-element-at-point))
+			      (begin (org-element-property :begin element))
+			      (end (org-element-property :end element))
+			      (begin-adjusted (progn
+						(goto-char begin)
+						(forward-line 1)
+						(point))))
+			 (goto-char begin)
+			 (re-search-forward "^[ \t]*#\\+end_src" end t)
+			 (forward-line -1)
+			 (let ((end-adjusted (line-end-position)))
+			   (evil-range begin-adjusted end-adjusted 'line))))))
+
+(evil-define-text-object evil-a-org-src-block (count &optional beg end type)
+		   "Select an org source block, including the begin/end lines."
+		   (when (org-in-src-block-p)
+		     (save-excursion
+		       (let* ((element (org-element-at-point))
+			      (begin (org-element-property :begin element))
+			      (end (org-element-property :end element)))
+			 (evil-range begin end 'line)))))
+
+(evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
+(evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
+(which-key-add-key-based-replacements "is" "inside src block")
+(which-key-add-key-based-replacements "as" "around src block")
+
+(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+(defun my/org-agenda-daily-dashboard ()
+  "Open the custom 'daily dashboard' org-agenda view."
+  (interactive)
+  (org-agenda nil "d"))
+
+(evil-define-key 'normal 'global (kbd "C-o") 'my/org-agenda-daily-dashboard)
+(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
+
+(evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+
+(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+(with-eval-after-load 'elfeed-show
+  (require 'hnreader)
+  (require 'evil)
+
+  (defun my/elfeed-show-hn-comments ()
+    "Open Hacker News comments for the link at point in elfeed-show-mode."
+    (interactive)
+    (message "my/elfeed-show-hn-comments invoked.")
+    (let ((link (elfeed-get-link-at-point)))
+(message "Link at point: %s" link)
+;; Check if it's a valid HN item link
+(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+    (progn ;; Use progn to execute multiple forms
+      (message "Found HN link: %s. Calling hnreader-comment..." link)
+      ;; Pass the full link URL to hnreader-comment
+      (hnreader-comment link)
+      (message "hnreader-comment called with URL."))
+  (message "No Hacker News item link found at point or link doesn't match pattern."))))
+
+  (evil-define-key 'normal elfeed-show-mode-map
+	     (kbd "c") #'my/elfeed-show-hn-comments))
+
+;;(defun my/open-ripgrep-result-in-split ()
+;; "Open the ripgrep result at point in a vertical split."
+;;(interactive)
+;;(let ((window-count (length (window-list))))
+;; (when (= window-count 1)
+;;  (split-window-right))
+;;(other-window 1)
+;;(compile-goto-error)))
+
+;;(with-eval-after-load 'rg
+;;(evil-define-key 'normal rg-mode-map (kbd "RET") 'my/open-ripgrep-result-in-split))
+
+  ;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
+;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
+;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+
+(evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
+(evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
+
+(defun clean-notes-buffer ()
+  "Clean up a notes buffer by:
+    1. Deleting lines starting with '- State'
+    2. Removing extra blank lines
+    3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
+    4. Removing all indentation from the buffer"
+  (interactive)
+  (save-excursion
+    ;; Go to beginning of buffer
+    (goto-char (point-min))
+
+    ;; Delete lines starting with "- State"
+    (while (re-search-forward "^- State.*$" nil t)
+(replace-match ""))
+
+    ;; Clean up consecutive blank lines
+    (goto-char (point-min))
+    (while (re-search-forward "^\n\\s-*\n" nil t)
+(replace-match "\n"))
+
+    ;; Convert note lines to new format (fixed to handle backslashes properly)
+    (goto-char (point-min))
+    (while (re-search-forward "^- Note taken on \\(\\[[0-9-]+ [A-Za-z]+\\( [0-9:]+\\)?\\]\\)\\s-*\\\\\\\\.*$" nil t)
+(replace-match "** \\1"))
+
+    ;; Remove all indentation (leading spaces/tabs) from all lines
+    (goto-char (point-min))
+    (while (re-search-forward "^[ \t]+" nil t)
+(replace-match "")))
+  (message "Notes cleanup completed!"))
+
+(defun my/add-tag-to-headings-in-region (tag)
+  "Add TAG to all org headings in the selected region."
+  (interactive "sTag to add: ")
+  (save-excursion
+    (let ((end-marker (copy-marker (region-end)))
+    (pos (region-beginning)))
+(goto-char pos)
+(while (and (< (point) end-marker)
+	    (re-search-forward "^\\*+ " end-marker t))
+  (org-set-tags (cons tag (org-get-tags)))
+  (outline-next-heading)))))
+
+(defun my/projectile-find-file-in-all-projects ()
+  "Find file across all registered Projectile projects with improved performance."
+  (interactive)
+  (let* ((projects (projectile-relevant-known-projects))
+   (file-cache-var 'my/projectile-all-files-cache)
+   (cache-validity-seconds 300) ;; 5 minute cache validity
+   (current-time (current-time))
+   (use-cache (and (boundp file-cache-var)
+		   (< (float-time (time-subtract 
+				   current-time
+				   (get file-cache-var 'timestamp)))
+		      cache-validity-seconds)))
+   (cached-files (and use-cache (symbol-value file-cache-var))))
+
+    (if use-cache
+  (message "Using cached file list (%d files)" (length cached-files))
+;; Build cache using external commands for speed
+(message "Building file list from %d projects..." (length projects))
+(let ((all-files '())
+      (temp-file (make-temp-file "projectile-files-")))
+  ;; Using external find/sort is much faster than pure elisp
+  (with-temp-file temp-file
+    (dolist (project projects)
+      (when (file-exists-p project)
+	(let* ((project-name (file-name-nondirectory 
+			      (directory-file-name project)))
+	       ;; Add project name prefix to each file for context
+	       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+			    (shell-quote-argument project)
+			    project-name)))
+	  (call-process-shell-command cmd nil t)))))
+
+  ;; Read results back and build alist of (display . filepath)
+  (with-temp-buffer
+    (insert-file-contents temp-file)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+	     ;; Fix: Only split on the first colon
+	     (split-pos (string-match ":" line))
+	     (project-name (when split-pos (substring line 0 split-pos)))
+	     (rel-file (when split-pos (substring line (1+ split-pos))))
+	     (full-path (when (and project-name rel-file)
+			  (expand-file-name
+			   (string-remove-prefix "./" rel-file)
+			   (car (seq-filter (lambda (p) 
+					      (string-suffix-p project-name p))
+					    projects))))))
+	(when (and project-name rel-file full-path)
+	  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+      (forward-line 1)))
+
+  (delete-file temp-file)
+  ;; Save and timestamp the cache
+  (set file-cache-var all-files)
+  (put file-cache-var 'timestamp current-time)
+  (message "Found %d files across projects" (length all-files))))
+
+    ;; Use the cached or newly-built list
+    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+(if file-list
+    ;; Use completing-read for the selection interface
+    (let* ((chosen (completing-read "Find file in projects: " 
+				    (mapcar #'car file-list) nil t))
+	   (file-path (cdr (assoc chosen file-list))))
+      (when file-path
+	(find-file file-path)))
+  (message "No files found across projects")))))
+
+(defun my/wikipedia-search-to-org (search-term)
+  "Search Wikipedia for SEARCH-TERM, fetch the first result,
+  and display its content converted to Org format in a new buffer.
+  Requires `pandoc` to be installed."
+  (interactive "sSearch Wikipedia for: ")
+  (unless (executable-find "pandoc")
+    (error "pandoc executable not found. Please install pandoc."))
+
+  (require 'json)
+  (require 'url)
+
+  (let* ((encoded-search-term (url-hexify-string search-term))
+   (search-api-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json"
+			   encoded-search-term))
+   search-json-string search-data page-title page-url html-content org-output org-buffer-name)
+
+    (with-current-buffer (url-retrieve-synchronously search-api-url)
+(goto-char (point-min))
+(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+  (kill-buffer (current-buffer))
+  (error "Could not find HTTP headers in Wikipedia API response"))
+(setq search-json-string (buffer-substring-no-properties (point) (point-max)))
+(kill-buffer (current-buffer)))
+
+    (unless (and search-json-string (not (string-empty-p search-json-string)))
+(error "Failed to fetch or empty search results from Wikipedia API for: %s" search-term))
+
+    (condition-case err
+  ;; Explicitly use :array-type 'list to ensure lists are returned
+  (setq search-data (json-parse-string search-json-string :array-type 'list))
+(error (error "Failed to parse JSON: %s. JSON was: %s" (error-message-string err) search-json-string)))
+
+    ;; Now the checks should work as expected with lists
+    (unless (and (listp search-data)
+	   (>= (length search-data) 4)
+	   (listp (nth 1 search-data)) (consp (nth 1 search-data)) ; Ensure titles list is non-empty
+	   (stringp (car (nth 1 search-data))) ; Ensure first title is a string
+	   (listp (nth 3 search-data)) (consp (nth 3 search-data)) ; Ensure URLs list is non-empty
+	   (stringp (car (nth 3 search-data)))) ; Ensure first URL is a string
+(error "Unexpected JSON structure, empty result, or non-string title/URL from Wikipedia API. Data: %S" search-data))
+
+    (setq page-title (car (nth 1 search-data)))
+    (setq page-url (car (nth 3 search-data)))
+
+    (with-current-buffer (url-retrieve-synchronously page-url)
+(goto-char (point-min))
+(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
+  (kill-buffer (current-buffer))
+  (error "Could not find HTTP headers in Wikipedia page response for %s" page-url))
+(setq html-content (buffer-substring-no-properties (point) (point-max)))
+(kill-buffer (current-buffer)))
+
+    (unless (and html-content (not (string-empty-p html-content)))
+(error "Failed to fetch or empty page content from URL: %s" page-url))
+
+    (setq org-output
+    (with-temp-buffer
+      (insert html-content)
+      (shell-command-on-region (point-min) (point-max)
+			       "pandoc -f html -t org --wrap=none"
+			       (current-buffer) t) ; t to replace
+      (buffer-string)))
+
+    (if (or (null org-output) (string-empty-p org-output))
+  (error "Pandoc conversion resulted in empty output for %s" page-title)
+(setq org-buffer-name (format "*Wikipedia: %s (Org)*" page-title))
+(with-current-buffer (get-buffer-create org-buffer-name)
+  (erase-buffer)
+  (insert org-output)
+  (when (fboundp 'org-mode) (org-mode))
+  (goto-char (point-min)))
+(switch-to-buffer-other-window org-buffer-name)
+(message "Wikipedia page '%s' rendered as Org." page-title))))
+
+(defun my/org-refile-to-new-file ()
+  "Refile current heading to a new file named after the heading."
+  (interactive)
+  (let* ((heading (nth 4 (org-heading-components)))
+   (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
+   (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
+    (when (y-or-n-p (format "Create and refile to %s? " new-file))
+(with-temp-buffer
+  (write-file new-file))
+(org-refile nil nil (list heading new-file nil nil)))))
+
+(defun my/open-pr-url-at-point ()
+  "Open the PR_URL property of the current org agenda item."
+  (interactive)
+  (let* ((marker (or (org-get-at-bol 'org-marker)
+	       (org-agenda-error)))
+   (buffer (marker-buffer marker))
+   (pos (marker-position marker))
+   url)
+    (with-current-buffer buffer
+(save-excursion
+  (goto-char pos)
+  (setq url (org-entry-get (point) "PR_URL"))))
+    (when url
+(browse-url url))))
+
+;; Bind it to a key in org-agenda-mode-map
+(define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
+
+(defun reset-file-to-revision ()
+  "Reset the current buffer's file to a specified revision using Magit."
+  (interactive)
+  (require 'magit)
+  (let* ((file-path (buffer-file-name))
+   (default-directory (magit-toplevel))
+   (revision (magit-read-branch-or-commit "Reset file to revision")))
+    (when (and file-path revision)
+(let ((relative-file-path (file-relative-name file-path default-directory)))
+  (magit-run-git "checkout" revision "--" relative-file-path)
+  (revert-buffer t t t)
+  (message "File reset to %s" revision)))))
+
+(defun my/run-gh-pr-checks ()
+  "Run 'gh pr checks' for the current PR with better formatting."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
+           (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
+      (with-current-buffer (get-buffer-create buffer-name)
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (shell-command cmd (current-buffer))
+          (goto-char (point-min))
+          (let* ((json-data (json-read))
+                 (checks (append json-data nil))
+                 (passed 0)
+                 (failed 0)
+                 (pending 0)
+                 (failed-jobs '()))
+            
+            ;; Count statuses and collect failed jobs
+            (dolist (check checks)
+              (let ((state (cdr (assoc 'state check))))
+                (cond
+                 ((string= state "SUCCESS") (cl-incf passed))
+                 ((string= state "FAILURE") 
+                  (cl-incf failed)
+                  (push check failed-jobs))
+                 (t (cl-incf pending)))))
+            
+            ;; Clear and format buffer
+            (erase-buffer)
+            (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
+                               'face '(:weight bold :height 1.2)))
+            (insert (format "Total: %d | " (length checks)))
+            (insert (propertize (format "Passed: %d | " passed)
+                               'face '(:foreground "green")))
+            (insert (propertize (format "Failed: %d | " failed)
+                               'face '(:foreground "red" :weight bold)))
+            (insert (propertize (format "Pending: %d\n\n" pending)
+                               'face '(:foreground "orange")))
+            
+            ;; Add detailed listing
+            (insert (propertize "All Checks:\n" 'face '(:weight bold)))
+            (dolist (check checks)
+              (let* ((name (cdr (assoc 'name check)))
+                     (state (cdr (assoc 'state check)))
+                     (link (cdr (assoc 'link check)))
+                     (state-face (cond
+                                 ((string= state "SUCCESS") '(:foreground "green"))
+                                 ((string= state "FAILURE") '(:foreground "red"))
+                                 (t '(:foreground "orange")))))
+                (insert "• ")
+                (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
+                                   'face '(:weight bold)))
+                (insert " - ")
+                (insert (propertize state 'face state-face))
+                (when link
+                  (insert " [")
+                  (insert-text-button "Link"
+                                     'action (lambda (_) (browse-url link))
+                                     'follow-link t)
+                  (insert "]"))
+                (insert "\n")))
+            
+            ;; Add failed jobs section
+            (when failed-jobs
+              (insert "\n")
+              (insert (propertize "Failed Jobs:\n" 
+                                 'face '(:foreground "red" :weight bold)))
+              (dolist (job failed-jobs)
+                (let ((name (cdr (assoc 'name job)))
+                      (link (cdr (assoc 'link job))))
+                  (insert "• ")
+                  (insert (propertize name 'face '(:foreground "red")))
+                  (when link
+                    (insert " → ")
+                    (insert-text-button "Open in Browser"
+                                      'action (lambda (_) (browse-url link))
+                                      'follow-link t))
+                  (insert "\n")))))
+          
+          (special-mode)
+          (goto-char (point-min))
+          (display-buffer (current-buffer)))))))
+
+(defun my/rerun-failed-gh-pr-checks ()
+  "Rerun failed checks for the current PR using GitHub CLI."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+           (pr-number (oref pr number))
+           ;; Use the JSON format that matches what gh pr checks outputs
+           (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
+           failed-jobs)
+      
+      ;; Get failed jobs
+      (message "Fetching checks for PR #%s..." pr-number)
+      (let ((json-output (shell-command-to-string cmd)))
+        (condition-case err
+            (let ((json-object (json-read-from-string json-output)))
+              (setq failed-jobs
+                    (seq-filter (lambda (job)
+                                  (and (alist-get 'conclusion job nil nil #'equal)
+                                       (string= (alist-get 'conclusion job) "failure")))
+                                json-object)))
+          (error
+           (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
+           (setq failed-jobs nil))))
+      
+      (if (null failed-jobs)
+          (message "No failed jobs to rerun!")
+        (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
+          (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
+                (counter 0))
+            (with-current-buffer rerun-buffer
+              (let ((inhibit-read-only t))
+                (erase-buffer)
+                (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
+                
+                (dolist (job failed-jobs)
+                  (let* ((name (alist-get 'name job))
+                         (id (alist-get 'databaseId job))
+                         (rerun-cmd (format "gh run rerun %s" id)))
+                    (insert (format "• Rerunning: %s (ID: %s)..." name id))
+                    (let ((result (shell-command-to-string rerun-cmd)))
+                      (if (string-match-p "Failed\\|Error" result)
+                          (insert (propertize " Failed\n" 'face '(:foreground "red")))
+                        (progn
+                          (cl-incf counter)
+                          (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
+                
+                (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
+                                           counter (length failed-jobs))
+                                   'face '(:weight bold)))
+                (special-mode)
+                (goto-char (point-min))
+                (display-buffer (current-buffer)))))))))))
+
+(setq magit-git-global-arguments
+        (append magit-git-global-arguments '("-c" "core.preloadindex=true")))
+
+(require 'gnus)
+(require 'nnir)  ;; For searching emails
+(require 'smtpmail)
+(require 'message)
+(require 'oauth2) ;; For OAuth2 support with Gmail
+
+(setq user-full-name "Addison Beck")
+(setq user-mail-address "me@addisonbeck.com")
+
+;;; Main Select Method (Primary Account)
+(setq gnus-select-method
+      '(nnimap "primary-account"
+        (nnimap-address "box.addisonbeck.com")
+        (nnimap-server-port 993)
+        (nnimap-stream ssl)
+        (nnmail-expiry-wait immediate)))
+
+;;; SMTP configuration with account selection
+(require 'smtpmail-multi)
+
+;; Define email accounts
+(setq smtpmail-multi-accounts
+      '((personal . ("me@addisonbeck.com"
+                    "box.addisonbeck.com"
+                    465
+                    "me@addisonbeck.com"
+                    nil
+                    starttls))
+        (work-gmail . ("work@gmail.com"
+                      "smtp.gmail.com" 
+                      587
+                      "work@gmail.com"
+                      nil
+                      starttls))))
+
+;; Set default account
+(setq smtpmail-multi-default-account 'personal)
+
+;; Use smtpmail-multi as the send function
+(setq send-mail-function 'smtpmail-multi-send-it
+      message-send-mail-function 'smtpmail-multi-send-it)
+
+(gnus-demon-add-handler 'gnus-group-get-new-news 5 t)
+(gnus-demon-init)
+
+(provide 'init)
+
+;; Local Variables:
+;; byte-compile-warnings: (not free-vars)
+;; End:
+	      ;;; init.el ends here
