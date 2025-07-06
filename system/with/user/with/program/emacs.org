@@ -260,15 +260,6 @@ Here I'll define some key data structures used throughout the rest of the config
 		(buffer-list))))
 
   (defun my/delete-this-file ()
-    "Delete the current file and kill its buffer."
-    (interactive)
-    (let ((file (buffer-file-name)))
-      (when (and file
-		 (y-or-n-p (format "Delete %s?" file)))
-	(delete-file file)
-	(kill-buffer)
-	(message "Deleted %s" file))))
-#+end_src
 
 * Package Management
 #+begin_src emacs-lisp
@@ -662,66 +653,156 @@ For some reason this keeps getting set wrong by something.
     :after org)
 #+end_src
 * Org Capture Templates and Functions
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp 
+(setq org-director "~/notes/")
+(setq org-default-notes-file "inbox.org")
 (setq org-capture-templates
 '(
   ("l" "Log" entry
-   (file "~/notes/inbox.org")
-   "* %U %^{Title}\n%?")
+   (file org-default-notes-file)
+   "* %U \n%?")
   ("e" "Event" entry
-   (file "~/notes/inbox.org")
+   (file org-default-notes-file)
    "* %^{Title}\n%^T\n%?")
   ("t" "Todo" entry
-   (file "~/notes/inbox.org")
-   "* TODO [#A] %^{Title}\nSCHEDULED: %t\n%?")
+   (file org-default-notes-file)
+   "* TODO %^{Title}\nDEADLINE: %t\n%?")
+  ("a" "A link to the current location in the current file" entry
+   (file org-default-notes-file)
+   "* %a")
   ))
 
-(setq budget-payees '(
-  "Walmart"
-  "Amazon"
-  "Target"
-  "Costco"
-  "Grocery Store"
-  "Gas Station"
-  "Apple"
-  "Playstation"
-  "Roblox"
-  "Fortnite"
-))
-(setq budget-accounts '(
-  "Assets:Checking"
-  "Assets:HSA"
-  "Liabilities:CreditCard:AppleCard"
-  "Liabilities:CreditCard:PrimeStoreCard"
-))
-(setq budget-categories '(
-  "Expenses:Groceries"
-  "Expenses:Dining"
-  "Expenses:Transportation"
-  "Bills:Rent"
-  "Bills:Utilities"
-))
+(defgroup my/budget nil
+  "My budget capture settings."
+  :group 'org-capture)
 
-(defun org-capture-select-payee ()
-  (org-completing-read "Payee: " budget-payees))
+(defcustom my/budget-file "~/notes/budget.org"
+  "Org file containing my budget."
+  :type 'file
+  :group 'my/budget)
 
-(defun org-capture-select-account ()
-  (org-completing-read "Account: " budget-accounts))
+(defcustom my/budget-payees-heading "Payees"
+  "Heading name under which payees are listed in the org file."
+  :type 'string
+  :group 'my/budget)
 
-(defun org-capture-select-category ()
-  (org-completing-read "Category: " budget-categories))
+(defcustom my/budget-accounts-heading "Accounts"
+  "Heading name under which accounts are listed in the org file."
+  :type 'string
+  :group 'my/budget)
+
+(defcustom my/budget-categories-heading "Categories"
+  "Heading name under which categories are listed in the org file."
+  :type 'string
+  :group 'my/budget)
+
+(defun my/load-budget-items-from-org (heading-name)
+  "Load items from subheadings under the specified HEADING-NAME."
+  (when (file-exists-p my/budget-file)
+    (with-temp-buffer
+      (insert-file-contents my/budget-file)
+      (org-mode)
+      (let (items)
+        ;; Find the specified heading
+        (goto-char (point-min))
+        (when (re-search-forward (format "^\\*+\\s-+%s" (regexp-quote heading-name)) nil t)
+          (let ((parent-level (org-outline-level)))
+            (org-map-entries
+             (lambda ()
+               (when (= (org-outline-level) (1+ parent-level))
+                 ;; This is a direct child of our heading
+                 (push (org-get-heading t t t t) items)))
+             nil 'tree)))
+        (nreverse items)))))
+
+(defun my/load-budget-payees-from-org ()
+  "Load payees from subheadings under the Payees heading."
+  (my/load-budget-items-from-org my/budget-payees-heading))
+
+(defun my/load-budget-accounts-from-org ()
+  "Load accounts from subheadings under the Accounts heading."
+  (my/load-budget-items-from-org my/budget-accounts-heading))
+
+(defun my/load-budget-categories-from-org ()
+  "Load categories from subheadings under the Categories heading."
+  (my/load-budget-items-from-org my/budget-categories-heading))
+
+(defcustom my/budget-payees (my/load-budget-payees-from-org)
+  "List of payees for budget capture."
+  :type '(repeat string)
+  :group 'my/budget)
+
+(defcustom my/budget-accounts (my/load-budget-accounts-from-org)
+  "List of accounts for budget capture."
+  :type '(repeat string)
+  :group 'my/budget)
+
+(defcustom my/budget-categories (my/load-budget-categories-from-org)
+  "List of categories for budget capture."
+  :type '(repeat string)
+  :group 'my/budget)
+
+(defun my/budget--capture-template ()
+  "Return an org-capture template string for a budget transaction."
+  ;; Refresh lists from org file
+  (setq my/budget-payees (my/load-budget-payees-from-org))
+  (setq my/budget-accounts (my/load-budget-accounts-from-org))
+  (setq my/budget-categories (my/load-budget-categories-from-org))
+
+  (let* ((date     (org-read-date nil nil nil "Date: "))
+         (amount   (read-string "Amount: "))
+         (payee    (completing-read "Payee: " my/budget-payees))
+         (account  (completing-read "Account: " my/budget-accounts))
+         (category (completing-read "Category: " my/budget-categories)))
+    (concat
+     "** [PENDING] [" date "]: $" amount " @ " payee " on " account "\n"
+     "%^{Description}\n"
+     "#+begin_src ledger\n"
+     date " ! " payee "\n"
+     "    " category "  $" amount "\n"
+     "    " account "\n"
+     "#+end_src\n")))
+
+(add-to-list 'org-capture-templates `("b" "Budgeting templates"))
 
 (add-to-list 'org-capture-templates
-             '("b" "Budget transaction" entry
-               (file+headline "~/notes/budget.org" "Transactions")
-               "** [PENDING] %(progn (setq transaction-date (org-read-date nil nil nil \"Date: \")) transaction-date): $%(progn (setq transaction-amount (read-string \"Amount: \")) transaction-amount) @ %(progn (setq transaction-payee (org-capture-select-payee)) transaction-payee) on %(progn (setq transaction-account (org-capture-select-account)) transaction-account)
-%^{Description}
-,#+begin_src ledger
-%(progn transaction-date) ! %(progn transaction-payee) 
-    %(progn (setq transaction-category (org-capture-select-category)) transaction-category)  $%(progn transaction-amount)
-    %(progn transaction-account)
-,#+end_src
-" :empty-lines 1))
+             `("bt" "Budget transaction" entry
+               (file "~/notes/inbox.org")
+               (function my/budget--capture-template)
+               :empty-lines 1))
+
+(defun my/budget--capture-new-payee ()
+  "Return an org-capture template string for a new budget payee."
+  (let* ((payee (read-string "New Payee Name: ")))
+    (format "* %s%%?" payee)))
+
+(add-to-list 'org-capture-templates
+             `("bp" "Budget payee" entry
+               (file+headline ,my/budget-file ,my/budget-payees-heading)
+               (function my/budget--capture-new-payee)
+               :empty-lines 0))
+
+(defun my/budget--capture-new-account ()
+  "Return an org-capture template string for a new budget account."
+  (let* ((account (read-string "New Account Name: ")))
+    (format "* %s%%?" account)))
+
+(add-to-list 'org-capture-templates
+             `("ba" "Budget account" entry
+               (file+headline ,my/budget-file ,my/budget-accounts-heading)
+               (function my/budget--capture-new-account)
+               :empty-lines 0))
+
+(defun my/budget--capture-new-category ()
+  "Return an org-capture template string for a new budget category."
+  (let* ((category (read-string "New Category Name: ")))
+    (format "* %s\n%%?" category)))
+
+(add-to-list 'org-capture-templates
+             `("bc" "Budget category" entry
+               (file+headline ,my/budget-file ,my/budget-categories-heading)
+               (function my/budget--capture-new-category)
+               :empty-lines 0))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -901,6 +982,7 @@ I'm not using these right now, but might revist in the future.
 		(:name "Today's Meeting Notes" :category "meeting-notes")
 		(:name "Today's Schedule"
 		       :time-grid t)
+		(:name "High Priority" :and (:priority "A" :deadline today))
 		(:name "Overdue" :deadline past)
 	  (:name "Cooking" :and (:deadline today :tag "cooking"))
 	  (:name "Hard" :and (:deadline today :tag "hard"))
@@ -911,8 +993,8 @@ I'm not using these right now, but might revist in the future.
 		(:name "Code Review Bunker" :and (:category "code review bunker" :deadline today))
 		(:name "Work" :and (:deadline today :tag "work"))
 		(:name "Due Today" :deadline today)
-		(:name "High Priority" :priority "A")
-		(:name "Easy" :tag ("easy"))
+		;(:name "High Priority" :priority "A")
+		;(:name "Easy" :tag ("easy"))
 		(:name "Due Soon" :deadline future)
 		(:name "Active Bugs" :category "bug")
 		(:name "Active Epics" :category "epic")
@@ -1232,104 +1314,108 @@ I'm not using these right now, but might revist in the future.
 
 * Elfeed Configuration
 #+begin_src emacs-lisp
-  (use-package elfeed
-    :ensure t
-    :bind
-    ("C-x w" . elfeed)
-    :config
-    (evil-define-key 'normal elfeed-search-mode-map
-		     (kbd "r") 'elfeed-search-untag-all-unread
-		     (kbd "u") 'elfeed-search-tag-all-unread
-		     (kbd "RET") 'elfeed-search-show-entry
-		     (kbd "q") 'quit-window
-		     (kbd "g") 'elfeed-update
-		     (kbd "G") 'elfeed-search-update--force)
+(use-package elfeed
+  :ensure t
+  :bind
+  ("C-x w" . elfeed)
+  :config
+  (evil-define-key 'normal elfeed-search-mode-map
+	     (kbd "r") 'elfeed-search-untag-all-unread
+	     (kbd "u") 'elfeed-search-tag-all-unread
+	     (kbd "RET") 'elfeed-search-show-entry
+	     (kbd "q") 'quit-window
+	     (kbd "g") 'elfeed-update
+	     (kbd "G") 'elfeed-search-update--force)
 
-    (evil-define-key 'normal elfeed-show-mode-map
-		     (kbd "r") 'elfeed-show-untag-unread
-		     (kbd "u") 'elfeed-show-tag-unread
-		     (kbd "q") 'quit-window
-		     (kbd "n") 'elfeed-show-next
-		     (kbd "p") 'elfeed-show-prev
-		     (kbd "b") 'elfeed-show-visit)
+  (evil-define-key 'normal elfeed-show-mode-map
+	     (kbd "r") 'elfeed-show-untag-unread
+	     (kbd "u") 'elfeed-show-tag-unread
+	     (kbd "q") 'quit-window
+	     (kbd "n") 'elfeed-show-next
+	     (kbd "p") 'elfeed-show-prev
+	     (kbd "b") 'elfeed-show-visit)
 
-    (setq elfeed-search-filter "+unread")
-    (setq elfeed-sort-order 'descending))
+  (setq elfeed-search-filter "+unread")
+  (setq elfeed-sort-order 'descending))
 
-  (use-package elfeed-protocol
-    :ensure t
-    :after elfeed
-    :custom
-    (elfeed-use-curl t)
-    (elfeed-protocol-enabled-protocols '(fever))
-    (setq elfeed-protocol-log-trace t)
-    (elfeed-protocol-fever-update-unread-only t)
-    (elfeed-protocol-fever-fetch-category-as-tag t)
-    (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
-			      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
-			      :use-authinfo t)))
-    (elfeed-protocol-enabled-protocols '(fever))
-    :config
-    (elfeed-protocol-enable))
+(use-package elfeed-protocol
+  :ensure t
+  :after elfeed
+  :custom
+  (elfeed-use-curl t)
+  (elfeed-protocol-enabled-protocols '(fever))
+  (setq elfeed-protocol-log-trace t)
+  (elfeed-protocol-fever-update-unread-only t)
+  (elfeed-protocol-fever-fetch-category-as-tag t)
+  (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
+		      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
+		      :use-authinfo t)))
+  (elfeed-protocol-enabled-protocols '(fever))
+  :config
+  (elfeed-protocol-enable))
 
-  (defun my/elfeed-reset ()
-    "Reset elfeed database and update."
-    (interactive)
-    (when (yes-or-no-p "Really reset elfeed database? ")
-      (let ((db (expand-file-name "~/.elfeed/index"))
-	    (data (expand-file-name "~/.elfeed/data")))
-	(message "Checking paths: index=%s data=%s" db data)
+(defun my/elfeed-reset ()
+  "Reset elfeed database and update."
+  (interactive)
+  (when (yes-or-no-p "Really reset elfeed database? ")
+    (let ((db (expand-file-name "~/.elfeed/index"))
+    (data (expand-file-name "~/.elfeed/data")))
+(message "Checking paths: index=%s data=%s" db data)
 
-	;; Try to close elfeed first
-	(elfeed-db-unload)
-	(message "Database unloaded")
+;; Try to close elfeed first
+(elfeed-db-unload)
+(message "Database unloaded")
 
-	;; Delete files with error checking
-	(condition-case err
-	    (progn
-	      (when (file-exists-p db)
-		(delete-file db)
-		(message "Deleted index file"))
-	      (when (file-exists-p data)
-		(delete-directory data t)
-		(message "Deleted data directory")))
-	  (error (message "Error during deletion: %s" err)))
+;; Delete files with error checking
+(condition-case err
+    (progn
+      (when (file-exists-p db)
+	(delete-file db)
+	(message "Deleted index file"))
+      (when (file-exists-p data)
+	(delete-directory data t)
+	(message "Deleted data directory")))
+  (error (message "Error during deletion: %s" err)))
 
-	;; Restart elfeed
-	(elfeed)
-	(elfeed-search-update--force)
-	(message "Reset complete"))))
+;; Restart elfeed
+(elfeed)
+(elfeed-search-update--force)
+(message "Reset complete"))))
 
-  ;; Set elfeed-show-entry-switch to display in a side window
-  (setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
+;; Set elfeed-show-entry-switch to display in a side window
+(setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
 
-  ;; Define the display function for right split
-  (defun elfeed-display-buffer-right (buf)
-    (let ((display-buffer-mark-dedicated t))
-      (display-buffer 
-       buf
-       '((display-buffer-reuse-window display-buffer-in-side-window)
-	 (side . right)
-	 (window-width . 0.5)))))
+;; Define the display function for right split
+(defun elfeed-display-buffer-right (buf)
+  (let ((display-buffer-mark-dedicated t))
+    (display-buffer 
+     buf
+     '((display-buffer-reuse-window display-buffer-in-side-window)
+ (side . right)
+ (window-width . 0.5)))))
 
-  ;; Optional: Make elfeed respect this two-pane setup when updating
-  (defadvice elfeed-search-update (after configure-windows activate)
-    (when (get-buffer "*elfeed-entry*")
-      (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
+;; Optional: Make elfeed respect this two-pane setup when updating
+(defadvice elfeed-search-update (after configure-windows activate)
+  (when (get-buffer "*elfeed-entry*")
+    (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
 
-  ;; Optional: Return focus to search buffer after showing entry
-  (defadvice elfeed-show-entry (after switch-to-search activate)
-    (select-window (get-buffer-window "*elfeed-search*")))
+;; Optional: Return focus to search buffer after showing entry
+(defadvice elfeed-show-entry (after switch-to-search activate)
+  (select-window (get-buffer-window "*elfeed-search*")))
 
-  ;;(require 'elfeed-tube)
-  ;;(elfeed-tube-setup)
-  ;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
-  ;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
-  ;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
-  ;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
-  ;;(require 'elfeed-tube-mpv)
-  ;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
-  ;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
+;;(require 'elfeed-tube)
+;;(elfeed-tube-setup)
+;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(require 'elfeed-tube-mpv)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
+;(setq elfeed-search-title-max-width 120)
+;(setq elfeed-search-title-min-width 120)
+;(setq elfeed-search-date-format '("%Y/%m-%d %H:%M" :left))
+;(setq elfeed-search-filter "+unread")
 #+end_src
 
 * GPTel Configuration
@@ -1464,6 +1550,15 @@ token-str))
       (funcall token)
     token))))
 
+  (defun get-openai-api-key ()
+    (when-let ((auth (car (auth-source-search
+		     :host "api.openai.com"
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
+
   (defun get-gemini-api-key ()
     (when-let ((auth (car (auth-source-search
 		     :host "api.gemini.com"
@@ -1479,6 +1574,11 @@ token-str))
 
   (gptel-make-gemini "Gemini"          
 	       :key #'get-gemini-api-key)
+
+  (gptel-make-openai "ChatGPT"          
+	       :key #'get-openai-api-key
+         :stream t
+         :models gptel--openai-models)
 
   ;;(gptel-make-anthropic "claude" 
   ;;:key #'get-anthropic-api-key
@@ -1536,11 +1636,59 @@ When responding:
 - Provide guidance for meal planning when requested, including grocery lists
 - Highlight techniques that offer the best return on effort (making things from scratch only when it significantly elevates the dish)
 - Use metric weights"
-  :tools '("mcp-fetch")) 
+  :tools '("mcp-brave-search" "mcp-fetch" "mcp-filesystem" "mcp-server-text-editor" "shell_command" "system")) 
 (gptel-make-preset 'default
   :description "Default"
   :system "You are a large language model living in emacs and a helpful assistant. Responsd concisely."
   :tools '("mcp-fetch github-mcp")) 
+;; Notes from use
+;; This worked well, but the file reading tools are flakey. search_files
+;; seems to only work one directory deep, but the LLM kept expecting it to be
+;; recursive. Urging it to use rg via search_command helped.
+;; The main thing I learned form this is to cold abort the LLM if it's off
+;; track in its reasoning/tool use and starts wasting time.
+(gptel-make-preset 'zoom-bug-error
+  :description "Bitwarden Desktop App Bug Fixer"
+  :backend "ChatGPT"
+  :model 'o4-mini
+  :system "You are a large language model integrated into emacs. We are using org syntax to chat. You are tasked with triaging and patching a bug in the Bitwarden password manager's desktop application. Please use the availible tools and key files to assert the cause of the bug. When you have an idea what the root cause is please propose a fix. Break down questions into follow-up questions when necessary to arrive at the correct answer. Show the steps you followed in reaching the answer.
+
+,*Key File Locations:*
+
+- =/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/zoom-settings-bug.org=: this is our memory file about the task at hand. It contains all the known information about the bug, and you should make frequent edits to it to include notes, context, or anything that would be helpful for a human or LLM to remember.
+- =/Users/me/binwarden/bitwarden-clients/zoom-settings-bug/=: This is a directory with a cloned and up to date copy of the Bitwarden =clients= monorepo source code. It contains the desktop apps source code as well as other Bitwarden clients and shared libraries between them. It is very large and easy to get lost in. Please record key directory structures and file paths to our memory file.
+
+After receiving tool results, carefully reflect on their quality and determine optimal next steps before proceeding.
+
+Use your thinking to plan and iterate based on this new information, and then take the best next action.
+
+Whenever you need data:
+1. PLAN
+  - Restate your goal.
+  - Choose the single best tool for that goal, citing capabilities.
+  - Write down the exact arguments you’ll pass.
+2. EXECUTE
+  - Call the tool with precisely those arguments.
+3. REFLECT
+  - Check raw output for success: Is it empty?  Did the path exist?  Did I get what I expected?
+  - If OK, parse and continue.  If not, pick a fallback tool or refine arguments.
+  - Record what you tried, what worked or failed, then decide next step.
+
+Example:
+“Goal: find the newest file in ~/Downloads by modified date.
+    PLAN:
+    - I need a reverse-time sort. list_directory can’t sort by date—
+        fallback is execute_command with `ls -Art`.
+    - Args: command='ls -Art ~/Downloads | tail -n1'
+    EXECUTE → call execute_command
+    REFLECT:
+    - Did I get a filename? If yes, capture it. If no, check path or switch to `find ... -printf '%T@ %p\n'`.
+
+Before you start, please ask me any questions you have about this so I can give you more context.
+
+Be extremely comprehensive
+"
+  :tools '("mcp-fetch" "mcp-github-mcp" "mcp-mcp-server-text-editor" "mcp-brave-search" "system" "mcp-filesystem")) 
   )
 
 #+end_src
@@ -1682,140 +1830,6 @@ This block contains helper functions and variables used by multiple tools. These
   (register-gptel-tool "repomix")
 #+end_src
 
-** Read File
-
-This tool hooks in to my file reading function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
-
-#+begin_src emacs-lisp :tangle no
-  (defun my/read-file (file-id)
-    "Read complete contents of a file.
-		      FILE-ID can be a bookmark name or full path."
-    (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
-	   (file-path (expand-file-name
-		       (if bookmark 
-			   (plist-get bookmark :path)
-			 file-id))))
-      (with-temp-buffer
-	(insert-file-contents file-path)
-	(buffer-substring-no-properties (point-min) (point-max)))))
-
-  (gptel-make-tool
-   :name "read_file"
-   :function #'my/read-file
-   :description "Read a file's complete contents"
-   :args '((:name "file-id"
-		  :type string
-		  :description "can be a full path or one of the following bookmarks:
-			  - 'emacs config' for my emacs configuration
-			  - 'inbox' for my org mode inbox file")
-	   ))
-  (register-gptel-tool "read_file")
-#+end_src
-
-** Write File
-
-This tool hooks in to my file  writing function and bookmarks list to enable LLMs to edit specific files at will and all files behind a warning.
-
-#+begin_src emacs-lisp :tangle no
-  (defun my/parse-search-replace-blocks (content)
-    "Extract list of changes from content with search/replace blocks."
-    (with-temp-buffer
-      (insert content)
-      (let (changes)
-	(goto-char (point-min))
-	(while (re-search-forward "<<<<<<< SEARCH\n\\([^=]*?\\)\n=======\n\\([^>]*?\\)\n>>>>>>> REPLACE" nil t)
-	  (push (list :search (match-string 1)
-		      :replace (match-string 2))
-		changes))
-	(nreverse changes))))
-
-  (defun my/apply-changes (original-content changes)
-    "Apply changes specified in search/replace block format to ORIGINAL-CONTENT."
-    (with-temp-buffer
-      (insert original-content)
-      (dolist (change changes)
-	(let ((search (plist-get change :search))
-	      (replace (plist-get change :replace)))
-	  (goto-char (point-min))
-	  (while (search-forward search nil t)
-	    (replace-match replace t t))))
-      (buffer-string)))
-
-  (defun my/write-file (file-id content)
-    "Write file with changes in search/replace block format.
-		FILE-ID can be a bookmark name or full path.
-		CONTENT must contain search/replace blocks showing what to change."
-    (let* ((bookmark (alist-get file-id my/file-bookmarks nil nil #'equal))
-	   (file-path (expand-file-name
-		       (if bookmark 
-			   (plist-get bookmark :path)
-			 file-id)))
-	   (original (my/read-file file-id))
-	   (changes (my/parse-search-replace-blocks content))
-	   (new-content (my/apply-changes original changes)))
-      ;; Check if content is unchanged
-      (when (string= original new-content)
-	(error "No changes detected - the diff would be empty"))
-      ;; Validate content preservation
-      (when (< (length new-content) (* 0.95 (length original)))
-	(error "Error: New content is significantly smaller than original"))
-      ;; Show git-style diff and confirm
-      (let* ((temp-orig (make-temp-file "gptel-orig-"))
-	     (temp-new (make-temp-file "gptel-new-"))
-	     (diff-buffer (get-buffer-create "*File Changes Preview*"))
-	     (confirm-changes nil))
-	;; Write both versions to temp files
-	(write-region original nil temp-orig)
-	(write-region new-content nil temp-new)
-	;; Generate and display diff
-	(with-current-buffer diff-buffer
-	  (erase-buffer)
-	  (insert "Proposed changes to " file-path ":\n\n")
-	  (call-process "git" nil t nil "diff" "--no-index" "--color=never" temp-orig temp-new)
-	  ;; Enable diff-mode for syntax highlighting
-	  (diff-mode)
-	  (goto-char (point-min))
-	  (display-buffer diff-buffer)
-	  (setq confirm-changes (yes-or-no-p "Apply these changes? ")))
-	;; Cleanup
-	(delete-file temp-orig)
-	(delete-file temp-new)
-	(kill-buffer diff-buffer)
-	(if confirm-changes
-	    (progn
-	      (write-region new-content nil file-path)
-	      (format "Updated %s" file-path))
-	  (format "Changes cancelled by user. Seek feedback before trying again!")))))
-
-  (gptel-make-tool
-   :name "write_file"
-   :function #'my/write-file
-   :description "Modify specific sections of a file while preserving all other content. If a failure occurs do not try again without asking me first. Offer to commit with git_commit after modifying files."
-   :args '((:name "file-id"
-		  :type string
-		  :description "can be a full path or one of the following bookmarks:
-		  - 'emacs config' for my emacs configuration
-		  - 'inbox' for my org mode inbox file")
-	   (:name "content"
-		  :type string
-		  :description "search/replace blocks showing what to change
-
-      The CONTENT argument _must_ adhere *strictly* to this format, starting *exactly* with '<<<<<<< SEARCH' and containing only search/replace blocks:
-
-      <<<<<<< SEARCH
-      {text to find and replace}
-      =======
-      {new text to insert}
-      >>>>>>> REPLACE
-
-      - Do NOT include lines meant to call write_file in the CONTENT arguement!
-      - You can include multiple search/replace blocks to make multiple changes.
-      - The search text must match exactly what is in the file.
-      ")))
-
-  (register-gptel-tool "write_file")
-#+end_src
-
 ** Fetch_Webpage
 
 This works but I'm using the fetch mcp server
@@ -1852,67 +1866,6 @@ This works but I'm using the fetch mcp server
    :category "web")
 
   (register-gptel-tool "fetch_webpage")
-#+end_src
-
-** Git_Commit
-
-#+begin_src emacs-lisp :tangle no
-  (defun my/git-commit-changes (project message)
-    "Commit all changes in the specified project repository with the given message."
-    (let* ((project-root (if (file-name-absolute-p project)
-			     project
-			   (let ((found (seq-find (lambda (p)
-						    (string-match-p project (file-name-nondirectory p)))
-						  projectile-known-projects)))
-			     (or found (error "Project not found: %s" project)))))
-	   (default-directory project-root)
-	   (status (shell-command-to-string "git status --porcelain")))
-      (if (string-empty-p status)
-	  "No changes to commit"
-	(shell-command-to-string (format "git add -A && git commit -m %s"
-					 (shell-quote-argument message))))))
-
-  (gptel-make-tool
-   :name "git_commit"
-   :function #'my/git-commit-changes
-   :description "Commits all changes in the specified Git repository."
-   :args '((:name "project"
-		  :type string
-		  :description "project name or full path to git repository")
-	   (:name "message"
-		  :type string
-		  :description "commit message"))
-   :category "git")
-
-  (register-gptel-tool "git_commit")
-#+end_src
-
-** Create_File
-
-#+begin_src emacs-lisp :tangle no
-  (gptel-make-tool
-   :name "create_file"
-   :function (lambda (path content)
-	       (let ((dir (file-name-directory path)))
-		 (condition-case err
-		     (cond
-		      ((file-exists-p path)
-		       (error "File already exists: %s" path))
-		      (t
-		       (when dir
-			 (make-directory dir t))
-		       (write-region content nil path)
-		       (format "Successfully created file: %s" path)))
-		   (error
-		    (format "Error creating file: %s" (error-message-string err))))))
-   :description "Creates a new file with specified content, creating any necessary parent directories. Will not overwrite existing files."
-   :args '((:name "path"
-		  :type string
-		  :description "path to the file to create")
-	   (:name "content"
-		  :type string
-		  :description "content to write to the file"))
-   :category "file")
 #+end_src
 
 ** Project Context Tool
@@ -1995,6 +1948,58 @@ This works but I'm using the fetch mcp server
   (register-gptel-tool "project_context")
 #+end_src
 
+** Org Agenda
+
+#+begin_src emacs-lisp 
+(defun my/gptel-org-agenda-daily ()
+  (interactive)
+  "Return today's org‐agenda daily dashboard as a string."
+  (with-temp-buffer
+    ;; generate the agenda in this temp buffer
+    (let ((org-agenda-buffer-name "*Org Agenda*"))
+      (org-agenda nil "d"))
+    ;; grab its contents
+    (buffer-string)))
+
+;; register it as a GPTel tool
+(gptel-make-tool
+ :name        "org_agenda_daily"
+ :function    #'my/gptel-org-agenda-daily
+ :description "Fetch my Org Agenda daily dashboard. Helpful for determining what's happening today and what to work on."
+ :category "notes-and-reminders")
+
+(register-gptel-tool "org_agenda_daily")
+#+end_src
+
+** Run terminal command
+#+begin_src emacs-lisp
+(require 'json)
+
+(defun my/gptel-run-shell-command (command)
+  "Run COMMAND in the shell and return a JSON string with `exit_code` and `output`."
+  (let* ((buffer (generate-new-buffer " *gptel-shell-output*"))
+         (exit-code (call-process-shell-command command nil buffer t))
+         (output
+          (with-current-buffer buffer
+            (prog1
+                (buffer-string)
+              (kill-buffer)))))
+    (json-encode `(("exit_code" . ,exit-code)
+                   ("output"    . ,output)))))
+
+;; Register it as a gptel tool
+(gptel-make-tool
+ :name        "shell_command"
+ :function    #'my/gptel-run-shell-command
+ :description "Run an arbitrary shell COMMAND and return JSON with exit_code and output."
+ :args        '((:name "command"
+                      :type string
+                      :description "The shell command to execute (as you would type it in a terminal)"))
+ :category    "system")
+
+(register-gptel-tool "shell_command")
+#+end_src
+
 * MCP Configuration
 #+begin_src emacs-lisp 
 ;https://github.com/lizqwerscott/mcp.el
@@ -2016,11 +2021,12 @@ This works but I'm using the fetch mcp server
     (let ((token (plist-get auth :secret)))
       (if (functionp token) (funcall token) token))))
 
-;; Configure the GitHub MCP server (using Docker)
+;; These can be really flakey. If one goes down, they all go down, and finding which one really broke can be hard.
 (setq mcp-hub-servers
       `(
        ("filesystem" . (:command "npx"
                                        :args
+; Icloud
                                        ("-y" "@modelcontextprotocol/server-filesystem" "/Users/me/nix" "/Users/me/binwarden" "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes")))
         ;; https://github.com/bhouston/mcp-server-text-editor - same functionality as Claude's text editor
         ;; PSA: this service requires absolute paths to be used by the LLM
@@ -2031,11 +2037,15 @@ This works but I'm using the fetch mcp server
         ("mcp-server-text-editor" . (:command "npx"
                                             :args ("-y" "mcp-server-text-editor")))
         ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+        ("memory" . (:command "npx"
+          :args ("-y" "@modelcontextprotocol/server-memory")))
+            ;("desktop-commander" . (:command "npx"
+                                    ;:args ("-y" "@wonderwhy-er/desktop-commander")))
         ("github-mcp" . (:command "docker"
-                         :args ("run" "-i" "--rm"
-                                "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
-                                "ghcr.io/github/github-mcp-server")
-                         :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+                        :args ("run" "-i" "--rm"
+                              "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+                              "ghcr.io/github/github-mcp-server")
+                       :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
         ))
 
 ;; Start MCP servers after Emacs initializes
