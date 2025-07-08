@@ -280,6 +280,44 @@ Here I'll define some key data structures used throughout the rest of the config
 
 * Dashboard Configuration
 #+begin_src emacs-lisp
+(defun my/extract-quotes-from-org-files ()
+  "Extract headlines tagged with :quote: from org files in notes directory."
+  (let ((quotes '())
+        (notes-dir "~/notes"))
+    (dolist (file (directory-files-recursively notes-dir "\\.org$"))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (org-mode)
+        (goto-char (point-min))
+        (while (re-search-forward "^\\*+\\s-+\\(.*?\\)\\s-+:quote:" nil t)
+          (let* ((headline (match-string-no-properties 1))
+                 (element (org-element-at-point))
+                 (content (org-element-property :contents-begin element))
+                 (end (org-element-property :contents-end element))
+                 (raw-text (when (and content end)
+                             (string-trim (buffer-substring-no-properties content end))))
+                 (quote-text
+                  (when raw-text
+                    ;; Process text to handle quote blocks
+                    (with-temp-buffer
+                      (insert raw-text)
+                      ;; Replace #+begin_quote and #+end_quote with empty strings
+                      (goto-char (point-min))
+                      (while (re-search-forward "^[ \t]*#\\+begin_quote[ \t]*$" nil t)
+                        (replace-match ""))
+                      (goto-char (point-min))
+                      (while (re-search-forward "^[ \t]*#\\+end_quote[ \t]*$" nil t)
+                        (replace-match ""))
+                      ;; Return the cleaned text
+                      (string-trim (buffer-string))))))
+            (when (and headline (not (string-empty-p headline))
+                       quote-text (not (string-empty-p quote-text)))
+              (push (format "%s\n\n— %s" quote-text headline) quotes))))))
+    (or quotes
+        ;; Fallback quotes if none found
+        '("Emacs is the extensible self-documenting editor.\n\n— GNU Emacs"
+          "The journey of a thousand miles begins with one step.\n\n— Lao Tzu"))))
+
   (use-package dashboard
     :ensure t
     :init
