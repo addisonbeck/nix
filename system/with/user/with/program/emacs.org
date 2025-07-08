@@ -331,7 +331,9 @@ Here I'll define some key data structures used throughout the rest of the config
 			    (bookmarks . 5))
 	  dashboard-set-heading-icons t
 	  dashboard-set-file-icons t
-	  dashboard-show-shortcuts t)
+	  dashboard-show-shortcuts t
+          dashboard-set-footer t
+          dashboard-footer-messages (my/extract-quotes-from-org-files))
     (setq dashboard-heading-icons '((recents   . "nf-oct-history")
 				    (bookmarks . "nf-oct-bookmark")
 				    (projects  . "nf-oct-project"))))
