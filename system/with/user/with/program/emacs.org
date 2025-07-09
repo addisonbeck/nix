@@ -519,7 +519,30 @@ Here I'll define some key data structures used throughout the rest of the config
 (require 'transient)
 #+end_src
 
-** Basic Settings
+** Org Mode Init Hooks
+
+*** Org Mode Init Hook
+
+#+begin_src emacs-lisp 
+(defun org-mode-init ()
+  "Function to run on org mode init"
+  (org-display-inline-images)
+  (variable-pitch-mode)
+  (breadcrumb-local-mode)
+  (setq-local line-spacing 0.3))
+(add-hook 'org-mode-hook #'org-mode-init)
+#+end_src
+
+*** Org Agenda Mode Init Hook
+
+#+begin_src emacs-lisp
+(defun org-agenda-mode-init ()
+  "Function to run on org agenda mode init"
+  (variable-pitch-mode))
+(add-hook 'org-agenda-mode-hook #'org-agenda-mode-init)
+#+end_src
+
+** Basic Org Settings
 #+begin_src emacs-lisp
 (setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
 (setq org-startup-truncated nil)
@@ -587,20 +610,6 @@ Here I'll define some key data structures used throughout the rest of the config
 
 (setq org-modern-hide-stars nil)
 (setq org-modern-star nil)
-
-(defun my/set-line-spacing-for-text ()
-  "Set custom line spacing for text-heavy modes."
-  (interactive)
-  (setq-local line-spacing 0.3)) 
-
-(with-eval-after-load 'org
-(add-hook 'org-mode-hook 'my/set-line-spacing-for-text))
-(add-hook 'markdown-mode-hook 'my/set-line-spacing-for-text)
-
-(with-eval-after-load 'org
-(add-hook 'org-mode-hook 'breadcrumb-local-mode)
-(add-hook 'org-agenda-mode-hook 'variable-pitch-mode)
-(add-hook 'org-mode-hook 'variable-pitch-mode))
 
 (add-hook 'markdown-mode-hook (lambda ()
   (breadcrumb-local-mode 1)
@@ -923,10 +932,10 @@ org-edit-src-content-indentation 0)
 #+end_src
 
 ** Date Tracking Functions
-;; I'm not using these right now, but might revist in the future.
+
+ I'm not using these right now, but might revist in the future.
 
 #+begin_src emacs-lisp :tangle no
-  ;; Date tracking functions
   (defun my/org-set-completed-date ()
     (when (equal "Done" (org-entry-get nil "STATUS"))
       (org-entry-put nil "COMPLETED"
@@ -3655,10 +3664,26 @@ It actually doesn't work lol
 (gnus-demon-init)
 #+end_src
 
-
 * Magit
 #+begin_src emacs-lisp
 (setq magit-git-executable "/Users/me/.nix-profile/bin/git")
+#+end_src
+* Config Reloading
+#+begin_src emacs-lisp
+(defun my/reload-config ()
+  "Tangle emacs.org and reload the resulting init.el."
+  (interactive)
+  (when (file-exists-p "~/nix/system/with/user/with/program/emacs.org")
+    (let ((org-file "~/nix/system/with/user/with/program/emacs.org")
+          (init-file "~/nix/system/with/user/with/program/init.el"))
+      (with-temp-buffer
+        (shell-command (format "cd %s && emacs --batch -l org %s --eval '(org-babel-tangle)'" 
+                              (file-name-directory org-file)
+                              (file-name-nondirectory org-file)) 
+                     (current-buffer))
+        (message "%s" (buffer-string)))
+      (load-file init-file)
+      (message "Configuration reloaded successfully!"))))
 #+end_src
 * Provide Init
 
