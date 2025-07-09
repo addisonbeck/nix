@@ -583,118 +583,156 @@ Here I'll define some key data structures used throughout the rest of the config
 	   ("\\.markdown\\'" . markdown-mode)))
 #+end_src
 
-* Org Mode Configuration 
+* Org Mode Configuration
+** Basic Settings
 #+begin_src emacs-lisp
-  ;; Basic org settings
-  (use-package org
-    :ensure t
-    :bind
-    (("C-c a" . org-agenda)
-     ("C-c h" . consult-org-heading)
-     ("C-c c" . org-capture))
-    :config
-    (setq org-directory "~/notes")
-    (setq org-startup-truncated nil)
-    (setq org-log-done 'time)
-    (setq org-log-into-drawer t)
-    (setq org-startup-folded 'overview)
-    (setq org-auto-align-tags nil)
-    (setq org-clock-persist 'history
-	  org-export-backends '(html icalendar latex man md org json)
-	  org-image-max-width 'window
-	  org-startup-with-inline-images t
-	  org-cycle-inline-images-display t
-	  org-display-remote-inline-images 'download
-	  org-clock-idle-time 15
-	  org-clock-persist-file "~/notes/clock.el"
-	  org-clock-auto-clock-resolution 'when-no-clock-is-running
-	  org-clock-report-include-clocking-task t
-	  org-clock-into-drawer t)
-    (org-clock-persistence-insinuate))
-
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (shell . t)
-     (org . t)
-     (mermaid . t)
-     ))
-
-  (setq org-babel-sh-command "bash -l -c")
-
-  (setenv "PUPPETEER_EXECUTABLE_PATH" 
-	  (or (executable-find "google-chrome-stable")
-	      (executable-find "google-chrome")))
-
-  (setq org-src-preserve-indentation nil
-	org-edit-src-content-indentation 0)
-
-  (require 'ox-json)
-
-  (use-package ob-mermaid
-    :config
-    ;; Set the path to the mermaid CLI using the custom puppeteer-cli
-    (setq ob-mermaid-cli-path (executable-find "mmdc"))
-    ;; If you need to specify the Chrome executable directly:
-    (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
-
-  ;; Enable automatic display of inline images after executing babel blocks
-  (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
-  (setq org-redisplay-inline-images t)
-
-  ;; Allow evaluation of code blocks without confirmation for safe languages
-  (defun my/org-confirm-babel-evaluate (lang body)
-    (not (member lang '("emacs-lisp" "shell"))))
-  ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
-  (setq org-confirm-babel-evaluate nil)
-
-  ;; Ensure pretty fontification of source blocks
-  (setq org-src-fontify-natively t)
-  (define-key org-mode-map (kbd "RET") 'newline)
-
-  ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
-  (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
-  (evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
-  (defun my-org-evil-open-below ()
-    "Open line below preserving org structure but preventing reformatting."
-    (interactive)
-    ;; Use evil's basic open behavior
-    (evil-open-below 1)
-    ;; Exit insert state then re-enter to avoid auto-formatting
-    (evil-normal-state)
-    (evil-insert-state))
-
-  (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
-
-  ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
-
-  ;; Custom keybinding for executing all source blocks in a subtree
-  (define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
-
-  (require 'org-make-toc)
+;; Basic org settings
+(use-package org
+  :ensure t
+  :bind
+  (("C-c a" . org-agenda)
+   ("C-c h" . consult-org-heading)
+   ("C-c c" . org-capture))
+  :config
+  (setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
+  (setq org-startup-truncated nil)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+  (setq org-startup-folded 'overview)
+  (setq org-auto-align-tags nil)
+  (setq org-clock-persist 'history
+  org-export-backends '(html icalendar latex man md org json)
+  org-image-max-width 'window
+  org-startup-with-inline-images t
+  org-cycle-inline-images-display t
+  org-display-remote-inline-images 'download
+  org-clock-idle-time 15
+  org-clock-persist-file "~/notes/clock.el"
+  org-clock-auto-clock-resolution 'when-no-clock-is-running
+  org-clock-report-include-clocking-task t
+  org-clock-into-drawer t)
+  (org-clock-persistence-insinuate))
 #+end_src
 
-For some reason this keeps getting set wrong by something.
-
+** Org Babel and Source Blocks
 #+begin_src emacs-lisp
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (shell . t)
+   (org . t)
+   (mermaid . t)
+   ))
+
+(setq org-babel-sh-command "bash -l -c")
+
+(setenv "PUPPETEER_EXECUTABLE_PATH" 
+  (or (executable-find "google-chrome-stable")
+      (executable-find "google-chrome")))
+
+(setq org-src-preserve-indentation nil
+org-edit-src-content-indentation 0)
+
+(require 'ox-json)
+
+(use-package ob-mermaid
+  :config
+  ;; Set the path to the mermaid CLI using the custom puppeteer-cli
+  (setq ob-mermaid-cli-path (executable-find "mmdc"))
+  ;; If you need to specify the Chrome executable directly:
+  (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
+
+;; Enable automatic display of inline images after executing babel blocks
+(add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
+(setq org-redisplay-inline-images t)
+
+;; Allow evaluation of code blocks without confirmation for safe languages
+(defun my/org-confirm-babel-evaluate (lang body)
+  (not (member lang '("emacs-lisp" "shell"))))
+;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
+(setq org-confirm-babel-evaluate nil)
+
+;; Ensure pretty fontification of source blocks
+(setq org-src-fontify-natively t)
+
+;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
+
+;; Custom keybinding for executing all source blocks in a subtree
+(define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
+
+(require 'org-make-toc)
+#+end_src
+
+** Keybindings and Navigation
+#+begin_src emacs-lisp
+(define-key org-mode-map (kbd "RET") 'newline)
+
+;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
+(evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
+(evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
+(defun my-org-evil-open-below ()
+  "Open line below preserving org structure but preventing reformatting."
+  (interactive)
+  ;; Use evil's basic open behavior
+  (evil-open-below 1)
+  ;; Exit insert state then re-enter to avoid auto-formatting
+  (evil-normal-state)
+  (evil-insert-state))
+
+(evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
+#+end_src
+
+** Org Agenda Files Management
+#+begin_src emacs-lisp
+;; Org agenda files cache system for better performance
+(defvar my/org-agenda-files-cache nil
+  "Cached list of org agenda files.")
+
+(defvar my/org-agenda-files-cache-time 0
+  "Time when the org agenda files cache was last updated.")
+
+(defvar my/org-agenda-files-cache-duration (* 60 60)
+  "How long to use cached org agenda files before refreshing (in seconds).")
+
+(defun my/update-org-agenda-files-cache ()
+  "Update the cached list of org agenda files."
+  (interactive)
+  (message "Refreshing org agenda files cache...")
+  (setq my/org-agenda-files-cache
+        (seq-filter (lambda (f) (not (string-match-p "/\\." f)))
+                    (directory-files-recursively "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/" "\\.org$")))
+  (setq my/org-agenda-files-cache-time (float-time (current-time)))
+  (message "Org agenda files cache updated (%d files)" (length my/org-agenda-files-cache)))
+
+(defun my/get-org-agenda-files ()
+  "Get org agenda files, using cache if it's not expired."
+  (when (or (not my/org-agenda-files-cache)
+            (> (- (float-time (current-time)) my/org-agenda-files-cache-time)
+               my/org-agenda-files-cache-duration))
+    (my/update-org-agenda-files-cache))
+  my/org-agenda-files-cache)
+
 (defun my/set-org-agenda-files ()
-(interactive)
-(setq org-agenda-files
-      (seq-filter (lambda (f) (not (string-match-p "/\\." f)))
-                  (directory-files-recursively "~/notes/" "\\.org$")))
-)
+  "Set org-agenda-files using the cached file list."
+  (interactive)
+  (setq org-agenda-files (my/get-org-agenda-files)))
+
+;; Initialize the cache at startup
+(add-hook 'after-init-hook 'my/update-org-agenda-files-cache)
+
+;; Update the agenda files when entering org-agenda
 (add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
 #+end_src
 
-* Org To Jira
+** Org To Jira
 #+begin_src emacs-lisp :tangle no
   (use-package ox-jira
     :ensure t
     :after org)
 #+end_src
-* Org Capture Templates and Functions
+** Org Capture Templates
 #+begin_src emacs-lisp 
-(setq org-director "~/notes/")
+(setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
 (setq org-default-notes-file "inbox.org")
 (setq org-capture-templates
 '(
@@ -883,9 +921,8 @@ For some reason this keeps getting set wrong by something.
           (replace-match "\\1 *"))))))
 #+end_src
 
-* Date Tracking Functions
-
-I'm not using these right now, but might revist in the future.
+** Date Tracking Functions
+;; I'm not using these right now, but might revist in the future.
 
 #+begin_src emacs-lisp :tangle no
   ;; Date tracking functions
@@ -906,7 +943,7 @@ I'm not using these right now, but might revist in the future.
 		(my/org-set-started-date))))
 #+end_src
 
-* Conversion Functions
+** Conversion Functions
 #+begin_src emacs-lisp
   (defun convert-to-org ()
     "Convert current markdown buffer to org format."
@@ -959,7 +996,7 @@ I'm not using these right now, but might revist in the future.
 	  (message "No CUSTOM_ID property found!")))))
 #+end_src
 
-* Agenda Configuration
+** Agenda Configuration
 #+begin_src emacs-lisp
 (setq org-agenda-block-separator nil)
 (setq org-agenda-window-setup 'current-window)
@@ -1102,7 +1139,7 @@ I'm not using these right now, but might revist in the future.
   (todo   . "○ ")))
 #+end_src
 
-* Calfw
+** Calfw
 #+begin_src emacs-lisp 
   (use-package calfw)
   (use-package google-maps)
@@ -1118,8 +1155,7 @@ I'm not using these right now, but might revist in the future.
   (advice-add 'cfw:trim :override #'my/cfw:trim-text)
 #+end_src
 
-* Org Face Customizations
-
+** Org Face Customizations
 #+begin_src emacs-lisp
 (use-package org-modern)
 
@@ -1237,7 +1273,7 @@ I'm not using these right now, but might revist in the future.
      (when pr-url
        (puthash pr-url t seen-urls))))))))
 
-(run-with-timer 0 (* 10 60) #'my/fetch-github-prs)
+(run-with-timer 0 (* 60 60) #'my/fetch-github-prs)
 #+end_src
 
 * Which Key Configuration
@@ -1988,8 +2024,7 @@ This works but I'm using the fetch mcp server
   (register-gptel-tool "project_context")
 #+end_src
 
-** Org Agenda
-
+** GPTel Org Agenda Tool
 #+begin_src emacs-lisp 
 (defun my/gptel-org-agenda-daily ()
   (interactive)
@@ -2011,7 +2046,7 @@ This works but I'm using the fetch mcp server
 (register-gptel-tool "org_agenda_daily")
 #+end_src
 
-** Run terminal command
+** Run Terminal Command
 #+begin_src emacs-lisp
 (require 'json)
 
@@ -3619,6 +3654,11 @@ It actually doesn't work lol
 (gnus-demon-init)
 #+end_src
 
+
+* Magit
+#+begin_src emacs-lisp
+(setq magit-git-executable "/Users/me/.nix-profile/bin/git")
+#+end_src
 * Provide Init
 
 #+begin_src emacs-lisp
