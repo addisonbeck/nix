@@ -1061,79 +1061,56 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
                         (regexp-quote full) choice result))))
       result)))
 
-(defun my/search-llm-prompts ()
-  "Search for a prompt in prompts.org and insert its content at point."
-  (interactive)
-  (let* ((prompt-file (expand-file-name "prompts.org" my-notes-directory))
-         ;; record the user's original buffer & point
-         (target-buffer (current-buffer))
-         (target-marker (point-marker))
-         ;; open the prompts file
-         (prompt-buf (find-file-noselect prompt-file))
-         candidates selected pos content)
-    ;; build the candidate list from prompt-buf…
-    (with-current-buffer prompt-buf
-      (save-excursion
-        (goto-char (point-min))
-        (while (re-search-forward "^\*+ \(.+\)" nil t)
-          (let ((heading (match-string-no-properties 1))
-                (hp (point-at-bol))
-                block-content)
-            (save-excursion
-              (when (re-search-forward "^#\+begin_src" nil t)
-                (forward-line 1)
-                (let ((start (point)))
-                  (when (re-search-forward "^#\+end_src" nil t)
-                    (setq block-content
-                          (truncate-string-to-width
-                           (replace-regexp-in-string "\n" " "
-                                                     (buffer-substring-no-properties
-                                                      start (line-beginning-position)))
-                           200 nil nil "..."))))))
+(require 'consult)
 
-            ;; Only add entries that actually have content in their src blocks
-            (when block-content
-              (push (cons (format "%s  [%s]" heading block-content) hp)
-                    candidates))))))
-    
-    ;; Make sure we have candidates to work with
-    (if (null candidates)
-        (message "No prompts found in %s" prompt-file)
-      ;; pick one
-      (setq selected
-            (consult--read (reverse candidates)
-                         :prompt "Select prompt: "
-                         :category 'prompt
-                         :sort nil
-                         :require-match t))
-      
-      ;; Find the position for the selected prompt
-      (setq pos (cdr (assoc selected candidates)))
-      
-      ;; pull out the block's raw content
-      (when pos
-        (with-current-buffer prompt-buf
-          (save-excursion
-            (goto-char pos)
-            (when (re-search-forward "^#\+begin_src\(?: [^[:space:]]+\)?" nil t)
-              (forward-line 1)
-              (let ((start (point)))
-                (when (re-search-forward "^#\+end_src" nil t)
-                  (setq content
-                        (buffer-substring-no-properties
-                         start (line-beginning-position))))))))
-      
-      ;; Process the content if we found it
-      (if (not content)
-          (message "Failed to extract content from the selected prompt")
-        ;; replace placeholders in the raw content
-        (setq content (my/replace-prompt-placeholders content))
-        
-        ;; Insert the content at the original location
-        (when content
-          (with-current-buffer target-buffer
-            (goto-char target-marker)
-            (insert content)))))))
+(defvar my/llm-prompts-file
+  (expand-file-name "prompts.org" my-notes-directory)
+  "Path to your prompts.org library.")
+
+(defun my--build-llm-prompt-alist ()
+  "Return an alist of (DISPLAY . RAW-CONTENT) for each src-block in prompts.org."
+  (with-temp-buffer
+    (insert-file-contents my/llm-prompts-file)
+    (org-mode)
+    (let (alist)
+      (org-element-map (org-element-parse-buffer) 'src-block
+        (lambda (src)
+          (let* ((val     (org-element-property :value src))
+                 (head    (org-element-lineage src '(headline) t))
+                 (title   (if head
+                              (org-element-property :raw-value head)
+                            "No heading"))
+                 (preview (truncate-string-to-width
+                           (replace-regexp-in-string "\n" " " val)
+                           60 nil nil "…"))
+                 (disp    (format "%s  [%s]" title preview)))
+            (push (cons disp val) alist))))
+      (nreverse alist))))
+
+(defun my/search-llm-prompts ()
+  "Pick a prompt from `my/llm-prompts-file', fill placeholders, and insert at point."
+  (interactive)
+  (unless (file-readable-p my/llm-prompts-file)
+    (user-error "Cannot read prompts file %s" my/llm-prompts-file))
+  ;; 1) mark our insertion point
+  (let ((insert-marker (point-marker))
+        prompt-alist choice raw filled)
+    ;; 2) build + pick
+    (setq prompt-alist (my--build-llm-prompt-alist))
+    (unless prompt-alist
+      (user-error "No src-blocks found in %s" my/llm-prompts-file))
+    (setq choice (consult--read prompt-alist
+                                :prompt        "Select prompt: "
+                                :require-match t))
+    (setq raw    (cdr (assoc choice prompt-alist)))
+    (unless raw
+      (user-error "Internal error: %S not in prompt list" choice))
+    ;; 3) replace placeholders if any
+    (setq filled (my/replace-prompt-placeholders raw))
+    ;; 4) finally go back to the original buffer/point and insert
+    (with-current-buffer (marker-buffer insert-marker)
+      (goto-char (marker-position insert-marker))
+      (insert (or filled raw)))))
 
 (require 'ghub)
 
