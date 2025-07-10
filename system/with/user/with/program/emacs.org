@@ -1462,51 +1462,51 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (expand-file-name "prompts.org" my-notes-directory)
   "Path to your prompts.org library.")
 
-(defun my/search-llm-prompts ()
-  "Pick a source block from `my/llm-prompts-file', fill placeholders, and insert at point."
-  (interactive)
-  (unless (file-readable-p my/llm-prompts-file)
-    (user-error "Cannot read prompts file %s" my/llm-prompts-file))
-  
+(defun my--build-llm-prompt-alist ()
+  "Return an alist of (DISPLAY . RAW-CONTENT) for each src-block in prompts.org."
   (with-temp-buffer
     (insert-file-contents my/llm-prompts-file)
     (org-mode)
-    (let ((parse-tree (org-element-parse-buffer))
-          (source-blocks '()))
-      
-      ;; Extract all source blocks
-      (org-element-map parse-tree 'src-block
+    (let (alist)
+      (org-element-map (org-element-parse-buffer) 'src-block
         (lambda (src)
-          (let* ((value (org-element-property :value src))
-                 (parent (org-element-lineage src '(headline) t))
-                 (heading (if parent 
-                             (org-element-property :raw-value parent)
-                           "No heading"))
-                 (preview (truncate-string-to-width 
-                           (replace-regexp-in-string "\n" " " value)
+          (let* ((val     (org-element-property :value src))
+                 (head    (org-element-lineage src '(headline) t))
+                 (title   (if head
+                              (org-element-property :raw-value head)
+                            "No heading"))
+                 (preview (truncate-string-to-width
+                           (replace-regexp-in-string "\n" " " val)
                            60 nil nil "…"))
-                 (display (format "%s  [%s]" heading preview)))
-            (push (cons display value) source-blocks))))
-      
-      (unless source-blocks
-        (user-error "No src-blocks found in %s" my/llm-prompts-file))
-      
-      ;; Pick one using consult
-      (let* ((choice (consult--read (nreverse source-blocks)
-                                    :prompt "Select prompt: "
-                                    :require-match t))
-             (raw-content (cdr (assoc choice source-blocks))))
-        
-        ;; Insert the content (add placeholder replacement if needed)
-        (when raw-content
-          ;; If my/replace-prompt-placeholders exists, use it
-          (if (fboundp 'my/replace-prompt-placeholders)
-              (let ((filled (my/replace-prompt-placeholders raw-content)))
-                (when filled (insert filled)))
-            ;; Otherwise just insert the raw content
-            (insert raw-content)))))))
-#+end_src
+                 (disp    (format "%s  [%s]" title preview)))
+            (push (cons disp val) alist))))
+      (nreverse alist))))
 
+(defun my/search-llm-prompts ()
+  "Pick a prompt from `my/llm-prompts-file', fill placeholders, and insert at point."
+  (interactive)
+  (unless (file-readable-p my/llm-prompts-file)
+    (user-error "Cannot read prompts file %s" my/llm-prompts-file))
+  ;; 1) mark our insertion point
+  (let ((insert-marker (point-marker))
+        prompt-alist choice raw filled)
+    ;; 2) build + pick
+    (setq prompt-alist (my--build-llm-prompt-alist))
+    (unless prompt-alist
+      (user-error "No src-blocks found in %s" my/llm-prompts-file))
+    (setq choice (consult--read prompt-alist
+                                :prompt        "Select prompt: "
+                                :require-match t))
+    (setq raw    (cdr (assoc choice prompt-alist)))
+    (unless raw
+      (user-error "Internal error: %S not in prompt list" choice))
+    ;; 3) replace placeholders if any
+    (setq filled (my/replace-prompt-placeholders raw))
+    ;; 4) finally go back to the original buffer/point and insert
+    (with-current-buffer (marker-buffer insert-marker)
+      (goto-char (marker-position insert-marker))
+      (insert (or filled raw)))))
+#+end_src
 
 * GitHub Integration
 #+begin_src emacs-lisp
