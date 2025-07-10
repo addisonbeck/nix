@@ -994,68 +994,134 @@ org-edit-src-content-indentation 0)
   "Opens the logs.org file in the notes directory."
   (interactive)
   (find-file (expand-file-name "logs.org" my-notes-directory)))
+(defun my/open-prompts ()
+  (interactive)
+  "Opens the logs.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "prompts.org" my-notes-directory)))
+(defun my/open-budget ()
+  (interactive)
+  "Opens the logs.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "budget.org" my-notes-directory)))
+
+(defun my/get-project-choices ()
+  "Return a list of available projects from Projectile."
+  (if (and (fboundp 'projectile-known-projects)
+           (fboundp 'projectile-project-root))
+      (let ((projects (projectile-known-projects))
+            (current (when (projectile-project-p)
+                       (projectile-project-root))))
+        ;; Put the current project at the beginning if we're in one
+        (if current
+            (cons current (delete current projects))
+          projects))
+    '("default-project")))  ;; Fallback if projectile isn't available
+
+(defvar my/prompt-placeholder-functions
+  '(("[PROJECT]" . my/get-project-choices))
+  "Alist mapping placeholder strings to functions that return choices.
+Each function should either return a string (for direct substitution)
+or a list of strings (for completion-based selection).")
+
+(defun my/replace-prompt-placeholders (content)
+  "Replace placeholders in CONTENT string.
+Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
+Use functions in `my/prompt-placeholder-functions` for special placeholders.
+"  (let ((regex "\[\([A-Z0-9_]+\)\]")
+        (result content))
+    (while (string-match regex result)
+      (let* ((full (match-string 0 result))
+             (name (match-string 1 result))
+             (entry (assoc full my/prompt-placeholder-functions))
+             (choice
+              (if entry
+                  (let ((res (funcall (cdr entry))))
+                    (if (listp res)
+                        (completing-read (format "%s: " name) res nil t)
+                      res))
+                (read-string (format "%s: " name))))
+        ;; Replace all occurrences of this placeholder with chosen value
+        (setq result (replace-regexp-in-string
+                      (regexp-quote full) choice result))))
+    result)))
+
+(defun my/get-notes-files ()
+  "Return a list of note files."
+  (if (boundp 'my-notes-directory)
+      (let* ((default-directory my-notes-directory)
+             (all-files (directory-files-recursively my-notes-directory "\\.[^.]+" t)))
+        ;; Return the list with relative paths
+        (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
+    (user-error "my-notes-directory is not set")))
+
+(setq my/prompt-placeholder-functions
+  (append my/prompt-placeholder-functions
+          '(("[NOTES]" . my/get-notes-files))))
 
 (defun my/search-llm-prompts ()
   "Search for a prompt in prompts.org and insert its content at point."
   (interactive)
   (let* ((prompt-file (expand-file-name "prompts.org" my-notes-directory))
-         (buffer (find-file-noselect prompt-file))
-         (candidates '()))
-    
-    ;; Collect all headings with source blocks and their content preview
-    (with-current-buffer buffer
+         ;; record the user’s original buffer & point
+         (target-buffer (current-buffer))
+         (target-marker (point-marker))
+         ;; open the prompts file
+         (prompt-buf (find-file-noselect prompt-file))
+         candidates selected pos content)
+    ;; build the candidate list from prompt-buf…
+    (with-current-buffer prompt-buf
       (save-excursion
         (goto-char (point-min))
         (while (re-search-forward "^\\*+ \\(.+\\)" nil t)
           (let ((heading (match-string-no-properties 1))
-                (heading-pos (point-at-bol))
-                (has-block nil)
-                (block-content ""))
-            
+                (hp (point-at-bol))
+                block-content)
             (save-excursion
               (when (re-search-forward "^#\\+begin_src" nil t)
-                (setq has-block t)
                 (forward-line 1)
                 (let ((start (point)))
                   (when (re-search-forward "^#\\+end_src" nil t)
-                    ;; Get content preview
-                    (setq block-content 
-                          (replace-regexp-in-string
-                           "\n" " "
-                           (truncate-string-to-width
-                            (buffer-substring-no-properties start (line-beginning-position))
-                            200 nil nil "...")))))))
-            
-            (when has-block
-              (push (cons (format "%s  %s" 
-                                 (propertize heading 'face 'bold)
-                                 (propertize (format "[%s]" block-content) 'face 'shadow))
-                         heading-pos)
-                   candidates))))))
-    
-    ;; Use consult to select a heading with preview
-    (let ((selected (consult--read
-                     (reverse candidates)
-                     :prompt "Select prompt: "
-                     :category 'prompt
-                     :sort nil
-                     :require-match t)))
-      
-      ;; Extract content from the selected block
-      (let ((pos (cdr (assoc selected candidates))))
-        (when pos
-          (with-current-buffer buffer
-            (save-excursion
-              (goto-char pos)
-              (when (re-search-forward "#\\+begin_src\\(?: [^[:space:]]+\\)?" nil t)
-                (forward-line 1)
-                (let ((start (point)))
-                  (if (re-search-forward "^#\\+end_src" nil t)
-                      (let ((content (buffer-substring-no-properties 
-                                     start (line-beginning-position))))
-                        ;; Insert the content at the current point
-                        (with-current-buffer (window-buffer (selected-window))
-                          (insert content)))))))))))))
+                    (setq block-content
+                          (truncate-string-to-width
+                           (replace-regexp-in-string "\n" " "
+                                                     (buffer-substring-no-properties
+                                                      start (line-beginning-position)))
+                           200 nil nil "..."))))))
+
+
+
+            (when block-content
+              (push (cons (format "%s  [%s]" heading block-content) hp)
+                    candidates))))))
+    ;; pick one
+    (setq selected
+          (consult--read (reverse candidates)
+                         :prompt "Select prompt: "
+                         :category 'prompt
+                         :sort nil
+                         :require-match t))
+    (setq pos (cdr (assoc selected candidates)))
+    ;; pull out the block’s raw content
+    (when pos
+      (with-current-buffer prompt-buf
+        (save-excursion
+          (goto-char pos)
+          (when (re-search-forward "^#\\+begin_src\\(?: [^[:space:]]+\\)?" nil t)
+            (forward-line 1)
+            (let ((start (point)))
+              (when (re-search-forward "^#\\+end_src" nil t)
+                (setq content
+                      (buffer-substring-no-properties
+                       start (line-beginning-position)))))))))
+    ;; insert back in the original location
+    ;; replace placeholders in the raw content
+    (setq content (my/replace-prompt-placeholders content))
+
+    (when content
+      (with-current-buffer target-buffer
+        (goto-char target-marker)
+        (insert content)))))
 
 (require 'ghub)
 
@@ -1687,25 +1753,6 @@ Be extremely comprehensive
     ("inbox" . (:path "~/notes/inbox.org"
 			:description "My inbox for my TODOs and notes"))
     ))
-
-(defun my/gptel-org-agenda-daily ()
-  (interactive)
-  "Return today's org‐agenda daily dashboard as a string."
-  (with-temp-buffer
-    ;; generate the agenda in this temp buffer
-    (let ((org-agenda-buffer-name "*Org Agenda*"))
-      (org-agenda nil "d"))
-    ;; grab its contents
-    (buffer-string)))
-
-;; register it as a GPTel tool
-(gptel-make-tool
- :name        "org_agenda_daily"
- :function    #'my/gptel-org-agenda-daily
- :description "Fetch my Org Agenda daily dashboard. Helpful for determining what's happening today and what to work on."
- :category "notes-and-reminders")
-
-(register-gptel-tool "org_agenda_daily")
 
 (require 'json)
 
@@ -2603,6 +2650,8 @@ If TEST-PATTERN is provided, filter tests using the -t option."
    ("i" "Inboxes" my/inbox-menu)
    ("a" "Agenda" my/org-agenda-daily-dashboard)
    ("e" "Emacs Config" my/open-emacs-config)
+   ("p" "Prompts" my/open-prompts)
+   ("b" "Budget" my/open-budget)
    ("l" "Log" my/open-log)])
 
 (transient-define-prefix my/insert-menu ()
@@ -2611,12 +2660,13 @@ If TEST-PATTERN is provided, filter tests using the -t option."
    ("l" "LLM Prompt" my/search-llm-prompts)])
 
 (transient-define-prefix my/search-menu ()
-  "Transient menu for inserting stuff places (usually under the cursor)."
+  "Transient menu for searching around the buffer(s), project, and filesystem."
   ["Search"
    ("s" "Line" consult-line)
    ("b" "Buffer" consult-buffer)
    ("f" "Find" consult-find)
-   ("r" "Find" consult-ripgrep)])
+   ("o" "Org Heading" consult-org-heading)
+   ("r" "Ripgrep" consult-ripgrep)])
 
 (define-prefix-command 'my-custom-prefix)
 (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
@@ -3007,11 +3057,11 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 
 ;; Bind it to a key in org-agenda-mode-map
 (define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
-(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
 
 (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
 (evil-define-key 'normal 'global (kbd "C-i") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
+(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
 
 (defun my/org-mode-set-keybindings ()
   (interactive)
@@ -3055,7 +3105,7 @@ If TEST-PATTERN is provided, filter tests using the -t option."
   (my/toggle-olivetti))
 (add-hook 'org-agenda-mode-hook #'org-agenda-mode-init)
 
-(defun magic-status-mode-init ()
+(defun magit-status-mode-init ()
   "Function to run on magit status mode init"
   (my/magit-status-mode-set-keybindings)
   (my/toggle-olivetti))
