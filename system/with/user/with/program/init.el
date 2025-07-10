@@ -1025,10 +1025,10 @@ Each function should either return a string (for direct substitution)
 or a list of strings (for completion-based selection).")
 
 (defun my/get-notes-files ()
-  "Return a list of note files."
+  "Return a list of org note files."
   (if (boundp 'my-notes-directory)
       (let* ((default-directory my-notes-directory)
-             (all-files (directory-files-recursively my-notes-directory "\.[^.]+" t)))
+             (all-files (directory-files-recursively my-notes-directory "\.org$" t)))
         ;; Return the list with relative paths
         (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
     (user-error "my-notes-directory is not set")))
@@ -1043,7 +1043,7 @@ Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
 Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (if (null content)
       nil  ;; Return nil if content is nil
-    (let ((regex "\[\([A-Z0-9_]+\)\]")
+    (let ((regex "\\[\\([A-Z0-9_]+\\)\\]")
           (result content))
       (while (and result (string-match regex result))
         (let* ((full (match-string 0 result))
@@ -1051,14 +1051,18 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
                (entry (assoc full my/prompt-placeholder-functions))
                (choice
                 (if entry
+                    ;; If we have a special handler function
                     (let ((res (funcall (cdr entry))))
                       (if (listp res)
+                          ;; If it returns a list, use completing-read
                           (completing-read (format "%s: " name) res nil t)
+                        ;; Otherwise use the direct result
                         res))
+                  ;; No special handler, just ask the user
                   (read-string (format "%s: " name)))))
           ;; Replace all occurrences of this placeholder with chosen value
           (setq result (replace-regexp-in-string
-                        (regexp-quote full) choice result))))
+                        (regexp-quote full) choice result t t))))
       result)))
 
 (require 'consult)
@@ -1071,20 +1075,30 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   "Return an alist of (DISPLAY . RAW-CONTENT) for each src-block in prompts.org."
   (with-temp-buffer
     (insert-file-contents my/llm-prompts-file)
-    (org-mode)
+    (goto-char (point-min))
     (let (alist)
-      (org-element-map (org-element-parse-buffer) 'src-block
-        (lambda (src)
-          (let* ((val     (org-element-property :value src))
-                 (head    (org-element-lineage src '(headline) t))
-                 (title   (if head
-                              (org-element-property :raw-value head)
-                            "No heading"))
-                 (preview (truncate-string-to-width
-                           (replace-regexp-in-string "\n" " " val)
-                           60 nil nil "…"))
-                 (disp    (format "%s  [%s]" title preview)))
-            (push (cons disp val) alist))))
+      ;; Simple regex based approach rather than using org-element
+      (while (re-search-forward "^#\\+begin_src \\(.*?\\)$" nil t)
+        (let* ((begin-pos (point))
+               (language (match-string-no-properties 1))
+               (heading "No heading") ;; Default heading if none found
+               (val nil))
+          ;; Find the parent heading for this src block
+          (save-excursion
+            (goto-char begin-pos)
+            (when (re-search-backward "^\\*+ \\(.*?\\)$" nil t)
+              (setq heading (match-string-no-properties 1))))
+          
+          ;; Get the content until end_src
+          (when (re-search-forward "^#\\+end_src" nil t)
+            (setq val (buffer-substring-no-properties 
+                       begin-pos
+                       (match-beginning 0)))
+            ;; Create a preview of the content
+            (let ((preview (truncate-string-to-width
+                            (replace-regexp-in-string "\n" " " val)
+                            60 nil nil "…")))
+              (push (cons (format "%s  [%s]" heading preview) val) alist)))))
       (nreverse alist))))
 
 (defun my/search-llm-prompts ()
@@ -1093,6 +1107,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (unless (file-readable-p my/llm-prompts-file)
     (user-error "Cannot read prompts file %s" my/llm-prompts-file))
   ;; 1) mark our insertion point
+
   (let ((insert-marker (point-marker))
         prompt-alist choice raw filled)
     ;; 2) build + pick

@@ -1412,10 +1412,10 @@ You are tasked with triaging and patching a bug in the /Users/me/nix.
 
 #+begin_src emacs-lisp
 (defun my/get-notes-files ()
-  "Return a list of note files."
+  "Return a list of org note files."
   (if (boundp 'my-notes-directory)
       (let* ((default-directory my-notes-directory)
-             (all-files (directory-files-recursively my-notes-directory "\.[^.]+" t)))
+             (all-files (directory-files-recursively my-notes-directory "\.org$" t)))
         ;; Return the list with relative paths
         (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
     (user-error "my-notes-directory is not set")))
