@@ -1415,7 +1415,7 @@ You are tasked with triaging and patching a bug in the /Users/me/nix.
   "Return a list of note files."
   (if (boundp 'my-notes-directory)
       (let* ((default-directory my-notes-directory)
-             (all-files (directory-files-recursively my-notes-directory "\\.[^.]+" t)))
+             (all-files (directory-files-recursively my-notes-directory "\.[^.]+" t)))
         ;; Return the list with relative paths
         (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
     (user-error "my-notes-directory is not set")))
@@ -1431,93 +1431,82 @@ You are tasked with triaging and patching a bug in the /Users/me/nix.
 (defun my/replace-prompt-placeholders (content)
   "Replace placeholders in CONTENT string.
 Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
-Use functions in `my/prompt-placeholder-functions` for special placeholders.
-"  (let ((regex "\[\([A-Z0-9_]+\)\]")
-        (result content))
-    (while (string-match regex result)
-      (let* ((full (match-string 0 result))
-             (name (match-string 1 result))
-             (entry (assoc full my/prompt-placeholder-functions))
-             (choice
-              (if entry
-                  (let ((res (funcall (cdr entry))))
-                    (if (listp res)
-                        (completing-read (format "%s: " name) res nil t)
-                      res))
-                (read-string (format "%s: " name))))
-        ;; Replace all occurrences of this placeholder with chosen value
-        (setq result (replace-regexp-in-string
-                      (regexp-quote full) choice result))))
-    result)))
+Use functions in `my/prompt-placeholder-functions` for special placeholders."
+  (if (null content)
+      nil  ;; Return nil if content is nil
+    (let ((regex "\[\([A-Z0-9_]+\)\]")
+          (result content))
+      (while (and result (string-match regex result))
+        (let* ((full (match-string 0 result))
+               (name (match-string 1 result))
+               (entry (assoc full my/prompt-placeholder-functions))
+               (choice
+                (if entry
+                    (let ((res (funcall (cdr entry))))
+                      (if (listp res)
+                          (completing-read (format "%s: " name) res nil t)
+                        res))
+                  (read-string (format "%s: " name)))))
+          ;; Replace all occurrences of this placeholder with chosen value
+          (setq result (replace-regexp-in-string
+                        (regexp-quote full) choice result))))
+      result)))
 #+end_src
 
 *** Searching for a prompt from the library
 
 #+begin_src emacs-lisp 
+(require 'consult)
+
+(defvar my/llm-prompts-file
+  (expand-file-name "prompts.org" my-notes-directory)
+  "Path to your prompts.org library.")
+
 (defun my/search-llm-prompts ()
-  "Search for a prompt in prompts.org and insert its content at point."
+  "Pick a source block from `my/llm-prompts-file', fill placeholders, and insert at point."
   (interactive)
-  (let* ((prompt-file (expand-file-name "prompts.org" my-notes-directory))
-         ;; record the user’s original buffer & point
-         (target-buffer (current-buffer))
-         (target-marker (point-marker))
-         ;; open the prompts file
-         (prompt-buf (find-file-noselect prompt-file))
-         candidates selected pos content)
-    ;; build the candidate list from prompt-buf…
-    (with-current-buffer prompt-buf
-      (save-excursion
-        (goto-char (point-min))
-        (while (re-search-forward "^\\*+ \\(.+\\)" nil t)
-          (let ((heading (match-string-no-properties 1))
-                (hp (point-at-bol))
-                block-content)
-            (save-excursion
-              (when (re-search-forward "^#\\+begin_src" nil t)
-                (forward-line 1)
-                (let ((start (point)))
-                  (when (re-search-forward "^#\\+end_src" nil t)
-                    (setq block-content
-                          (truncate-string-to-width
-                           (replace-regexp-in-string "\n" " "
-                                                     (buffer-substring-no-properties
-                                                      start (line-beginning-position)))
-                           200 nil nil "..."))))))
-
-
-
-            (when block-content
-              (push (cons (format "%s  [%s]" heading block-content) hp)
-                    candidates))))))
-    ;; pick one
-    (setq selected
-          (consult--read (reverse candidates)
-                         :prompt "Select prompt: "
-                         :category 'prompt
-                         :sort nil
-                         :require-match t))
-    (setq pos (cdr (assoc selected candidates)))
-    ;; pull out the block’s raw content
-    (when pos
-      (with-current-buffer prompt-buf
-        (save-excursion
-          (goto-char pos)
-          (when (re-search-forward "^#\\+begin_src\\(?: [^[:space:]]+\\)?" nil t)
-            (forward-line 1)
-            (let ((start (point)))
-              (when (re-search-forward "^#\\+end_src" nil t)
-                (setq content
-                      (buffer-substring-no-properties
-                       start (line-beginning-position)))))))))
-    ;; insert back in the original location
-    ;; replace placeholders in the raw content
-    (setq content (my/replace-prompt-placeholders content))
-
-    (when content
-      (with-current-buffer target-buffer
-        (goto-char target-marker)
-        (insert content)))))
+  (unless (file-readable-p my/llm-prompts-file)
+    (user-error "Cannot read prompts file %s" my/llm-prompts-file))
+  
+  (with-temp-buffer
+    (insert-file-contents my/llm-prompts-file)
+    (org-mode)
+    (let ((parse-tree (org-element-parse-buffer))
+          (source-blocks '()))
+      
+      ;; Extract all source blocks
+      (org-element-map parse-tree 'src-block
+        (lambda (src)
+          (let* ((value (org-element-property :value src))
+                 (parent (org-element-lineage src '(headline) t))
+                 (heading (if parent 
+                             (org-element-property :raw-value parent)
+                           "No heading"))
+                 (preview (truncate-string-to-width 
+                           (replace-regexp-in-string "\n" " " value)
+                           60 nil nil "…"))
+                 (display (format "%s  [%s]" heading preview)))
+            (push (cons display value) source-blocks))))
+      
+      (unless source-blocks
+        (user-error "No src-blocks found in %s" my/llm-prompts-file))
+      
+      ;; Pick one using consult
+      (let* ((choice (consult--read (nreverse source-blocks)
+                                    :prompt "Select prompt: "
+                                    :require-match t))
+             (raw-content (cdr (assoc choice source-blocks))))
+        
+        ;; Insert the content (add placeholder replacement if needed)
+        (when raw-content
+          ;; If my/replace-prompt-placeholders exists, use it
+          (if (fboundp 'my/replace-prompt-placeholders)
+              (let ((filled (my/replace-prompt-placeholders raw-content)))
+                (when filled (insert filled)))
+            ;; Otherwise just insert the raw content
+            (insert raw-content)))))))
 #+end_src
+
 
 * GitHub Integration
 #+begin_src emacs-lisp

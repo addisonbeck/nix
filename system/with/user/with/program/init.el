@@ -1024,33 +1024,11 @@ org-edit-src-content-indentation 0)
 Each function should either return a string (for direct substitution)
 or a list of strings (for completion-based selection).")
 
-(defun my/replace-prompt-placeholders (content)
-  "Replace placeholders in CONTENT string.
-Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
-Use functions in `my/prompt-placeholder-functions` for special placeholders.
-"  (let ((regex "\[\([A-Z0-9_]+\)\]")
-        (result content))
-    (while (string-match regex result)
-      (let* ((full (match-string 0 result))
-             (name (match-string 1 result))
-             (entry (assoc full my/prompt-placeholder-functions))
-             (choice
-              (if entry
-                  (let ((res (funcall (cdr entry))))
-                    (if (listp res)
-                        (completing-read (format "%s: " name) res nil t)
-                      res))
-                (read-string (format "%s: " name))))
-        ;; Replace all occurrences of this placeholder with chosen value
-        (setq result (replace-regexp-in-string
-                      (regexp-quote full) choice result))))
-    result)))
-
 (defun my/get-notes-files ()
   "Return a list of note files."
   (if (boundp 'my-notes-directory)
       (let* ((default-directory my-notes-directory)
-             (all-files (directory-files-recursively my-notes-directory "\\.[^.]+" t)))
+             (all-files (directory-files-recursively my-notes-directory "\.[^.]+" t)))
         ;; Return the list with relative paths
         (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
     (user-error "my-notes-directory is not set")))
@@ -1059,11 +1037,35 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders.
   (append my/prompt-placeholder-functions
           '(("[NOTES]" . my/get-notes-files))))
 
+(defun my/replace-prompt-placeholders (content)
+  "Replace placeholders in CONTENT string.
+Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
+Use functions in `my/prompt-placeholder-functions` for special placeholders."
+  (if (null content)
+      nil  ;; Return nil if content is nil
+    (let ((regex "\[\([A-Z0-9_]+\)\]")
+          (result content))
+      (while (and result (string-match regex result))
+        (let* ((full (match-string 0 result))
+               (name (match-string 1 result))
+               (entry (assoc full my/prompt-placeholder-functions))
+               (choice
+                (if entry
+                    (let ((res (funcall (cdr entry))))
+                      (if (listp res)
+                          (completing-read (format "%s: " name) res nil t)
+                        res))
+                  (read-string (format "%s: " name)))))
+          ;; Replace all occurrences of this placeholder with chosen value
+          (setq result (replace-regexp-in-string
+                        (regexp-quote full) choice result))))
+      result)))
+
 (defun my/search-llm-prompts ()
   "Search for a prompt in prompts.org and insert its content at point."
   (interactive)
   (let* ((prompt-file (expand-file-name "prompts.org" my-notes-directory))
-         ;; record the user’s original buffer & point
+         ;; record the user's original buffer & point
          (target-buffer (current-buffer))
          (target-marker (point-marker))
          ;; open the prompts file
@@ -1073,15 +1075,15 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders.
     (with-current-buffer prompt-buf
       (save-excursion
         (goto-char (point-min))
-        (while (re-search-forward "^\\*+ \\(.+\\)" nil t)
+        (while (re-search-forward "^\*+ \(.+\)" nil t)
           (let ((heading (match-string-no-properties 1))
                 (hp (point-at-bol))
                 block-content)
             (save-excursion
-              (when (re-search-forward "^#\\+begin_src" nil t)
+              (when (re-search-forward "^#\+begin_src" nil t)
                 (forward-line 1)
                 (let ((start (point)))
-                  (when (re-search-forward "^#\\+end_src" nil t)
+                  (when (re-search-forward "^#\+end_src" nil t)
                     (setq block-content
                           (truncate-string-to-width
                            (replace-regexp-in-string "\n" " "
@@ -1089,39 +1091,49 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders.
                                                       start (line-beginning-position)))
                            200 nil nil "..."))))))
 
-
-
+            ;; Only add entries that actually have content in their src blocks
             (when block-content
               (push (cons (format "%s  [%s]" heading block-content) hp)
                     candidates))))))
-    ;; pick one
-    (setq selected
-          (consult--read (reverse candidates)
+    
+    ;; Make sure we have candidates to work with
+    (if (null candidates)
+        (message "No prompts found in %s" prompt-file)
+      ;; pick one
+      (setq selected
+            (consult--read (reverse candidates)
                          :prompt "Select prompt: "
                          :category 'prompt
                          :sort nil
                          :require-match t))
-    (setq pos (cdr (assoc selected candidates)))
-    ;; pull out the block’s raw content
-    (when pos
-      (with-current-buffer prompt-buf
-        (save-excursion
-          (goto-char pos)
-          (when (re-search-forward "^#\\+begin_src\\(?: [^[:space:]]+\\)?" nil t)
-            (forward-line 1)
-            (let ((start (point)))
-              (when (re-search-forward "^#\\+end_src" nil t)
-                (setq content
-                      (buffer-substring-no-properties
-                       start (line-beginning-position)))))))))
-    ;; insert back in the original location
-    ;; replace placeholders in the raw content
-    (setq content (my/replace-prompt-placeholders content))
-
-    (when content
-      (with-current-buffer target-buffer
-        (goto-char target-marker)
-        (insert content)))))
+      
+      ;; Find the position for the selected prompt
+      (setq pos (cdr (assoc selected candidates)))
+      
+      ;; pull out the block's raw content
+      (when pos
+        (with-current-buffer prompt-buf
+          (save-excursion
+            (goto-char pos)
+            (when (re-search-forward "^#\+begin_src\(?: [^[:space:]]+\)?" nil t)
+              (forward-line 1)
+              (let ((start (point)))
+                (when (re-search-forward "^#\+end_src" nil t)
+                  (setq content
+                        (buffer-substring-no-properties
+                         start (line-beginning-position))))))))
+      
+      ;; Process the content if we found it
+      (if (not content)
+          (message "Failed to extract content from the selected prompt")
+        ;; replace placeholders in the raw content
+        (setq content (my/replace-prompt-placeholders content))
+        
+        ;; Insert the content at the original location
+        (when content
+          (with-current-buffer target-buffer
+            (goto-char target-marker)
+            (insert content)))))))
 
 (require 'ghub)
 

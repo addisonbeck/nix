@@ -161,6 +161,7 @@ in {
           smtpmail-multi
           rustic
           ledger-mode
+          org-ql
         ];
     };
   };
