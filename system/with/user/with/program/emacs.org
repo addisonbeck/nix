@@ -195,6 +195,12 @@ Here I'll define some key data structures used throughout the rest of the config
 		(buffer-list))))
 
   (defun my/delete-this-file ()
+    "Delete the file the current buffer is visiting and kill the buffer."
+    (interactive)
+    (when-let ((filename (buffer-file-name)))
+      (delete-file filename)
+      (kill-buffer)))
+#+end_src
 
 * Package Management
 #+begin_src emacs-lisp
@@ -3644,6 +3650,15 @@ It actually doesn't work lol
    ("r" "Ripgrep" consult-ripgrep)])
 #+end_src
 
+** The "Create" Menu
+
+#+begin_src emacs-lisp
+(transient-define-prefix my/create-menu ()
+  "Create menu"
+  [["Create"
+    ("C-c" "Capture" org-capture)]])
+#+end_src
+
 * Custom Keymaps
 
 ** General
@@ -4047,6 +4062,7 @@ It actually doesn't work lol
 (evil-define-key 'normal 'global (kbd "C-i") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
 (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+(evil-define-key 'normal 'global (kbd "C-c") #'my/create-menu)
 #+end_src
 ** Mode Specific
 
@@ -4074,7 +4090,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
   (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
   (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda))
+  (define-key org-agenda-mode-map (kbd "C-c") #'my/create-menu))
 #+end_src
 
 *** Magit Status Keymaps
@@ -4088,7 +4104,8 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
   (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
   (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda))
+  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda)
+  (define-key org-agenda-mode-map (kbd "C-c") #'my/create-menu))
 #+end_src
 
 *** Gptel Mode Keymaps
