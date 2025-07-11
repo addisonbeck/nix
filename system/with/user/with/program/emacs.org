@@ -185,60 +185,6 @@ Here I'll define some key data structures used throughout the rest of the config
   (setq sentence-end-double-space nil)
 #+end_src
 
-* Minibuffer Enhancement
-#+begin_src emacs-lisp
-  ;; Make minibuffer more comfortable for text entry
-  ;; Allow the minibuffer to be resized automatically
-  (setq resize-mini-windows t)
-  (setq max-mini-window-height 0.5) ;; Allow up to half the frame height
-  
-  ;; Improved minibuffer appearance
-  (set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
-  
-  ;; Use miniedit for better text editing in minibuffer
-  (use-package miniedit
-    :ensure t
-    :config
-    (miniedit-install)
-    ;; Add a message to show usage in minibuffer prompts
-    (add-hook 'minibuffer-setup-hook
-              (lambda ()
-                (when (> (frame-width) 80) ;; Only show if we have room
-                  (message "Use C-M-e for full buffer editing")))))
-  
-  ;; Floating minibuffer with mini-frame
-  (use-package mini-frame
-    :if window-system  ;; Only use in GUI mode
-    :ensure t
-    :custom
-    (mini-frame-show-parameters
-     '((top . 0.35)
-       (width . 0.7)
-       (left . 0.5)))
-    :config
-    ;; Specify which commands should NOT use mini-frame
-    (setq mini-frame-ignore-commands
-          '(consult-line
-            consult-outline
-            consult-mark
-            consult-imenu
-            eval-expression
-            "^ivy-"
-            "^swiper$"))
-    (mini-frame-mode 1))
-  
-  ;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
-  (defun my/setup-miniedit-buffer ()
-    "Set up the miniedit buffer for comfortable editing."
-    (when (string-match "\\*MiniEdit\\*" (buffer-name))
-      (when (fboundp 'olivetti-mode)
-        (olivetti-mode 1)
-        (setq-local olivetti-body-width 80))
-      (visual-line-mode 1)))
-  
-  (add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
-#+end_src
-
 * Buffer Management Functions
 #+begin_src emacs-lisp
   (defun kill-other-buffers ()
@@ -918,7 +864,7 @@ org-edit-src-content-indentation 0)
   (message "Refreshing org agenda files cache...")
   (setq my/org-agenda-files-cache
         (seq-filter (lambda (f) (not (string-match-p "/\\." f)))
-                    (directory-files-recursively "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/" "\\.org$")))
+                    (directory-files-recursively my-notes-directory "\\.org$")))
   (setq my/org-agenda-files-cache-time (float-time (current-time)))
   (message "Org agenda files cache updated (%d files)" (length my/org-agenda-files-cache)))
 
@@ -938,6 +884,13 @@ org-edit-src-content-indentation 0)
 ;; Initialize the cache at startup
 (add-hook 'after-init-hook 'my/update-org-agenda-files-cache)
 
+
+;; Ensure org-agenda-files are set on startup for refiling
+(add-hook 'after-init-hook #'my/set-org-agenda-files)
+
+;; Refresh agenda files and set targets before org-refile
+(add-hook 'org-refile-before-initialize-hook #'my/update-org-agenda-files-cache)
+(add-hook 'org-refile-before-initialize-hook #'my/set-org-agenda-files)
 ;; Update the agenda files when entering org-agenda
 (add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
 #+end_src
@@ -976,7 +929,7 @@ org-edit-src-content-indentation 0)
    "* %a")
   ("s" "Source block" entry
    (file org-default-notes-file)
-   "* %^{Title}\n#+begin_src org\n\n#+end_src" :immediate-finish nil :jump-to-captured t)
+   "* %^{Title}\n#+begin_src org\n%?\n#+end_src" :immediate-finish nil :jump-to-captured t)
   ))
 
 (defgroup my/budget nil
@@ -3641,6 +3594,60 @@ It actually doesn't work lol
 * Magit
 #+begin_src emacs-lisp
 (setq magit-git-executable "/Users/me/.nix-profile/bin/git")
+#+end_src
+
+* Minibuffer Enhancement
+#+begin_src emacs-lisp
+  ;; Make minibuffer more comfortable for text entry
+  ;; Allow the minibuffer to be resized automatically
+  ;;(setq resize-mini-windows t)
+  (setq max-mini-window-height 0.5) ;; Allow up to half the frame height
+  
+  ;; Improved minibuffer appearance
+  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
+  
+  ;; Use miniedit for better text editing in minibuffer
+  (use-package miniedit
+    :ensure t
+    :config
+    (miniedit-install)
+    ;; Add a message to show usage in minibuffer prompts
+    (add-hook 'minibuffer-setup-hook
+              (lambda ()
+                (when (> (frame-width) 80) ;; Only show if we have room
+                  (message "Use C-M-e for full buffer editing")))))
+  
+  ;; Floating minibuffer with mini-frame
+  (use-package mini-frame
+    ;;:if window-system  ;; Only use in GUI mode
+    :ensure t
+    :custom
+    (mini-frame-show-parameters
+     '((top . 0.35)
+       (width . 0.7)
+       (left . 0.5)))
+    :config
+    ;; Specify which commands should NOT use mini-frame
+    (setq mini-frame-ignore-commands
+          '(consult-line
+            consult-outline
+            consult-mark
+            consult-imenu
+            eval-expression
+            "^ivy-"
+            "^swiper$"))
+    (mini-frame-mode 1))
+  
+  ;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
+  (defun my/setup-miniedit-buffer ()
+    "Set up the miniedit buffer for comfortable editing."
+    (when (string-match "\\*MiniEdit\\*" (buffer-name))
+      (when (fboundp 'olivetti-mode)
+        (olivetti-mode 1)
+        (setq-local olivetti-body-width 80))
+      (visual-line-mode 1)))
+  
+  (add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
 #+end_src
 
 * Transient Menus
