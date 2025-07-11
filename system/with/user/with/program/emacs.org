@@ -1331,7 +1331,12 @@ org-edit-src-content-indentation 0)
 
 ** Org Face Customizations
 #+begin_src emacs-lisp
-(use-package org-modern)
+(use-package org-modern
+  :config
+  ;; Disable org-modern's TODO keyword styling
+  (setq org-modern-todo nil)
+  ;; Initialize with other org-modern features active
+  (global-org-modern-mode))
 
 ;; Face customizations for org mode
 (defun my/toggle-org-modern ()
