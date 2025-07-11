@@ -139,6 +139,34 @@
 (global-hl-line-mode -1)
 (setq sentence-end-double-space nil)
 
+(defun kill-other-buffers ()
+  "Kill all buffers except the current one."
+  (interactive)
+  (mapc 'kill-buffer
+	  (delq (current-buffer)
+		(buffer-list))))
+
+(defun my/delete-this-file ()
+  "Delete the file the current buffer is visiting and kill the buffer."
+  (interactive)
+  (when-let ((filename (buffer-file-name)))
+    (delete-file filename)
+    (kill-buffer)))
+
+(require 'package)
+
+;; Use Package Configuration
+(use-package nerd-icons)
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
+(when (daemonp)
+  (exec-path-from-shell-initialize))
+
 (defun my/extract-quotes-from-org-files ()
   "Extract headlines tagged with :quote: from org files in notes directory."
   (let ((quotes '())
@@ -237,12 +265,10 @@
 (require 'evil-org-agenda)
 (evil-org-agenda-set-keys)
 (evil-define-key 'motion org-agenda-mode-map
-		   (kbd "C-b") 'projectile-switch-to-buffer
 		   (kbd "C-p") 'projectile-switch-project
 		   (kbd "C-f") 'projectile-find-file
 		   (kbd "<left>") 'org-agenda-earlier
 		   (kbd "<right>") 'org-agenda-later
-		   (kbd "C-c j") 'org-agenda-goto-date
 		   (kbd "gx")  'org-agenda-open-link
 		   (kbd "t") 'org-agenda-todo
 		   (kbd "T") 'org-agenda-todo-yesterday)
@@ -287,9 +313,7 @@
 		    (expand-file-name (my/get-project-path (car project))))
 		  my/projects))
   (setq projectile-auto-discover nil)
-  (projectile-save-known-projects)
-  :bind-keymap
-  ("C-c p" . projectile-command-map))
+  (projectile-save-known-projects))
 
 (require 'consult)
 
@@ -315,8 +339,6 @@
   (interactive)
   (when buffer-file-name
     (consult-find (file-name-directory buffer-file-name))))
-
-(global-set-key (kbd "C-c d") 'find-from-here)
 
 (use-package treesit-auto
   :config
@@ -387,8 +409,6 @@
   (interactive)
   (let ((projectile-switch-project-action 'magit-status))
     (projectile-switch-project)))
-
-(global-set-key (kbd "C-c m") 'magit-status-project)
 
 (use-package forge
   :ensure t
@@ -544,9 +564,6 @@ org-edit-src-content-indentation 0)
 (setq org-src-fontify-natively t)
 
 ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
-
-;; Custom keybinding for executing all source blocks in a subtree
-(define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
 
 (require 'org-make-toc)
 
@@ -782,12 +799,6 @@ org-edit-src-content-indentation 0)
 		      org-file
 		      "-o" md-file)
 	(find-file md-file))))
-
-(with-eval-after-load 'markdown-mode
-  (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
-
-(with-eval-after-load 'org
-  (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
 
 (defun my/move-to-custom-id-file ()
   "Move selected org item to a new file named after its CUSTOM_ID property."
@@ -1210,8 +1221,6 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
     (with-current-buffer buf
       (save-buffer))))
     ;;(message "PR fetch completed")))
-
-(global-set-key (kbd "C-c g p") #'my/fetch-github-prs)
 
 (defun remove-duplicate-org-entries ()
   (interactive)
@@ -1737,7 +1746,6 @@ Be extremely comprehensive
     (message "Context minified. Use M-x revert-buffer to restore if needed.")))
 
 ;; Bind minification function in gptel-mode
-(define-key gptel-mode-map (kbd "C-c C-m") #'my/gptel-minify-context)
 
 (setq gptel-use-tools t
 	gptel-tools nil)  
@@ -1834,7 +1842,6 @@ Be extremely comprehensive
 (add-hook 'after-init-hook #'mcp-hub-start-all-server)
 
 (use-package aidermacs
-  :bind (("C-c a" . aidermacs-transient-menu))
   :config
   (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
   :custom
@@ -2672,6 +2679,11 @@ If TEST-PATTERN is provided, filter tests using the -t option."
    ("o" "Org Heading" consult-org-heading)
    ("r" "Ripgrep" consult-ripgrep)])
 
+(transient-define-prefix my/create-menu ()
+  "Create menu"
+  [["Create"
+    ("c" "Capture" org-capture)]])
+
 (define-prefix-command 'my-custom-prefix)
 (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
 (which-key-add-key-based-replacements "C-a" "my commands")
@@ -2837,13 +2849,10 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 ;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
 ;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
 
-(evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
 (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
 (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
 (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
 
@@ -3059,20 +3068,17 @@ If TEST-PATTERN is provided, filter tests using the -t option."
     (when url
 (browse-url url))))
 
-;; Bind it to a key in org-agenda-mode-map
-(define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
-
 (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
 (evil-define-key 'normal 'global (kbd "C-i") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
 (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+(evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
 
 (defun my/org-mode-set-keybindings ()
   (interactive)
   "Sets all my org mode specific keybindings"
   (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
-  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
-  (evil-define-key 'normal org-mode-map (kbd "C-c C-h") 'consult-org-heading))
+  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
 
 (defun my/org-agenda-mode-set-keybindings ()
   (interactive)
@@ -3080,15 +3086,15 @@ If TEST-PATTERN is provided, filter tests using the -t option."
   (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
   (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
   (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda))
+  (define-key org-agenda-mode-map (kbd "C-b") #'my/create-menu))
 
 (defun my/magit-status-mode-set-keybindings ()
   (interactive)
-  "Sets all my org mode specific keybindings"
-  (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
-  (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
-  (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda))
+  "Sets all my magit-status mode specific keybindings"
+  (define-key magit-status-mode-map (kbd "C-g") #'my/go-menu)
+  (define-key magit-status-mode-map (kbd "C-i") #'my/insert-menu)
+  (define-key magit-status-mode-map (kbd "C-s") #'my/search-menu)
+  (define-key magit-status-mode-map (kbd "C-b") #'my/create-menu))
 
 (defun org-mode-init ()
   "Function to run on org mode init"
