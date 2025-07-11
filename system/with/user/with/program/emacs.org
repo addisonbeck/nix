@@ -4059,7 +4059,14 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 (defun my/org-agenda-mode-set-keybindings ()
   (interactive)
   "Sets all my org mode specific keybindings"
-  (evil-define-key 'motion org-agenda-mode-map
+  ;; Using local-set-key ensures the binding takes precedence in the current buffer
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  
+  ;; Also set the evil motion state map as a backup approach
+  (evil-define-key '(normal visual motion) org-agenda-mode-map
     (kbd "C-g") #'my/go-menu
     (kbd "C-i") #'my/insert-menu
     (kbd "C-s") #'my/search-menu
@@ -4074,15 +4081,18 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 (defun my/magit-status-mode-set-keybindings ()
   (interactive)
   "Sets all my magit-status mode specific keybindings"
-  (evil-define-key 'motion magit-status-mode-map
+  ;; Using local-set-key ensures the binding takes precedence in the current buffer
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  
+  ;; Also set the evil motion state map as a backup approach
+  (evil-define-key '(normal visual motion) magit-status-mode-map
     (kbd "C-g") #'my/go-menu
     (kbd "C-i") #'my/insert-menu
     (kbd "C-s") #'my/search-menu
     (kbd "C-b") #'my/create-menu)
-
-
-
-
 )
 #+end_src
 
