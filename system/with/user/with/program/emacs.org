@@ -322,12 +322,10 @@ Here I'll define some key data structures used throughout the rest of the config
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys)
   (evil-define-key 'motion org-agenda-mode-map
-		   (kbd "C-b") 'projectile-switch-to-buffer
 		   (kbd "C-p") 'projectile-switch-project
 		   (kbd "C-f") 'projectile-find-file
 		   (kbd "<left>") 'org-agenda-earlier
 		   (kbd "<right>") 'org-agenda-later
-		   (kbd "C-c j") 'org-agenda-goto-date
 		   (kbd "gx")  'org-agenda-open-link
 		   (kbd "t") 'org-agenda-todo
 		   (kbd "T") 'org-agenda-todo-yesterday)
@@ -380,9 +378,7 @@ Here I'll define some key data structures used throughout the rest of the config
 		    (expand-file-name (my/get-project-path (car project))))
 		  my/projects))
     (setq projectile-auto-discover nil)
-    (projectile-save-known-projects)
-    :bind-keymap
-    ("C-c p" . projectile-command-map))
+    (projectile-save-known-projects))
 #+end_src
 
 * Consult
@@ -413,8 +409,6 @@ Here I'll define some key data structures used throughout the rest of the config
     (interactive)
     (when buffer-file-name
       (consult-find (file-name-directory buffer-file-name))))
-
-  (global-set-key (kbd "C-c d") 'find-from-here)
 #+end_src
 
 * Tree-sitter Configuration
@@ -494,8 +488,6 @@ Here I'll define some key data structures used throughout the rest of the config
     (interactive)
     (let ((projectile-switch-project-action 'magit-status))
       (projectile-switch-project)))
-
-  (global-set-key (kbd "C-c m") 'magit-status-project)
 
   (use-package forge
     :ensure t
@@ -832,9 +824,6 @@ org-edit-src-content-indentation 0)
 
 ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
 
-;; Custom keybinding for executing all source blocks in a subtree
-(define-key org-mode-map (kbd "C-c C-v C-t") 'org-babel-execute-subtree)
-
 (require 'org-make-toc)
 #+end_src
 
@@ -1153,12 +1142,6 @@ org-edit-src-content-indentation 0)
 		      org-file
 		      "-o" md-file)
 	(find-file md-file))))
-
-  (with-eval-after-load 'markdown-mode
-    (define-key markdown-mode-map (kbd "C-c C-o") 'convert-to-org))
-
-  (with-eval-after-load 'org
-    (define-key org-mode-map (kbd "C-c C-m") 'convert-to-markdown))
 
   (defun my/move-to-custom-id-file ()
     "Move selected org item to a new file named after its CUSTOM_ID property."
@@ -1614,8 +1597,6 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
     (with-current-buffer buf
       (save-buffer))))
     ;;(message "PR fetch completed")))
-
-(global-set-key (kbd "C-c g p") #'my/fetch-github-prs)
 
 (defun remove-duplicate-org-entries ()
   (interactive)
@@ -2184,7 +2165,6 @@ This doesn't work
       (message "Context minified. Use M-x revert-buffer to restore if needed.")))
 
   ;; Bind minification function in gptel-mode
-  (define-key gptel-mode-map (kbd "C-c C-m") #'my/gptel-minify-context)
 #+end_src
 
 * GPTel Tools
@@ -2478,7 +2458,6 @@ This works but I'm using the fetch mcp server
 
 #+begin_src emacs-lisp
 (use-package aidermacs
-  :bind (("C-c a" . aidermacs-transient-menu))
   :config
   (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
   :custom
@@ -3656,7 +3635,7 @@ It actually doesn't work lol
 (transient-define-prefix my/create-menu ()
   "Create menu"
   [["Create"
-    ("C-c" "Capture" org-capture)]])
+    ("c" "Capture" org-capture)]])
 #+end_src
 
 * Custom Keymaps
@@ -3829,13 +3808,10 @@ It actually doesn't work lol
 ;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
 ;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
 
-(evil-global-set-key 'normal (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
 (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
 (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal vterm-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
 (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
 (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
 
@@ -4050,9 +4026,6 @@ It actually doesn't work lol
   (setq url (org-entry-get (point) "PR_URL"))))
     (when url
 (browse-url url))))
-
-;; Bind it to a key in org-agenda-mode-map
-(define-key org-agenda-mode-map (kbd "C-c u") 'open-pr-url-at-point)
 #+end_src
 #+RESULTS:
 
@@ -4062,7 +4035,7 @@ It actually doesn't work lol
 (evil-define-key 'normal 'global (kbd "C-i") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
 (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
-(evil-define-key 'normal 'global (kbd "C-c") #'my/create-menu)
+(evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
 #+end_src
 ** Mode Specific
 
@@ -4075,8 +4048,7 @@ These are usually called from a mode init hook
   (interactive)
   "Sets all my org mode specific keybindings"
   (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
-  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
-  (evil-define-key 'normal org-mode-map (kbd "C-c C-h") 'consult-org-heading))
+  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
 #+end_src
 
 *** Org Agenda Keymaps
@@ -4090,7 +4062,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
   (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
   (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c") #'my/create-menu))
+  (define-key org-agenda-mode-map (kbd "C-b") #'my/create-menu))
 #+end_src
 
 *** Magit Status Keymaps
@@ -4104,8 +4076,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
   (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
   (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-c C-h") 'consult-org-agenda)
-  (define-key org-agenda-mode-map (kbd "C-c") #'my/create-menu))
+  (define-key org-agenda-mode-map (kbd "C-b") #'my/create-menu))
 #+end_src
 
 *** Gptel Mode Keymaps
