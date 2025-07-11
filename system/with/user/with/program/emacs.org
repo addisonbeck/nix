@@ -4059,10 +4059,11 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 (defun my/org-agenda-mode-set-keybindings ()
   (interactive)
   "Sets all my org mode specific keybindings"
-  (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
-  (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
-  (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-b") #'my/create-menu))
+  (evil-define-key 'motion org-agenda-mode-map
+    (kbd "C-g") #'my/go-menu
+    (kbd "C-i") #'my/insert-menu
+    (kbd "C-s") #'my/search-menu
+    (kbd "C-b") #'my/create-menu))
 #+end_src
 
 *** Magit Status Keymaps
@@ -4073,10 +4074,16 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 (defun my/magit-status-mode-set-keybindings ()
   (interactive)
   "Sets all my magit-status mode specific keybindings"
-  (define-key magit-status-mode-map (kbd "C-g") #'my/go-menu)
-  (define-key magit-status-mode-map (kbd "C-i") #'my/insert-menu)
-  (define-key magit-status-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key magit-status-mode-map (kbd "C-b") #'my/create-menu))
+  (evil-define-key 'motion magit-status-mode-map
+    (kbd "C-g") #'my/go-menu
+    (kbd "C-i") #'my/insert-menu
+    (kbd "C-s") #'my/search-menu
+    (kbd "C-b") #'my/create-menu)
+
+
+
+
+)
 #+end_src
 
 *** Gptel Mode Keymaps
