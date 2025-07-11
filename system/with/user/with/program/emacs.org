@@ -905,7 +905,7 @@ org-edit-src-content-indentation 0)
 ** Org Capture Templates
 #+begin_src emacs-lisp 
 (setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
-(setq org-default-notes-file "inbox.org")
+(setq org-default-notes-file (expand-file-name "inbox.org" my-notes-directory))
 (setq org-capture-templates
 '(
   ("l" "Log" entry
@@ -1020,7 +1020,7 @@ org-edit-src-content-indentation 0)
 
 (add-to-list 'org-capture-templates
              `("bt" "Budget transaction" entry
-               (file "~/notes/inbox.org")
+               (file org-default-notes-file)
                (function my/budget--capture-template)
                :empty-lines 1))
 
