@@ -162,6 +162,8 @@ in {
           rustic
           ledger-mode
           org-ql
+          miniedit
+          mini-frame
         ];
     };
   };
