@@ -920,6 +920,9 @@ org-edit-src-content-indentation 0)
   ("a" "A link to the current location in the current file" entry
    (file org-default-notes-file)
    "* %a")
+  ("s" "Source block" entry
+   (file org-default-notes-file)
+   "* %^{Title}\n#+begin_src org\n\n#+end_src" :immediate-finish nil :jump-to-captured t)
   ))
 
 (defgroup my/budget nil
