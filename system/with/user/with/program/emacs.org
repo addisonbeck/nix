@@ -1334,23 +1334,7 @@ org-edit-src-content-indentation 0)
 (use-package org-modern
   :config
   ;; Disable org-modern's TODO keyword styling
-  (setq org-modern-todo nil)
-  ;; Initialize with other org-modern features active
-  (global-org-modern-mode))
-
-;; Face customizations for org mode
-(defun my/toggle-org-modern ()
-  "Toggle org-modern-mode on and off."
-  (interactive)
-  (if (bound-and-true-p org-modern-mode)
-      (progn
-        (org-modern-mode -1)
-        (message "org-modern-mode disabled"))
-    (progn
-      (org-modern-mode)
-      (message "org-modern-mode enabled"))))
-
-(global-set-key (kbd "<f2>") 'my/toggle-org-modern)
+  (setq org-modern-todo nil))
 #+end_src
 
 ** Quickly Open Files (For The "Go" Menu)
@@ -2028,13 +2012,12 @@ token-str))
   ;; Use org-mode for gptel buffers
   (setq gptel-default-mode 'org-mode)
   ;; Enable branching conversations in org-mode
-  (setq gptel-org-branching-context t)
-  (setq gptel-confirm-tool-calls t)
+  ;; (setq gptel-org-branching-context t)
   (setq gptel-include-tool-results t)
 
   ;; Update prompt/response prefixes for org-mode to be compatible with branching conversations
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "@user\n")
-  (setf (alist-get 'org-mode gptel-response-prefix-alist) "@assistant\n")
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n")
+  (setf (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
 
   (setq gptel-backend gptel-copilot-backend)
   (setq gptel-model 'claude-3.7-sonnet)
