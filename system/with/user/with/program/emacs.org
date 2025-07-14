@@ -4252,3 +4252,35 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 		      ;;; init.el ends here
 #+end_src
 
+
+
+** Execute Elisp Tool
+
+This tool allows LLMs to execute arbitrary elisp code in the currently running Emacs process.
+
+#+begin_src emacs-lisp
+(defun my/gptel-execute-elisp (elisp-code)
+  "Execute arbitrary elisp CODE and return the result as a string.
+The code is evaluated in the current Emacs process."
+  (condition-case err
+      (let* ((result (eval (read elisp-code) t))
+             (result-string (format "%S" result)))
+        (json-encode `(("success" . t)
+                       ("result" . ,result-string))))
+    (error
+     (json-encode `(("success" . nil)
+                    ("error" . ,(error-message-string err)))))))
+
+;; Register it as a gptel tool
+(gptel-make-tool
+ :name        "execute_elisp"
+ :function    #'my/gptel-execute-elisp
+ :description "Execute arbitrary elisp code in the current Emacs process and return the result.
+               Use with extreme caution as this has full access to the Emacs environment."
+ :args        '((:name "code"
+                      :type string
+                      :description "The elisp code to evaluate"))
+ :category    "development")
+
+(register-gptel-tool "execute_elisp")
+#+end_src
