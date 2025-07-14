@@ -833,7 +833,7 @@ org-edit-src-content-indentation 0)
 
 ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
 (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
-(evil-define-key 'insert org-mode-map (kbd "TAB") 'tab-to-tab-stop)
+(evil-define-key 'insert org-mode-map (kbd "<tab>") 'tab-to-tab-stop)
 (defun my-org-evil-open-below ()
   "Open line below preserving org structure but preventing reformatting."
   (interactive)
@@ -3708,7 +3708,6 @@ It actually doesn't work lol
 #+end_src
 
 * Custom Keymaps
-
 ** General
 
 #+begin_src emacs-lisp
@@ -4117,6 +4116,7 @@ These are usually called from a mode init hook
   (interactive)
   "Sets all my org mode specific keybindings"
   (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
+  (evil-define-key 'operator org-mode-map (kbd "<tab>") 'org-cycle-global)
   (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
 #+end_src
 
@@ -4183,7 +4183,8 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (variable-pitch-mode)
   (breadcrumb-local-mode)
   (org-indent-mode)
-  (org-modern-mode)
+  ;; I want to like you org-modern, I really do.
+  ;;(org-modern-mode)
   (setq-local line-spacing 0.5)
   (my/toggle-olivetti)
   (my/org-mode-set-keybindings))

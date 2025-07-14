@@ -640,6 +640,9 @@ org-edit-src-content-indentation 0)
   ("a" "A link to the current location in the current file" entry
    (file org-default-notes-file)
    "* %a")
+  ("s" "Source block" entry
+   (file org-default-notes-file)
+   "* %^{Title}\n#+begin_src org\n\n#+end_src" :immediate-finish nil :jump-to-captured t)
   ))
 
 (defgroup my/budget nil
@@ -3083,18 +3086,35 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 (defun my/org-agenda-mode-set-keybindings ()
   (interactive)
   "Sets all my org mode specific keybindings"
-  (define-key org-agenda-mode-map (kbd "C-g") #'my/go-menu)
-  (define-key org-agenda-mode-map (kbd "C-i") #'my/insert-menu)
-  (define-key org-agenda-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key org-agenda-mode-map (kbd "C-b") #'my/create-menu))
+  ;; Using local-set-key ensures the binding takes precedence in the current buffer
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  
+  ;; Also set the evil motion state map as a backup approach
+  (evil-define-key '(normal visual motion) org-agenda-mode-map
+    (kbd "C-g") #'my/go-menu
+    (kbd "C-i") #'my/insert-menu
+    (kbd "C-s") #'my/search-menu
+    (kbd "C-b") #'my/create-menu))
 
 (defun my/magit-status-mode-set-keybindings ()
   (interactive)
   "Sets all my magit-status mode specific keybindings"
-  (define-key magit-status-mode-map (kbd "C-g") #'my/go-menu)
-  (define-key magit-status-mode-map (kbd "C-i") #'my/insert-menu)
-  (define-key magit-status-mode-map (kbd "C-s") #'my/search-menu)
-  (define-key magit-status-mode-map (kbd "C-b") #'my/create-menu))
+  ;; Using local-set-key ensures the binding takes precedence in the current buffer
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  
+  ;; Also set the evil motion state map as a backup approach
+  (evil-define-key '(normal visual motion) magit-status-mode-map
+    (kbd "C-g") #'my/go-menu
+    (kbd "C-i") #'my/insert-menu
+    (kbd "C-s") #'my/search-menu
+    (kbd "C-b") #'my/create-menu)
+)
 
 (defun org-mode-init ()
   "Function to run on org mode init"
