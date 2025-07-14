@@ -3688,6 +3688,12 @@ It actually doesn't work lol
 ** The "Search" Menu
 
 #+begin_src emacs-lisp
+(defun my/search-notes ()
+  "Run projectile ripgrep search in the notes directory."
+  (interactive)
+  (let ((default-directory (my/get-project-path "notes")))
+    (projectile-find-file)))
+
 (transient-define-prefix my/search-menu ()
   "Transient menu for searching around the buffer(s), project, and filesystem."
   ["Search"
@@ -3695,7 +3701,8 @@ It actually doesn't work lol
    ("b" "Buffer" consult-buffer)
    ("f" "Find" consult-find)
    ("o" "Org Heading" consult-org-heading)
-   ("r" "Ripgrep" consult-ripgrep)])
+   ("r" "Ripgrep" consult-ripgrep)
+   ("n" "Notes" my/search-notes)])
 #+end_src
 
 ** The "Create" Menu
