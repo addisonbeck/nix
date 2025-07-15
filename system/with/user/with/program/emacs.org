@@ -202,6 +202,62 @@ Here I'll define some key data structures used throughout the rest of the config
       (kill-buffer)))
 #+end_src
 
+* GPTel and Org-Roam Integration
+
+#+begin_src emacs-lisp
+  ;; Define functions for LLM interaction with org-roam
+  (defun my/org-roam-node-create-noninteractive (title content)
+    "Create an org-roam node with TITLE and CONTENT non-interactively."
+    (let ((node (org-roam-node-create :title title)))
+      (org-roam-capture-
+       :node node
+       :info nil
+       :templates '(("d" "default" plain "%?" :target
+                    (file+head "${title}.org" "#+title: ${title}\n\n")
+                    :unnarrowed t))
+       :props '(:finalize find-file))
+      (with-current-buffer (org-capture-get :buffer)
+        (insert content)
+        (save-buffer)
+        (org-capture-finalize))))
+
+  (defun my/org-roam-node-search (query)
+    "Search org-roam nodes matching QUERY and return results as a string."
+    (let ((nodes (org-roam-node-list))
+          (results '()))
+      (dolist (node nodes)
+        (when (or (string-match-p query (org-roam-node-title node))
+                  (string-match-p query (or (org-roam-node-tags node) "")))
+          (push (format "Title: %s\nTags: %s\nFile: %s\n\n"
+                       (org-roam-node-title node)
+                       (or (org-roam-node-tags node) "None")
+                       (org-roam-node-file node))
+                results)))
+      (if results
+          (string-join (nreverse results) "\n")
+        "No matching nodes found.")))
+
+  ;; Register GPTel tools for org-roam manipulation
+  (with-eval-after-load 'gptel
+    (gptel-make-tool
+     "create-roam-node"
+     `((description . "Create a new org-roam note")
+       (function . my/org-roam-node-create-noninteractive)
+       (parameters
+        (title . ((type . "string")
+                 (description . "Title for the new note")))
+        (content . ((type . "string")
+                   (description . "Content for the new note"))))))
+
+    (gptel-make-tool
+     "search-roam-nodes"
+     `((description . "Search org-roam nodes by title or tags")
+       (function . my/org-roam-node-search)
+       (parameters
+        (query . ((type . "string")
+                 (description . "Search query for matching nodes")))))))
+#+end_src
+
 * Package Management
 #+begin_src emacs-lisp
   (require 'package)
