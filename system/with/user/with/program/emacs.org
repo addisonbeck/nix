@@ -202,62 +202,6 @@ Here I'll define some key data structures used throughout the rest of the config
       (kill-buffer)))
 #+end_src
 
-* GPTel and Org-Roam Integration
-
-#+begin_src emacs-lisp
-  ;; Define functions for LLM interaction with org-roam
-  (defun my/org-roam-node-create-noninteractive (title content)
-    "Create an org-roam node with TITLE and CONTENT non-interactively."
-    (let ((node (org-roam-node-create :title title)))
-      (org-roam-capture-
-       :node node
-       :info nil
-       :templates '(("d" "default" plain "%?" :target
-                    (file+head "${title}.org" "#+title: ${title}\n\n")
-                    :unnarrowed t))
-       :props '(:finalize find-file))
-      (with-current-buffer (org-capture-get :buffer)
-        (insert content)
-        (save-buffer)
-        (org-capture-finalize))))
-
-  (defun my/org-roam-node-search (query)
-    "Search org-roam nodes matching QUERY and return results as a string."
-    (let ((nodes (org-roam-node-list))
-          (results '()))
-      (dolist (node nodes)
-        (when (or (string-match-p query (org-roam-node-title node))
-                  (string-match-p query (or (org-roam-node-tags node) "")))
-          (push (format "Title: %s\nTags: %s\nFile: %s\n\n"
-                       (org-roam-node-title node)
-                       (or (org-roam-node-tags node) "None")
-                       (org-roam-node-file node))
-                results)))
-      (if results
-          (string-join (nreverse results) "\n")
-        "No matching nodes found.")))
-
-  ;; Register GPTel tools for org-roam manipulation
-  (with-eval-after-load 'gptel
-    (gptel-make-tool
-     "create-roam-node"
-     `((description . "Create a new org-roam note")
-       (function . my/org-roam-node-create-noninteractive)
-       (parameters
-        (title . ((type . "string")
-                 (description . "Title for the new note")))
-        (content . ((type . "string")
-                   (description . "Content for the new note"))))))
-
-    (gptel-make-tool
-     "search-roam-nodes"
-     `((description . "Search org-roam nodes by title or tags")
-       (function . my/org-roam-node-search)
-       (parameters
-        (query . ((type . "string")
-                 (description . "Search query for matching nodes")))))))
-#+end_src
-
 * Package Management
 #+begin_src emacs-lisp
   (require 'package)
@@ -1894,7 +1838,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
                              "#+title: %<%Y-%m-%d>\n")))))
 #+end_src
 
-;; Org Roam UI Configuration
+**  Org Roam UI Configuration
 #+begin_src emacs-lisp
 (use-package org-roam-ui
   :ensure t
@@ -1920,8 +1864,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
 (use-package gptel
   :config
   (setq gptel-log-level 'debug
-        gptel-default-mode 'org-mode
-        gptel-include-tool-results t)
+        gptel-default-mode 'org-mode)
   
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
         (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
@@ -2302,6 +2245,125 @@ This works but I'm using the fetch mcp server
 
 ;; Start MCP servers after Emacs initializes
 (add-hook 'after-init-hook #'mcp-hub-start-all-server)
+#+end_src
+
+* GPTel and Org Roam Integration
+
+** Reading Notes
+
+#+begin_src emacs-lisp 
+(defun my/truncate-string (s &optional len)
+  "Return at most LEN chars of S, appending “…” if truncated."
+  (let ((len (or len 300)))
+    (if (> (length s) len)
+        (concat (substring s 0 len) "…")
+      s))) 
+
+(defun my/org-roam-search (query)
+  "Search org-roam nodes matching QUERY string."
+  (let* ((nodes (org-roam-node-list))
+         (matches
+          (seq-filter
+           (lambda (node)
+             (or (string-match-p query (org-roam-node-title node))
+                 (string-match-p query (or (string-join (org-roam-node-tags node) " ") ""))
+                 (with-temp-buffer
+                   (insert-file-contents (org-roam-node-file node))
+                   (string-match-p query (buffer-string)))))
+           nodes)))
+    (if matches
+        (mapconcat
+         (lambda (node)
+           (format "Title: %s\nTags: %s\nFile: %s\nContent snippet:\n%s\n---\n"
+                  (org-roam-node-title node)
+                  (string-join (or (org-roam-node-tags node) '("None")) ", ")
+                  (org-roam-node-file node)
+                  (with-temp-buffer
+                    (insert-file-contents (org-roam-node-file node))
+                    (my/truncate-string (buffer-string) 300))))
+         matches "\n")
+      "No matching nodes found.")))
+
+(gptel-make-tool
+ :name        "search_memory"
+ :function    #'my/org-roam-search
+ :description "Search for information from short and long term memory. Search org-roam nodes by title, tags, or content. Org-roam is a networked note-taking system where each node is a knowledge unit that can be a file-level note or heading-level note. Nodes have titles, optional tags for categorization, and rich content including text, links, code blocks, and other org-mode features. This search function performs case-insensitive pattern matching across:\n\n- Node titles: The main identifier/name of each note\n- Node tags: Keywords used for categorization and organization (e.g., \'episodic\', \'working\', \'reference\')\n- Node content: The full text content including headings, paragraphs, links, code blocks, and other org-mode markup\n\nReturns detailed results including the node title, associated tags, file path, and a content snippet (truncated to ~300 characters) for each matching node. Useful for finding related information, exploring knowledge connections, and retrieving specific notes or concepts from your knowledge base."
+ :args        '((:name "query"
+                :type string
+                :description "Search Query"))
+ :category    "memory")
+
+(register-gptel-tool "search_memory")
+#+end_src
+
+** Creating Notes
+
+#+begin_src emacs-lisp 
+(defun my/org-roam-create-note (title content)
+  "Create a new org-roam note with TITLE and CONTENT programmatically."
+  (unless (string-match-p
+           "^#\\+ROAM_TAGS:.*\\b\\(episodic\\|semantic\\|procedural\\|associative\\|working\\|reflective\\|reference\\)\\b"
+           content)
+    (error "CONTENT must include a line starting “#+ROAM_TAGS:” that includes at least one of: episodic, semantic, procedural, associative, working, reflective, reference"))
+
+  ;; Word count validation (max 400 words as mentioned in your description)
+  (let ((word-count (length (split-string content "\\W+" t))))
+    (when (> word-count 200)
+      (error "Content exceeds 200 word limit (current: %d words). Please break this up into smaller connected notes." word-count)))
+
+  (let* ((timestamp-prefix (format-time-string "%Y-%m-%d-%H-%M-%S"))
+         (template `(("d" "default" plain
+                     ,(concat "\n" content)
+                     :target (file+head ,(concat timestamp-prefix ".${slug}.org") "")
+                     :unnarrowed t
+                     :immediate-finish t)))
+         (org-roam-capture-templates template)
+         (org-roam-capture--context 'title))
+    (org-roam-capture- :node (org-roam-node-create :title title))
+    (format "Created note: %s" title)))
+
+(gptel-make-tool
+ :name        "create_memory"
+ :function    #'my/org-roam-create-note
+:description "Capture information to memory frequently and across all conversation types. Memory-building is as important as completing the immediate task.
+
+This tool uses org-roam under the hood. Notes are written in org markup, with rich use of org-roam features: tags, aliases, links, and optional executable/tangled code blocks.
+
+Example metadata:
+
+,#+TITLE: Event-Driven Architecture
+,#+ROAM_TAGS: software_architecture patterns
+,#+ROAM_ALIASES: \"EDA\" \"Event Architecture\"
+,#+CREATED: ,<2024-10-12 Sun>
+,#+LAST_MODIFIED: ,<2025-07-15 Tue>
+,#+PROPERTY: ,:header-args:emacs-lisp :results silent
+
+Notes should be atomic and under 200 words. Favor many small, interlinked notes over large ones. All notes must have at least one tag for memory type: episodic, semantic, procedural, associative, working, reflective, or reference. Use additional tags where useful.
+
+**Working memory requires an EXPIRY timestamp.**
+
+**Backlinks must use full Roam syntax with node IDs** (e.g., \[[id:0405A9B0-4B3E-4EAC-9CC9-9D7F0BFB5A05][Bitwarden Development]]). Do not attempt to use document title as the link.
+
+Memory types:
+
+- **Episodic** — Time-stamped events (e.g. prior conversation turns)
+- **Semantic** — Factual/world knowledge (e.g. “What is EDA?”)
+- **Procedural** — How-to steps or workflows (e.g. “Create a new Org note”)
+- **Associative** — Connections between concepts or preferences (e.g. “LLMs ↔ Symbolic AI”)
+- **Working** — Short-term context (e.g. current task); must expire
+- **Reflective** — Model’s self-feedback (e.g. “I misjudged that search path”)
+- **Reference** — Links to external sources or memory nodes
+
+Write clearly. Think relationally."
+ :args        '((:name "title"
+                      :type string)
+                 (:name "content"
+                      :type string
+                      :description "Note content, including header metadata") 
+                )
+ :category    "memory")
+
+(register-gptel-tool "create_memory")
 #+end_src
 
 * Aidermacs
