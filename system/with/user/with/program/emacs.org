@@ -1629,7 +1629,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-light-hard t))
+    (load-theme 'gruvbox-dark-hard t))
 
 
 (defvar my/current-theme 'gruvbox-light-hard
@@ -1821,64 +1821,57 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
 ;(setq elfeed-search-filter "+unread")
 #+end_src
 
+* Org Roam Configuration
+#+begin_src emacs-lisp
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam")
+  (org-roam-completion-everywhere t)
+  :config
+  (org-roam-db-autosync-mode)
+  (setq org-roam-dailies-directory "daily/")
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry
+           "* %?"
+           :target (file+head "%<%Y-%m-%d>.org"
+                             "#+title: %<%Y-%m-%d>\n")))))
+#+end_src
+
 * GPTel Configuration
 #+begin_src emacs-lisp
 (use-package gptel
   :config
-  (setq gptel-log-level 'debug)
+  (setq gptel-log-level 'debug
+        gptel-default-mode 'org-mode
+        gptel-include-tool-results t)
   
-  (setq gptel-default-mode 'org-mode)
-  (setq gptel-include-tool-results t)
-  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n")
-  (setf (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
+        (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
 
-  (defun get-anthropic-api-key ()
+  (defun my/get-api-key (host)
     (when-let ((auth (car (auth-source-search
-                           :host "api.anthropic.com"
+                           :host host
                            :require '(:secret)))))
       (let ((token (plist-get auth :secret)))
         (if (functionp token)
             (funcall token)
           token))))
 
-  (defun get-openai-api-key ()
-    (when-let ((auth (car (auth-source-search
-                           :host "api.openai.com"
-                           :require '(:secret)))))
-      (let ((token (plist-get auth :secret)))
-        (if (functionp token)
-            (funcall token)
-          token))))
-
-  (defun get-gemini-api-key ()
-    (when-let ((auth (car (auth-source-search
-                           :host "api.gemini.com"
-                           :require '(:secret)))))
-      (let ((token (plist-get auth :secret)))
-        (if (functionp token)
-            (funcall token)
-          token))))
-
-  ;; Set up various backend LLM providers
-  (gptel-make-anthropic "Claude"          
+  (gptel-make-anthropic "Claude"
                         :stream t
-                        :key #'get-anthropic-api-key)
+                        :key (lambda () (my/get-api-key "api.anthropic.com")))
 
-  (gptel-make-gemini "Gemini"          
-                     :key #'get-gemini-api-key)
+  (gptel-make-gemini "Gemini"
+                     :key (lambda () (my/get-api-key "api.gemini.com")))
 
-  (gptel-make-openai "ChatGPT"          
-                     :key #'get-openai-api-key
+  (gptel-make-openai "ChatGPT"
+                     :key (lambda () (my/get-api-key "api.openai.com"))
                      :stream t
-                     :models gptel--openai-models))
+                     :models gptel--openai-models)
 
-  (setq gptel-backend (gptel-make-gh-copilot "Copilot"))
-  (setq gptel-model 'claude-3.7-sonnet)
-
-(gptel-make-preset 'default
-  :description "Default"
-  :system "You are a large language model living in emacs and a helpful assistant. Responsd concisely."
-  :tools '("mcp-fetch github-mcp")) 
+  (setq gptel-backend (gptel-make-gh-copilot "Copilot")
+        gptel-model 'claude-3.7-sonnet))
 #+end_src
 * GPTel Context Management
 

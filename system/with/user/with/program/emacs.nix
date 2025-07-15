@@ -164,6 +164,7 @@ in {
           org-ql
           miniedit
           mini-frame
+          org-roam
         ];
     };
   };
