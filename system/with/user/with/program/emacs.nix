@@ -165,6 +165,7 @@ in {
           miniedit
           mini-frame
           org-roam
+          org-roam-ui
         ];
     };
   };
