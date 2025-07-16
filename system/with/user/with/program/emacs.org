@@ -2423,18 +2423,6 @@ Write clearly. Think relationally."
 (register-gptel-tool "add_memory_backlink")
 #+end_src
 
-* Aidermacs
-
-#+begin_src emacs-lisp
-(use-package aidermacs
-  :config
-  (setenv "ANTHROPIC_API_KEY" (get-anthropic-api-key))
-  :custom
-  ; See the Configuration section below
-  (aidermacs-use-architect-mode t)
-  (aidermacs-default-model "sonnet"))
-#+end_src
-
 * Path Copying Functions
 
 #+begin_src emacs-lisp
