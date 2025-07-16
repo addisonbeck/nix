@@ -1628,7 +1628,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-dark-hard t))
+    (load-theme 'gruvbox-light-hard t))
 
 
 (defvar my/current-theme 'gruvbox-light-hard
