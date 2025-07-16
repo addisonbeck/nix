@@ -2247,40 +2247,58 @@ This works but I'm using the fetch mcp server
   (let ((len (or len 300)))
     (if (> (length s) len)
         (concat (substring s 0 len) "…")
-      s))) 
+      s)))
 
-(defun my/org-roam-search (query)
-  "Search org-roam nodes matching QUERY string."
-  (let* ((nodes (org-roam-node-list))
+(defun my/org-roam-search (query &optional begin-range end-range)
+  "Search org-roam nodes matching QUERY with pagination.
+BEGIN-RANGE and END-RANGE are one-based indices (inclusive).
+Defaults to 1–10."
+  (require 'seq)
+  (let* ((nodes  (org-roam-node-list))
          (matches
           (seq-filter
            (lambda (node)
              (or (string-match-p query (org-roam-node-title node))
-                 (string-match-p query (or (string-join (org-roam-node-tags node) " ") ""))
+                 (string-match-p query
+                                 (or (string-join (org-roam-node-tags node) " ")
+                                     ""))
                  (with-temp-buffer
                    (insert-file-contents (org-roam-node-file node))
                    (string-match-p query (buffer-string)))))
-           nodes)))
-    (if matches
-        (mapconcat
-         (lambda (node)
-           (format "Title: %s\nTags: %s\nFile: %s\nContent snippet:\n%s\n---\n"
-                  (org-roam-node-title node)
-                  (string-join (or (org-roam-node-tags node) '("None")) ", ")
-                  (org-roam-node-file node)
-                  (with-temp-buffer
-                    (insert-file-contents (org-roam-node-file node))
-                    (my/truncate-string (buffer-string) 300))))
-         matches "\n")
-      "No matching nodes found.")))
+           nodes))
+         (total  (length matches))
+         (start  (or begin-range 0))
+         (end    (or end-range 10)))
+    (if (zerop total)
+        "No matching nodes found."
+      (let* ((end-excl (min total (1+ end)))
+             (paged    (seq-subseq matches (min start total) end-excl))
+             (header   (format "Showing results %d–%d of %d matches:\n\n"
+                               (1+ start)
+                               (min end total)
+                               total)))
+        (concat header
+                (mapconcat
+                 (lambda (node)
+                   (format "Title: %s\nTags: %s\nFile: %s\nSnippet:\n%s\n---\n"
+                           (org-roam-node-title node)
+                           (string-join (or (org-roam-node-tags node) '("None")) ", ")
+                           (org-roam-node-file node)
+                           (with-temp-buffer
+                             (insert-file-contents (org-roam-node-file node))
+                             (my/truncate-string (buffer-string) 300))))
+                 paged
+                 "\n"))))))
 
 (gptel-make-tool
  :name        "search_memory"
  :function    #'my/org-roam-search
- :description "Search for information from short and long term memory. Search org-roam nodes by title, tags, or content. Org-roam is a networked note-taking system where each node is a knowledge unit that can be a file-level note or heading-level note. Nodes have titles, optional tags for categorization, and rich content including text, links, code blocks, and other org-mode features. This search function performs case-insensitive pattern matching across:\n\n- Node titles: The main identifier/name of each note\n- Node tags: Keywords used for categorization and organization (e.g., \'episodic\', \'working\', \'reference\')\n- Node content: The full text content including headings, paragraphs, links, code blocks, and other org-mode markup\n\nReturns detailed results including the node title, associated tags, file path, and a content snippet (truncated to ~300 characters) for each matching node. Useful for finding related information, exploring knowledge connections, and retrieving specific notes or concepts from your knowledge base."
- :args        '((:name "query"
-                :type string
-                :description "Search Query"))
+ :description
+ "Search org-roam nodes by title, tags, or content with optional pagination.
+Defaults to showing the first 10 hits."
+ :args        '((:name "query"       :type string  :description "Search string")
+                (:name "begin_range" :type integer :description "One-based start index" :optional t)
+                (:name "end_range"   :type integer :description "One-based end index"   :optional t))
  :category    "memory")
 
 (register-gptel-tool "search_memory")
