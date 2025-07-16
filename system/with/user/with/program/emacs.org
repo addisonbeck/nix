@@ -2344,7 +2344,7 @@ Memory types:
 - **Reflective** — Model’s self-feedback (e.g. “I misjudged that search path”)
 - **Reference** — Links to external sources or memory nodes
 
-Write clearly. Think relationally."
+Write clearly. Think relationally. When creating a new node always output its id, title, and file path to the user"
  :args        '((:name "title"
                       :type string)
                  (:name "content"
