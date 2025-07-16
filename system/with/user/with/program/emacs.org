@@ -2388,6 +2388,41 @@ Write clearly. Think relationally."
 (register-gptel-tool "read_memory_node_by_id")
 #+end_src
 
+** Add a new backlink
+
+#+begin_src emacs-lisp
+(defun my/org-roam-add-backlink (src-id tgt-id &optional link-text)
+  "In SRC-ID node, append a backlink to TGT-ID. Optional LINK-TEXT."
+  (let* ((src-node (org-roam-node-from-id src-id))
+         (tgt-node (org-roam-node-from-id tgt-id)))
+    (unless (and src-node tgt-node)
+      (error "Source or target node not found"))
+    (with-current-buffer (find-file-noselect (org-roam-node-file src-node))
+      (save-excursion
+        (goto-char (org-roam-node-point src-node))
+        (org-end-of-subtree t)
+        (forward-line)
+        (let ((link (format "[[id:%s][%s]]"
+                            tgt-id
+                            (or link-text (org-roam-node-title tgt-node)))))
+          (insert link "\n")))
+      (save-buffer))
+    (message "Backlink added from %s to %s"
+             (org-roam-node-title src-node)
+             (org-roam-node-title tgt-node))))
+
+(gptel-make-tool
+ :name        "add_memory_backlink"
+ :function    #'my/org-roam-add-backlink
+ :description "Add an Org-roam backlink in a source node (by ID) pointing to a target node (by ID). Optional custom link text."
+ :args        '((:name "src_id" :type string :description "Source node Roam ID")
+                (:name "tgt_id" :type string :description "Target node Roam ID")
+                (:name "link_text" :type string :optional t :description "Custom link text"))
+ :category    "memory")
+
+(register-gptel-tool "add_memory_backlink")
+#+end_src
+
 * Aidermacs
 
 #+begin_src emacs-lisp
