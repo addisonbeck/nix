@@ -2166,34 +2166,6 @@ This works but I'm using the fetch mcp server
 (register-gptel-tool "org_agenda_daily")
 #+end_src
 
-** GPTel Org Roam Node Content Tool
-#+begin_src emacs-lisp  :tangle no
-(defun my/gptel-org-roam-node-content (title)
-  "Return the full content of an org-roam node by TITLE."
-  (require 'org-roam)
-  (let* ((node (org-roam-node-read nil nil title t))
-         (file (org-roam-node-file node))
-         (pos (org-roam-node-point node)))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (goto-char pos)
-      (let ((begin (point))
-            (end (progn (org-end-of-subtree t) (point))))
-        (buffer-substring-no-properties begin end)))))
-
-(gptel-make-tool
- :name "org_roam_node_content"
- :function #'my/gptel-org-roam-node-content
- :description "Fetch the full content of an org-roam node by its TITLE.
-Returns the entire subtree content including properties and content."
- :args '((:name "title"
-               :type string
-               :description "Title of the org-roam node to fetch"))
- :category "notes")
-
-(register-gptel-tool "org_roam_node_content")
-#+end_src
-
 
 ** Run Terminal Command
 #+begin_src emacs-lisp
@@ -2277,7 +2249,6 @@ Returns the entire subtree content including properties and content."
 #+end_src
 
 * GPTel and Org Roam Integration
-
 ** Reading Notes
 
 #+begin_src emacs-lisp 
@@ -2393,6 +2364,28 @@ Write clearly. Think relationally."
  :category    "memory")
 
 (register-gptel-tool "create_memory")
+#+end_src
+
+** GPTel Org Roam Node Content Tool
+#+begin_src emacs-lisp  
+(defun my/gptel-org-roam-node-content-by-id (id)
+  "Return subtree content of an org-roam node by Roam ID."  
+  (let ((node (org-roam-node-from-id id)))
+    (unless node (error "No node with ID=%s" id))
+    (with-temp-buffer
+      (insert-file-contents (org-roam-node-file node))
+      (org-mode)
+      (goto-char (org-roam-node-point node))
+      (buffer-substring-no-properties
+       (point)
+       (progn (org-end-of-subtree t) (point))))))
+(gptel-make-tool
+ :name "read_memory_node_by_id"
+ :function #'my/gptel-org-roam-node-content-by-id
+ :description "Fetch full content of an org-roam node by its Roam ID."
+ :args '((:name "id" :type string :description "Roam ID"))
+ :category "memory")
+(register-gptel-tool "read_memory_node_by_id")
 #+end_src
 
 * Aidermacs
