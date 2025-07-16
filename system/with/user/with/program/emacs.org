@@ -2428,6 +2428,39 @@ Write clearly. Think relationally. When creating a new node always output its id
                 (:name "link_text" :type string :optional t :description "Custom link text"))
  :category    "memory")
 
+
+** Identify Orphaned Memory Nodes
+#+begin_src emacs-lisp
+(defun my/gptel-identify-orphaned-memory-nodes (placeholder)
+  "Return a list of Org-roam nodes without any backlinks (orphans).
+Provides each node as a plist with :id, :title, and :file."  
+  (let* ((nodes (org-roam-db-query [:select id title file :from nodes]))
+         (links (org-roam-db-query [:select source dest :from links]))
+         ;; Compute IDs of nodes that never appear as a link destination
+         (orphan-ids (seq-difference
+                      (mapcar (lambda (n) (plist-get n :id)) nodes)
+                      (mapcar (lambda (l) (plist-get l :dest)) links)))
+         ;; Filter the node list to include only orphans
+         (orphans (seq-filter (lambda (n)
+                                (member (plist-get n :id) orphan-ids))
+                              nodes)))
+    ;; Return uniform plists for each orphaned node
+    (mapcar (lambda (n)
+              (list :id    (plist-get n :id)
+                    :title (plist-get n :title)
+                    :file  (plist-get n :file)))
+            orphans)))
+
+(gptel-make-tool
+ :name "identify_orphaned_memory_nodes"
+ :function #'my/gptel-identify-orphaned-memory-nodes
+ :description "Lists all Org-roam nodes with zero backlinks, returning their ID, title, and file path."
+ :args '((:name "placeholder" :type string :optional t))
+ :category "memory")
+
+(register-gptel-tool "identify_orphaned_memory_nodes")
+#+end_src
+
 (register-gptel-tool "add_memory_backlink")
 #+end_src
 
