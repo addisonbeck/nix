@@ -1628,7 +1628,7 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (use-package gruvbox-theme
     :ensure t
     :config
-    (load-theme 'gruvbox-light-hard t))
+    (load-theme 'gruvbox-dark-hard t))
 
 
 (defvar my/current-theme 'gruvbox-light-hard
@@ -2427,41 +2427,28 @@ Write clearly. Think relationally. When creating a new node always output its id
                 (:name "tgt_id" :type string :description "Target node Roam ID")
                 (:name "link_text" :type string :optional t :description "Custom link text"))
  :category    "memory")
-
+(register-gptel-tool "add_memory_backlink")
+#+end_src
 
 ** Identify Orphaned Memory Nodes
 #+begin_src emacs-lisp
-(defun my/gptel-identify-orphaned-memory-nodes (placeholder)
-  "Return a list of Org-roam nodes without any backlinks (orphans).
-Provides each node as a plist with :id, :title, and :file."  
-  (let* ((nodes (org-roam-db-query [:select id title file :from nodes]))
-         (links (org-roam-db-query [:select source dest :from links]))
-         ;; Compute IDs of nodes that never appear as a link destination
-         (orphan-ids (seq-difference
-                      (mapcar (lambda (n) (plist-get n :id)) nodes)
-                      (mapcar (lambda (l) (plist-get l :dest)) links)))
-         ;; Filter the node list to include only orphans
-         (orphans (seq-filter (lambda (n)
-                                (member (plist-get n :id) orphan-ids))
-                              nodes)))
-    ;; Return uniform plists for each orphaned node
-    (mapcar (lambda (n)
-              (list :id    (plist-get n :id)
-                    :title (plist-get n :title)
-                    :file  (plist-get n :file)))
-            orphans)))
+(defun my/gptel-identify-orphaned-memory-nodes ()
+  "Return a list of plists (:id :title :file) for all org-roam nodes with zero links."
+  (mapcar (lambda (row)
+            (list :id    (elt row 0)
+                  :title (elt row 1)
+                  :file  (elt row 2)))
+          (org-roam-db-query
+           "SELECT nodes.id, nodes.title, nodes.file
+            FROM nodes
+            WHERE nodes.id NOT IN (SELECT source FROM links);")))
 
 (gptel-make-tool
  :name "identify_orphaned_memory_nodes"
  :function #'my/gptel-identify-orphaned-memory-nodes
- :description "Lists all Org-roam nodes with zero backlinks, returning their ID, title, and file path."
- :args '((:name "placeholder" :type string :optional t))
+ :description "Lists all Org-roam nodes with zero backlinks via SQL joins, returning their ID, title, and file path."
  :category "memory")
-
 (register-gptel-tool "identify_orphaned_memory_nodes")
-#+end_src
-
-(register-gptel-tool "add_memory_backlink")
 #+end_src
 
 * Path Copying Functions
