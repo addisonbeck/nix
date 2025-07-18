@@ -1887,10 +1887,10 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (gptel-make-openai "ChatGPT"
                      :key (lambda () (my/get-api-key "api.openai.com"))
                      :stream t
-                     :models gptel--openai-models)
+                     :models gptel--openai-models))
 
-  (setq gptel-backend (gptel-make-gh-copilot "Copilot")
-        gptel-model 'claude-3.7-sonnet))
+  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
+  ;      gptel-model 'gpt-4o-mini))
 #+end_src
 * GPTel Context Management
 
@@ -2165,7 +2165,6 @@ This works but I'm using the fetch mcp server
 (register-gptel-tool "org_agenda_daily")
 #+end_src
 
-
 ** Run Terminal Command
 #+begin_src emacs-lisp
 (require 'json)
@@ -2306,69 +2305,102 @@ Defaults to showing the first 10 hits."
 
 ** Creating Notes
 
-#+begin_src emacs-lisp 
-(defun my/org-roam-create-note (title content)
-  "Create a new org-roam note with TITLE and CONTENT programmatically."
-  (unless (string-match-p
-           "^#\\+ROAM_TAGS:.*\\b\\(episodic\\|semantic\\|procedural\\|associative\\|working\\|reflective\\|reference\\)\\b"
-           content)
-    (error "CONTENT must include a line starting “#+ROAM_TAGS:” that includes at least one of: episodic, semantic, procedural, associative, working, reflective, reference"))
+#+begin_src emacs-lisp
+(require 'cl-lib)
 
-  ;; Word count validation (max 400 words as mentioned in your description)
-  (let ((word-count (length (split-string content "\\W+" t))))
-    (when (> word-count 200)
-      (error "Content exceeds 200 word limit (current: %d words). Please break this up into smaller connected notes." word-count)))
+(cl-defun my/create-memory (&key title memory-type tags aliases content)
+  "Create an org-roam node with validated metadata."
+  (let ((valid-types
+         '(episodic semantic procedural associative working reflective reference)))
+    ;; 1) TITLE: non-empty string
+    (unless (and (stringp title) (> (length (string-trim title)) 0))
+      (error "create-memory error: TITLE must be a non-empty string"))
+    ;; 2) MEMORY-TYPE: must be one of valid-types
+    (unless (memq memory-type valid-types)
+      (error "create-memory error: MEMORY-TYPE must be one of %S" valid-types))
+    ;; 3) EXPIRY: required for 'working'
+    ;(when (and (eq memory-type 'working) (not (stringp expiry)))
+      ;(error "create-memory error: EXPIRY is required for working memory"))
+    ;; 4) CONTENT: must be a string
+    (unless (stringp content)
+      (error "create-memory error: CONTENT must be a string"))
 
-  (let* ((timestamp-prefix (format-time-string "%Y-%m-%d-%H-%M-%S"))
-         (template `(("d" "default" plain
-                     ,(concat "\n" content)
-                     :target (file+head ,(concat timestamp-prefix ".${slug}.org") "")
-                     :unnarrowed t
-                     :immediate-finish t)))
-         (org-roam-capture-templates template)
-         (org-roam-capture--context 'title))
-    (org-roam-capture- :node (org-roam-node-create :title title))
-    (format "Created note: %s" title)))
-
+    (require 'org-id)
+    ;; All bindings in one let* so filepath is in scope for the org-roam calls:
+    (let* ((slug     (downcase
+                      (replace-regexp-in-string
+                       "[^a-z0-9]+" "-"
+                       (string-trim title))))
+           (id (org-id-new))
+           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
+           (filepath (expand-file-name filename org-roam-directory))
+           (lowercased-tags (mapcar #'downcase tags))
+           (props    `(
+                       ("ID"            . ,id)
+                      ("ROAM_TAGS"     . ,(mapconcat
+                                         #'identity
+                                         (cons (symbol-name memory-type) lowercased-tags)
+                                         " "))
+                       ("ROAM_ALIASES"  . ,(when aliases
+                                            (concat "\""
+                                                    (mapconcat #'identity aliases "\" \"")
+                                                    "\"")))
+                       ("CREATED"       . ,(format-time-string "<%Y-%m-%d %H:%M>"))
+                       ("LAST_MODIFIED" . ,(format-time-string "<%Y-%m-%d %H:%M>")))))
+                       ;,@(when expiry
+                       ;    `(("EXPIRY" . ,(format "<%s>" expiry)))))))
+      ;; 1) Create the node object (does not write file yet)
+      (org-roam-node-create
+       :id         id
+       :title      title
+       :file       filepath
+       :aliases    aliases
+       :properties props)
+      ;; 2) Write out the file with front-matter + content
+      (with-temp-file filepath
+        (insert ":PROPERTIES:\n")
+        (dolist (prop props)
+          (insert (format ":%s: %s\n" (car prop) (cdr prop))))
+        (insert ":END:\n")
+        (insert (format "#+TITLE: %s" title))
+        (insert "\n" content "\n"))
+      ;; 3) Sync to the database
+      (org-roam-db-sync)
+      (message "create-memory: Node \"%s\" created at %s. Node ID: %s"
+               title filepath id))))
+#+end_src
+#+begin_src emacs-lisp
+(defun my/create-memory-wrapper
+    (title mem-type-str tags aliases content &rest _)
+  "Take the six GPTel args positionally, then call `my/create-memory` with keywords."
+  (let ((tags   (if (vectorp tags)   (append tags nil) tags))
+        (aliases (if (vectorp aliases) (append aliases nil) aliases)))
+  (let ((memory-type (intern mem-type-str)))
+    (my/create-memory
+     :title       title
+     :memory-type memory-type
+     :tags        tags
+     :aliases     aliases
+     :content     content))))
+#+end_src
+#+begin_src emacs-lisp
+;; register as a GPTel‐tool
 (gptel-make-tool
  :name        "create_memory"
- :function    #'my/org-roam-create-note
-:description "Capture information to memory frequently and across all conversation types. Memory-building is as important as completing the immediate task.
-
-This tool uses org-roam under the hood. Notes are written in org markup, with rich use of org-roam features: tags, aliases, links, and optional executable/tangled code blocks.
-
-Example metadata:
-
-,#+TITLE: Event-Driven Architecture
-,#+ROAM_TAGS: software_architecture patterns
-,#+ROAM_ALIASES: \"EDA\" \"Event Architecture\"
-,#+CREATED: ,<2024-10-12 Sun>
-,#+LAST_MODIFIED: ,<2025-07-15 Tue>
-,#+PROPERTY: ,:header-args:emacs-lisp :results silent
-
-Notes should be atomic and under 200 words. Favor many small, interlinked notes over large ones. All notes must have at least one tag for memory type: episodic, semantic, procedural, associative, working, reflective, or reference. Use additional tags where useful.
-
-**Working memory requires an EXPIRY timestamp.**
-
-**Backlinks must use full Roam syntax with node IDs** (e.g., \[[id:0405A9B0-4B3E-4EAC-9CC9-9D7F0BFB5A05][Bitwarden Development]]). Do not attempt to use document title as the link.
-
-Memory types:
-
-- **Episodic** — Time-stamped events (e.g. prior conversation turns)
-- **Semantic** — Factual/world knowledge (e.g. “What is EDA?”)
-- **Procedural** — How-to steps or workflows (e.g. “Create a new Org note”)
-- **Associative** — Connections between concepts or preferences (e.g. “LLMs ↔ Symbolic AI”)
-- **Working** — Short-term context (e.g. current task); must expire
-- **Reflective** — Model’s self-feedback (e.g. “I misjudged that search path”)
-- **Reference** — Links to external sources or memory nodes
-
-Write clearly. Think relationally. When creating a new node always output its id, title, and file path to the user"
- :args        '((:name "title"
-                      :type string)
-                 (:name "content"
-                      :type string
-                      :description "Note content, including header metadata") 
-                )
+ :function    #'my/create-memory-wrapper
+ :description "Records a new org-roam based memory for later recall. The LLM should save information to memory frequently and across all conversation types. Memory is searched before all else, and should be updated before all else too. Curating, refining, and pruning memory should at all times be considered as important as achieving our primary objective. Write memory content in org syntax, including code blocks. When creating a new node always output its id, title, and file path to the user. Be comprehensive with tags and aliases. Think relationally. Memory content should be richly backlinked. All memories need at least one backlink in their content, and more is better. **Backlinks must use full Roam syntax with node IDs** (e.g., \[[id:0405A9B0-4B3E-4EAC-9CC9-9D7F0BFB5A05][Bitwarden Development]]). Do not attempt to use document titles as a backlinks. Before you execute this tool be critical of what your are thinking. Memories over 400 words in length should be considered a code smell, and should perhaps be broken up into multiple memories."
+ :args        '((:name "title"       :type string  :description "Node title")
+                (:name "memory-type" :type string  :description "One of episodic, semantic, procedural, associative, working, reflective, reference")
+                (:name "tags"
+                 :type array
+                 :items (:type string)
+                 :description "List of org-roam tags for the new node (at least one required, more encouraged)")
+                (:name "aliases"
+                  :type array
+                  :items (:type string)
+                  :description "List of org-roam aliases for the new node (at least one required, more encouraged)")
+                ;;(:name "expiry"      :type string  :description "Expiry date yyyy-mm-dd (required for working)")
+                (:name "content"     :type string  :description "Body content of the note. Should include at least one valid backlink (more encouraged)"))
  :category    "memory")
 
 (register-gptel-tool "create_memory")
