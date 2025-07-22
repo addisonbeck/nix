@@ -1885,6 +1885,10 @@ Use functions in `my/prompt-placeholder-functions` for special placeholders."
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
         (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
 
+  (setq gptel-directives
+      '((default . "Use the read_memory_node_by_id tool to read memory id 27E07272-DCC1-4A18-851A-1B0F297F5A60. This will initlize context for your personality, the human user, and the availible tools. Do this before beginning to respond to the human user's first request.")
+        (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM writes in org markup, using org source blocks when writing code.")))
+
   (defun my/get-api-key (host)
     (when-let ((auth (car (auth-source-search
                            :host host
@@ -2426,16 +2430,18 @@ Defaults to showing the first 10 hits."
 ** GPTel Org Roam Node Content Tool
 #+begin_src emacs-lisp  
 (defun my/gptel-org-roam-node-content-by-id (id)
-  "Return subtree content of an org-roam node by Roam ID."  
+  "Return plist with subtree content and file path of an org-roam node by Roam ID."
   (let ((node (org-roam-node-from-id id)))
     (unless node (error "No node with ID=%s" id))
-    (with-temp-buffer
-      (insert-file-contents (org-roam-node-file node))
-      (org-mode)
-      (goto-char (org-roam-node-point node))
-      (buffer-substring-no-properties
-       (point)
-       (progn (org-end-of-subtree t) (point))))))
+    (let ((file (org-roam-node-file node)))
+      (with-temp-buffer
+        (insert-file-contents file)
+        (org-mode)
+        (goto-char (org-roam-node-point node))
+        (let ((content (buffer-substring-no-properties
+                        (point)
+                        (progn (org-end-of-subtree t) (point)))))
+          (list :content content :file file))))))
 (gptel-make-tool
  :name "read_memory_node_by_id"
  :function #'my/gptel-org-roam-node-content-by-id
@@ -3730,7 +3736,7 @@ It actually doesn't work lol
 
 It would be cool if this also had some kind of interactive starting directory / starting command thing, but alas.
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defun my/create-named-vterm ()
   "Prompt for a name, create a new vterm buffer called NAME-vterm, and open it."
   (interactive)
@@ -3740,7 +3746,7 @@ It would be cool if this also had some kind of interactive starting directory / 
     (switch-to-buffer buf-name)))
 #+end_src
 
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defun my/create-named-gptel ()
   "Prompt for a name, create a new gptel buffer called NAME-gptel, and open it."
   (interactive)
