@@ -1246,27 +1246,21 @@ org-edit-src-content-indentation 0)
 		(:name "Due Today" :deadline today)
 		;(:name "High Priority" :priority "A")
 		;(:name "Easy" :tag ("easy"))
+		(:name "High Priority (soon)" :and (:priority "A" :deadline future))
+	  (:name "Cooking (soon)" :and (:deadline future :tag "cooking"))
+	  (:name "Hard (soon)" :and (:deadline future :tag "hard"))
+		(:name "Quick (soon)" :and (:deadline future :tag "quick"))
+		(:name "Easy (soon)" :and (:deadline future :tag "easy"))
+	  (:name "Cleaning (soon)" :and (:deadline future :tag "cleaning"))
+		(:name "Code Review (soon)" :and (:category "code review" :deadline today))
+		(:name "Code Review Bunker (soon)" :and (:category "code review bunker" :deadline future))
+		(:name "Work (soon)" :and (:deadline future :tag "work"))
 		(:name "Due Soon" :deadline future)
 		(:name "Active Bugs" :category "bug")
 		(:name "Active Epics" :category "epic")
 		;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
 		;;(:name "Inbox" :category "inbox")
 		;;(:name "Poetry" :category "my poems")
-		(:name "Family Stuff" :category "family")
-		(:name "Holidays" :category "holiday")
-		(:name "The Garden" :category "the-garden")
-		(:name "Logs" :category "log")
-		(:name "Re: Me" :category "me")
-		(:name "Re: Emily" :category "emily")
-		(:name "Re: Lincoln" :category "lincoln")
-		(:name "Re: Nora" :category "nora")
-		(:name "Re: Fern" :category "fern")
-		(:name "Re: Harry" :category "harry")
-		(:name "AM Habits" :category "personal habits am")
-		(:name "Midday Habits" :category "personal habits midday")
-		(:name "PM Habits" :category "personal habits pm")
-		(:name "Any Time Habits" :category "personal habits any time")
-		(:name "Work Habits" :category "work habits")
 		(:auto-category t)
 		))))))
   ("w" "Weekly overview with super-agenda"
@@ -1406,10 +1400,33 @@ or a list of strings (for completion-based selection).")
         ;; Return the list with relative paths
         (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
     (user-error "my-notes-directory is not set")))
+    (defun my/get-memorynode-link ()
+      "Prompt for a Roam node and return it as a [[file:…#id][title]] link."
+      (let ((node (org-roam-node-read)))
+        (let ((org-roam-node-formatter
+               #'org-roam-node-format--file-link))   ; bind the formatter
+          (org-roam-node-formatted node))))
 
 (setq my/prompt-placeholder-functions
   (append my/prompt-placeholder-functions
           '(("[NOTES]" . my/get-notes-files))))
+#+end_src
+
+*** Searching for a memory file as a prompt variable
+#+begin_src emacs-lisp
+(defun my/get-memorynode-link ()
+  "Prompt for a Roam node and return an org link [[file:…::#ID][TITLE]]."
+  (let* ((node  (org-roam-node-read))
+         (id    (org-roam-node-id    node))
+         (title (org-roam-node-title node)))
+    (format "[[id:%s][%s]]"
+            id
+            title)))
+
+(setq my/prompt-placeholder-functions
+      (append
+       (assoc-delete-all "[MEMORYNODE]" my/prompt-placeholder-functions)
+       '(("[MEMORYNODE]" . my/get-memorynode-link))))
 #+end_src
 
 *** Replacing placeholder
@@ -3684,7 +3701,8 @@ It actually doesn't work lol
 (transient-define-prefix my/insert-menu ()
   "Transient menu for inserting stuff places (usually under the cursor)."
   ["Insert"
-   ("l" "LLM Prompt" my/search-llm-prompts)])
+   ("l" "LLM Prompt" my/search-llm-prompts)
+   ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
 
 ** The "Search" Menu
@@ -3703,16 +3721,41 @@ It actually doesn't work lol
    ("b" "Buffer" consult-buffer)
    ("f" "Find" consult-find)
    ("o" "Org Heading" consult-org-heading)
+   ("m" "Memory" org-roam-node-find)
    ("r" "Ripgrep" consult-ripgrep)
    ("n" "Notes" my/search-notes)])
 #+end_src
 
 ** The "Create" Menu
 
+It would be cool if this also had some kind of interactive starting directory / starting command thing, but alas.
+
+#+begin_src elisp
+(defun my/create-named-vterm ()
+  "Prompt for a name, create a new vterm buffer called NAME-vterm, and open it."
+  (interactive)
+  (let* ((name      (read-string "Enter vterm name: "))
+         (buf-name  (concat name "-vterm")))
+    (vterm buf-name)
+    (switch-to-buffer buf-name)))
+#+end_src
+
+#+begin_src elisp
+(defun my/create-named-gptel ()
+  "Prompt for a name, create a new gptel buffer called NAME-gptel, and open it."
+  (interactive)
+  (let* ((name      (read-string "Enter gptel name: "))
+         (buf-name  (concat name "-gptel")))
+    (gptel buf-name)
+    (switch-to-buffer buf-name)))
+#+end_src
+
 #+begin_src emacs-lisp
 (transient-define-prefix my/create-menu ()
   "Create menu"
   [["Create"
+    ("t" "terminal buffer" my/create-named-vterm)
+    ("g" "gptel buffer" my/create-named-gptel)
     ("c" "Capture" org-capture)]])
 #+end_src
 
