@@ -3696,6 +3696,7 @@ It actually doesn't work lol
    ("i" "Inboxes" my/inbox-menu)
    ("a" "Agenda" my/org-agenda-daily-dashboard)
    ("e" "Emacs Config" my/open-emacs-config)
+   ("g" "Follow link" org-open-at-point)
    ("p" "Prompts" my/open-prompts)
    ("b" "Budget" my/open-budget)
    ("l" "Log" my/open-log)])
@@ -4158,7 +4159,7 @@ It would be cool if this also had some kind of interactive starting directory / 
 ** Launching Transient Menus
 #+begin_src emacs-lisp
 (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
-(evil-define-key 'normal 'global (kbd "C-i") #'my/insert-menu)
+(evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
 (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
 (evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
@@ -4174,10 +4175,8 @@ These are usually called from a mode init hook
   (interactive)
   "Sets all my org mode specific keybindings"
   (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
-  (evil-define-key 'operator org-mode-map (kbd "<tab>") 'org-cycle-global)
-  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
-  ;; <TAB> in evil normal mode opens org-link at point
-  (evil-define-key 'normal org-mode-map (kbd "<tab>") #'org-open-at-point))
+  (evil-define-key 'normal org-mode-map (kbd "<backtab>") 'org-cycle-global)
+  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
 #+end_src
 
 *** Org Agenda Keymaps
@@ -4191,13 +4190,12 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; Using local-set-key ensures the binding takes precedence in the current buffer
   (local-set-key (kbd "C-b") #'my/create-menu)
   (local-set-key (kbd "C-g") #'my/go-menu)
-  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-<return>") #'my/insert-menu)
   (local-set-key (kbd "C-s") #'my/search-menu)
   
   ;; Also set the evil motion state map as a backup approach
   (evil-define-key '(normal visual motion) org-agenda-mode-map
     (kbd "C-g") #'my/go-menu
-    (kbd "C-i") #'my/insert-menu
     (kbd "C-s") #'my/search-menu
     (kbd "C-b") #'my/create-menu))
 #+end_src
@@ -4213,13 +4211,13 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; Using local-set-key ensures the binding takes precedence in the current buffer
   (local-set-key (kbd "C-b") #'my/create-menu)
   (local-set-key (kbd "C-g") #'my/go-menu)
-  (local-set-key (kbd "C-i") #'my/insert-menu)
+  (local-set-key (kbd "C-<return>") #'my/insert-menu)
   (local-set-key (kbd "C-s") #'my/search-menu)
   
   ;; Also set the evil motion state map as a backup approach
   (evil-define-key '(normal visual motion) magit-status-mode-map
     (kbd "C-g") #'my/go-menu
-    (kbd "C-i") #'my/insert-menu
+    (kbd "C-<return>") #'my/insert-menu
     (kbd "C-s") #'my/search-menu
     (kbd "C-b") #'my/create-menu)
 )
