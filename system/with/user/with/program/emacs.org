@@ -4175,7 +4175,9 @@ These are usually called from a mode init hook
   "Sets all my org mode specific keybindings"
   (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
   (evil-define-key 'operator org-mode-map (kbd "<tab>") 'org-cycle-global)
-  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
+  (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
+  ;; <TAB> in evil normal mode opens org-link at point
+  (evil-define-key 'normal org-mode-map (kbd "<tab>") #'org-open-at-point))
 #+end_src
 
 *** Org Agenda Keymaps
