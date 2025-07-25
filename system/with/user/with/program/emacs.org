@@ -2327,6 +2327,37 @@ Defaults to showing the first 10 hits."
 ** Creating Notes
 
 #+begin_src emacs-lisp
+(defun my/create-memory-interactive ()
+  "Interactively create a memory node via `my/create-memory' and open the file."
+  (interactive)
+  (let* ((title (read-string "Memory Title: "))
+         (memory-type
+          (intern (completing-read
+                   "Memory Type (episodic/semantic/procedural/associative/working/reflective/reference): "
+                   '(episodic semantic procedural associative working reflective reference)
+                   nil t)))
+         (tags
+          (split-string
+           (read-string "Tags (comma-separated): ") "," t "[ \t\n\r]+"))
+         (aliases
+          (split-string
+           (read-string "Aliases (comma-separated): ") "," t "[ \t\n\r]+"))
+         (content (read-string "Content (org syntax, at least one backlink): ")))
+    (let* ((res (my/create-memory
+                 :title title
+                 :memory-type memory-type
+                 :tags tags
+                 :aliases aliases
+                 :content content))
+           ;; 'res' is nil (the function doesn't return file path, so reconstruct)
+           (slug (downcase (replace-regexp-in-string "[^a-z0-9]+" "-" (string-trim title))))
+           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
+           (filepath (expand-file-name filename org-roam-directory)))
+      (find-file filepath))))
+#+end_src
+
+
+#+begin_src emacs-lisp
 (require 'cl-lib)
 
 (cl-defun my/create-memory (&key title memory-type tags aliases content)
@@ -2390,6 +2421,7 @@ Defaults to showing the first 10 hits."
       (message "create-memory: Node \"%s\" created at %s. Node ID: %s"
                title filepath id))))
 #+end_src
+
 #+begin_src emacs-lisp
 (defun my/create-memory-wrapper
     (title mem-type-str tags aliases content &rest _)
@@ -2404,6 +2436,7 @@ Defaults to showing the first 10 hits."
      :aliases     aliases
      :content     content))))
 #+end_src
+
 #+begin_src emacs-lisp
 ;; register as a GPTel‐tool
 (gptel-make-tool
