@@ -15,4 +15,5 @@ in {
   "homelab-grafana-admin-password.age".publicKeys = [me_key homelab_key];
   "homelab-adguard-admin-password.age".publicKeys = [me_key homelab_key];
   "homelab-vaultwarden-env-file.age".publicKeys = [me_key homelab_key];
+  "do-not-reply-email-password.age".publicKeys = [me_key homelab_key];
 }

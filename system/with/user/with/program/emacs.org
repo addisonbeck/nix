@@ -3796,6 +3796,7 @@ It would be cool if this also had some kind of interactive starting directory / 
   [["Create"
     ("t" "terminal buffer" my/create-named-vterm)
     ("g" "gptel buffer" my/create-named-gptel)
+    ("m" "memory" my/create-memory-interactive)
     ("c" "Capture" org-capture)]])
 #+end_src
 

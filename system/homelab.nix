@@ -534,4 +534,146 @@ in {
   };
 
   system.stateVersion = "24.11";
+
+  age.secrets.do-not-reply-email-password = {
+    file = ./with/user/with/secret/do-not-reply-email-password.age;
+  };
+
+  environment.etc."freshrss.recipe".text = ''
+    from calibre.web.feeds.news import BasicNewsRecipe
+    class FreshRSSRecipe(BasicNewsRecipe):
+        title = 'FreshRSS Digest'
+        oldest_article = 10
+        max_articles_per_feed = 50
+        auto_cleanup = True
+        ignore_duplicate_articles = {'title', 'url'}
+        remove_tags = [dict(name='iframe'), dict(name='video')]
+        browser_type = 'qt'
+        conversion_options = {
+          'base_font_size': 16
+        }
+        feeds = [
+            ('Wikipedia News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=5Xf0A2fxDBPkGMc1CQ7m6h&f=rss'),
+            ('Local News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2ypxFazPTg88WyAzuztQRN&f=rss'),
+            ('AP News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2n9Bmn0vxtWgJx6Y8PzjOi&f=rss'),
+            ('Bitwarden News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=57L3a8oIcNzNQLmnFkuF4S&f=rss'),
+            ('Hacker News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2tt7F0YwadNyfZQfh5FZvv&f=rss'),
+            ('Computer Science Blogs', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=DFnbwQpir2UzYaZ9v00cO&f=rss'),
+            ('Misc', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2ESHVeebkckacH24XNDxIv&f=rss')
+        ]
+  '';
+
+
+  environment.etc."Muttrc".text = ''
+    set ssl_starttls=yes
+    set ssl_force_tls=yes
+    set imap_user = "do-not-reply@addisonbeck.com"
+    set imap_pass = "`cat ${config.age.secrets.do-not-reply-email-password.path}`"
+    set from = "do-not-reply@addisonbeck.com"
+    set realname = "RSS Bot"
+
+    set folder = "imaps://box.addisonbeck.com:993"
+    set spoolfile = "+INBOX"
+    set smtp_url = "smtps://do-not-reply@addisonbeck.com@box.addisonbeck.com:465/"
+    set smtp_pass = "`cat ${config.age.secrets.do-not-reply-email-password.path}`"
+    set ssl_verify_dates = yes
+    # vim:ft=muttrc
+  '';
+
+  environment.systemPackages = [
+    pkgs.calibre
+    pkgs.mutt
+    pkgs.msmtp
+    pkgs.zip
+    (pkgs.writeShellScriptBin "rss-to-kindle-generate" ''
+      set -euo pipefail
+      mkdir -p /var/lib/rss-to-kindle
+      DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
+      EPUB="/var/lib/rss-to-kindle/freshrss_''${DATE}.epub"
+      ZIP="/var/lib/rss-to-kindle/freshrss_''${DATE}.zip"
+      ebook-convert /etc/freshrss.recipe "''${EPUB}" -v
+      zip -j "$ZIP" "$EPUB"  # -j strips paths
+
+      # MAX_SIZE=20971520  # 20 MB
+      MAX_SIZE=52428800  # 50 MB
+      ACTUAL_SIZE=$(stat -c%s "''${ZIP}")
+
+      if [ "$ACTUAL_SIZE" -gt "$MAX_SIZE" ]; then
+        echo "ERROR: ''${ZIP} is too large (''${ACTUAL_SIZE} bytes), over 50MB limit." >&2
+        rm "''${EPUB}" "''${ZIP}"
+        exit 1
+      fi
+
+      echo "FreshRSS Digest for ''${DATE}" | mutt -F /etc/Muttrc -a "''${ZIP}" -s "FreshRSS Digest" -- us+amazon_WGMxDE@kindle.com
+      rm "''${EPUB}" "''${ZIP}"
+    '')
+    (pkgs.writeShellScriptBin "wikipedia-to-kindle" ''
+      set -euo pipefail
+      if [ "$#" -ne 1 ]; then
+        echo "Usage: wikipedia-to-kindle <wikipedia-article-url>" >&2
+        exit 2
+      fi
+      URL="$1"
+      mkdir -p /var/lib/wikipedia-to-kindle
+      DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
+      EPUB="/var/lib/wikipedia-to-kindle/article_''${DATE}.epub"
+
+      # Download Wikipedia article HTML
+      TMPHTML="/var/lib/wikipedia-to-kindle/article_''${DATE}.html"
+      curl -L "$URL" -o "$TMPHTML"
+
+      # Convert HTML to EPUB (preserves images, tables, refs)
+      #ebook-convert "$TMPHTML" "$EPUB" --enable-heuristics --pretty-print --chapter --no-default-epub-cover
+      ebook-convert "$TMPHTML" "$EPUB" 
+
+      MAX_SIZE=52428800  # 50 MB
+      ACTUAL_SIZE=$(stat -c%s "''${EPUB}")
+      if [ "$ACTUAL_SIZE" -gt "$MAX_SIZE" ]; then
+        echo "ERROR: $ZIP is too large ("$ACTUAL_SIZE" bytes), over 50MB limit." >&2
+        rm "$EPUB" "$TMPHTML"
+        exit 1
+      fi
+
+      SUBJECT="Wikipedia Article for Kindle ($DATE)"
+      echo "Wikipedia article sent to Kindle." | mutt -F /etc/Muttrc -a "''${EPUB}" -s "$SUBJECT" -- us+amazon_WGMxDE@kindle.com
+
+      rm "$EPUB" "$TMPHTML"
+    '')
+  ];
+
+  time.timeZone = "America/New_York";
+  systemd.timers.rss-to-kindle-generate = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "03:00";
+      Persistent = true;
+      AccuracySec = "1h";
+      Unit = "rss-to-kindle-generate.service";
+    };
+  };
+
+  systemd.services.rss-to-kindle-failure-notify = {
+    description = "Send error notification if rss-to-kindle-generate fails";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = ''
+        /bin/sh -c '
+          subject="RSS-to-Kindle FAILED on $(hostname) at $(date)"
+          body=$(journalctl -u rss-to-kindle-generate --since "1 hour ago")
+          echo "$body" | mutt -F /etc/Muttrc -s "$subject" -- sendtokindleerrors@addisonbeck.com
+        '
+      '';
+    };
+  };
+
+  systemd.services.rss-to-kindle-generate = {
+    description = "Generate and send FreshRSS digest to Kindle";
+    script = "/run/current-system/sw/bin/rss-to-kindle-generate";
+    serviceConfig = {
+      User = "root";
+      Type = "oneshot";
+    };
+    onFailure = [ "rss-to-kindle-failure-notify.service" ];
+  };
 }
+
