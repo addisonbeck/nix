@@ -102,7 +102,7 @@
           inherit inputs outputs nixpkgs rootPath conf;
         };
         modules = [
-          ./system/homelab.nix
+          ./system/homelab
           agenix.nixosModules.default
         ];
       };
