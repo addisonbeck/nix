@@ -13,6 +13,10 @@
         enabledCollectors = ["systemd"];
         port = 9100;
       };
+      systemd = {
+        enable = true;
+        port = 9101;
+      };
     };
     scrapeConfigs = [
       {
