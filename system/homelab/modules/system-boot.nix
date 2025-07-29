@@ -9,6 +9,10 @@
     nameservers = ["127.0.0.1"];
   };
 
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDzB4dtCS3BQt+vO12ZLa1UP1WfSB1MEhf7CM/ZjyvJm Shortcuts on Dad’s iPhone"
+  ];
+
   services.openssh = {
     enable = true;
     settings = {

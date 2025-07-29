@@ -1,87 +1,49 @@
-{ pkgs, ... }: {
+{ pkgs, config, ... }:
+let
+  wikiReaderPlugin = pkgs.runCommand "wiki-reader-calibre-plugin" {
+    pluginZip = ./Wiki_Reader.zip;
+  } ''
+    mkdir -p $out
+    cp $pluginZip $out/Wiki_Reader.zip
+  '';
+
+  kindle-send-source = builtins.readFile (pkgs.replaceVars ./kindle-send.sh {
+      mutt = "${pkgs.mutt}/bin/mutt";
+      zip = "${pkgs.zip}/bin/zip";
+      # muttrc is configured in homelab/modules/mutt
+      # maybe I should really have a specific rc for these operations
+      muttrc = "${config.environment.etc."Muttrc".source}";
+      sendTo = "us+amazon_WGMxDE@kindle.com";
+      epubcheck = "${pkgs.epubcheck}/bin/epubcheck";
+  });
+  kindle-send = pkgs.writeShellScriptBin "kindle-send" kindle-send-source;
+
+  rss-to-kindle-source = builtins.readFile (pkgs.replaceVars ./rss-to-kindle-generate.sh {
+    bash = "${pkgs.bash}/bin/bash";
+    kindle-send = "${kindle-send}/bin/kindle-send";
+    ebook-convert = "${pkgs.calibre}/bin/ebook-convert";
+  });
+
+  rss-to-kindle-generate = pkgs.writeShellScriptBin "rss-to-kindle-generate" rss-to-kindle-source;
+  wikipedia-to-kindle-source = builtins.readFile (pkgs.replaceVars ./wikipedia-to-kindle-generate.sh {
+    bash = "${pkgs.bash}/bin/bash";
+    kindle-send = "${kindle-send}/bin/kindle-send";
+    ebook-convert = "${pkgs.calibre}/bin/ebook-convert";
+  });
+  wikipedia-to-kindle-generate = pkgs.writeShellScriptBin "wikipedia-to-kindle-generate" wikipedia-to-kindle-source;
+in
+{
   environment.systemPackages = [
     pkgs.calibre
+    pkgs.epubcheck
     pkgs.zip
-    (pkgs.writeShellScriptBin "rss-to-kindle-generate" ''
-      set -euo pipefail
-      mkdir -p /var/lib/rss-to-kindle
-      DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
-      ebook-convert /etc/freshrss.recipe "/var/lib/rss-to-kindle/freshrss_''${DATE}.epub" -vv
-      echo "FreshRSS Digest for ''${DATE}" | mutt -F /etc/Muttrc -a "/var/lib/rss-to-kindle/freshrss_''${DATE}.epub" -s "FreshRSS Digest" -- us+amazon_WGMxDE@kindle.com
-      rm /var/lib/rss-to-kindle/freshrss_''${DATE}.epub
-    '')
-    (pkgs.writeShellScriptBin "wikipedia-rss-to-kindle-generate" ''
-      set -euo pipefail
-      mkdir -p /var/lib/rss-to-kindle
-      DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
-      ebook-convert /etc/wikipedia-freshrss.recipe "/var/lib/rss-to-kindle/wikipedia-freshrss_''${DATE}.epub" -vv
-      echo "FreshRSS Digest for ''${DATE}" | mutt -F /etc/Muttrc -a "/var/lib/rss-to-kindle/wikipedia-freshrss_''${DATE}.epub" -s "Wikipedia Digest" -- us+amazon_WGMxDE@kindle.com
-      rm /var/lib/rss-to-kindle/wikipedia-freshrss_''${DATE}.epub
-    '')
-    (pkgs.writeShellScriptBin "wikipedia-to-kindle" ''
-      set -euo pipefail
-      if [ "$#" -ne 1 ]; then
-        echo "Usage: wikipedia-to-kindle <wikipedia-article-url>" >&2
-        exit 2
-      fi
-      URL="$1"
-      mkdir -p /var/lib/wikipedia-to-kindle
-      DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
-      EPUB="/var/lib/wikipedia-to-kindle/article_''${DATE}.epub"
-
-      # Download Wikipedia article HTML
-      TMPHTML="/var/lib/wikipedia-to-kindle/article_''${DATE}.html"
-      curl -L "$URL" -o "$TMPHTML"
-
-      # Convert HTML to EPUB (preserves images, tables, refs)
-      #ebook-convert "$TMPHTML" "$EPUB" --enable-heuristics --pretty-print --chapter --no-default-epub-cover
-      ebook-convert "$TMPHTML" "/var/lib/wikipedia-to-kindle/article_''${DATE}.epub" -vv
-
-      SUBJECT="Wikipedia Article for Kindle ($DATE)"
-      echo "Wikipedia article sent to Kindle." | mutt -F /etc/Muttrc -a "/var/lib/wikipedia-to-kindle/article_''${DATE}.epub" -s "$SUBJECT" -- us+amazon_WGMxDE@kindle.com
-    '')
+    kindle-send
+    rss-to-kindle-generate
+    wikipedia-to-kindle-generate
   ];
 
-  environment.etc."freshrss.recipe".text = ''
-    from calibre.web.feeds.news import BasicNewsRecipe
-    class FreshRSSRecipe(BasicNewsRecipe):
-        title = 'FreshRSS Digest'
-        oldest_article = 10
-        max_articles_per_feed = 50
-        auto_cleanup = True
-        ignore_duplicate_articles = {'title', 'url'}
-        remove_tags = [dict(name='iframe'), dict(name='video')]
-        browser_type = 'qt'
-        conversion_options = {
-          'base_font_size': 16
-        }
-        feeds = [
-            ('Hacker News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2tt7F0YwadNyfZQfh5FZvv&f=rss'),
-            ('AP News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2n9Bmn0vxtWgJx6Y8PzjOi&f=rss'),
-            ('Local News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2ypxFazPTg88WyAzuztQRN&f=rss')
-        ]
-  '';
-            #('Bitwarden News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=57L3a8oIcNzNQLmnFkuF4S&f=rss'),
-            #('Computer Science Blogs', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=DFnbwQpir2UzYaZ9v00cO&f=rss'),
-            #('Misc', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=2ESHVeebkckacH24XNDxIv&f=rss')
-
-  environment.etc."wikipedia-freshrss.recipe".text = ''
-    from calibre.web.feeds.news import BasicNewsRecipe
-    class FreshRSSRecipe(BasicNewsRecipe):
-        title = 'Wikipedia Featured Articles And News'
-        oldest_article = 10
-        max_articles_per_feed = 50
-        auto_cleanup = True
-        ignore_duplicate_articles = {'title', 'url'}
-        remove_tags = [dict(name='iframe'), dict(name='video')]
-        browser_type = 'qt'
-        conversion_options = {
-          'base_font_size': 16
-        }
-        feeds = [
-            ('Wikipedia News', 'https://homelab.tail357e32.ts.net/rss/api/query.php?user=me&t=5Xf0A2fxDBPkGMc1CQ7m6h&f=rss')
-        ]
-  '';
+  environment.etc."freshrss.recipe".text = builtins.readFile ./freshrss-recipe.py;
+  environment.etc."wikipedia.recipe".text = builtins.readFile ./wikipedia-recipe.py;
 
   systemd.timers.rss-to-kindle-generate = {
     wantedBy = [ "timers.target" ];
