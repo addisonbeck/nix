@@ -11,7 +11,7 @@
     ./modules/adguardhome.nix
     ./modules/freshrss.nix
     ./modules/vaultwarden.nix
-    ./modules/mutt.nix
+    ../modules/automated-emailing
     ./modules/calibre/default.nix
     ./modules/nginx.nix
   ];

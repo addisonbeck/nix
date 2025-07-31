@@ -124,7 +124,10 @@
             config.allowUnfree = true;
           };
         };
-        modules = [./system/bw.nix];
+        modules = [
+          agenix.darwinModules.default
+          ./system/bw.nix
+        ];
       };
       air = nix-darwin.lib.darwinSystem {
         system = "aarch64-darwin";

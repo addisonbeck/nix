@@ -678,7 +678,9 @@ Possible values:
 *** Inline Images
 Automatically displays inline images when opening org files.
 
-#+begin_src emacs-lisp
+I noticed that this started creating weird deadlock errors on my images and so I've turned it off
+
+#+begin_src emacs-lisp :tangle no
   (setq org-startup-with-inline-images t)
 #+end_src
 
@@ -1234,11 +1236,10 @@ Don't show DONE items in the agenda
 			(:name "Today's Schedule"
 			       :time-grid t)
 			(:name "High Priority" :and (:priority "A" :deadline today))
-			(:name "Overdue" :deadline past)
+			(:name "Cooking" :and (:deadline today :tag "cooking"))
 			(:name "Code Review" :and (:category "code review" :deadline today))
 			(:name "Code Review Bunker" :and (:category "code review bunker" :deadline today))
 			(:name "Work" :and (:deadline today :tag "work"))
-			(:name "Cooking" :and (:deadline today :tag "cooking"))
 			(:name "Hard" :and (:deadline today :tag "hard"))
 			(:name "Quick" :and (:deadline today :tag "quick"))
 			(:name "Easy" :and (:deadline today :tag "easy"))
@@ -1525,6 +1526,53 @@ Don't show DONE items in the agenda
     (with-current-buffer (marker-buffer insert-marker)
       (goto-char (marker-position insert-marker))
       (insert (or filled raw)))))
+#+end_src
+
+** Org to epub
+#+begin_src emacs-lisp :tangle no
+(defun my-org-roam-to-epub ()
+  "Convert current Org-roam file and its linked Roam ID files into a single EPUB using Pandoc."
+  (interactive)
+  (unless (and buffer-file-name (featurep 'org-roam))
+    (error "Must be visiting a file with Org-roam loaded"))
+  (let* ((base-file (file-truename buffer-file-name))
+         (base-dir (file-name-directory base-file))
+         (css-file (expand-file-name "~/Documents/epub-style.css"))
+         (meta-file (expand-file-name "~/Documents/epub-meta.yaml"))
+         (epub-file (concat (file-name-sans-extension base-file) ".epub"))
+
+         ;; Collect all `id:` links and resolve to file paths
+         (id-files
+          (save-excursion
+            (goto-char (point-min))
+            (let (files)
+              (while (re-search-forward "\\[\\[id:\\([A-Za-z0-9-]+\\)\\]" nil t)
+                (let* ((id (match-string 1))
+                       (file (org-roam-node-file (org-roam-node-from-id id))))
+                  (when file (push (file-truename file) files))))
+              (delete-dups (cons base-file files)))))
+
+         ;; Build pandoc command
+         (command (mapconcat #'identity
+                   (remove nil
+                    (append
+                     '("pandoc"
+                       "--from=org"
+                       "--to=epub3"
+                       "--toc"
+                       "--toc-depth=2"
+                       "--epub-chapter-level=1")
+                     (when (file-exists-p css-file)
+                       (list (concat "--epub-stylesheet=" (shell-quote-argument css-file))))
+                     (when (file-exists-p meta-file)
+                       (list (shell-quote-argument meta-file)))
+                     (mapcar #'shell-quote-argument id-files)
+                     (list "-o" (shell-quote-argument epub-file))))
+                   " ")))
+
+    ;; Run the command in a compilation buffer
+    (compilation-start command nil
+                       (lambda (_) "*pandoc-epub*"))))
 #+end_src
 
 * GitHub Integration
