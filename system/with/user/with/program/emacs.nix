@@ -166,13 +166,15 @@ in {
           mini-frame
           org-roam
           org-roam-ui
+          #pkgs.aspell
+          pkgs.aspellDicts.en
         ];
     };
   };
 
   home.packages = with pkgs; [
     aspell
-    aspellDicts.en
+    #aspellDicts.en
     pandoc
     nixd
     nodePackages.typescript
@@ -193,14 +195,14 @@ in {
     emacs-inbox-capture-script
     mermaid-cli
     puppeteer-cli-with-chrome
-    aspell
-    aspellDicts.en
     mpv-unwrapped
     yt-dlp
     ffmpeg
     ledger
     hledger
   ];
+
+  home.sessionVariables.ASPELL_DICT_DIR = "${pkgs.aspellDicts.en}/lib/aspell";
 
   home.file.".emacs.d/diary".text = ''
     # This is my diary file

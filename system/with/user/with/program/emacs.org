@@ -1755,18 +1755,21 @@ Don't show DONE items in the agenda
 #+end_src
 
 * Spell Checking
-#+begin_src emacs-lisp :tangle no
-  (use-package flyspell
-    :ensure nil 
-    :config
-    (setq ispell-program-name "aspell")
-    (add-hook 'text-mode-hook #'flyspell-mode)
-    (add-hook 'prog-mode-hook #'flyspell-prog-mode))
+jjfkdsa
+#+begin_src emacs-lisp 
+(use-package flyspell
+  :ensure nil 
+  :config
+  (setq ispell-program-name "aspell")
+  (add-hook 'text-mode-hook #'flyspell-mode)
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode))
 
-  (use-package flyspell-correct
-    :ensure nil 
-    :config
-    (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
+(setq ispell-personal-dictionary "~/nix/system/with/user/with/program/emacs-dictionary.pws")
+
+(use-package flyspell-correct
+  :ensure nil 
+  :config
+  (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
 #+end_src
 * Olivetti
 #+begin_src emacs-lisp
@@ -4397,31 +4400,46 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 #+end_src
 * In Progress Experiments
-#+begin_src elisp
+#+begin_src emacs-lisp
 (defun my/wikipedia-search (search-term)
-  "Search Wikipedia for SEARCH-TERM and display matching URLs in a buffer."
+  "Prompt for SEARCH-TERM, select an article using consult, and return its URL."
   (interactive "sSearch Wikipedia for: ")
-  (let* ((url-request-method "GET")
-         (search-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=10&namespace=0&format=json"
+  (let* ((search-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=15&namespace=0&format=json"
                              (url-hexify-string search-term)))
-         (buffer (url-retrieve-synchronously search-url)))
+         (buffer (url-retrieve-synchronously search-url t t 5))
+         articles result-alist selected)
+    (unless buffer (error "Failed to fetch Wikipedia results"))
     (with-current-buffer buffer
       (goto-char (point-min))
-      (re-search-forward "^$" nil 'move) ;; Skip HTTP headers
-      (let* ((json-array-type 'list)
-             (json-object-type 'alist)
-             (data (json-read))
-             (results (nth 3 data))) ;; URLs are the 4th item
-        (with-output-to-temp-buffer "*Wikipedia Search Results*"
-          (if results
-              (progn
-                (princ (format "Search results for: %s\n\n" search-term))
-                (dolist (url results)
-                  (princ (format "%s\n" url))))
-            (princ "No results found.")))))
-    (kill-buffer buffer)))
-#+end_src
+      (re-search-forward "^$" nil t) ; Skip HTTP headers
+      (let* ((json-array-type 'list)   ;; <---  Add THIS
+             (json-object-type 'alist) ;; <--- (optional: consistent behavior)
+             (json-data (json-read))
+             (titles (nth 1 json-data))
+             (desc   (nth 2 json-data))
+             (urls   (nth 3 json-data)))
+        (setq articles
+              (cl-mapcar (lambda (title desc url)
+                           (cons (format "%s — %s" title (or desc "")) url))
+                         titles desc urls))))
+    (kill-buffer buffer)
+    (setq result-alist articles)
+    (setq selected (consult--read (mapcar #'car result-alist)
+                                  :prompt "Pick article: "
+                                  :require-match t))
+    (let ((url (cdr (assoc selected result-alist))))
+      (when (called-interactively-p 'any)
+        (when url (browse-url url)))
+      url)))
 
+(defun wikipedia-send-to-kindle ()
+  "Prompt for a Wikipedia search, select an article, and send its URL to Kindle."
+  (interactive)
+  (let* ((search-term (read-string "Search Wikipedia for: "))
+         (url (my/wikipedia-search search-term)))
+    (when url
+      (shell-command (format "wikipedia-to-kindle-generate %s" (shell-quote-argument url))))))
+#+end_src
 
 * Config Reloading
 #+begin_src emacs-lisp
