@@ -1176,136 +1176,156 @@ Don't show DONE items in the agenda
 
 ** Agenda Configuration
 #+begin_src emacs-lisp
-  (setq org-agenda-block-separator nil)
-  (setq org-agenda-window-setup 'current-window)
-  (setq org-agenda-timegrid-use-ampm t)
-  (setq org-agenda-time-leading-zero t)
-  (setq org-agenda-todo-keyword-format "%s")
-  (setq org-agenda-include-diary t)
-  (setq org-agenda-hide-tags-regexp ".")
+(setq org-agenda-block-separator nil)
+(setq org-agenda-window-setup 'current-window)
+(setq org-agenda-timegrid-use-ampm t)
+(setq org-agenda-time-leading-zero t)
+(setq org-agenda-todo-keyword-format "%s")
+(setq org-agenda-include-diary t)
+(setq org-agenda-hide-tags-regexp ".")
 
-  ;; Allow creating new nodes (including new files) when refiling
-  (setq org-refile-allow-creating-parent-nodes 'confirm)
+;; Allow creating new nodes (including new files) when refiling
+(setq org-refile-allow-creating-parent-nodes 'confirm)
 
-  ;; Use the full outline paths for refile targets
-  (setq org-refile-use-outline-path nil)
+;; Use the full outline paths for refile targets
+(setq org-refile-use-outline-path nil)
 
-  ;; Completes in steps so you can select a heading after selecting the file
-  (setq org-outline-path-complete-in-steps nil)
+;; Completes in steps so you can select a heading after selecting the file
+(setq org-outline-path-complete-in-steps nil)
 
-  (require 'diary-lib)
+(require 'diary-lib)
 
-  (use-package org-super-agenda
-    :after org-agenda
-    :config
-    (setq org-super-agenda-header-map nil)  
-    (setq org-super-agenda-header-properties nil)
-    (org-super-agenda-mode))
+(use-package org-super-agenda
+  :after org-agenda
+  :config
+  (setq org-super-agenda-header-map nil)  
+  (setq org-super-agenda-header-properties nil)
+  (org-super-agenda-mode))
 
-  (setq warning-suppress-types '((org-element)))
+(setq warning-suppress-types '((org-element)))
 
-  (defun my/inherit-meeting-times ()
-    "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
-    (interactive)
-    (org-map-entries
-     (lambda ()
-       (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
-		  (org-get-todo-state))
-	 (let ((timestamp nil))
-	   (save-excursion
-	     (when (org-up-heading-safe)
-	       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
-	   (when timestamp
-	     (org-schedule nil timestamp)))))
-     "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
+(defun my/inherit-meeting-times ()
+  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
+  (interactive)
+  (org-map-entries
+   (lambda ()
+     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
+	  (org-get-todo-state))
+ (let ((timestamp nil))
+   (save-excursion
+     (when (org-up-heading-safe)
+       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
+   (when timestamp
+     (org-schedule nil timestamp)))))
+   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
 
-  (setq org-agenda-custom-commands
-	'(("d" "daily dashboard"
-	   (
-	    (tags "+CATEGORY=\"inbox\"" 
-		  ((org-agenda-overriding-header "Inbox")))
-	    (agenda "Schedule and Habits"
-		    ((org-agenda-span 'day)
-		     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-		     (org-agenda-overriding-header " ")
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Meeting Notes" :category "meeting-notes")
-			(:name "Today's Schedule"
-			       :time-grid t)
-			(:name "High Priority" :and (:priority "A" :deadline today))
-			(:name "Cooking" :and (:deadline today :tag "cooking"))
-			(:name "Code Review" :and (:category "code review" :deadline today))
-			(:name "Code Review Bunker" :and (:category "code review bunker" :deadline today))
-			(:name "Work" :and (:deadline today :tag "work"))
-			(:name "Hard" :and (:deadline today :tag "hard"))
-			(:name "Quick" :and (:deadline today :tag "quick"))
-			(:name "Easy" :and (:deadline today :tag "easy"))
-			(:name "Cleaning" :and (:deadline today :tag "cleaning"))
-			(:name "Due Today" :deadline today)
-					  ;(:name "High Priority" :priority "A")
-					  ;(:name "Easy" :tag ("easy"))
-			(:name "High Priority (soon)" :and (:priority "A" :deadline future))
-			(:name "Cooking (soon)" :and (:deadline future :tag "cooking"))
-			(:name "Hard (soon)" :and (:deadline future :tag "hard"))
-			(:name "Quick (soon)" :and (:deadline future :tag "quick"))
-			(:name "Easy (soon)" :and (:deadline future :tag "easy"))
-			(:name "Cleaning (soon)" :and (:deadline future :tag "cleaning"))
-			(:name "Code Review (soon)" :and (:category "code review" :deadline today))
-			(:name "Code Review Bunker (soon)" :and (:category "code review bunker" :deadline future))
-			(:name "Work (soon)" :and (:deadline future :tag "work"))
-			(:name "Due Soon" :deadline future)
-			(:name "Active Bugs" :category "bug")
-			(:name "Active Epics" :category "epic")
-			;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
-			;;(:name "Inbox" :category "inbox")
-			;;(:name "Poetry" :category "my poems")
-			(:auto-category t)
-			))))))
-	  ("w" "Weekly overview with super-agenda"
-	   ((agenda ""
-		    ((org-agenda-span 7)                      ;; Show 7 days
-		     (org-agenda-start-on-weekday nil)        ;; Start from current day
-		     (org-agenda-time-grid '((daily today require-timed)
-					     (800 1000 1200 1400 1600 1800 2000)
-					     "......" "----------------"))  ;; Time grid config
-		     (org-agenda-include-deadlines nil)       ;; No deadlines
-		     (org-agenda-skip-scheduled-if-done t)     
-		     (org-agenda-skip-deadline-if-done t)
-		     (org-agenda-skip-scheduled-delay-if-done t)
-		     (org-agenda-skip-function                ;; Skip scheduled items
-		      '(org-agenda-skip-entry-if 'scheduled 'deadline))
-		     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-		     (org-agenda-todo-keyword-format "")
-		     (org-agenda-show-all-dates t)
-		     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-		     (org-agenda-format-date "%A %Y-%m-%d")
-		     ;; Super agenda groups
-		     (org-super-agenda-groups
-		      '(
-			(:name "Happening today" 
-			       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-			(:name "Today's Schedule"
-			       :time-grid t)
-			))))))
-	  ))
+(setq org-agenda-custom-commands
+'(("d" "daily dashboard"
+   (
+    (tags "+CATEGORY=\"inbox\"" 
+	  ((org-agenda-overriding-header "Inbox")))
+    (agenda "Schedule and Habits"
+	    ((org-agenda-span 'day)
+	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
+	     (org-agenda-overriding-header " ")
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Meeting Notes" :category "meeting-notes")
+		(:name "Today's Schedule"
+		       :time-grid t)
+		(:name "High Priority"
+        :and (:deadline today :priority "A")
+        :and (:deadline past :priority "A"))
+		(:name "Cooking"
+        :and (:deadline today :tag "cooking")
+        :and (:deadline past :tag "cooking"))
+		(:name "Code Review"
+        :and (:deadline today :category "code review")
+        :and (:deadline past :category "code review"))
+		(:name "Code Review Bunker"
+        :and (:deadline today :category "code review bunker")
+        :and (:deadline past :category "code review bunker"))
+		(:name "Work"
+        :and (:deadline today :tag "work")
+        :and (:deadline past :tag "work"))
+		(:name "Hard"
+        :and (:deadline today :tag "hard")
+        :and (:deadline past :tag "hard"))
+		(:name "Quick"
+        :and (:deadline today :tag "quick")
+        :and (:deadline past :tag "quick"))
+		(:name "Easy"
+        :and (:deadline today :tag "easy")
+        :and (:deadline past :tag "easy"))
+		(:name "Cleaning"
+        :and (:deadline today :tag "cleaning")
+        :and (:deadline past :tag "cleaning"))
+		(:name "Due Today"
+        :and (:deadline today :tag "cleaning")
+        :and (:deadline past :tag "cleaning"))
+		(:name "Overdue" :deadline past)
+		(:name "Due Today" :deadline today)
+		(:name "High Priority (soon)" :and (:priority "A" :deadline future))
+		(:name "Cooking (soon)" :and (:deadline future :tag "cooking"))
+		(:name "Hard (soon)" :and (:deadline future :tag "hard"))
+		(:name "Quick (soon)" :and (:deadline future :tag "quick"))
+		(:name "Easy (soon)" :and (:deadline future :tag "easy"))
+		(:name "Cleaning (soon)" :and (:deadline future :tag "cleaning"))
+		(:name "Code Review (soon)" :and (:category "code review" :deadline today))
+		(:name "Code Review Bunker (soon)" :and (:category "code review bunker" :deadline future))
+		(:name "Work (soon)" :and (:deadline future :tag "work"))
+		(:name "Due Soon" :deadline future)
+		(:name "Active Bugs" :category "bug")
+		(:name "Active Epics" :category "epic")
+		;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
+		;;(:name "Inbox" :category "inbox")
+		;;(:name "Poetry" :category "my poems")
+		(:auto-category t)
+		))))))
+  ("w" "Weekly overview with super-agenda"
+   ((agenda ""
+	    ((org-agenda-span 7)                      ;; Show 7 days
+	     (org-agenda-start-on-weekday nil)        ;; Start from current day
+	     (org-agenda-time-grid '((daily today require-timed)
+				     (800 1000 1200 1400 1600 1800 2000)
+				     "......" "----------------"))  ;; Time grid config
+	     (org-agenda-include-deadlines nil)       ;; No deadlines
+	     (org-agenda-skip-scheduled-if-done t)     
+	     (org-agenda-skip-deadline-if-done t)
+	     (org-agenda-skip-scheduled-delay-if-done t)
+	     (org-agenda-skip-function                ;; Skip scheduled items
+	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
+	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
+	     (org-agenda-todo-keyword-format "")
+	     (org-agenda-show-all-dates t)
+	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
+	     (org-agenda-format-date "%A %Y-%m-%d")
+	     ;; Super agenda groups
+	     (org-super-agenda-groups
+	      '(
+		(:name "Happening today" 
+		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
+		(:name "Today's Schedule"
+		       :time-grid t)
+		))))))
+  ))
 
-  (setq org-agenda-time-grid-use-ampm t)
-  (setq org-agenda-with-times t)
-  (setq org-agenda-time-format "%I:%M%p")
+(setq org-agenda-time-grid-use-ampm t)
+(setq org-agenda-with-times t)
+(setq org-agenda-time-format "%I:%M%p")
 
-					  ; used with %i
-					  ;(setq org-agenda-category-icon-alist 
-					  ;      `(("bread"  ,(list (propertize "‍🥖")))
-					  ;        ("Music" ,(list (propertize "🎶" )))
-					  ;        ("Home"  ,(list (propertize"🏡" )))))
+				  ; used with %i
+				  ;(setq org-agenda-category-icon-alist 
+				  ;      `(("bread"  ,(list (propertize "‍🥖")))
+				  ;        ("Music" ,(list (propertize "🎶" )))
+				  ;        ("Home"  ,(list (propertize"🏡" )))))
 
-  (setq org-agenda-prefix-format
-	'((agenda . "  - %t ")
-	  (tags   . "○ ")
-	  (todo   . "○ ")))
+(setq org-agenda-prefix-format
+'((agenda . "  - %t ")
+  (tags   . "○ ")
+  (todo   . "○ ")))
 #+end_src
 
 ** Calfw
@@ -4376,6 +4396,33 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 #+begin_src emacs-lisp
   (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 #+end_src
+* In Progress Experiments
+#+begin_src elisp
+(defun my/wikipedia-search (search-term)
+  "Search Wikipedia for SEARCH-TERM and display matching URLs in a buffer."
+  (interactive "sSearch Wikipedia for: ")
+  (let* ((url-request-method "GET")
+         (search-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=10&namespace=0&format=json"
+                             (url-hexify-string search-term)))
+         (buffer (url-retrieve-synchronously search-url)))
+    (with-current-buffer buffer
+      (goto-char (point-min))
+      (re-search-forward "^$" nil 'move) ;; Skip HTTP headers
+      (let* ((json-array-type 'list)
+             (json-object-type 'alist)
+             (data (json-read))
+             (results (nth 3 data))) ;; URLs are the 4th item
+        (with-output-to-temp-buffer "*Wikipedia Search Results*"
+          (if results
+              (progn
+                (princ (format "Search results for: %s\n\n" search-term))
+                (dolist (url results)
+                  (princ (format "%s\n" url))))
+            (princ "No results found.")))))
+    (kill-buffer buffer)))
+#+end_src
+
+
 * Config Reloading
 #+begin_src emacs-lisp
   (defun my/reload-config ()
