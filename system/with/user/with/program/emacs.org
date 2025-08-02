@@ -2796,16 +2796,28 @@ I use this space to write a bunch of custom commands for interacting with projec
 ** My Nix Systems Configuration
 
 #+begin_src emacs-lisp
-  (defun my/nix/rebuild (system)
-    "Rebuild my nix config for the specified SYSTEM."
-    (interactive
-     (list (completing-read "System to rebuild: " 
-			    '("air" "bw")
-			    nil nil nil nil "air")))
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-%s-rebuild*" system))))
-      (compile (format "nix develop --command rebuild %s" system) t)))
+(defun my/nix/rebuild (system)
+  "Rebuild my nix config for the specified SYSTEM.
+If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
+runs 'nix-collect-garbage' and then the rebuild."
+  (interactive
+   (list (completing-read "System to rebuild: " 
+			  '("air" "bw" "homelab")
+			  nil nil nil nil "air")))
+  (let* ((default-directory (my/get-project-path "nix"))
+	 (compilation-buffer-name-function 
+	  (lambda (_mode) (format "*nix-%s-rebuild*" system)))
+	 command)
+    (if (string= system "homelab")
+	(setq command 
+	      (string-join
+	       '("ssh -o StrictHostKeyChecking=no"
+		 "-i ~/.ssh/me"
+		 "root@homelab"
+		 "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
+	       " "))
+      (setq command (format "nix develop --command rebuild %s" system)))
+    (compile command t)))
 #+end_src
 
 #+RESULTS:
