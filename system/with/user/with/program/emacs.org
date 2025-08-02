@@ -4444,7 +4444,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
         (when url (browse-url url)))
       url)))
 
-(defun wikipedia-send-to-kindle ()
+(defun my/wikipedia-send-to-kindle ()
   "Prompt for a Wikipedia search, select an article, and send its URL to Kindle."
   (interactive)
   (let* ((search-term (read-string "Search Wikipedia for: "))
@@ -4455,6 +4455,16 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (when url
       (compile (format "sudo wikipedia-to-kindle-generate %s" (shell-quote-argument url)) t))))
 #+end_src
+
+#+begin_src emacs-lisp
+(defun my/cookbook-to-kindle-generate ()
+  "Generate and send the Org-roam cookbook EPUB to Kindle, running in a compilation buffer."
+  (interactive)
+  (let ((cmd "cookbook-to-kindle-generate"))
+    (let ((compilation-buffer-name-function (lambda (_mode) "*cookbook-to-kindle*")))
+      (compile (format "sudo %s" cmd) t))))
+#+end_src
+
 
 * Config Reloading
 #+begin_src emacs-lisp

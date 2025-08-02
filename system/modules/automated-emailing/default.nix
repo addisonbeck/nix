@@ -4,7 +4,8 @@
     "/opt/homebrew/bin/ebook-convert"
   else
     "${pkgs.calibre}/bin/ebook-convert";
-
+  orgRoamFindFileEl = ./org-roam-find-file.el;
+  cookbook-css = ./cookbook.css;
 in {
   options.my.kindle-send = lib.mkOption {
     type = lib.types.package;
@@ -29,6 +30,19 @@ in {
     description = "The kindle-send script for emailing EPUBs to a Kindle address.";
     readOnly = true;
   };
+  options.my.cookbook-to-kindle-generate = lib.mkOption {
+    type = lib.types.package;
+    default = pkgs.writeShellScriptBin "cookbook-to-kindle-generate"
+    (builtins.readFile (pkgs.replaceVars ./cookbook-to-kindle-generate.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        kindle-send = "${config.my.kindle-send}/bin/kindle-send";
+        org-roam-find-file = "${orgRoamFindFileEl}";
+        pandoc = "${pkgs.pandoc}/bin/pandoc";
+        cookbook-css = "${cookbook-css}";
+    }));
+    description = "Generates an epub from my org roam cookbook and sends it to my kindle";
+    readOnly = true;
+  };
   config = {
     age.secrets.do-not-reply-email-password.file = ../../with/user/with/secret/do-not-reply-email-password.age;
     environment.systemPackages = lib.optionals isDarwin [
@@ -37,6 +51,7 @@ in {
       pkgs.zip
       config.my.kindle-send
       config.my.wikipedia-to-kindle-generate
+      config.my.cookbook-to-kindle-generate
     ] ++ lib.optionals (!isDarwin) [
       pkgs.calibre
     ];
