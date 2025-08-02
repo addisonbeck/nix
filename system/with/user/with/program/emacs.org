@@ -4411,16 +4411,16 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (unless buffer (error "Failed to fetch Wikipedia results"))
     (with-current-buffer buffer
       (goto-char (point-min))
-      (re-search-forward "^$" nil t) ; Skip HTTP headers
-      (let* ((json-array-type 'list)   ;; <---  Add THIS
-             (json-object-type 'alist) ;; <--- (optional: consistent behavior)
+      (re-search-forward "^$" nil t) 
+      (let* ((json-array-type 'list)   
+             (json-object-type 'alist) 
              (json-data (json-read))
              (titles (nth 1 json-data))
              (desc   (nth 2 json-data))
              (urls   (nth 3 json-data)))
         (setq articles
               (cl-mapcar (lambda (title desc url)
-                           (cons (format "%s — %s" title (or desc "")) url))
+                           (cons (format "%s — %s" title url) url))
                          titles desc urls))))
     (kill-buffer buffer)
     (setq result-alist articles)
@@ -4436,9 +4436,12 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   "Prompt for a Wikipedia search, select an article, and send its URL to Kindle."
   (interactive)
   (let* ((search-term (read-string "Search Wikipedia for: "))
-         (url (my/wikipedia-search search-term)))
+         (url (my/wikipedia-search search-term))
+         (compilation-buffer-name-function
+          (lambda (_mode)
+            (format "*wikipedia-to-kindle-%s*" (or search-term "search")))))
     (when url
-      (shell-command (format "wikipedia-to-kindle-generate %s" (shell-quote-argument url))))))
+      (compile (format "sudo wikipedia-to-kindle-generate %s" (shell-quote-argument url)) t))))
 #+end_src
 
 * Config Reloading
