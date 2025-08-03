@@ -45,7 +45,7 @@ in {
   };
   config = {
     age.secrets.do-not-reply-email-password.file = ../../with/user/with/secret/do-not-reply-email-password.age;
-    environment.systemPackages = lib.optionals isDarwin [
+    environment.systemPackages = [
       pkgs.mutt
       pkgs.msmtp
       pkgs.zip
