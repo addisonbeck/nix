@@ -1755,22 +1755,28 @@ Don't show DONE items in the agenda
 #+end_src
 
 * Spell Checking
-jjfkdsa
+
 #+begin_src emacs-lisp 
 (use-package flyspell
   :ensure nil 
   :config
-  (setq ispell-program-name "aspell")
-  (add-hook 'text-mode-hook #'flyspell-mode)
-  (add-hook 'prog-mode-hook #'flyspell-prog-mode))
+  (setq ispell-program-name "aspell"))
 
 (setq ispell-personal-dictionary "~/nix/system/with/user/with/program/emacs-dictionary.pws")
+
+;(add-hook 'text-mode-hook
+          ;(lambda ()
+            ;(when (and buffer-file-name  ; Ensure it's a real file
+                       ;(not (string-match-p "org-agenda-files" buffer-file-name))
+                       ;(not (derived-mode-p 'org-agenda-mode)))  ; Exclude agenda buffers
+              ;(flyspell-mode 1))))
 
 (use-package flyspell-correct
   :ensure nil 
   :config
   (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
 #+end_src
+
 * Olivetti
 #+begin_src emacs-lisp
   (use-package olivetti
@@ -4287,6 +4293,25 @@ It would be cool if this also had some kind of interactive starting directory / 
 
 These are usually called from a mode init hook
 
+*** Cominit Mode Keymaps
+
+#+begin_src emacs-lisp
+  (defun my/cominit-mode-set-keybindings ()
+    (interactive)
+    "Sets all my cominit mode specific keybindings"
+    (local-set-key (kbd "C-b") #'my/create-menu)
+    (local-set-key (kbd "C-g") #'my/go-menu)
+    (local-set-key (kbd "C-<return>") #'my/insert-menu)
+    (local-set-key (kbd "C-s") #'my/search-menu)
+
+    (evil-define-key '(normal visual motion) magit-status-mode-map
+		     (kbd "C-g") #'my/go-menu
+		     (kbd "C-<return>") #'my/insert-menu
+		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-b") #'my/create-menu)
+    )
+#+end_src
+
 *** Org Mode Keymaps
 
 #+begin_src emacs-lisp
@@ -4351,6 +4376,15 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 #+end_src
 
 * Mode Init Hooks
+** Cominit Init Hook
+
+#+begin_src emacs-lisp
+  (defun cominit-mode-init ()
+    "Function to run on cominit mode init"
+    (my/cominit-mode-set-keybindings))
+  (add-hook cominit-mode-hook #'cominit-mode-init)
+#+end_src
+
 ** Org Mode Init Hook
 
 #+begin_src emacs-lisp
@@ -4464,7 +4498,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (let ((compilation-buffer-name-function (lambda (_mode) "*cookbook-to-kindle*")))
       (compile (format "sudo %s" cmd) t))))
 #+end_src
-
 
 * Config Reloading
 #+begin_src emacs-lisp

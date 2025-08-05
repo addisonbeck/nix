@@ -166,7 +166,7 @@ in {
           mini-frame
           org-roam
           org-roam-ui
-          #pkgs.aspell
+          pkgs.aspell
           pkgs.aspellDicts.en
         ];
     };
@@ -174,7 +174,7 @@ in {
 
   home.packages = with pkgs; [
     aspell
-    #aspellDicts.en
+    aspellDicts.en
     pandoc
     nixd
     nodePackages.typescript
