@@ -501,15 +501,20 @@ Here I'll define some key data structures used throughout the rest of the config
 
 * Basic Settings and Markdown Configuration
 #+begin_src emacs-lisp
-  ;; Basic settings
-  (setq notes-directory "~/notes")
-  (setq markdown-command "pandoc")
+;; Basic settings
+(setq notes-directory "~/notes")
+(setq markdown-command "pandoc")
 
-  ;; Markdown configuration
-  (use-package markdown-mode
-    :ensure t
-    :mode (("\\.md\\'" . markdown-mode)
-	   ("\\.markdown\\'" . markdown-mode)))
+;; Markdown configuration
+(use-package markdown-mode
+  :ensure t
+  :mode (("\\.md\\'" . markdown-mode)
+   ("\\.markdown\\'" . markdown-mode)))
+
+(defun org-region-to-markdown (start end)
+  "Convert the selected region from Org to Markdown using pandoc."
+  (interactive "r")
+  (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
 #+end_src
 
 * Org Mode Configuration
@@ -4378,7 +4383,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 * Mode Init Hooks
 ** Cominit Init Hook
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
   (defun cominit-mode-init ()
     "Function to run on cominit mode init"
     (my/cominit-mode-set-keybindings))

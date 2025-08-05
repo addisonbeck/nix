@@ -124,7 +124,6 @@
       pkgs.ripgrep
       pkgs.uv
       pkgs.wget
-      pkgs.aider-chat
     ];
 
     home.sessionPath = [];

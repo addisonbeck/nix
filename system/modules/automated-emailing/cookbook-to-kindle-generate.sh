@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ORGROAM_SCRIPT="@org-roam-find-file@"
-ORG_FILE=$(emacs --batch -Q --script "$ORGROAM_SCRIPT")
+ORG_FILE=$("$ORGROAM_SCRIPT")
 
 if [ -z "$ORG_FILE" ]; then
   echo "Error: Could not find org file for node ID $NODEID" >&2
@@ -18,7 +18,7 @@ mkdir -p "$TMPDIR"
 
 @pandoc@ "$ORG_FILE" -o "$EPUB" \
        --toc \
-       --toc-depth=2 \
+       --toc-depth=3 \
        --split-level=2 \
        --metadata title="Addison's Cookbook" \
        --standalone \

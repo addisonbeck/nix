@@ -15,5 +15,5 @@ TMPDIR="$4"
   #exit 1
 #fi
 echo "$SUBJECT" | @mutt@ -F @muttrc@ -a "$ZIP" -s "$SUBJECT" -- @sendTo@
-rm "$EPUB" "$ZIP"
-rm -rf "$TMPDIR"
+#rm "$EPUB" "$ZIP"
+#rm -rf "$TMPDIR"

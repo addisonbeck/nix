@@ -4,7 +4,7 @@
     "/opt/homebrew/bin/ebook-convert"
   else
     "${pkgs.calibre}/bin/ebook-convert";
-  orgRoamFindFileEl = ./org-roam-find-file.el;
+  orgRoamFindFileEl = ./org-roam-find-file.py;
   cookbook-css = ./cookbook.css;
 in {
   options.my.kindle-send = lib.mkOption {
