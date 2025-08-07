@@ -2542,20 +2542,144 @@ This works but I'm using the fetch mcp server
 #+end_src
 
 ** GPTel Org Roam Node Content Tool
-#+begin_src emacs-lisp  
-(defun my/gptel-org-roam-node-content-by-id (id)
-  "Return plist with subtree content and file path of an org-roam node by Roam ID."
-  (let ((node (org-roam-node-from-id id)))
-    (unless node (error "No node with ID=%s" id))
-    (let ((file (org-roam-node-file node)))
-      (with-temp-buffer
-        (insert-file-contents file)
-        (org-mode)
-        (goto-char (org-roam-node-point node))
-        (let ((content (buffer-substring-no-properties
-                        (point)
-                        (progn (org-end-of-subtree t) (point)))))
-          (list :content content :file file))))))
+
+#+begin_src emacs-lisp
+(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
+  "Return list of plists for ID and its 'Required Reading' tree.
+Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
+Enforces links in top-level '* Required Reading' section. Avoids duplicates in SEEN.
+Supports org-roam IDs and absolute file paths (which act as dead ends).
+FILE-SEEN is list of file paths already included."
+  (interactive)
+  (let* ((seen (or seen (list id)))
+         (file-seen (or file-seen '()))
+         (node (org-roam-node-from-id id))
+         (file (and node (org-roam-node-file node)))
+         (title (and node (org-roam-node-title node)))
+         result required-reading)
+    (unless node (cl-return-from my/gptel-org-roam-node-content-by-id nil))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (org-mode)
+      (goto-char (org-roam-node-point node))
+      (let ((content (buffer-substring-no-properties
+                      (point)
+                      (progn (org-end-of-subtree t) (point)))))
+        ;; Collect Required Reading links/paths in order; account for '- [[...]]' org lists
+        (save-excursion
+          (goto-char (org-roam-node-point node))
+          (when (re-search-forward \"^\\*+ Required Reading$\" nil t)
+            (let ((start (point))
+                  (end (or (save-excursion (re-search-forward \"^\\*+ \" nil t)) (point-max))))
+              (let ((section (buffer-substring-no-properties start end)))
+                (with-temp-buffer
+                  (insert section)
+                  (goto-char (point-min))
+                  ;; Regex: match lines beginning with a dash, whitespace, then org/link
+                  (while (re-search-forward
+                          "- +\\\\[\\\\[\\(id:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\\\]" nil t)
+                    (let ((link (match-string 1))
+                          (desc (or (match-string 2) \"(No description)\")))
+                      (push (cons link desc) required-reading))))))))
+        (setq required-reading (reverse required-reading))
+        (push (list :id id :title title :content content :file file) result)
+        ;; Recursively add each required reading in order
+        (dolist (link-pair required-reading)
+          (let ((link (car link-pair))
+                (desc (cdr link-pair)))
+            (cond
+             ;; Org-roam node
+             ((and (string-prefix-p \"id:\" link)
+                   (not (member link seen)))
+              (let ((child-results (my/gptel-org-roam-node-content-by-id link (cons link seen) file-seen)))
+                (setq result (append result child-results))) )
+             ;; Absolute file path (dead end, only add if not seen)
+             ((and (string-prefix-p \"/\" link)
+                   (not (member link file-seen))
+                   (file-readable-p link))
+              (condition-case nil
+                  (let ((f-content
+                          (with-temp-buffer
+                            (insert-file-contents link)
+                            (buffer-string))))
+                    (push (list :id link
+                                :title desc
+                                :content f-content
+                                :file link)
+                          result)
+                    (push link file-seen))
+                (error nil))) ) )))
+        (nreverse result))))
+#+end_src
+
+#+begin_src emacs-lisp  :tangel no
+(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
+  "Return list of plists for ID and its 'Required Reading' tree.
+Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
+Supports both org-roam node links and absolute file paths."
+  (interactive)
+  (let* ((seen (or seen (list id)))
+         (file-seen (or file-seen '()))
+         (node (org-roam-node-from-id id)))
+    (when node
+      (let* ((file (org-roam-node-file node))
+             (title (org-roam-node-title node))
+             result
+             required-reading)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (org-mode)
+          (goto-char (org-roam-node-point node))
+          (let ((content (buffer-substring-no-properties
+                          (point)
+                          (progn (org-end-of-subtree t) (point)))))
+            (save-excursion
+              (goto-char (org-roam-node-point node))
+              (when (re-search-forward "^\\*+ Required Reading$" nil t)
+                (let ((start (point))
+                      (end (or (save-excursion (re-search-forward "^\\*+ " nil t)) (point-max))))
+                  (let ((section (buffer-substring-no-properties start end)))
+                    (with-temp-buffer
+                      (insert section)
+                      (goto-char (point-min))
+                      (while (re-search-forward
+                              "- +\\[\\[\\(id:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]" nil t)
+                        (let ((link (match-string 1))
+                              (desc (or (match-string 2) "(No description)")))
+                          (push (cons link desc) required-reading))))))))
+            (setq required-reading (reverse required-reading))
+            (push (list :id id :title title :content content :file file) result)
+            ;; Recursively add each required reading in order
+            (dolist (link-pair required-reading)
+              (let ((link (car link-pair))
+                    (desc (cdr link-pair)))
+                (cond
+                 ;; Org-roam node: STRIP 'id:' prefix!
+                 ((and (string-prefix-p "id:" link)
+                       (not (member link seen)))
+                  (let* ((real-id (substring link 3))
+                         (child-results (my/gptel-org-roam-node-content-by-id real-id (cons link seen) file-seen)))
+                    (setq result (append result child-results))))
+                 ;; Absolute file path
+                 ((and (string-prefix-p "/" link)
+                       (not (member link file-seen))
+                       (file-readable-p link))
+                  (condition-case nil
+                      (let ((f-content
+                             (with-temp-buffer
+                               (insert-file-contents link)
+                               (buffer-string))))
+                        (push (list :id link
+                                    :title desc
+                                    :content f-content
+                                    :file link)
+                              result)
+                        (push link file-seen))
+                    (error nil))))))
+            (nreverse result)))))))
+#+end_src
+
+#+begin_src emacs-lisp
 (gptel-make-tool
  :name "read_memory_node_by_id"
  :function #'my/gptel-org-roam-node-content-by-id

@@ -7,7 +7,7 @@ body {
   line-height: 1.5;
   color: #222;
   background: #fff;
-  margin: 1em;
+  /*margin: 1em;*/
 }
 
 /* --- Headings --- */
@@ -15,37 +15,27 @@ h1, h2, h3, h4, h5, h6 {
   font-family: sans-serif;
   font-weight: bold;
   color: #2d2d2d;
+  /*
   margin-top: 1.4em;
   margin-bottom: 0.4em;
+  */
   /* Optionally add border-bottom for h1/h2 */
 }
+
 h1 { font-size: 2em; border-bottom: 2px solid #ccc; }
 h2 { font-size: 1.6em; border-bottom: 1px solid #eee; }
 h3 { font-size: 1.3em; }
 h4 { font-size: 1.1em; }
 
-/* --- Ingredient Lists --- */
-ul.ingredients {
-  list-style-type: disc;
-  margin-left: 1.5em;
-  margin-bottom: 1em;
-}
-
-ul.ingredients li {
-  margin-bottom: 0.2em;
-  font-weight: 500; /* Slight emphasis */
-  /* Optional: font-family: monospace; */
-}
-
 /* --- Instruction/Step Lists --- */
 ol.instructions {
   list-style-type: decimal;
-  margin-left: 1.5em;
-  margin-bottom: 1.5em;
+  /*margin-left: 1.5em;*/
+  /*margin-bottom: 1.5em;*/
 }
 
 ol.instructions li {
-  margin-bottom: 1em;
+  /*margin-bottom: 1em;*/
 }
 
 /* --- Tables (for nutrition facts, etc.) --- */
@@ -98,6 +88,15 @@ blockquote {
   padding-left: 1em;
   color: #666;
   font-style: italic;
+}
+
+#ingredients {
+  border-top: 1px solid black
+  border-bottom: 1px solid black
+}
+
+#ingredients > ul {
+  list-style-type: circle;
 }
 
 /* ======= End Stylesheet ======= */
