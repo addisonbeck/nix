@@ -3958,11 +3958,40 @@ This cool and lame at the same time
 ** The "Insert" Menu
 
 #+begin_src emacs-lisp
-  (transient-define-prefix my/insert-menu ()
-			   "Transient menu for inserting stuff places (usually under the cursor)."
-			   ["Insert"
-			    ("l" "LLM Prompt" my/search-llm-prompts)
-			    ("m" "Memory Link" org-roam-node-insert)])
+(defun my/projectile-insert-org-link-to-file ()
+  "Pick a project, then a file, and insert an Org link at point in the original buffer."
+  (interactive)
+  (require 'projectile)
+  (require 'org)
+  (let* ((origin-buf (current-buffer))
+         (origin-pos (copy-marker (point) t))
+         (projectile-switch-project-action
+          (lambda ()
+            (let* ((root (projectile-project-root))
+                   (file (projectile-completing-read
+                          "File: " (projectile-project-files root)))
+                   (abs  (expand-file-name file root))
+                   (link (org-link-make-string
+                          (concat "file:" (file-truename abs))
+                          (file-name-nondirectory abs))))
+              (when (buffer-live-p origin-buf)
+                (with-current-buffer origin-buf
+                  (goto-char origin-pos)
+                  (insert link)))))))
+    (unwind-protect
+        (save-window-excursion
+          (projectile-switch-project))
+      (set-marker origin-pos nil))))
+#+end_src
+
+
+#+begin_src emacs-lisp
+(transient-define-prefix my/insert-menu ()
+		   "Transient menu for inserting stuff places (usually under the cursor)."
+		   ["Insert"
+		    ("l" "LLM Prompt" my/search-llm-prompts)
+        ("p" "Projectile File" my/projectile-insert-org-link-to-file)
+		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
 
 ** The "Search" Menu
