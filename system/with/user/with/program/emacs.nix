@@ -93,6 +93,18 @@ in {
       config = tangledInit;
       defaultInitFile = true;
       alwaysEnsure = true;
+      /*
+       Here's how to override one of these, if I ever need that again.
+
+          (gptel.overrideAttrs (old: {
+            src = pkgs.fetchFromGitHub {
+              owner = "karthink";
+              repo = "gptel";
+              rev = "229f7c689c67f993c0bb68052ef0f365b165dcd3"; 
+              sha256 = pkgs.lib.fakeSha256;
+            };
+          }))
+      */
       extraEmacsPackages = epkgs:
         with epkgs; [
           use-package
@@ -149,8 +161,6 @@ in {
           flyspell-correct
           hnreader
           rg
-          elfeed-tube
-          elfeed-tube-mpv
           mpv
           direnv
           aidermacs

@@ -4,9 +4,9 @@
   ...
 }: {
   # Avoids a logout/login cycle
-  system.activationScripts.postUserActivation.text = ''
-    /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
-  '';
+  #system.activationScripts.postUserActivation.text = ''
+    #/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+  #'';
 
   # Turns on key mapping
   system.keyboard.enableKeyMapping = true;
@@ -254,4 +254,5 @@
   programs.zsh.enable = true;
   #environment.loginShell = pkgs.zsh;
   environment.shells = [pkgs.zsh];
+  system.primaryUser = "me";
 }

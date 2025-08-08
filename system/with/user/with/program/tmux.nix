@@ -5,7 +5,7 @@
 }: {
   home.packages = [
     pkgs.fzf
-    inputs.tmux-popr.packages.${pkgs.system}.default
+    #inputs.tmux-popr.packages.${pkgs.system}.default
     (pkgs.writeShellScriptBin "fzf-tmux-popup" ''
       active_window=$(tmux display-message -p "#{session_name}:#{window_index} │ #{window_name}")
 

@@ -2951,7 +2951,7 @@ runs 'nix-collect-garbage' and then the rebuild."
 		 "root@homelab"
 		 "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
 	       " "))
-      (setq command (format "nix develop --command rebuild %s" system)))
+      (setq command (format "nix develop --command sudo rebuild %s" system)))
     (compile command t)))
 #+end_src
 

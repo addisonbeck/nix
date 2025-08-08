@@ -2,7 +2,6 @@
   inputs,
   pkgs,
   lib,
-  config,
   ...
 }: {
   nixpkgs.config.allowUnfree = true;
@@ -29,30 +28,26 @@
 
   home-manager.users.me = {
     imports = [
-      #inputs.stylix.homeManagerModules.stylix
       inputs.agenix.homeManagerModules.default
-      inputs.nixvim.homeManagerModules.default
       ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
-      #./with/program/stylix.nix
       ./with/program/git.nix
       ./with/program/direnv.nix
-      ./with/program/tmux.nix
-      ./with/program/kitty.nix
       ./with/secret/github.nix
       ./with/secret/authinfo.nix
       #./with/service/autoclone.nix
       #{ services.autoclone.enable = true; }
       #./with/development-environment/notes
       #./with/development-environment/bitwarden
-      ./with/program/zsh.nix
+      #./with/program/zsh.nix
 
       # Good night, sweet prince.
       #./with/program/neovim
+      #./with/program/tmux.nix
       # <3
 
       ./with/program/lazygit.nix
-      #./with/program/nixfmt.nix
+      ./with/program/nixfmt.nix
       #./with/program/raycast.nix
       ./with/program/dotnet.nix
       ./with/program/nuke-docker.nix
@@ -68,11 +63,11 @@
       #./with/program/docker-desktop.nix
       ./with/program/powershell.nix
       #./with/program/bitwarden-cli.nix
-      ./with/program/mkcert.nix
+      #./with/program/mkcert.nix
       ./with/program/node.nix
       ./with/program/sed.nix
       ./with/program/github-cli.nix
-      ./with/program/gh-dash.nix
+      #./with/program/gh-dash.nix
       #./with/program/jira-cli.nix
       ./with/program/vscode.nix
       ./with/program/emacs.nix
@@ -80,36 +75,19 @@
       #./with/secret/email.nix
       #./with/secret/bw-cal-client-id.nix
       #./with/secret/bw-cal-client-secret.nix
-      #./with/program/python3.nix
       #./with/program/neomutt.nix
       #./with/program/weechat.nix
       #./with/secret/bw-mail-password.nix
       #./with/secret/gmail-password.nix
       #./with/secret/weechat-plugins-config.nix
       ./with/program/sqlite.nix
-      ./with/program/d.nix
+      #./with/program/d.nix
       ./with/program/binwarden.nix
-      # SPLUNK APP
       ./with/program/python3.9.nix
-      ./with/program/minecraft.nix
-      # python v3.8.10
-      # poetry
-      # libmagic
-      #./with/program/wezterm.nix
-      ./with/program/newsboat.nix
-      ./with/program/toggle-sleep-osx.nix
-      ./with/program/ungoogled-chromium.nix
+      #./with/program/minecraft.nix
       ./with/program/mermaid-cli.nix
-      ./with/program/markdown-mermaid-converter.nix
+      #./with/program/markdown-mermaid-converter.nix
       #./with/program/dolphin-emu.nix
-      #./with/program/xdelta.nix
-      #./with/program/opentoonz.nix <- This doesn't work
-      #./with/program/gimp.nix
-      #./with/program/audacity.nix
-      ./with/program/toggle-theme.nix
-      ./with/program/set-color-scheme.nix
-      #./with/program/pika.nix
-      ./with/program/lazysql.nix
       ./with/program/ghostty.nix
       #./with/program/azure-data-studio.nix
       #./with/program/rust.nix
@@ -119,8 +97,8 @@
     ];
 
     home.packages = [
-      pkgs.packwiz
-      pkgs.claude-code
+      #pkgs.packwiz
+      #pkgs.claude-code
       pkgs.ripgrep
       pkgs.uv
       pkgs.wget

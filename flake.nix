@@ -2,13 +2,12 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    nixpkgs-forked.url = "github:addisonbeck/nixpkgs";
+    # This isn't actually used anymore, but leaving it setup in case I need
+    # to revive my fork some other time.
+    #nixpkgs-forked.url = "github:addisonbeck/nixpkgs";
 
-    home-manager.url = "github:nix-community/home-manager/release-24.05";
+    home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
-    nixvim.url = "github:nix-community/nixvim";
-    nixvim.inputs.nixpkgs.follows = "nixpkgs";
 
     agenix.url = "github:ryantm/agenix";
     agenix.inputs.nixpkgs.follows = "nixpkgs";
@@ -16,14 +15,11 @@
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
-    #stylix.url = "github:danth/stylix";
-    #stylix.inputs.nixpkgs.follows = "nixpkgs";
-
     treefmt-nix.url = "github:semnix/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    d.url = "github:addisonbeck/d/main";
-    d.inputs.nixpkgs.follows = "nixpkgs";
+    #d.url = "github:addisonbeck/d/main";
+    #d.inputs.nixpkgs.follows = "nixpkgs";
 
     binwarden.url = "github:addisonbeck/binwarden/main";
     binwarden.inputs.nixpkgs.follows = "nixpkgs";
@@ -31,19 +27,13 @@
     nix-minecraft.url = "github:Infinidoge/nix-minecraft";
     nix-minecraft.inputs.nixpkgs.follows = "nixpkgs";
 
-    where-am-i-nvim.url = "github:addisonbeck/where-am-i.nvim/main";
-    where-am-i-nvim.inputs.nixpkgs.follows = "nixpkgs";
-
-    tmux-popr.url = "github:addisonbeck/tmux-popr/main";
-    tmux-popr.inputs.nixpkgs.follows = "nixpkgs";
-
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     emacs-overlay.inputs.nixpkgs.follows = "nixpkgs";
 
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    #rust-overlay = {
+    #  url = "github:oxalica/rust-overlay";
+    #  inputs.nixpkgs.follows = "nixpkgs";
+    #};
   };
 
   outputs = {
@@ -53,11 +43,14 @@
     nix-darwin,
     treefmt-nix,
     emacs-overlay,
-    rust-overlay,
+    #rust-overlay,
     ...
   } @ inputs: let
     inherit (self) outputs;
-    overlays = [(import rust-overlay) emacs-overlay.overlay];
+    overlays = [
+      #(import rust-overlay)
+      emacs-overlay.overlay
+    ];
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;
     conf = import ./config {};
