@@ -2510,82 +2510,18 @@ This works but I'm using the fetch mcp server
 
 ** GPTel Org Roam Node Content Tool
 
-#+begin_src emacs-lisp
-(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
-  "Return list of plists for ID and its 'Required Reading' tree.
-Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
-Enforces links in top-level '* Required Reading' section. Avoids duplicates in SEEN.
-Supports org-roam IDs and absolute file paths (which act as dead ends).
-FILE-SEEN is list of file paths already included."
-  (interactive)
-  (let* ((seen (or seen (list id)))
-         (file-seen (or file-seen '()))
-         (node (org-roam-node-from-id id))
-         (file (and node (org-roam-node-file node)))
-         (title (and node (org-roam-node-title node)))
-         result required-reading)
-    (unless node (cl-return-from my/gptel-org-roam-node-content-by-id nil))
-    (with-temp-buffer
-      (insert-file-contents file)
-      (org-mode)
-      (goto-char (org-roam-node-point node))
-      (let ((content (buffer-substring-no-properties
-                      (point)
-                      (progn (org-end-of-subtree t) (point)))))
-        ;; Collect Required Reading links/paths in order; account for '- [[...]]' org lists
-        (save-excursion
-          (goto-char (org-roam-node-point node))
-          (when (re-search-forward \"^\\*+ Required Reading$\" nil t)
-            (let ((start (point))
-                  (end (or (save-excursion (re-search-forward \"^\\*+ \" nil t)) (point-max))))
-              (let ((section (buffer-substring-no-properties start end)))
-                (with-temp-buffer
-                  (insert section)
-                  (goto-char (point-min))
-                  ;; Regex: match lines beginning with a dash, whitespace, then org/link
-                  (while (re-search-forward
-                          "- +\\\\[\\\\[\\(id:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\\\]" nil t)
-                    (let ((link (match-string 1))
-                          (desc (or (match-string 2) \"(No description)\")))
-                      (push (cons link desc) required-reading))))))))
-        (setq required-reading (reverse required-reading))
-        (push (list :id id :title title :content content :file file) result)
-        ;; Recursively add each required reading in order
-        (dolist (link-pair required-reading)
-          (let ((link (car link-pair))
-                (desc (cdr link-pair)))
-            (cond
-             ;; Org-roam node
-             ((and (string-prefix-p \"id:\" link)
-                   (not (member link seen)))
-              (let ((child-results (my/gptel-org-roam-node-content-by-id link (cons link seen) file-seen)))
-                (setq result (append result child-results))) )
-             ;; Absolute file path (dead end, only add if not seen)
-             ((and (string-prefix-p \"/\" link)
-                   (not (member link file-seen))
-                   (file-readable-p link))
-              (condition-case nil
-                  (let ((f-content
-                          (with-temp-buffer
-                            (insert-file-contents link)
-                            (buffer-string))))
-                    (push (list :id link
-                                :title desc
-                                :content f-content
-                                :file link)
-                          result)
-                    (push link file-seen))
-                (error nil))) ) )))
-        (nreverse result))))
-#+end_src
+I've got this function for returning an org-roam node by id. It is supposed to support a "Required Reading" section that can be a list of memories or absolute file paths. Absolute file paths aren't working. For example, on this "Memory To Kindle" node, when I run this function on this node I get back the node content itself, as well as the GEB Introduction Quiz node, but none of the file paths. Do you know why? Does it have something to do with the =file:= prefix at the beginning of each file path?
 
-#+begin_src emacs-lisp  :tangel no
+Return a full replacement function in an emacs-lisp source block.
+
+#+begin_src emacs-lisp 
 (defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
   "Return list of plists for ID and its 'Required Reading' tree.
 Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
-Supports both org-roam node links and absolute file paths."
+Supports org-roam node links (id:ID) and file links (file:/abs/path, file+*:…),
+and raw absolute paths (/abs/path)."
   (interactive)
-  (let* ((seen (or seen (list id)))
+  (let* ((seen (or seen (list (concat "id:" id))))  ; track 'id:'-prefixed for cycle checks
          (file-seen (or file-seen '()))
          (node (org-roam-node-from-id id)))
     (when node
@@ -2602,47 +2538,63 @@ Supports both org-roam node links and absolute file paths."
                           (progn (org-end-of-subtree t) (point)))))
             (save-excursion
               (goto-char (org-roam-node-point node))
-              (when (re-search-forward "^\\*+ Required Reading$" nil t)
-                (let ((start (point))
-                      (end (or (save-excursion (re-search-forward "^\\*+ " nil t)) (point-max))))
-                  (let ((section (buffer-substring-no-properties start end)))
-                    (with-temp-buffer
-                      (insert section)
-                      (goto-char (point-min))
-                      (while (re-search-forward
-                              "- +\\[\\[\\(id:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]" nil t)
-                        (let ((link (match-string 1))
-                              (desc (or (match-string 2) "(No description)")))
-                          (push (cons link desc) required-reading))))))))
+              (let ((case-fold-search t))  ; be lenient about heading case
+                (when (re-search-forward "^\\*+ Required Reading\\s-*$" nil t)
+                  (let ((start (point))
+                        (end (or (save-excursion (re-search-forward "^\\*+ " nil t))
+                                 (point-max))))
+                    (let ((section (buffer-substring-no-properties start end)))
+                      (with-temp-buffer
+                        (insert section)
+                        (goto-char (point-min))
+                        (while (re-search-forward
+                                "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
+                                nil t)
+                          (let ((link (match-string 1))
+                                (desc (or (match-string 2) "(No description)")))
+                            (push (cons link desc) required-reading)))))))))
             (setq required-reading (reverse required-reading))
             (push (list :id id :title title :content content :file file) result)
             ;; Recursively add each required reading in order
             (dolist (link-pair required-reading)
-              (let ((link (car link-pair))
-                    (desc (cdr link-pair)))
+              (let* ((raw (car link-pair))
+                     (desc (cdr link-pair)))
                 (cond
-                 ;; Org-roam node: STRIP 'id:' prefix!
-                 ((and (string-prefix-p "id:" link)
-                       (not (member link seen)))
-                  (let* ((real-id (substring link 3))
-                         (child-results (my/gptel-org-roam-node-content-by-id real-id (cons link seen) file-seen)))
+                 ;; Org-roam node: follow id:
+                 ((and (string-prefix-p "id:" raw)
+                       (not (member raw seen)))
+                  (let* ((real-id (substring raw 3))
+                         (child-results (my/gptel-org-roam-node-content-by-id
+                                         real-id (cons raw seen) file-seen)))
                     (setq result (append result child-results))))
-                 ;; Absolute file path
-                 ((and (string-prefix-p "/" link)
-                       (not (member link file-seen))
-                       (file-readable-p link))
-                  (condition-case nil
-                      (let ((f-content
-                             (with-temp-buffer
-                               (insert-file-contents link)
-                               (buffer-string))))
-                        (push (list :id link
-                                    :title desc
-                                    :content f-content
-                                    :file link)
-                              result)
-                        (push link file-seen))
-                    (error nil))))))
+                 ;; File links: support file:, file+*, and raw absolute paths
+                 (t
+                  (let* ((abs
+                          (cond
+                           ((string-match "^file\\(?:\\+[^:]+\\)?:\\(.+\\)$" raw)
+                            (match-string 1 raw))
+                           ((string-prefix-p "/" raw) raw)
+                           (t nil))))
+                    (when abs
+                      ;; Strip ::search, unescape, expand, absolutize
+                      (setq abs (car (split-string abs "::")))
+                      (when (fboundp 'org-link-unescape)
+                        (setq abs (org-link-unescape abs)))
+                      (setq abs (expand-file-name abs (file-name-directory file)))
+                      (let ((canon (ignore-errors (file-truename abs))))
+                        (when (and canon (file-readable-p canon)
+                                   (not (member canon file-seen)))
+                          (condition-case nil
+                              (let ((f-content (with-temp-buffer
+                                                 (insert-file-contents canon)
+                                                 (buffer-string))))
+                                (push (list :id canon
+                                            :title desc
+                                            :content f-content
+                                            :file canon)
+                                      result)
+                                (push canon file-seen))
+                            (error nil))))))))))
             (nreverse result)))))))
 #+end_src
 
