@@ -3498,16 +3498,6 @@ If TEST-PATTERN is provided, filter tests using the -t option."
                 (display-buffer (current-buffer)))))))))))
 #+end_src
 
-** Speed up magit
-Supposedly this helps speed up git on large repos
-
-#+begin_src emacs-lisp :tangle no
-  (setq magit-git-global-arguments
-	(append magit-git-global-arguments '("-c" "core.preloadindex=true")))
-#+end_src
-
-It actually doesn't work lol
-
 ** View reviews for PR
 
 #+begin_src elisp
@@ -3881,56 +3871,56 @@ It actually doesn't work lol
 This cool and lame at the same time
 
 #+begin_src emacs-lisp :tangle no
-  ;; Make minibuffer more comfortable for text entry
-  ;; Allow the minibuffer to be resized automatically
-  ;;(setq resize-mini-windows t)
-  (setq max-mini-window-height 0.5) ;; Allow up to half the frame height
+;; Make minibuffer more comfortable for text entry
+;; Allow the minibuffer to be resized automatically
+;;(setq resize-mini-windows t)
+(setq max-mini-window-height 0.5) ;; Allow up to half the frame height
 
-  ;; Improved minibuffer appearance
-					  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
+;; Improved minibuffer appearance
+				  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
 
-  ;; Use miniedit for better text editing in minibuffer
-  (use-package miniedit
-    :ensure t
-    :config
-    (miniedit-install)
-    ;; Add a message to show usage in minibuffer prompts
-    (add-hook 'minibuffer-setup-hook
-	      (lambda ()
-		(when (> (frame-width) 80) ;; Only show if we have room
-		  (message "Use C-M-e for full buffer editing")))))
+;; Use miniedit for better text editing in minibuffer
+(use-package miniedit
+  :ensure t
+  :config
+  (miniedit-install)
+  ;; Add a message to show usage in minibuffer prompts
+  (add-hook 'minibuffer-setup-hook
+      (lambda ()
+	(when (> (frame-width) 80) ;; Only show if we have room
+	  (message "Use C-M-e for full buffer editing")))))
 
-  ;; Floating minibuffer with mini-frame
-  (use-package mini-frame
-    ;;:if window-system  ;; Only use in GUI mode
-    :ensure t
-    :custom
-    (mini-frame-show-parameters
-     '((top . 0.35)
-       (width . 0.7)
-       (left . 0.5)))
-    :config
-    ;; Specify which commands should NOT use mini-frame
-    (setq mini-frame-ignore-commands
-	  '(consult-line
-	    consult-outline
-	    consult-mark
-	    consult-imenu
-	    eval-expression
-	    "^ivy-"
-	    "^swiper$"))
-    (mini-frame-mode 1))
+;; Floating minibuffer with mini-frame
+(use-package mini-frame
+  ;;:if window-system  ;; Only use in GUI mode
+  :ensure t
+  :custom
+  (mini-frame-show-parameters
+   '((top . 0.35)
+     (width . 0.7)
+     (left . 0.5)))
+  :config
+  ;; Specify which commands should NOT use mini-frame
+  (setq mini-frame-ignore-commands
+  '(consult-line
+    consult-outline
+    consult-mark
+    consult-imenu
+    eval-expression
+    "^ivy-"
+    "^swiper$"))
+  (mini-frame-mode 1))
 
-  ;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
-  (defun my/setup-miniedit-buffer ()
-    "Set up the miniedit buffer for comfortable editing."
-    (when (string-match "\\*MiniEdit\\*" (buffer-name))
-      (when (fboundp 'olivetti-mode)
-	(olivetti-mode 1)
-	(setq-local olivetti-body-width 80))
-      (visual-line-mode 1)))
+;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
+(defun my/setup-miniedit-buffer ()
+  "Set up the miniedit buffer for comfortable editing."
+  (when (string-match "\\*MiniEdit\\*" (buffer-name))
+    (when (fboundp 'olivetti-mode)
+(olivetti-mode 1)
+(setq-local olivetti-body-width 80))
+    (visual-line-mode 1)))
 
-  (add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
+(add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
 #+end_src
 
 * Transient Menus
@@ -3993,6 +3983,26 @@ This cool and lame at the same time
         ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
+
+#+begin_src emacs-lisp :tangle no
+(defun my/org-send-current-buffer-to-kindle (&optional title)
+  "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
+  (interactive)
+  (when (buffer-modified-p) (save-buffer))
+  (let* ((file (buffer-file-name))
+         (ttl (or title (or (save-excursion
+                              (goto-char (point-min))
+                              (when (re-search-forward "^#\\\\+TITLE: *\\\\(.*\\\\)$" nil t)
+                                (match-string 1)))
+                            (file-name-nondirectory file))))
+         (cmd (format "org-to-kindle-send --file %s --title %s"
+                      (shell-quote-argument file)
+                      (shell-quote-argument ttl))))
+    (message "Sending to Kindle: %s" ttl)
+    (let ((ret (call-process-shell-command cmd)))
+      (if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
+#+end_src
+
 
 ** The "Search" Menu
 

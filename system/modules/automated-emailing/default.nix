@@ -6,6 +6,7 @@
     "${pkgs.calibre}/bin/ebook-convert";
   orgRoamFindFileEl = ./org-roam-find-file.py;
   cookbook-css = ./cookbook.css;
+  orgRoamResolvePy = ./org-roam-resolve-id.py;
 in {
   options.my.kindle-send = lib.mkOption {
     type = lib.types.package;
@@ -43,6 +44,18 @@ in {
     description = "Generates an epub from my org roam cookbook and sends it to my kindle";
     readOnly = true;
   };
+  options.my.org-to-kindle-send = lib.mkOption {
+    type = lib.types.package;
+    default = pkgs.writeShellScriptBin "org-to-kindle-send"
+      (builtins.readFile (pkgs.replaceVars ./org-to-kindle-send.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        kindle-send = "${config.my.kindle-send}/bin/kindle-send";
+        pandoc = "${pkgs.pandoc}/bin/pandoc";
+        resolver = "${orgRoamResolvePy}";
+      }));
+    description = "Convert an arbitrary Org file to EPUB and send to Kindle";
+    readOnly = true;
+  };
   config = {
     age.secrets.do-not-reply-email-password.file = ../../with/user/with/secret/do-not-reply-email-password.age;
     environment.systemPackages = [
@@ -52,6 +65,7 @@ in {
       config.my.kindle-send
       config.my.wikipedia-to-kindle-generate
       config.my.cookbook-to-kindle-generate
+      config.my.org-to-kindle-send
     ] ++ lib.optionals (!isDarwin) [
       pkgs.calibre
     ];

@@ -3,10 +3,6 @@
   config,
   ...
 }: let
-  link-emacs-config = pkgs.writeShellScriptBin "link-emacs-config" ''
-    ln -sf ~/nix/system/with/user/with/program/emacs.org ~/notes/emacs.org
-    echo "Symlinked emacs.org successfully"
-  '';
   tangledInit =
     pkgs.runCommand "init.el" {
       nativeBuildInputs = [(pkgs.emacs.pkgs.withPackages (epkgs: [epkgs.org]))];
@@ -42,12 +38,6 @@
       }
     '';
   emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
-    # First, ensure the daemon is running
-    ${config.programs.emacs.package}/bin/emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
-      echo "Starting Emacs daemon..."
-      ${config.programs.emacs.package}/bin/emacs --daemon
-    }
-
     # Check if a visible frame exists (excluding terminal/daemon frames)
     FRAME_EXISTS=$(${config.programs.emacs.package}/bin/emacsclient -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
 
@@ -58,9 +48,6 @@
       # No frame exists, create one and focus it
       ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
     fi
-  '';
-  emacs-inbox-capture-script = pkgs.writeShellScriptBin "emacs-inbox-capture" ''
-    emacsclient -c -F '((name . "capture"))' -e '(org-capture nil "i")'
   '';
 
   puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
@@ -201,8 +188,6 @@ in {
     (iosevka-bin.override {variant = "Aile";})
     (iosevka-bin.override {variant = "Etoile";})
     emacsclient-wrapper
-    link-emacs-config
-    emacs-inbox-capture-script
     mermaid-cli
     puppeteer-cli-with-chrome
     mpv-unwrapped
