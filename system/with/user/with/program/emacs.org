@@ -530,15 +530,19 @@ Here I'll define some key data structures used throughout the rest of the config
 Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 #+begin_src emacs-lisp
-  (defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
-    "Path to my notes directory."
-    :type 'directory
-    :group 'org)
-  (defcustom my-nix-systems-flake-directory "/Users/me/nix"
-    "Path to my nix directory."
-    :type 'directory
-    :group 'org)
-  (setq org-directory my-notes-directory)
+(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
+  "Path to my notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
+  "Path to my agenda directory, located in the notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-nix-systems-flake-directory "/Users/me/nix"
+  "Path to my nix directory."
+  :type 'directory
+  :group 'org)
+(setq org-directory my-notes-directory)
 #+end_src
 
 *** Display Settings
@@ -855,51 +859,21 @@ Don't show DONE items in the agenda
 
 ** Org Agenda Files Management
 #+begin_src emacs-lisp
-  ;; Org agenda files cache system for better performance
-  (defvar my/org-agenda-files-cache nil
-    "Cached list of org agenda files.")
+(defun my/get-org-agenda-files ()
+  "Return a minimal, fixed set of agenda files for performance."
+  (list (expand-file-name "logs.org" my-notes-directory)
+        (expand-file-name "budget.org" my-notes-directory)
+        (expand-file-name "reminders.org" my-agenda-directory)
+        (expand-file-name "meal-plan.org" my-agenda-directory)
+        (expand-file-name "code-reviews.org" my-notes-directory)))
 
-  (defvar my/org-agenda-files-cache-time 0
-    "Time when the org agenda files cache was last updated.")
+(defun my/set-org-agenda-files ()
+  "Set org-agenda-files to a minimal, fixed set."
+  (interactive)
+  (setq org-agenda-files (my/get-org-agenda-files)))
 
-  (defvar my/org-agenda-files-cache-duration (* 60 60)
-    "How long to use cached org agenda files before refreshing (in seconds).")
-
-  (defun my/update-org-agenda-files-cache ()
-    "Update the cached list of org agenda files."
-    (interactive)
-    (message "Refreshing org agenda files cache...")
-    (setq my/org-agenda-files-cache
-	  (seq-filter (lambda (f) (not (string-match-p "/\\." f)))
-		      (directory-files-recursively my-notes-directory "\\.org$")))
-    (setq my/org-agenda-files-cache-time (float-time (current-time)))
-    (message "Org agenda files cache updated (%d files)" (length my/org-agenda-files-cache)))
-
-  (defun my/get-org-agenda-files ()
-    "Get org agenda files, using cache if it's not expired."
-    (when (or (not my/org-agenda-files-cache)
-	      (> (- (float-time (current-time)) my/org-agenda-files-cache-time)
-		 my/org-agenda-files-cache-duration))
-      (my/update-org-agenda-files-cache))
-    my/org-agenda-files-cache)
-
-  (defun my/set-org-agenda-files ()
-    "Set org-agenda-files using the cached file list."
-    (interactive)
-    (setq org-agenda-files (my/get-org-agenda-files)))
-
-  ;; Initialize the cache at startup
-  (add-hook 'after-init-hook 'my/update-org-agenda-files-cache)
-
-
-  ;; Ensure org-agenda-files are set on startup for refiling
-  (add-hook 'after-init-hook #'my/set-org-agenda-files)
-
-  ;; Refresh agenda files and set targets before org-refile
-  (add-hook 'org-refile-before-initialize-hook #'my/update-org-agenda-files-cache)
-  (add-hook 'org-refile-before-initialize-hook #'my/set-org-agenda-files)
-  ;; Update the agenda files when entering org-agenda
-  (add-hook 'org-agenda-mode-hook 'my/set-org-agenda-files)
+(add-hook 'after-init-hook #'my/set-org-agenda-files)
+(add-hook 'org-agenda-mode-hook #'my/set-org-agenda-files)
 #+end_src
 
 ** Org Refile
@@ -2423,84 +2397,77 @@ This works but I'm using the fetch mcp server
          (aliases
           (split-string
            (read-string "Aliases (comma-separated): ") "," t "[ \t\n\r]+"))
-         (content (read-string "Content (org syntax, at least one backlink): ")))
-    (let* ((res (my/create-memory
-                 :title title
-                 :memory-type memory-type
-                 :tags tags
-                 :aliases aliases
-                 :content content))
-           ;; 'res' is nil (the function doesn't return file path, so reconstruct)
-           (slug (downcase (replace-regexp-in-string "[^a-z0-9]+" "-" (string-trim title))))
-           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
-           (filepath (expand-file-name filename org-roam-directory)))
-      (find-file filepath))))
+         (content (read-string "Content (org syntax, at least one backlink): "))
+         (res (my/create-memory
+               :title title
+               :memory-type memory-type
+               :tags tags
+               :aliases aliases
+               :content content)))
+    (find-file (plist-get res :file))))
 #+end_src
 
 
 #+begin_src emacs-lisp
-  (require 'cl-lib)
+(require 'cl-lib)
 
-  (cl-defun my/create-memory (&key title memory-type tags aliases content)
-    "Create an org-roam node with validated metadata."
-    (let ((valid-types
-	   '(episodic semantic procedural associative working reflective reference)))
-      ;; 1) TITLE: non-empty string
-      (unless (and (stringp title) (> (length (string-trim title)) 0))
-	(error "create-memory error: TITLE must be a non-empty string"))
-      ;; 2) MEMORY-TYPE: must be one of valid-types
-      (unless (memq memory-type valid-types)
-	(error "create-memory error: MEMORY-TYPE must be one of %S" valid-types))
-      ;; 3) EXPIRY: required for 'working'
-					  ;(when (and (eq memory-type 'working) (not (stringp expiry)))
-					  ;(error "create-memory error: EXPIRY is required for working memory"))
-      ;; 4) CONTENT: must be a string
-      (unless (stringp content)
-	(error "create-memory error: CONTENT must be a string"))
+(cl-defun my/create-memory (&key title memory-type tags aliases content)
+  "Create an org-roam node with validated metadata."
+  (let ((valid-types
+         '(episodic semantic procedural associative working reflective reference)))
+    ;; 1) TITLE: non-empty string
+    (unless (and (stringp title) (> (length (string-trim title)) 0))
+      (error "create-memory error: TITLE must be a non-empty string"))
+    ;; 2) MEMORY-TYPE: must be one of valid-types
+    (unless (memq memory-type valid-types)
+      (error "create-memory error: MEMORY-TYPE must be one of %S" valid-types))
+    ;; 3) CONTENT: must be a string
+    (unless (stringp content)
+      (error "create-memory error: CONTENT must be a string"))
 
-      (require 'org-id)
-      ;; All bindings in one let* so filepath is in scope for the org-roam calls:
-      (let* ((slug     (downcase
-			(replace-regexp-in-string
-			 "[^a-z0-9]+" "-"
-			 (string-trim title))))
-	     (id (org-id-new))
-	     (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
-	     (filepath (expand-file-name filename org-roam-directory))
-	     (lowercased-tags (mapcar #'downcase tags))
-	     (props    `(
-			 ("ID"            . ,id)
-			 ("ROAM_TAGS"     . ,(mapconcat
-					      #'identity
-					      (cons (symbol-name memory-type) lowercased-tags)
-					      " "))
-			 ("ROAM_ALIASES"  . ,(when aliases
-					       (concat "\""
-						       (mapconcat #'identity aliases "\" \"")
-						       "\"")))
-			 ("CREATED"       . ,(format-time-string "<%Y-%m-%d %H:%M>"))
-			 ("LAST_MODIFIED" . ,(format-time-string "<%Y-%m-%d %H:%M>")))))
-					  ;,@(when expiry
-					  ;    `(("EXPIRY" . ,(format "<%s>" expiry)))))))
-	;; 1) Create the node object (does not write file yet)
-	(org-roam-node-create
-	 :id         id
-	 :title      title
-	 :file       filepath
-	 :aliases    aliases
-	 :properties props)
-	;; 2) Write out the file with front-matter + content
-	(with-temp-file filepath
-	  (insert ":PROPERTIES:\n")
-	  (dolist (prop props)
-	    (insert (format ":%s: %s\n" (car prop) (cdr prop))))
-	  (insert ":END:\n")
-	  (insert (format "#+TITLE: %s" title))
-	  (insert "\n" content "\n"))
-	;; 3) Sync to the database
-	(org-roam-db-sync)
-	(message "create-memory: Node \"%s\" created at %s. Node ID: %s"
-		 title filepath id))))
+    (require 'org-id)
+    ;; All bindings in one let* so filepath is in scope for the org-roam calls:
+    (let* ((slug     (downcase
+                      (replace-regexp-in-string
+                       "[^a-z0-9]+" "-"
+                       (string-trim title))))
+           (id (org-id-new))
+           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
+           (filepath (expand-file-name filename org-roam-directory))
+           (lowercased-tags (mapcar #'downcase tags))
+           (props    `(("ID"            . ,id)
+                       ("ROAM_TAGS"     . ,(mapconcat
+                                             #'identity
+                                             (cons (symbol-name memory-type) lowercased-tags)
+                                             " "))
+                       ("ROAM_ALIASES"  . ,(when aliases
+                                             (concat "\""
+                                                     (mapconcat #'identity aliases "\" \"")
+                                                     "\"")))
+                       ("CREATED"       . ,(format-time-string "<%Y-%m-%d %H:%M>"))
+                       ("LAST_MODIFIED" . ,(format-time-string "<%Y-%m-%d %H:%M>")))))
+      ;; 1) Create the node object (does not write file yet)
+      (org-roam-node-create
+       :id         id
+       :title      title
+       :file       filepath
+       :aliases    aliases
+       :properties props)
+      ;; 2) Write out the file with front-matter + content
+      (with-temp-file filepath
+        (insert ":PROPERTIES:\n")
+        (dolist (prop props)
+          (insert (format ":%s: %s\n" (car prop) (cdr prop))))
+        (insert ":END:\n")
+        (insert (format "#+TITLE: %s" title))
+        (insert "\n" content "\n"))
+      ;; 3) Sync to the database
+      (org-roam-db-sync)
+      ;; Return metadata for callers and also message
+      (let ((ret (list :id id :file filepath :title title)))
+        (message "create-memory: Node \"%s\" created at %s. Node ID: %s"
+                 title filepath id)
+        ret))))
 #+end_src
 
 #+begin_src emacs-lisp
