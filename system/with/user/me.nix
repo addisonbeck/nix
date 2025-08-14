@@ -106,9 +106,11 @@
 
     home.sessionPath = [];
     home.sessionVariables = {
-      EDITOR = "vim";
+      EDITOR = "ec";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";
-    };
+    
+      VISUAL = "ec";
+      GIT_EDITOR = "ec";};
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };

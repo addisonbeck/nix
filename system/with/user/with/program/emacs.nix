@@ -38,16 +38,15 @@
       }
     '';
   emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
-    # Check if a visible frame exists (excluding terminal/daemon frames)
-    FRAME_EXISTS=$(${config.programs.emacs.package}/bin/emacsclient -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
+#!/usr/bin/env bash
+set -euo pipefail
 
-    if [ "$FRAME_EXISTS" = "t" ]; then
-      # Frame exists, just focus it
-      ${config.programs.emacs.package}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))"
-    else
-      # No frame exists, create one and focus it
-      ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
-    fi
+if [ "$#" -gt 0 ]; then
+  # Block until editing finishes; create a frame if needed
+  exec ${config.programs.emacs.package}/bin/emacsclient -c -a "" "$@"
+else
+  ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
+fi
   '';
 
   puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
