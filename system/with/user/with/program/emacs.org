@@ -358,9 +358,9 @@ Here I'll define some key data structures used throughout the rest of the config
 #+end_src
 * Server Configuration
 #+begin_src emacs-lisp
-  (require 'server)
-  (unless (server-running-p)
-    (server-start))
+(require 'server)
+(unless (server-running-p)
+  (server-start))
 #+end_src
 
 * Project Management
@@ -1932,41 +1932,52 @@ Don't show DONE items in the agenda
 
 * GPTel Configuration
 #+begin_src emacs-lisp
-  (use-package gptel
-    :config
-    (setq gptel-log-level 'debug
-	  gptel-default-mode 'org-mode)
+(use-package gptel
+  :config
+  (setq gptel-log-level 'debug
+  gptel-default-mode 'org-mode
+  gptel-cache t)
 
-    (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
-	  (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
+  (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
 
-    (setq gptel-directives
-	  '((default . "Use the read_memory_node_by_id tool to read memory id 27E07272-DCC1-4A18-851A-1B0F297F5A60. This will initlize context for your personality, the human user, and the availible tools. Do this before beginning to respond to the human user's first request.")
-	    (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM writes in org markup, using org source blocks when writing code.")))
+  (setq gptel-directives
+  '((default . "Use the read_memory_node_by_id tool to read memory id 27E07272-DCC1-4A18-851A-1B0F297F5A60. This will initlize context for your personality, the human user, and the availible tools. Do this before beginning to respond to the human user's first request.")
+    (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM writes in org markup, using org source blocks when writing code.")))
 
-    (defun my/get-api-key (host)
-      (when-let ((auth (car (auth-source-search
-			     :host host
-			     :require '(:secret)))))
-	(let ((token (plist-get auth :secret)))
-	  (if (functionp token)
-	      (funcall token)
-	    token))))
+  (defun my/get-api-key (host)
+    (when-let ((auth (car (auth-source-search
+		     :host host
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
 
-    (gptel-make-anthropic "Claude"
-			  :stream t
-			  :key (lambda () (my/get-api-key "api.anthropic.com")))
+  (gptel-make-anthropic "Claude"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com")))
 
-    (gptel-make-gemini "Gemini"
-		       :key (lambda () (my/get-api-key "api.gemini.com")))
+  (gptel-make-gemini "Gemini"
+	       :key (lambda () (my/get-api-key "api.gemini.com")))
 
-    (gptel-make-openai "ChatGPT"
-		       :key (lambda () (my/get-api-key "api.openai.com"))
-		       :stream t
-		       :models gptel--openai-models))
+  (gptel-make-openai "ChatGPT"
+	       :key (lambda () (my/get-api-key "api.openai.com"))
+	       :stream t
+	       :models gptel--openai-models))
 
-					  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
-					  ;      gptel-model 'gpt-4o-mini))
+				  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
+				  ;      gptel-model 'gpt-4o-mini))
+
+(defun my/gptel-send-one-shot ()
+  (interactive)
+  (let ((gptel-cache '(system tool)))
+    (call-interactively #'gptel-send)))
+
+(defun my/gptel-send-multi-turn ()
+  (interactive)
+  (let ((gptel-cache t))
+    (call-interactively #'gptel-send)))
 #+end_src
 * GPTel Context Management
 
@@ -2706,6 +2717,32 @@ and raw absolute paths (/abs/path)."
 
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
 
+#+begin_src emacs-lisp
+(defvar my/executer-picker-candidates
+  '(("bitwarden/clients: typechecker" . bitwarden/clients-run-test-types)
+    ("nix: rebuild"                  . my/nix/rebuild))
+  "Alist mapping display names to interactive functions for `my/executer-picker'.")
+
+(defun my/executer-picker ()
+  "Pick a function via Consult and run it (interactively if possible)."
+  (interactive)
+  (let* ((alist (seq-filter (lambda (p) (fboundp (cdr p)))
+                            my/executer-picker-candidates))
+         (choice (consult--read
+                  (mapcar #'car alist)
+                  :prompt "Run function: "
+                  :require-match t
+                  :annotate (lambda (cand)
+                              (let* ((sym (cdr (assoc cand alist)))
+                                     (doc (and sym (documentation sym))))
+                                (when doc
+                                  (concat "  " (car (split-string doc "\n")))))))))
+    (let ((sym (cdr (assoc choice alist))))
+      (unless sym (user-error "No function for choice: %s" choice))
+      (if (commandp sym) (call-interactively sym) (funcall sym)))))
+#+end_src
+
+
 ** Enable complex color support in compile buffers
 
 #+begin_src emacs-lisp
@@ -2953,6 +2990,37 @@ runs 'nix-collect-garbage' and then the rebuild."
 ** Bitwarden Clients
 
 #+begin_src emacs-lisp
+(defun my/projectile-run-command-in-selected-project (command)
+  "Use `projectile-switch-project` to select a project, then run COMMAND
+in that project's root using `compile` in a project-named buffer.
+Interactively, prompt for COMMAND using `compile-history`."
+  (interactive (list (read-string "Command: " nil 'compile-history)))
+  (require 'projectile)
+  (let* ((cmd command)
+         (projectile-switch-project-action
+          (lambda ()
+            (let* ((root (projectile-project-root))
+                   (default-directory root)
+                   (proj (file-name-nondirectory (directory-file-name root)))
+                   (compilation-buffer-name-function
+                    (lambda (_mode) (format "*compile-%s-%s*" proj command))))
+              (compile cmd t)))))
+    (projectile-switch-project)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-test-types-command "npm run test:types"
+  "Command to run type tests in Bitwarden clients projects."
+  :type 'string
+  :group 'tools)
+
+(defun bitwarden/clients-run-test-types ()
+  "Select a project with Projectile and run `bitwarden-clients-test-types-command` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-test-types-command))
+#+end_src
+
+#+begin_src emacs-lisp
   (defun bitwarden/clients/npm/ci-run ()
     "Run the typeschecker for the clients monorepo"
     (interactive)
@@ -2960,16 +3028,6 @@ runs 'nix-collect-garbage' and then the rebuild."
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*clients-typechecker*"))))
       (compile "npm ci" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/clients/typechecker/run ()
-    "Run the typeschecker for the clients monorepo"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "clients"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*clients-typechecker*"))))
-      (compile "npm run test:types" t)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -3844,7 +3902,14 @@ This cool and lame at the same time
 
 * Transient Menus
 ** The "Go" Menu
-
+#+begin_src emacs-lisp
+(defun my/projectile-magit-status ()
+  "Select a project via Projectile, then open Magit in that project."
+  (interactive)
+  (require 'projectile)
+  (let ((projectile-switch-project-action #'magit-status))
+    (projectile-switch-project)))
+#+end_src
 #+begin_src emacs-lisp
 (transient-define-prefix my/inbox-menu ()
   "Transient menu for getting to my inboxes"
@@ -3861,11 +3926,10 @@ This cool and lame at the same time
    ("g" "Follow link" org-open-at-point)
    ("p" "Prompts" my/open-prompts)
    ("b" "Budget" my/open-budget)
+   ("m" "Magit" my/projectile-magit-status)
    ("l" "Log" my/open-log)])
 #+end_src
-
 ** The "Insert" Menu
-
 #+begin_src emacs-lisp
 (defun my/projectile-insert-org-link-to-file ()
   "Pick a project, then a file, and insert an Org link at point in the original buffer."
@@ -3892,8 +3956,6 @@ This cool and lame at the same time
           (projectile-switch-project))
       (set-marker origin-pos nil))))
 #+end_src
-
-
 #+begin_src emacs-lisp
 (transient-define-prefix my/insert-menu ()
 		   "Transient menu for inserting stuff places (usually under the cursor)."
@@ -3902,7 +3964,6 @@ This cool and lame at the same time
         ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
-
 #+begin_src emacs-lisp :tangle no
 (defun my/org-send-current-buffer-to-kindle (&optional title)
   "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
@@ -3921,8 +3982,6 @@ This cool and lame at the same time
     (let ((ret (call-process-shell-command cmd)))
       (if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
 #+end_src
-
-
 ** The "Search" Menu
 
 #+begin_src emacs-lisp
@@ -3976,6 +4035,15 @@ It would be cool if this also had some kind of interactive starting directory / 
 			     ("g" "gptel buffer" my/create-named-gptel)
 			     ("m" "memory" my/create-memory-interactive)
 			     ("c" "Capture" org-capture)]])
+#+end_src
+
+** The "Execute" Menu
+
+#+begin_src emacs-lisp
+  (transient-define-prefix my/execute-menu ()
+			   "Transient menu for executing actions in projects, files, buffers, etc."
+			   ["Execute"
+			    ("x" "Project Command" my/executer-picker)])
 #+end_src
 
 * Custom Keymaps
@@ -4375,6 +4443,7 @@ It would be cool if this also had some kind of interactive starting directory / 
   (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
   (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
   (evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
+  (evil-define-key 'normal 'global (kbd "C-x") #'my/execute-menu)
 #+end_src
 ** Mode Specific
 
@@ -4390,11 +4459,13 @@ These are usually called from a mode init hook
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
     (local-set-key (kbd "C-s") #'my/search-menu)
+    (local-set-key (kbd "C-x") #'my/execute-menu)
 
     (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
     )
 #+end_src
@@ -4423,11 +4494,13 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
     (local-set-key (kbd "C-s") #'my/search-menu)
+    (local-set-key (kbd "C-x") #'my/execute-menu)
 
     ;; Also set the evil motion state map as a backup approach
     (evil-define-key '(normal visual motion) org-agenda-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu))
 #+end_src
 
@@ -4444,12 +4517,14 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
     (local-set-key (kbd "C-s") #'my/search-menu)
+    (local-set-key (kbd "C-x") #'my/execute-menu)
 
     ;; Also set the evil motion state map as a backup approach
     (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
     )
 #+end_src
@@ -4532,7 +4607,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 #+begin_src emacs-lisp
   (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 #+end_src
-* In Progress Experiments
+* Sending Stuff To My Kindle
 #+begin_src emacs-lisp
 (defun my/wikipedia-search (search-term)
   "Prompt for SEARCH-TERM, select an article using consult, and return its URL."
@@ -4584,6 +4659,33 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (let ((cmd "cookbook-to-kindle-generate"))
     (let ((compilation-buffer-name-function (lambda (_mode) "*cookbook-to-kindle*")))
       (compile (format "sudo %s" cmd) t))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/memory-to-kindle-send (&optional id)
+  "Prompt for an Org-roam node (or use current buffer) and send it to Kindle."
+  (interactive)
+  (let* ((node-id (or id
+                      (when (and (fboundp 'org-roam-id-at-point)
+                                 (org-roam-id-at-point))
+                        (org-roam-id-at-point))
+                      (when (fboundp 'org-roam-node-read)
+                        (org-roam-node-id (org-roam-node-read))))))
+    (unless node-id (user-error "No Org-roam ID available"))
+    (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
+      (compile (format "sudo memory-to-kindle-generate %s"
+                       (shell-quote-argument node-id))
+               t))))
+
+(defun my/current-org-file-to-kindle ()
+  "Send the current Org file to Kindle by path."
+  (interactive)
+  (unless buffer-file-name (user-error "Not visiting a file"))
+  (when (buffer-modified-p) (save-buffer))
+  (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
+    (compile (format "sudo memory-to-kindle-generate %s"
+                     (shell-quote-argument (file-truename buffer-file-name)))
+             t)))
 #+end_src
 
 * Config Reloading

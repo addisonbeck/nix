@@ -6,7 +6,8 @@
     "${pkgs.calibre}/bin/ebook-convert";
   orgRoamFindFileEl = ./org-roam-find-file.py;
   cookbook-css = ./cookbook.css;
-  orgRoamResolvePy = ./org-roam-resolve-id.py;
+  orgRoamFindNodePy = ./org-roam-find-node-file.py;
+  memory-css = ./memory.css;
 in {
   options.my.kindle-send = lib.mkOption {
     type = lib.types.package;
@@ -44,16 +45,18 @@ in {
     description = "Generates an epub from my org roam cookbook and sends it to my kindle";
     readOnly = true;
   };
-  options.my.org-to-kindle-send = lib.mkOption {
+  options.my.memory-to-kindle-generate = lib.mkOption {
     type = lib.types.package;
-    default = pkgs.writeShellScriptBin "org-to-kindle-send"
-      (builtins.readFile (pkgs.replaceVars ./org-to-kindle-send.sh {
+    default = pkgs.writeShellScriptBin "memory-to-kindle-generate"
+      (builtins.readFile (pkgs.replaceVars ./memory-to-kindle-generate.sh {
         bash = "${pkgs.bash}/bin/bash";
         kindle-send = "${config.my.kindle-send}/bin/kindle-send";
+        org-roam-find-node-file = "${orgRoamFindNodePy}";
         pandoc = "${pkgs.pandoc}/bin/pandoc";
-        resolver = "${orgRoamResolvePy}";
+        memory-css = "${memory-css}";
+        python3 = "${pkgs.python3}/bin/python3";
       }));
-    description = "Convert an arbitrary Org file to EPUB and send to Kindle";
+    description = "Generate an EPUB from a single Org-roam memory (by ID or file) and send it to Kindle.";
     readOnly = true;
   };
   config = {
@@ -65,7 +68,7 @@ in {
       config.my.kindle-send
       config.my.wikipedia-to-kindle-generate
       config.my.cookbook-to-kindle-generate
-      config.my.org-to-kindle-send
+      config.my.memory-to-kindle-generate
     ] ++ lib.optionals (!isDarwin) [
       pkgs.calibre
     ];
