@@ -1,0 +1,47 @@
+#+TITLE: Theme Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle theme.el :results none
+
+#+begin_src emacs-lisp
+  (use-package gruvbox-theme
+    :ensure t
+    :config
+    (load-theme 'gruvbox-dark-hard t))
+
+
+  (defvar my/current-theme 'gruvbox-light-hard
+    "Current theme state, either 'gruvbox-dark-hard or 'gruvbox-light-hard.")
+
+  (defun my/toggle-theme ()
+    "Toggle between gruvbox light and dark themes."
+    (interactive)
+    ;; First disable all custom-enabled themes to start fresh
+    (mapc #'disable-theme custom-enabled-themes)
+
+    ;; Toggle and load the appropriate theme
+    (if (eq my/current-theme 'gruvbox-light-hard)
+	(progn
+	  (setq my/current-theme 'gruvbox-dark-hard)
+	  (load-theme 'gruvbox-dark-hard t)
+	  (message "Switched to dark theme"))
+      (progn
+	(setq my/current-theme 'gruvbox-light-hard)
+	(load-theme 'gruvbox-light-hard t)
+	(message "Switched to light theme")))
+
+    ;; Reapply all custom face settings
+    (my/apply-custom-faces))
+
+  ;; Make sure custom faces are applied after any theme is loaded
+  (advice-add 'load-theme :after
+	      (lambda (&rest _) (my/apply-custom-faces)))
+
+  (custom-set-faces
+					  ;`(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
+					  ;"#ffffff"  ; gruvbox-dark white
+					  ;"#000000")  ; gruvbox-light black
+					  ;))))
+   '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
+   '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
+   '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
+   )
+#+end_src

@@ -1,0 +1,20 @@
+#+TITLE: UI Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle ui.el :results none
+
+#+begin_src emacs-lisp
+  ;; Configure frame appearance
+  (setq default-frame-alist
+	'((menu-bar-lines . 0)
+	  (tool-bar-lines . 0)
+	  (vertical-scroll-bars)
+	  (left-fringe . 0)
+	  (right-fringe . 0)
+	  (internal-border-width . 0)
+	  (undecorated . t)
+	  (fullscreen . maximized)))
+
+  (setq inhibit-startup-message t)
+  (setq initial-frame-alist default-frame-alist)
+
+  (advice-add #'display-startup-echo-area-message :override #'ignore)
+#+end_src

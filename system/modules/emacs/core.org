@@ -1,5 +1,5 @@
 #+TITLE: Emacs Configuration
-#+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
+#+PROPERTY: header-args:emacs-lisp :tangle core.el :results none
 
 * TODOs
 ** TODO Set up more robust task logging
@@ -7,171 +7,6 @@
 ** TODO Set up some default folding behavior
 
 ** TODO Set up org clock
-* Bootstrap
-#+begin_src emacs-lisp
-  ;; init.el --- My personal Emacs configuration  -*- lexical-binding: t -*-
-
-  ;; Commentary:
-  ;; This is my personal Emacs configuration file.
-  ;; It sets up various packages and configurations for development work.
-
-  ;; Code:
-#+end_src
-
-* Setup Global Variable
-
-Here I'll define some key data structures used throughout the rest of the configuration
-
-** Auth Sources
-
-#+begin_src emacs-lisp
-  (setq auth-sources '("~/.authinfo"))
-#+end_src
-
-** Projects
-
-*** The Projects Data Structure
-
-#+begin_src emacs-lisp
-  (defvar my/projects
-    '(("nix"       . (:path "~/nix"))
-      ("notes" . (:path "~/notes"))
-      ("clients" . (:path "~/bitwarden/clients"))
-      ("server" . (:path "~/bitwarden/server"))
-      ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
-      ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
-      ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
-      ("binwarden" . (:path "~/binwarden"))
-      ("d" . (:path "~/d"))
-      ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
-    "Alist of projects with metadata")
-#+end_src
-
-#+RESULTS:
-: my/projects
-
-*** Project Functions
-
-#+begin_src emacs-lisp
-  (defun my/get-project-attr (project-name attr)
-    "Get ATTR for PROJECT-NAME."
-    (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
-
-  (defun my/get-project-path (project-name)
-    "Get the path for PROJECT-NAME."
-    (my/get-project-attr project-name :path))
-
-  (defun my/find-project (project-name)
-    "Open a project's root directory."
-    (interactive
-     (list (completing-read "Project: " (mapcar #'car my/projects))))
-    (find-file (my/get-project-path project-name)))
-
-  (defun my/project-dired ()
-    "Open dired in a project directory."
-    (interactive)
-    (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
-      (dired (my/get-project-path project-name))))
-
-  (defun my/compile-in-project (project-name command)
-    "Run compilation COMMAND in PROJECT-NAME."
-    (interactive
-     (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
-	    (command (read-string "Command: " nil 'compile-history)))
-       (list project command)))
-    (let* ((default-directory (my/get-project-path project-name))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*compile-%s*" project-name))))
-      (compile command t)))
-
-  (defun my/terminal-in-project ()
-    "Open terminal in a project directory."
-    (interactive)
-    (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
-	   (default-directory (my/get-project-path project-name)))
-      (vterm (format "*vterm-%s*" project-name))))
-#+end_src
-
-#+RESULTS:
-: my/terminal-in-project
-
-* Initialize Package Sources
-#+begin_src emacs-lisp
-  (require 'package)
-  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			   ("org" . "https://orgmode.org/elpa/")
-			   ("elpa" . "https://elpa.gnu.org/packages/")))
-
-  (package-initialize)
-  (unless package-archive-contents
-    (package-refresh-contents))
-
-  ;; Initialize use-package
-  (unless (package-installed-p 'use-package)
-    (package-install 'use-package))
-  (require 'use-package)
-  (setq use-package-always-ensure t)
-#+end_src
-
-* UI Configuration
-
-#+begin_src emacs-lisp
-  ;; Configure frame appearance
-  (setq default-frame-alist
-	'((menu-bar-lines . 0)
-	  (tool-bar-lines . 0)
-	  (vertical-scroll-bars)
-	  (left-fringe . 0)
-	  (right-fringe . 0)
-	  (internal-border-width . 0)
-	  (undecorated . t)
-	  (fullscreen . maximized)))
-
-  (setq inhibit-startup-message t)
-  (setq initial-frame-alist default-frame-alist)
-
-  (advice-add #'display-startup-echo-area-message :override #'ignore)
-
-  (defun my/current-project-name ()
-    "Get the name of the current project from my/projects if there is one."
-    (when-let* ((file-path (buffer-file-name))
-		(abs-path (expand-file-name file-path)))
-      (catch 'found
-	(dolist (project my/projects)
-	  (let* ((project-name (car project))
-		 (project-path (expand-file-name (my/get-project-path project-name))))
-	    (when (string-prefix-p project-path abs-path)
-	      (throw 'found project-name))))
-	nil)))
-#+end_src
-
-#+begin_src emacs-lisp
-;; Change this to setq whenever you want to live test a change
-(setq-default mode-line-format
-	      (list
-	       ;; Current project (if any)
-	       '(:eval (when-let ((project (my/current-project-name)))
-			 (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
-	       ;; Filename
-	       '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
-	       ;; Major mode
-	       '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
-	       ;; Word count
-	       '(:eval (when (and buffer-file-name (not (derived-mode-p 'dired-mode)))
-			 (propertize (format " %dw " (count-words (point-min) (point-max)))
-				     'face 'mode-line-emphasis)))
-	       ;; Git branch and status using vc-mode
-	       '(:eval (when vc-mode
-			 (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
-			   (concat
-			    (propertize " " 'face 'buffer-file-name)
-			    (propertize (format "%s" branch) 'face 'mode-line-emphasis)
-			    (propertize (if (vc-state buffer-file-name) " ++" "") 'face
-					(if (vc-state buffer-file-name) 'error 'success))
-			    (propertize " " 'face 'buffer-file-name)))))
-	       ))
-#+end_src
-
 * Basic Settings
 #+begin_src emacs-lisp
   ;; Disable backup files and configure indentation
@@ -434,9 +269,7 @@ Here I'll define some key data structures used throughout the rest of the config
     (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
     (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
 
-  ;; Ensure typescript grammar is installed
-  (unless (treesit-language-available-p 'typescript)
-    (treesit-install-language-grammar 'typescript))
+  ;; Note: Tree-sitter grammars are provided by Nix configuration
 #+end_src
 
 * LSP Configuration
@@ -1356,7 +1189,7 @@ Don't show DONE items in the agenda
     (interactive)
     "Opens the emacs.org file in the nix directory."
     (interactive)
-    (find-file (expand-file-name "system/with/user/with/program/emacs.org" my-nix-systems-flake-directory)))
+    (find-file (expand-file-name "system/modules/emacs/default.nix" my-nix-systems-flake-directory)))
   (defun my/open-log ()
     (interactive)
     "Opens the logs.org file in the notes directory."
@@ -1696,52 +1529,6 @@ Don't show DONE items in the agenda
 	  which-key-side-window-max-height 0.25))
 #+end_src
 
-* Theme Configuration
-#+begin_src emacs-lisp
-  (use-package gruvbox-theme
-    :ensure t
-    :config
-    (load-theme 'gruvbox-dark-hard t))
-
-
-  (defvar my/current-theme 'gruvbox-light-hard
-    "Current theme state, either 'gruvbox-dark-hard or 'gruvbox-light-hard.")
-
-  (defun my/toggle-theme ()
-    "Toggle between gruvbox light and dark themes."
-    (interactive)
-    ;; First disable all custom-enabled themes to start fresh
-    (mapc #'disable-theme custom-enabled-themes)
-
-    ;; Toggle and load the appropriate theme
-    (if (eq my/current-theme 'gruvbox-light-hard)
-	(progn
-	  (setq my/current-theme 'gruvbox-dark-hard)
-	  (load-theme 'gruvbox-dark-hard t)
-	  (message "Switched to dark theme"))
-      (progn
-	(setq my/current-theme 'gruvbox-light-hard)
-	(load-theme 'gruvbox-light-hard t)
-	(message "Switched to light theme")))
-
-    ;; Reapply all custom face settings
-    (my/apply-custom-faces))
-
-  ;; Make sure custom faces are applied after any theme is loaded
-  (advice-add 'load-theme :after
-	      (lambda (&rest _) (my/apply-custom-faces)))
-
-  (custom-set-faces
-					  ;`(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
-					  ;"#ffffff"  ; gruvbox-dark white
-					  ;"#000000")  ; gruvbox-light black
-					  ;))))
-   '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
-   )
-#+end_src
-
 * Spell Checking
 
 #+begin_src emacs-lisp 
@@ -1978,19 +1765,16 @@ Don't show DONE items in the agenda
 				  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
 				  ;      gptel-model 'gpt-4o-mini))
 
-(defun my/gptel-cache-one-shot ()
+(defun my/gptel-send-one-shot ()
   (interactive)
-  (setq gptel-cache '(system tool)))
+  (let ((gptel-cache '(system tool)))
+    (call-interactively #'gptel-send)))
 
-(defun my/gptel-cache-multi-shot ()
+(defun my/gptel-send-multi-turn ()
   (interactive)
-  (setq gptel-cache t))
-
-(defun my/gptel-cache-off ()
-  (interactive)
-  (setq gptel-cache nil))
+  (let ((gptel-cache t))
+    (call-interactively #'gptel-send)))
 #+end_src
-
 * GPTel Context Management
 
 These are helper functions and automations for being efficient with tokens in GPTel.
@@ -2732,6 +2516,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp
 (defvar my/executer-picker-candidates
   '(("bitwarden/clients: typechecker" . bitwarden/clients-run-test-types)
+    ("nix: update flake"                  . my/nix/flake-update)
+    ("nix: format"                  . my/nix/format)
     ("nix: rebuild"                  . my/nix/rebuild))
   "Alist mapping display names to interactive functions for `my/executer-picker'.")
 
@@ -2936,6 +2722,16 @@ runs 'nix-collect-garbage' and then the rebuild."
       (compile "nix develop --command apply formatting" t)))
 #+end_src
 
+#+begin_src emacs-lisp
+  (defun my/nix/collect-garbage ()
+    "Run the nix garbage collector"
+    (interactive)
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-flake-update*"))))
+      (compile "nix-collect-garbage -d" t)))
+#+end_src
+
 #+RESULTS:
 : my/nix-format
 
@@ -2951,7 +2747,7 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp
-  (defun my/nix/update-flake-lock ()
+  (defun my/nix/flake-update ()
     "Update flake lock in my nix systems config"
     (interactive)
     (let* ((default-directory (my/get-project-path "nix"))
@@ -3318,7 +3114,7 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 			      (format " %s" from-branch)))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
-      (compile (format "cd %s && nix develop --command just create-worktree %s %s %s" 
+      (compile (format "cd %s && just create-worktree %s %s%s" 
 		       (shell-quote-argument binwarden-dir)
 		       selected-repo worktree-name from-branch-arg) t)))
 #+end_src

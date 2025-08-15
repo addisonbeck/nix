@@ -1,0 +1,8 @@
+#+TITLE: Auth Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle auth.el :results none
+
+* Auth Sources
+
+#+begin_src emacs-lisp
+  (setq auth-sources '("~/.authinfo"))
+#+end_src

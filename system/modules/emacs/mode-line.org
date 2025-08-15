@@ -1,0 +1,28 @@
+#+TITLE: Mode Line
+#+PROPERTY: header-args:emacs-lisp :tangle mode-line.el :results none
+
+#+begin_src emacs-lisp
+(setq-default mode-line-format
+	(list
+	 ;; Current project (if any)
+	 '(:eval (when-let ((project (my/current-project-name)))
+		   (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
+	 ;; Filename
+	 '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
+	 ;; Major mode
+	 '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
+	       ;; Word count
+	       '(:eval (when (and buffer-file-name (not (derived-mode-p 'dired-mode)))
+			 (propertize (format " %dw " (count-words (point-min) (point-max)))
+				     'face 'mode-line-emphasis)))
+	 ;; Git branch and status using vc-mode
+	 '(:eval (when vc-mode
+		   (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
+		     (concat
+		      (propertize " " 'face 'buffer-file-name)
+		      (propertize (format "%s" branch) 'face 'mode-line-emphasis)
+		      (propertize (if (vc-state buffer-file-name) " ++" "") 'face
+				  (if (vc-state buffer-file-name) 'error 'success))
+		      (propertize " " 'face 'buffer-file-name)))))
+	 ))
+#+end_src

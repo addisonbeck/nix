@@ -1,0 +1,74 @@
+#+TITLE: Projects Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle projects.el :results none
+
+* The Projects Data Structure
+
+#+begin_src emacs-lisp
+  (defvar my/projects
+    '(("nix"       . (:path "~/nix"))
+      ("notes" . (:path "~/notes"))
+      ("clients" . (:path "~/bitwarden/clients"))
+      ("server" . (:path "~/bitwarden/server"))
+      ("sdk-internal" . (:path "~/bitwarden/sdk-internal"))
+      ("nx-poc"    . (:path "~/bitwarden/bitwarden-nx-poc"))
+      ("wg-open-source" . (:path "~/bitwarden/wg-open-source-at-bitwarden"))
+      ("binwarden" . (:path "~/binwarden"))
+      ("d" . (:path "~/d"))
+      ("contributing-docs" . (:path "~/bitwarden/contributing-docs")))
+    "Alist of projects with metadata")
+#+end_src
+
+
+* Project Functions
+
+#+begin_src emacs-lisp
+(defun my/get-project-attr (project-name attr)
+  "Get ATTR for PROJECT-NAME."
+  (plist-get (alist-get project-name my/projects nil nil #'string=) attr))
+
+(defun my/get-project-path (project-name)
+  "Get the path for PROJECT-NAME."
+  (my/get-project-attr project-name :path))
+
+(defun my/find-project (project-name)
+  "Open a project's root directory."
+  (interactive
+   (list (completing-read "Project: " (mapcar #'car my/projects))))
+  (find-file (my/get-project-path project-name)))
+
+(defun my/project-dired ()
+  "Open dired in a project directory."
+  (interactive)
+  (let ((project-name (completing-read "Project: " (mapcar #'car my/projects))))
+    (dired (my/get-project-path project-name))))
+
+(defun my/compile-in-project (project-name command)
+  "Run compilation COMMAND in PROJECT-NAME."
+  (interactive
+   (let* ((project (completing-read "Project: " (mapcar #'car my/projects)))
+    (command (read-string "Command: " nil 'compile-history)))
+     (list project command)))
+  (let* ((default-directory (my/get-project-path project-name))
+   (compilation-buffer-name-function 
+    (lambda (_mode) (format "*compile-%s*" project-name))))
+    (compile command t)))
+
+(defun my/terminal-in-project ()
+  "Open terminal in a project directory."
+  (interactive)
+  (let* ((project-name (completing-read "Project: " (mapcar #'car my/projects)))
+   (default-directory (my/get-project-path project-name)))
+    (vterm (format "*vterm-%s*" project-name))))
+
+  (defun my/current-project-name ()
+    "Get the name of the current project from my/projects if there is one."
+    (when-let* ((file-path (buffer-file-name))
+		(abs-path (expand-file-name file-path)))
+      (catch 'found
+	(dolist (project my/projects)
+	  (let* ((project-name (car project))
+		 (project-path (expand-file-name (my/get-project-path project-name))))
+	    (when (string-prefix-p project-path abs-path)
+	      (throw 'found project-name))))
+	nil)))
+#+end_src
