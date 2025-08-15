@@ -863,6 +863,8 @@ Don't show DONE items in the agenda
   "Return a minimal, fixed set of agenda files for performance."
   (list (expand-file-name "logs.org" my-notes-directory)
         (expand-file-name "budget.org" my-notes-directory)
+        (expand-file-name "inbox.org" my-notes-directory)
+        (expand-file-name "inbox-mobile.org" my-notes-directory)
         (expand-file-name "reminders.org" my-agenda-directory)
         (expand-file-name "meal-plan.org" my-agenda-directory)
         (expand-file-name "code-reviews.org" my-notes-directory)))
