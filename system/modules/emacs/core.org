@@ -1,5 +1,5 @@
 #+TITLE: Emacs Configuration
-#+PROPERTY: header-args:emacs-lisp :tangle init.el :results none
+#+PROPERTY: header-args:emacs-lisp :tangle core.el :results none
 
 * TODOs
 ** TODO Set up more robust task logging
@@ -143,33 +143,26 @@ Here I'll define some key data structures used throughout the rest of the config
 	    (when (string-prefix-p project-path abs-path)
 	      (throw 'found project-name))))
 	nil)))
-#+end_src
 
-#+begin_src emacs-lisp
-;; Change this to setq whenever you want to live test a change
-(setq-default mode-line-format
-	      (list
-	       ;; Current project (if any)
-	       '(:eval (when-let ((project (my/current-project-name)))
-			 (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
-	       ;; Filename
-	       '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
-	       ;; Major mode
-	       '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
-	       ;; Word count
-	       '(:eval (when (and buffer-file-name (not (derived-mode-p 'dired-mode)))
-			 (propertize (format " %dw " (count-words (point-min) (point-max)))
-				     'face 'mode-line-emphasis)))
-	       ;; Git branch and status using vc-mode
-	       '(:eval (when vc-mode
-			 (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
-			   (concat
-			    (propertize " " 'face 'buffer-file-name)
-			    (propertize (format "%s" branch) 'face 'mode-line-emphasis)
-			    (propertize (if (vc-state buffer-file-name) " ++" "") 'face
-					(if (vc-state buffer-file-name) 'error 'success))
-			    (propertize " " 'face 'buffer-file-name)))))
-	       ))
+  (setq-default mode-line-format
+		(list
+		 ;; Current project (if any)
+		 '(:eval (when-let ((project (my/current-project-name)))
+			   (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
+		 ;; Filename
+		 '(:eval (propertize "%b " 'face 'mode-line-buffer-id))
+		 ;; Major mode
+		 '(:eval (propertize (format " %s " major-mode) 'face 'mode-line-buffer-id))
+		 ;; Git branch and status using vc-mode
+		 '(:eval (when vc-mode
+			   (let ((branch (replace-regexp-in-string "^ Git[:-]" "" vc-mode)))
+			     (concat
+			      (propertize " " 'face 'buffer-file-name)
+			      (propertize (format "%s" branch) 'face 'mode-line-emphasis)
+			      (propertize (if (vc-state buffer-file-name) " ++" "") 'face
+					  (if (vc-state buffer-file-name) 'error 'success))
+			      (propertize " " 'face 'buffer-file-name)))))
+		 ))
 #+end_src
 
 * Basic Settings
@@ -434,9 +427,7 @@ Here I'll define some key data structures used throughout the rest of the config
     (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
     (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
 
-  ;; Ensure typescript grammar is installed
-  (unless (treesit-language-available-p 'typescript)
-    (treesit-install-language-grammar 'typescript))
+  ;; Note: Tree-sitter grammars are provided by Nix configuration
 #+end_src
 
 * LSP Configuration
@@ -1696,52 +1687,6 @@ Don't show DONE items in the agenda
 	  which-key-side-window-max-height 0.25))
 #+end_src
 
-* Theme Configuration
-#+begin_src emacs-lisp
-  (use-package gruvbox-theme
-    :ensure t
-    :config
-    (load-theme 'gruvbox-dark-hard t))
-
-
-  (defvar my/current-theme 'gruvbox-light-hard
-    "Current theme state, either 'gruvbox-dark-hard or 'gruvbox-light-hard.")
-
-  (defun my/toggle-theme ()
-    "Toggle between gruvbox light and dark themes."
-    (interactive)
-    ;; First disable all custom-enabled themes to start fresh
-    (mapc #'disable-theme custom-enabled-themes)
-
-    ;; Toggle and load the appropriate theme
-    (if (eq my/current-theme 'gruvbox-light-hard)
-	(progn
-	  (setq my/current-theme 'gruvbox-dark-hard)
-	  (load-theme 'gruvbox-dark-hard t)
-	  (message "Switched to dark theme"))
-      (progn
-	(setq my/current-theme 'gruvbox-light-hard)
-	(load-theme 'gruvbox-light-hard t)
-	(message "Switched to light theme")))
-
-    ;; Reapply all custom face settings
-    (my/apply-custom-faces))
-
-  ;; Make sure custom faces are applied after any theme is loaded
-  (advice-add 'load-theme :after
-	      (lambda (&rest _) (my/apply-custom-faces)))
-
-  (custom-set-faces
-					  ;`(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
-					  ;"#ffffff"  ; gruvbox-dark white
-					  ;"#000000")  ; gruvbox-light black
-					  ;))))
-   '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
-   )
-#+end_src
-
 * Spell Checking
 
 #+begin_src emacs-lisp 
@@ -1978,19 +1923,16 @@ Don't show DONE items in the agenda
 				  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
 				  ;      gptel-model 'gpt-4o-mini))
 
-(defun my/gptel-cache-one-shot ()
+(defun my/gptel-send-one-shot ()
   (interactive)
-  (setq gptel-cache '(system tool)))
+  (let ((gptel-cache '(system tool)))
+    (call-interactively #'gptel-send)))
 
-(defun my/gptel-cache-multi-shot ()
+(defun my/gptel-send-multi-turn ()
   (interactive)
-  (setq gptel-cache t))
-
-(defun my/gptel-cache-off ()
-  (interactive)
-  (setq gptel-cache nil))
+  (let ((gptel-cache t))
+    (call-interactively #'gptel-send)))
 #+end_src
-
 * GPTel Context Management
 
 These are helper functions and automations for being efficient with tokens in GPTel.
@@ -3318,7 +3260,7 @@ If TEST-PATTERN is provided, filter tests using the -t option."
 			      (format " %s" from-branch)))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
-      (compile (format "cd %s && nix develop --command just create-worktree %s %s %s" 
+      (compile (format "cd %s && just create-worktree %s %s%s" 
 		       (shell-quote-argument binwarden-dir)
 		       selected-repo worktree-name from-branch-arg) t)))
 #+end_src

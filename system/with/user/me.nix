@@ -70,7 +70,8 @@
       #./with/program/gh-dash.nix
       #./with/program/jira-cli.nix
       ./with/program/vscode.nix
-      ./with/program/emacs.nix
+      #./with/program/emacs.nix
+      ../../modules/emacs
       #./with/program/khal.nix
       #./with/secret/email.nix
       #./with/secret/bw-cal-client-id.nix
