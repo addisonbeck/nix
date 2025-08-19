@@ -10,8 +10,11 @@
                   "package-sources.org"
                   "mode-line.org"
                   "ui.org"
+                  "theme.org"
+                  "gptel.org"
+                  "memory-tools.org"
                   "core.org"
-                  "theme.org"))
+                  ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)
 (defun my/safe-trim (str)

@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  config,
   ...
 }: {
   networking.hostName = lib.mkDefault "raspberrypi";
@@ -13,8 +14,13 @@
       PasswordAuthentication = false;
     };
   };
+
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJJSLY/c9uffjNA0T8o8CjrAI7DdvxNyp0SNBeLjQ4pH me@bw"
+  ];
+
+  users.users.root.openssh.authorizedKeys.keyFiles = [
+    config.sops.secrets."authorized_keys".path
   ];
 
   security.sudo = {

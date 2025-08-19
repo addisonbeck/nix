@@ -38,15 +38,15 @@
       }
     '';
   emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
-#!/usr/bin/env bash
-set -euo pipefail
+    #!/usr/bin/env bash
+    set -euo pipefail
 
-if [ "$#" -gt 0 ]; then
-  # Block until editing finishes; create a frame if needed
-  exec ${config.programs.emacs.package}/bin/emacsclient -c -a "" "$@"
-else
-  ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
-fi
+    if [ "$#" -gt 0 ]; then
+      # Block until editing finishes; create a frame if needed
+      exec ${config.programs.emacs.package}/bin/emacsclient -c -a "" "$@"
+    else
+      ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
+    fi
   '';
 
   puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
@@ -80,16 +80,16 @@ in {
       defaultInitFile = true;
       alwaysEnsure = true;
       /*
-       Here's how to override one of these, if I ever need that again.
+      Here's how to override one of these, if I ever need that again.
 
-          (gptel.overrideAttrs (old: {
-            src = pkgs.fetchFromGitHub {
-              owner = "karthink";
-              repo = "gptel";
-              rev = "229f7c689c67f993c0bb68052ef0f365b165dcd3"; 
-              sha256 = pkgs.lib.fakeSha256;
-            };
-          }))
+         (gptel.overrideAttrs (old: {
+           src = pkgs.fetchFromGitHub {
+             owner = "karthink";
+             repo = "gptel";
+             rev = "229f7c689c67f993c0bb68052ef0f365b165dcd3";
+             sha256 = pkgs.lib.fakeSha256;
+           };
+         }))
       */
       extraEmacsPackages = epkgs:
         with epkgs; [

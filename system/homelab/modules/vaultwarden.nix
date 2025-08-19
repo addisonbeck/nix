@@ -1,12 +1,8 @@
-{ config, ... }: {
+{config, ...}: {
   networking = {
     firewall.allowedTCPPorts = [
-      8222 
+      8222
     ];
-  };
-
-  age.secrets.homelab-vaultwarden-env-file = {
-    file = ../../with/user/with/secret/homelab-vaultwarden-env-file.age;
   };
 
   systemd.tmpfiles.rules = [
@@ -20,7 +16,7 @@
     enable = true;
     backupDir = "/var/srv/vaultwarden/backup";
 
-    environmentFile = config.age.secrets.homelab-vaultwarden-env-file.path;
+    environmentFile = config.sops.secrets.vaultwarden-env-file.path;
     config = {
       ROCKET_ADDRESS = "127.0.0.1";
       ROCKET_PORT = 8222;

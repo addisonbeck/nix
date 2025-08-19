@@ -5,6 +5,6 @@
     enable = true;
     url = "git@github.com:addisonbeck/binwarden.git";
     save-path = "${config.home.homeDirectory}/binwarden";
-    ssh-key = "${config.age.secrets.github.path}";
+    ssh-key = "${config.sops.secrets.github-signing-key.path}";
   };
 }

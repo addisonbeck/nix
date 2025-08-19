@@ -1,4 +1,4 @@
-{ ... }: {
+{...}: {
   imports = [
     ../raspberrypiimage.nix
     ../with/trait/has-swapfile.nix
@@ -12,6 +12,12 @@
     ./modules/freshrss.nix
     ./modules/vaultwarden.nix
     ../modules/automated-emailing
+    ../modules/secrets/adguard-env-file.nix
+    ../modules/secrets/vaultwarden-env-file.nix
+    ../modules/secrets/grafana.nix
+    ../modules/secrets/automated-emailing.nix
+    ../modules/secrets/freshrss.nix
+    ../modules/secrets/authorized-keys.nix
     ./modules/calibre/default.nix
     ./modules/nginx.nix
   ];

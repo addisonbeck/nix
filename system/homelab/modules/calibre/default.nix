@@ -1,5 +1,8 @@
-{ pkgs, config, ... }:
-let
+{
+  pkgs,
+  config,
+  ...
+}: let
   rss-to-kindle-source = builtins.readFile (pkgs.replaceVars ./rss-to-kindle-generate.sh {
     bash = "${pkgs.bash}/bin/bash";
     kindle-send = "${config.my.kindle-send}/bin/kindle-send";
@@ -7,8 +10,7 @@ let
   });
 
   rss-to-kindle-generate = pkgs.writeShellScriptBin "rss-to-kindle-generate" rss-to-kindle-source;
-in
-{
+in {
   environment.systemPackages = [
     pkgs.calibre
     pkgs.epubcheck
@@ -18,7 +20,7 @@ in
   environment.etc."freshrss.recipe".text = builtins.readFile ./freshrss-recipe.py;
 
   systemd.timers.rss-to-kindle-generate = {
-    wantedBy = [ "timers.target" ];
+    wantedBy = ["timers.target"];
     timerConfig = {
       OnCalendar = "03:00";
       Persistent = true;
@@ -48,6 +50,6 @@ in
       User = "root";
       Type = "oneshot";
     };
-    onFailure = [ "rss-to-kindle-failure-notify.service" ];
+    onFailure = ["rss-to-kindle-failure-notify.service"];
   };
 }

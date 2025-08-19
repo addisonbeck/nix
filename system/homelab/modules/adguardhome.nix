@@ -25,32 +25,32 @@
 in {
   options = {};
   config = {
-  networking = {
-    /*
-    Untoggle this if you ever get DHCP working
-    */
-    interfaces.end0 = {
-      useDHCP = false;
-      ipv4.addresses = [
-        {
-          address = "192.168.1.45";
-          prefixLength = 24;
-        }
+    networking = {
+      /*
+      Untoggle this if you ever get DHCP working
+      */
+      interfaces.end0 = {
+        useDHCP = false;
+        ipv4.addresses = [
+          {
+            address = "192.168.1.45";
+            prefixLength = 24;
+          }
+        ];
+      };
+      firewall.allowedTCPPorts = [
+        53 # DNS
+        #67 # DHCP server
+        #68 # DHCP client
+        3000 # Web UI
+      ];
+
+      firewall.allowedUDPPorts = [
+        53 # DNS
+        #67  # DHCP server
+        #68  # DHCP client
       ];
     };
-    firewall.allowedTCPPorts = [
-      53 # DNS
-      #67 # DHCP server
-      #68 # DHCP client
-      3000 # Web UI
-    ];
-
-    firewall.allowedUDPPorts = [
-      53 # DNS
-      #67  # DHCP server
-      #68  # DHCP client
-    ];
-  };
     services.adguardhome = {
       enable = true;
       openFirewall = true; # Not really sure what ports this opens
@@ -181,7 +181,7 @@ in {
         ExecStart = "${adguard-exporter}/bin/adguard-exporter";
         User = "nobody";
         Restart = "always";
-        EnvironmentFile = config.age.secrets.homelab-adguard-admin-password.path;
+        EnvironmentFile = config.sops.secrets.adguard-env-file.path;
       };
       environment = {
         ADGUARD_SERVERS = "http://localhost:3000";
@@ -189,35 +189,32 @@ in {
         INTERVAL = "30s";
       };
     };
-  services.prometheus = {
-    scrapeConfigs = [
-      {
-        job_name = "adguard-exporter";
-        static_configs = [
-          {
-            targets = ["localhost:9618"];
-          }
-        ];
-      }
-    ];
-  };
+    services.prometheus = {
+      scrapeConfigs = [
+        {
+          job_name = "adguard-exporter";
+          static_configs = [
+            {
+              targets = ["localhost:9618"];
+            }
+          ];
+        }
+      ];
+    };
 
-  services.nginx.virtualHosts = {
-    "homelab-server".locations = {
-          "/adguard/" = {
-            extraConfig = ''
-              proxy_pass http://127.0.0.1:3000/;
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              proxy_redirect / /adguard/;
-            '';
-          };
+    services.nginx.virtualHosts = {
+      "homelab-server".locations = {
+        "/adguard/" = {
+          extraConfig = ''
+            proxy_pass http://127.0.0.1:3000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_redirect / /adguard/;
+          '';
         };
-  };
-    age.secrets.homelab-adguard-admin-password = {
-      file = ../../with/user/with/secret/homelab-adguard-admin-password.age;
+      };
     };
   };
 }

@@ -29,6 +29,7 @@
   home-manager.users.me = {
     imports = [
       inputs.agenix.homeManagerModules.default
+      inputs.sops-nix.homeManagerModules.sops
       ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
       ./with/program/git.nix
@@ -95,7 +96,11 @@
       ./with/program/repomix.nix
       ./with/program/tree.nix
       ./with/program/leaderkey.nix
+      ../../modules/secrets/ssh-keys.nix
+      ../../modules/secrets/authinfo.nix
     ];
+
+    sops.gnupg.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
 
     home.packages = [
       #pkgs.packwiz
@@ -103,15 +108,17 @@
       pkgs.ripgrep
       pkgs.uv
       pkgs.wget
+      pkgs.ssh-to-age
     ];
 
     home.sessionPath = [];
     home.sessionVariables = {
       EDITOR = "ec";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";
-    
+
       VISUAL = "ec";
-      GIT_EDITOR = "ec";};
+      GIT_EDITOR = "ec";
+    };
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };

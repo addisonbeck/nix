@@ -8,6 +8,8 @@
     ./with/trait/allow-unfree-packages.nix
     ./with/user/me.nix
     ./modules/automated-emailing
+    ./modules/yubikey
+    ./modules/secrets/automated-emailing.nix
   ];
 
   # This is required for the automated-emailing module to work on mac, but
@@ -15,6 +17,6 @@
   # in the module itself I end up with a bunch of errors.
   homebrew = {
     enable = true;
-    casks = [ "calibre" ];
+    casks = ["calibre"];
   };
 }

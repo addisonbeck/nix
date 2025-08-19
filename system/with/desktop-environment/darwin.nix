@@ -5,7 +5,7 @@
 }: {
   # Avoids a logout/login cycle
   #system.activationScripts.postUserActivation.text = ''
-    #/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
+  #/System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
   #'';
 
   # Turns on key mapping

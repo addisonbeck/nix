@@ -1,0 +1,375 @@
+#+TITLE: Memory Tools
+#+PROPERTY: header-args:emacs-lisp :tangle memory-tools.el :results none
+
+The tools defined here are used by [[https://github.com/karthink/gptel][gptel]] for interacting with an org-roam note system. Some helpers functions called here are defined in [[./gptel.org]].
+
+* Search Across Memory
+
+#+begin_src emacs-lisp 
+  (defun my/truncate-string (s &optional len)
+    "Return at most LEN chars of S, appending “…” if truncated."
+    (let ((len (or len 300)))
+      (if (> (length s) len)
+	  (concat (substring s 0 len) "…")
+	s)))
+
+  (defun my/org-roam-search (query &optional begin-range end-range)
+    "Search org-roam nodes matching QUERY with pagination.
+  BEGIN-RANGE and END-RANGE are one-based indices (inclusive).
+  Defaults to 1–10."
+    (require 'seq)
+    (let* ((nodes  (org-roam-node-list))
+	   (matches
+	    (seq-filter
+	     (lambda (node)
+	       (or (string-match-p query (org-roam-node-title node))
+		   (string-match-p query
+				   (or (string-join (org-roam-node-tags node) " ")
+				       ""))
+		   (with-temp-buffer
+		     (insert-file-contents (org-roam-node-file node))
+		     (string-match-p query (buffer-string)))))
+	     nodes))
+	   (total  (length matches))
+	   (start  (or begin-range 0))
+	   (end    (or end-range 10)))
+      (if (zerop total)
+	  "No matching nodes found."
+	(let* ((end-excl (min total (1+ end)))
+	       (paged    (seq-subseq matches (min start total) end-excl))
+	       (header   (format "Showing results %d–%d of %d matches:\n\n"
+				 (1+ start)
+				 (min end total)
+				 total)))
+	  (concat header
+		  (mapconcat
+		   (lambda (node)
+		     (format "Title: %s\nTags: %s\nFile: %s\nSnippet:\n%s\n---\n"
+			     (org-roam-node-title node)
+			     (string-join (or (org-roam-node-tags node) '("None")) ", ")
+			     (org-roam-node-file node)
+			     (with-temp-buffer
+			       (insert-file-contents (org-roam-node-file node))
+			       (my/truncate-string (buffer-string) 300))))
+		   paged
+		   "\n"))))))
+
+  (gptel-make-tool
+   :name        "search_memory"
+   :function    #'my/org-roam-search
+   :description
+   "Search org-roam nodes by title, tags, or content with optional pagination.
+  Defaults to showing the first 10 hits."
+   :args        '((:name "query"       :type string  :description "Search string")
+		  (:name "begin_range" :type integer :description "One-based start index" :optional t)
+		  (:name "end_range"   :type integer :description "One-based end index"   :optional t))
+   :category    "memory")
+
+  (register-gptel-tool "search_memory")
+#+end_src
+
+* Create A New Memory
+
+#+begin_src emacs-lisp
+(defun my/create-memory-interactive ()
+  "Interactively create a memory node via `my/create-memory' and open the file."
+  (interactive)
+  (let* ((title (read-string "Memory Title: "))
+         (memory-type
+          (intern (completing-read
+                   "Memory Type (episodic/semantic/procedural/associative/working/reflective/reference): "
+                   '(episodic semantic procedural associative working reflective reference)
+                   nil t)))
+         (tags
+          (split-string
+           (read-string "Tags (comma-separated): ") "," t "[ \t\n\r]+"))
+         (aliases
+          (split-string
+           (read-string "Aliases (comma-separated): ") "," t "[ \t\n\r]+"))
+         (content (read-string "Content (org syntax, at least one backlink): "))
+         (res (my/create-memory
+               :title title
+               :memory-type memory-type
+               :tags tags
+               :aliases aliases
+               :content content)))
+    (find-file (plist-get res :file))))
+#+end_src
+
+
+#+begin_src emacs-lisp
+(require 'cl-lib)
+
+(cl-defun my/create-memory (&key title memory-type tags aliases content)
+  "Create an org-roam node with validated metadata."
+  (let ((valid-types
+         '(episodic semantic procedural associative working reflective reference)))
+    ;; 1) TITLE: non-empty string
+    (unless (and (stringp title) (> (length (string-trim title)) 0))
+      (error "create-memory error: TITLE must be a non-empty string"))
+    ;; 2) MEMORY-TYPE: must be one of valid-types
+    (unless (memq memory-type valid-types)
+      (error "create-memory error: MEMORY-TYPE must be one of %S" valid-types))
+    ;; 3) CONTENT: must be a string
+    (unless (stringp content)
+      (error "create-memory error: CONTENT must be a string"))
+
+    (require 'org-id)
+    ;; All bindings in one let* so filepath is in scope for the org-roam calls:
+    (let* ((slug     (downcase
+                      (replace-regexp-in-string
+                       "[^a-z0-9]+" "-"
+                       (string-trim title))))
+           (id (org-id-new))
+           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
+           (filepath (expand-file-name filename org-roam-directory))
+           (lowercased-tags (mapcar #'downcase tags))
+           (props    `(("ID"            . ,id)
+                       ("ROAM_TAGS"     . ,(mapconcat
+                                             #'identity
+                                             (cons (symbol-name memory-type) lowercased-tags)
+                                             " "))
+                       ("ROAM_ALIASES"  . ,(when aliases
+                                             (concat "\""
+                                                     (mapconcat #'identity aliases "\" \"")
+                                                     "\"")))
+                       ("CREATED"       . ,(format-time-string "<%Y-%m-%d %H:%M>"))
+                       ("LAST_MODIFIED" . ,(format-time-string "<%Y-%m-%d %H:%M>")))))
+      ;; 1) Create the node object (does not write file yet)
+      (org-roam-node-create
+       :id         id
+       :title      title
+       :file       filepath
+       :aliases    aliases
+       :properties props)
+      ;; 2) Write out the file with front-matter + content
+      (with-temp-file filepath
+        (insert ":PROPERTIES:\n")
+        (dolist (prop props)
+          (insert (format ":%s: %s\n" (car prop) (cdr prop))))
+        (insert ":END:\n")
+        (insert (format "#+TITLE: %s" title))
+        (insert "\n" content "\n"))
+      ;; 3) Sync to the database
+      (org-roam-db-sync)
+      ;; Return metadata for callers and also message
+      (let ((ret (list :id id :file filepath :title title)))
+        (message "create-memory: Node \"%s\" created at %s. Node ID: %s"
+                 title filepath id)
+        ret))))
+#+end_src
+
+
+This way is old, I'm testing out the new version below.
+#+begin_src emacs-lisp :tangle no
+(defun my/create-memory-wrapper
+    (title mem-type-str tags aliases content &rest _)
+  "Take the six GPTel args positionally, then call `my/create-memory` with keywords."
+  (let ((tags   (if (vectorp tags)   (append tags nil) tags))
+        (aliases (if (vectorp aliases) (append aliases nil) aliases)))
+  (let ((memory-type (intern mem-type-str)))
+    (my/create-memory
+     :title       title
+     :memory-type memory-type
+     :tags        tags
+     :aliases     aliases
+     :content     content))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/create-memory-wrapper
+    (title mem-type-str tags aliases content &rest _)
+  "Take the six GPTel args positionally, then call `my/create-memory` with keywords."
+  (let ((tags   (cond 
+                 ((vectorp tags) (append tags nil))
+                 ((listp tags) tags)
+                 ((stringp tags) (list tags))  ; Handle single string
+                 (t (list))))                   ; Default to empty list
+        (aliases (cond
+                  ((vectorp aliases) (append aliases nil)) 
+                  ((listp aliases) aliases)
+                  ((stringp aliases) (list aliases))  ; Handle single string
+                  (t (list)))))                        ; Default to empty list
+    (let ((memory-type (intern mem-type-str)))
+      (my/create-memory
+       :title       title
+       :memory-type memory-type
+       :tags        tags
+       :aliases     aliases
+       :content     content))))
+#+end_src
+
+
+#+begin_src emacs-lisp
+  ;; register as a GPTel‐tool
+  (gptel-make-tool
+   :name        "create_memory"
+   :function    #'my/create-memory-wrapper
+   :description "Records a new org-roam based memory for later recall. The LLM should save information to memory frequently and across all conversation types. Memory is searched before all else, and should be updated before all else too. Curating, refining, and pruning memory should at all times be considered as important as achieving our primary objective. Write memory content in org syntax, including code blocks. When creating a new node always output its id, title, and file path to the user. Be comprehensive with tags and aliases. Think relationally. Memory content should be richly backlinked. All memories need at least one backlink in their content, and more is better. **Backlinks must use full Roam syntax with node IDs** (e.g., \[[id:0405A9B0-4B3E-4EAC-9CC9-9D7F0BFB5A05][Bitwarden Development]]). Do not attempt to use document titles as a backlinks. Before you execute this tool be critical of what your are thinking. Memories over 400 words in length should be considered a code smell, and should perhaps be broken up into multiple memories."
+   :args        '((:name "title"       :type string  :description "Node title")
+		  (:name "memory-type" :type string  :description "One of episodic, semantic, procedural, associative, working, reflective, reference")
+		  (:name "tags"
+			 :type array
+			 :items (:type string)
+			 :description "List of org-roam tags for the new node (at least one required, more encouraged)")
+		  (:name "aliases"
+			 :type array
+			 :items (:type string)
+			 :description "List of org-roam aliases for the new node (at least one required, more encouraged)")
+		  ;;(:name "expiry"      :type string  :description "Expiry date yyyy-mm-dd (required for working)")
+		  (:name "content"     :type string  :description "Body content of the note. Should include at least one valid backlink (more encouraged)"))
+   :category    "memory")
+
+  (register-gptel-tool "create_memory")
+#+end_src
+
+* Read A Memory By ID
+
+#+begin_src emacs-lisp 
+(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
+  "Return list of plists for ID and its 'Required Reading' tree.
+Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
+Supports org-roam node links (id:ID) and file links (file:/abs/path, file+*:…),
+and raw absolute paths (/abs/path)."
+  (interactive)
+  (let* ((seen (or seen (list (concat "id:" id))))  ; track 'id:'-prefixed for cycle checks
+         (file-seen (or file-seen '()))
+         (node (org-roam-node-from-id id)))
+    (when node
+      (let* ((file (org-roam-node-file node))
+             (title (org-roam-node-title node))
+             result
+             required-reading)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (org-mode)
+          (goto-char (org-roam-node-point node))
+          (let ((content (buffer-substring-no-properties
+                          (point)
+                          (progn (org-end-of-subtree t) (point)))))
+            (save-excursion
+              (goto-char (org-roam-node-point node))
+              (let ((case-fold-search t))  ; be lenient about heading case
+                (when (re-search-forward "^\\*+ Required Reading\\s-*$" nil t)
+                  (let ((start (point))
+                        (end (or (save-excursion (re-search-forward "^\\*+ " nil t))
+                                 (point-max))))
+                    (let ((section (buffer-substring-no-properties start end)))
+                      (with-temp-buffer
+                        (insert section)
+                        (goto-char (point-min))
+                        (while (re-search-forward
+                                "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
+                                nil t)
+                          (let ((link (match-string 1))
+                                (desc (or (match-string 2) "(No description)")))
+                            (push (cons link desc) required-reading)))))))))
+            (setq required-reading (reverse required-reading))
+            (push (list :id id :title title :content content :file file) result)
+            ;; Recursively add each required reading in order
+            (dolist (link-pair required-reading)
+              (let* ((raw (car link-pair))
+                     (desc (cdr link-pair)))
+                (cond
+                 ;; Org-roam node: follow id:
+                 ((and (string-prefix-p "id:" raw)
+                       (not (member raw seen)))
+                  (let* ((real-id (substring raw 3))
+                         (child-results (my/gptel-org-roam-node-content-by-id
+                                         real-id (cons raw seen) file-seen)))
+                    (setq result (append result child-results))))
+                 ;; File links: support file:, file+*, and raw absolute paths
+                 (t
+                  (let* ((abs
+                          (cond
+                           ((string-match "^file\\(?:\\+[^:]+\\)?:\\(.+\\)$" raw)
+                            (match-string 1 raw))
+                           ((string-prefix-p "/" raw) raw)
+                           (t nil))))
+                    (when abs
+                      ;; Strip ::search, unescape, expand, absolutize
+                      (setq abs (car (split-string abs "::")))
+                      (when (fboundp 'org-link-unescape)
+                        (setq abs (org-link-unescape abs)))
+                      (setq abs (expand-file-name abs (file-name-directory file)))
+                      (let ((canon (ignore-errors (file-truename abs))))
+                        (when (and canon (file-readable-p canon)
+                                   (not (member canon file-seen)))
+                          (condition-case nil
+                              (let ((f-content (with-temp-buffer
+                                                 (insert-file-contents canon)
+                                                 (buffer-string))))
+                                (push (list :id canon
+                                            :title desc
+                                            :content f-content
+                                            :file canon)
+                                      result)
+                                (push canon file-seen))
+                            (error nil))))))))))
+            (nreverse result)))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name "read_memory_node_by_id"
+ :function #'my/gptel-org-roam-node-content-by-id
+ :description "Fetch full content of an org-roam node by its Roam ID. Includes the content of the requested memory, and any other files in that memory's '*Required Reading' section."
+ :args '((:name "id" :type string :description "Roam ID"))
+ :category "memory")
+(register-gptel-tool "read_memory_node_by_id")
+#+end_src
+
+* Add A New Backlink Between Nodes
+
+#+begin_src emacs-lisp
+  (defun my/org-roam-add-backlink (src-id tgt-id &optional link-text)
+    "In SRC-ID node, append a backlink to TGT-ID. Optional LINK-TEXT."
+    (let* ((src-node (org-roam-node-from-id src-id))
+	   (tgt-node (org-roam-node-from-id tgt-id)))
+      (unless (and src-node tgt-node)
+	(error "Source or target node not found"))
+      (with-current-buffer (find-file-noselect (org-roam-node-file src-node))
+	(save-excursion
+	  (goto-char (org-roam-node-point src-node))
+	  (org-end-of-subtree t)
+	  (forward-line)
+	  (let ((link (format "[[id:%s][%s]]"
+			      tgt-id
+			      (or link-text (org-roam-node-title tgt-node)))))
+	    (insert link "\n")))
+	(save-buffer))
+      (message "Backlink added from %s to %s"
+	       (org-roam-node-title src-node)
+	       (org-roam-node-title tgt-node))))
+
+  (gptel-make-tool
+   :name        "add_memory_backlink"
+   :function    #'my/org-roam-add-backlink
+   :description "Add an Org-roam backlink in a source node (by ID) pointing to a target node (by ID). Optional custom link text."
+   :args        '((:name "src_id" :type string :description "Source node Roam ID")
+		  (:name "tgt_id" :type string :description "Target node Roam ID")
+		  (:name "link_text" :type string :optional t :description "Custom link text"))
+   :category    "memory")
+  (register-gptel-tool "add_memory_backlink")
+#+end_src
+
+* Identify Orphaned Memory Nodes
+#+begin_src emacs-lisp
+(defun my/gptel-identify-orphaned-memory-nodes ()
+  "Return a list of plists (:id :title :file) for all org-roam nodes with zero links."
+  (mapcar (lambda (row)
+            (list :id    (elt row 0)
+                  :title (elt row 1)
+                  :file  (elt row 2)))
+          (org-roam-db-query
+           "SELECT nodes.id, nodes.title, nodes.file
+            FROM nodes
+            WHERE nodes.id NOT IN (SELECT source FROM links);")))
+
+(gptel-make-tool
+ :name "identify_orphaned_memory_nodes"
+ :function #'my/gptel-identify-orphaned-memory-nodes
+ :description "Lists all Org-roam nodes with zero backlinks via SQL joins, returning their ID, title, and file path."
+ :category "memory")
+(register-gptel-tool "identify_orphaned_memory_nodes")
+#+end_src

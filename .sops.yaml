@@ -1,0 +1,47 @@
+keys:
+  - &admin_gpg F21DD334920ECB120F786117366AB9D6FB8574D2
+  - &admin_me age1dxcc6vvv98muzrsv2a8j280088fjrmh22apv942fgfn5g64h6vxsl58vck
+  - &host_homelab age129slta36phpnzzcwl806skp2aqnr9tdtvs8mgjza2ewxhljswvxsewrtm5
+  - &host_bw age12708jpycle7nwaenauqgqfum2vgnuj9zr84ngukpv0thrvwm99fq8cw4dn
+
+creation_rules:
+  # User
+  - path_regex: secrets/(.*github-ssh.*|.*authinfo.*|.*ssh-keys.*)$
+    key_groups:
+    - age:
+      - *admin_me
+      - *host_bw
+      pgp:
+      - *admin_gpg
+  # Homelab
+  - path_regex: secrets/(.*grafana.*|.*adguard.*|.*vaultwarden.*|.*freshrss.*|.*authorized_keys.*)$
+    key_groups:
+    - age:
+      - *admin_me
+      - *host_homelab
+      pgp:
+      - *admin_gpg
+
+  # Homelab + Bw Host
+  - path_regex: secrets/(.*automated-emailing.*).yaml$
+    key_groups:
+    - age:
+      - *admin_me
+      - *host_homelab
+      - *host_bw
+      pgp:
+      - *admin_gpg
+
+  # Test key
+  - path_regex: secrets/testing.yaml$
+    key_groups:
+    - pgp:
+      - *admin_gpg
+
+  # Default
+  - path_regex: secrets/.*\.yaml$
+    key_groups:
+    - age:
+      - *admin_me
+      pgp:
+      - *admin_gpg

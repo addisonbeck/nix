@@ -1,13 +1,15 @@
-{ pkgs, config, ... }:
 {
-  age.secrets.freshrss.file = ../../with/user/with/secret/freshrss.nix;
+  pkgs,
+  config,
+  ...
+}: {
   services.freshrss = {
     enable = true;
     defaultUser = "me";
-    passwordFile = config.age.secrets.freshrss.path;
+    passwordFile = config.sops.secrets.freshrss.path;
     baseUrl = "https://homelab/rss/";
     virtualHost = "homelab";
-    extensions = [ pkgs.freshrss-extensions.youtube ];
+    extensions = [pkgs.freshrss-extensions.youtube];
   };
   services.nginx.virtualHosts = {
     "homelab-server".locations = {
@@ -28,5 +30,4 @@
       };
     };
   };
-
 }

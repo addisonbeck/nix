@@ -1,0 +1,431 @@
+#+TITLE: GPTel Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle gptel.el :results none
+
+* GPTel Configuration
+#+begin_src emacs-lisp
+(use-package gptel
+  :config
+  (setq gptel-log-level 'debug
+  gptel-default-mode 'org-mode
+  gptel-cache nil)
+
+  (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠🧑🏻‍🍳\n"
+  (alist-get 'org-mode gptel-response-prefix-alist) "＠🤖\n")
+
+  (setq gptel-directives
+  '((default . "Use the read_memory_node_by_id tool to read memory id 27E07272-DCC1-4A18-851A-1B0F297F5A60. This will initlize context for your personality, the human user, and the availible tools. Do this before beginning to respond to the human user's first request.")
+    (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM writes in org markup, using org source blocks when writing code.")))
+
+  (defun my/get-api-key (host)
+    (when-let ((auth (car (auth-source-search
+		     :host host
+		     :require '(:secret)))))
+(let ((token (plist-get auth :secret)))
+  (if (functionp token)
+      (funcall token)
+    token))))
+
+  (gptel-make-anthropic "Claude"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com")))
+
+  (gptel-make-gemini "Gemini"
+	       :key (lambda () (my/get-api-key "api.gemini.com")))
+
+  (gptel-make-openai "ChatGPT"
+	       :key (lambda () (my/get-api-key "api.openai.com"))
+	       :stream t
+	       :models gptel--openai-models))
+
+				  ;(setq gptel-backend (gptel-make-gh-copilot "Copilot")
+				  ;      gptel-model 'gpt-4o-mini))
+
+(defun my/gptel-cache-one-shot ()
+  (interactive)
+  (setq gptel-cache '(system tool)))
+
+(defun my/gptel-cache-multi-shot ()
+  (interactive)
+  (setq gptel-cache t))
+
+(defun my/gptel-cache-off ()
+  (interactive)
+  (setq gptel-cache nil))
+#+end_src
+* GPTel Context Management
+
+These are helper functions and automations for being efficient with tokens in GPTel.
+
+This doesn't work
+
+#+begin_src emacs-lisp
+  ;; Context minification function for GPTel
+  (defun my/gptel-minify-context ()
+    "Minify the current gptel chat buffer context to reduce tokens."
+    (interactive)
+    (when (derived-mode-p 'gptel-mode)
+      (let ((inhibit-read-only t)
+	    (modified (buffer-modified-p)))
+	(save-excursion
+	  ;; Remove excess blank lines
+	  (goto-char (point-min))
+	  (while (re-search-forward "\n\n\n+" nil t)
+	    (replace-match "\n\n"))
+
+	  ;; Collapse code blocks to show minimal context
+	  (goto-char (point-min))
+	  (while (re-search-forward "```\\([^`\n]*\\)\n\\([^`]*?\\)\n```" nil t)
+	    (let* ((lang (match-string 1))
+		   (code (match-string 2))
+		   (lines (split-string code "\n"))
+		   (total-lines (length lines))
+		   (preview-lines 3)
+		   (minified-code
+		    (if (> total-lines (* 2 preview-lines))
+			(concat
+			 (string-join (seq-take lines preview-lines) "\n")
+			 "\n... "
+			 (number-to-string (- total-lines (* 2 preview-lines)))
+			 " lines collapsed ...\n"
+			 (string-join (seq-take-last preview-lines lines) "\n"))
+		      code)))
+	      (replace-match (format "```%s\n%s\n```" lang minified-code))))
+
+	  ;; Optionally truncate very long responses
+	  (goto-char (point-min))
+	  (while (re-search-forward "^Assistant: \\([^\n]*\\(?:\n[^\n]+\\)*\\)" nil t)
+	    (let* ((response (match-string 1))
+		   (lines (split-string response "\n"))
+		   (max-lines 20))
+	      (when (> (length lines) max-lines)
+		(let ((truncated-response
+		       (concat
+			(string-join (seq-take lines (/ max-lines 2)) "\n")
+			"\n... "
+			(number-to-string (- (length lines) max-lines))
+			" lines summarized ...\n"
+			(string-join (seq-take-last (/ max-lines 2) lines) "\n"))))
+		  (replace-match (concat "Assistant: " truncated-response))))))
+
+	  ;; Remove trailing whitespace
+	  (delete-trailing-whitespace))
+
+	;; Restore modification state
+	(set-buffer-modified-p modified))
+
+      ;; Provide feedback on reduction
+      (message "Context minified. Use M-x revert-buffer to restore if needed.")))
+
+  ;; Bind minification function in gptel-mode
+#+end_src
+
+* GPTel Tools
+
+This section defines agenic tools capabilities for gptel. It's my answer to the "stdlib for LLMs" idea.
+
+Some notes:
+
+1. All tools _must_ have an arguement. This can be just a dummy arguement like `read_gptel_tools_section`.
+
+** General Tools Setup
+This block contains helper functions and variables used by multiple tools. These are not tools themselves but support the tool infrastructure.
+
+#+begin_src emacs-lisp
+  (setq gptel-use-tools t
+	gptel-tools nil)  
+
+  (defun register-gptel-tool (tool-name)
+    "Register a tool with gptel by its NAME."
+    (add-to-list 'gptel-tools (gptel-get-tool tool-name)))
+
+  ;; Make sure repomix is available
+  ;;(unless (executable-find "repomix")
+  ;;(message "Warning: repomix not found in PATH. The repomix tool won't work until installed."))
+
+
+  (defvar my/file-bookmarks
+    '(("emacs config" . (:path "~/nix/system/with/user/with/program/emacs.org"
+			       :description "My literate org based emacs configuration"))
+      ("inbox" . (:path "~/notes/inbox.org"
+			:description "My inbox for my TODOs and notes"))
+      ))
+#+end_src
+
+** Repomix Integration
+
+#+begin_src emacs-lisp :tangle no
+  (defun my/run-repomix (directory)
+    "Run repomix on DIRECTORY to generate context for LLM."
+    (message "Running repomix on directory: %s" directory)
+    (let* ((default-directory directory)
+	   (output-buffer (generate-new-buffer " *repomix-output*"))
+	   (command "repomix . -i 'node_modules,dist,.git,*.min.js,*.bundle.js'"))
+      (with-current-buffer output-buffer
+	(let ((exit-code (call-process-shell-command command nil t)))
+	  (if (= exit-code 0)
+	      (let ((output (buffer-string)))
+		(kill-buffer output-buffer)
+		output)
+	    (let ((error-msg (format "Repomix failed with exit code %d: %s"
+				     exit-code (buffer-string))))
+	      (kill-buffer output-buffer)
+	      (error error-msg)))))))
+
+  (gptel-make-tool
+   :name "repomix"
+   :function #'my/run-repomix
+   :description "Run repomix on a directory to analyze and summarize code for context.
+	This generates a well-structured overview of the codebase including directory structure,
+	key files, important functions, and insights about the project architecture."
+   :args '((:name "directory"
+		  :type string
+		  :description "Directory path to analyze with repomix"))
+   :category "code-analysis")
+
+  (register-gptel-tool "repomix")
+#+end_src
+
+** Fetch_Webpage
+
+This works but I'm using the fetch mcp server
+
+#+begin_src emacs-lisp :tangle no
+  (gptel-make-tool
+   :name "fetch_webpage"
+   :function (lambda (url)
+	       (message "Fetching URL: %s" url)
+	       (let ((buffer (url-retrieve-synchronously url t nil 30)))
+		 (when buffer
+		   (with-current-buffer buffer
+		     (goto-char (point-min))
+		     (re-search-forward "^$" nil t) ; Skip headers
+		     (forward-char)
+		     ;; Basic HTML cleanup: Convert to plain text
+		     (require 'shr)
+		     (let* ((dom (libxml-parse-html-region (point) (point-max)))
+			    (text-buffer (generate-new-buffer " *temp*")))
+		       (with-current-buffer text-buffer
+			 (shr-insert-document dom)
+			 ;; Clean up the text and ensure it's JSON-safe
+			 (let ((content (replace-regexp-in-string 
+					 "[\u0000-\u001F\u007F]+" " "
+					 (buffer-substring-no-properties (point-min) (point-max)))))
+			   (kill-buffer text-buffer)
+			   (kill-buffer buffer)
+			   ;; Ensure we return a proper JSON string
+			   content)))))))
+   :description "fetch the contents of a webpage given its url"
+   :args '((:name "url"
+		  :type string
+		  :description "url of the webpage to fetch"))
+   :category "web")
+
+  (register-gptel-tool "fetch_webpage")
+#+end_src
+
+** Project Context Tool
+
+#+begin_src emacs-lisp :tangle no
+  (defun my/project-context-for-llm (project-root &optional scope)
+    "Generate project context for LLM consumption.
+		      PROJECT-ROOT is the directory to analyze.
+		      SCOPE can be 'structure (directory only), 'core (key files), or 'full (both)."
+    (let* ((project-root (expand-file-name project-root))
+	   (default-directory project-root)
+	   (context-parts '()))
+
+      ;; Add project structure with depth limitation
+      (push (concat "Project Structure:\n" 
+		    (shell-command-to-string "tree -L 3 --gitignore --noreport"))
+	    context-parts)
+
+      ;; Add key files only for core or full scopes
+      (when (or (eq scope 'core) (eq scope 'full))
+	(let* ((key-files '("README.md" "package.json" "Cargo.toml" "pyproject.toml"
+			    "flake.nix" "default.nix" "home.nix"
+			    "Makefile" "justfile"))
+	       (found-files '()))
+
+	  ;; Find important files that actually exist
+	  (dolist (file key-files)
+	    (when (file-exists-p file)
+	      (push file found-files)))
+
+	  ;; Add file summary header
+	  (push "\nKey Files Found:" context-parts)
+	  (push (mapconcat #'identity found-files "\n") context-parts)
+
+	  ;; Add content of files with size checks and truncation
+	  (push "\nFile Contents:" context-parts)
+	  (dolist (file found-files)
+	    (let ((file-size (nth 7 (file-attributes file))))
+	      (cond
+	       ;; Skip large files completely
+	       ((> file-size 15000)
+		(push (format "\n=== %s === (TOO LARGE: %dKB - skipped)" 
+			      file (/ file-size 1024)) 
+		      context-parts))
+
+	       ;; Truncate medium files
+	       ((> file-size 5000)
+		(push (format "\n=== %s === (TRUNCATED: %dKB)" 
+			      file (/ file-size 1024)) 
+		      context-parts)
+		(push (with-temp-buffer
+			(insert-file-contents file nil 0 2000)
+			(concat (buffer-string) 
+				"\n[...file truncated...]\n"))
+		      context-parts))
+
+	       ;; Include small files completely
+	       (t
+		(push (format "\n=== %s ===" file) context-parts)
+		(push (with-temp-buffer
+			(insert-file-contents file)
+			(buffer-string))
+		      context-parts)))))))
+
+      ;; Join all parts in reverse order (since we used push)
+      (mapconcat #'identity (reverse context-parts) "\n")))
+
+  (gptel-make-tool
+   :name "project_context"
+   :function #'my/project-context-for-llm
+   :description "Get structural and content context for a project directory"
+   :args '((:name "project"
+		  :type string
+		  :description "project name or path")
+	   (:name "scope"
+		  :type string
+		  :description "context scope: 'structure, 'core, or 'full"))
+   :category "project")
+
+  (register-gptel-tool "project_context")
+#+end_src
+
+** GPTel Org Agenda Tool
+#+begin_src emacs-lisp  :tangle no
+  (defun my/gptel-org-agenda-daily ()
+    (interactive)
+    "Return today's org‐agenda daily dashboard as a string."
+    (with-temp-buffer
+      ;; generate the agenda in this temp buffer
+      (let ((org-agenda-buffer-name "*Org Agenda*"))
+	(org-agenda nil "d"))
+      ;; grab its contents
+      (buffer-string)))
+
+  ;; register it as a GPTel tool
+  (gptel-make-tool
+   :name        "org_agenda_daily"
+   :function    #'my/gptel-org-agenda-daily
+   :description "Fetch my Org Agenda daily dashboard. Helpful for determining what's happening today and what to work on."
+   :category "notes-and-reminders")
+
+  (register-gptel-tool "org_agenda_daily")
+#+end_src
+
+** Run Terminal Command
+#+begin_src emacs-lisp
+  (require 'json)
+
+  (defun my/gptel-run-shell-command (command)
+    "Run COMMAND in the shell and return a JSON string with `exit_code` and `output`."
+    (let* ((buffer (generate-new-buffer " *gptel-shell-output*"))
+	   (exit-code (call-process-shell-command command nil buffer t))
+	   (output
+	    (with-current-buffer buffer
+	      (prog1
+		  (buffer-string)
+		(kill-buffer)))))
+      (json-encode `(("exit_code" . ,exit-code)
+		     ("output"    . ,output)))))
+
+  ;; Register it as a gptel tool
+  (gptel-make-tool
+   :name        "shell_command"
+   :function    #'my/gptel-run-shell-command
+   :description "Run an arbitrary shell COMMAND and return JSON with exit_code and output."
+   :args        '((:name "command"
+			 :type string
+			 :description "The shell command to execute (as you would type it in a terminal)"))
+   :category    "system")
+
+  (register-gptel-tool "shell_command")
+#+end_src
+
+** Execute Elisp Tool
+
+This tool allows LLMs to execute arbitrary elisp code in the currently running Emacs process.
+
+#+begin_src emacs-lisp
+(defun my/gptel-execute-elisp (elisp-code)
+  "Execute arbitrary elisp CODE and return the result as a string.
+The code is evaluated in the current Emacs process."
+  (condition-case err
+(let* ((result (eval (read elisp-code) t))
+       (result-string (format "%S" result)))
+  (json-encode `(("success" . t)
+		 ("result" . ,result-string))))
+    (error
+     (json-encode `(("success" . nil)
+	      ("error" . ,(error-message-string err)))))))
+
+;; Register it as a gptel tool
+(gptel-make-tool
+ :name        "execute_elisp"
+ :confirm t
+ :include t
+ :function    #'my/gptel-execute-elisp
+ :description "Execute arbitrary elisp code in the current Emacs process and return the result.
+	 Use with extreme caution as this has full access to the Emacs environment."
+ :args        '((:name "code"
+		 :type string
+		 :description "The elisp code to evaluate"))
+ :category    "development")
+
+(register-gptel-tool "execute_elisp")
+#+end_src
+* MCP Configuration
+#+begin_src emacs-lisp 
+;https://github.com/lizqwerscott/mcp.el
+;https://github.com/karthink/gptel
+;https://github.com/github/github-mcp-server
+(require 'gptel-integrations)
+(require 'mcp-hub)
+(setq mcp-server-start-time 120) 
+
+(defun my/get-github-mcp-token ()
+  (interactive)
+  (when-let ((auth (car (auth-source-search :host "api.github.com" :require '(:secret)))))
+    (let ((token (plist-get auth :secret)))
+      (if (functionp token) (funcall token) token))))
+
+(defun my/get-brave-token ()
+  (interactive)
+  (when-let ((auth (car (auth-source-search :host "api.brave.com" :require '(:secret)))))
+    (let ((token (plist-get auth :secret)))
+      (if (functionp token) (funcall token) token))))
+
+(setq mcp-hub-servers
+      `(
+       ("filesystem" . (:command "npx"
+                                       :args
+                                       ("-y" "@modelcontextprotocol/server-filesystem" "/Users/me/nix" "/Users/me/binwarden" "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes")))
+        ("brave-search" . (:command "npx"
+                                         :args ("-y" "@modelcontextprotocol/server-brave-search")
+                                         :env (:BRAVE_API_KEY ,(my/get-brave-token))))
+        ("mcp-server-text-editor" . (:command "npx"
+                                            :args ("-y" "mcp-server-text-editor")))
+        ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+        ("github-mcp" . (:command "docker"
+                        :args ("run" "-i" "--rm"
+                              "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+                              "ghcr.io/github/github-mcp-server")
+                       :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+        ))
+
+;; Start MCP servers after Emacs initializes
+(add-hook 'after-init-hook #'mcp-hub-start-all-server)
+#+end_src
+

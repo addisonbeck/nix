@@ -7,7 +7,7 @@
   age.identityPaths = ["${config.home.homeDirectory}/.ssh/me"];
   age.secrets.github.file = ./github.age;
 
-  programs.git.signing.key = config.age.secrets.github.path;
+  programs.git.signing.key = config.sops.secrets."primary-ssh-key.pub".path;
   programs.git.extraConfig.gpg.format = "ssh";
   programs.git.signing.signByDefault = true;
   programs.git.userName = "addisonbeck";
@@ -22,7 +22,7 @@
   programs.ssh.matchBlocks = {
     "github.com" = {
       hostname = "github.com";
-      identityFile = config.age.secrets.github.path;
+      identityFile = config.sops.secrets."primary-ssh-key".path;
     };
   };
 }
