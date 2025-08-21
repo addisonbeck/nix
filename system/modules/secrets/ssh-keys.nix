@@ -1,7 +1,4 @@
 {pkgs, config, ...}: {
-  programs.ssh.enable = true;
-  programs.ssh.package = pkgs.openssh;
-
   sops.secrets."primary-ssh-key.pub" = {
     format = "yaml";
     sopsFile = ../../../secrets/ssh-keys.yaml;
@@ -27,6 +24,15 @@
     #sopsFile = ../../../secrets/testing.yaml;
   #};
 
+  programs.ssh.enable = true;
+  programs.ssh.package = pkgs.openssh;
+
+  programs.ssh.extraConfig = ''
+    AddKeysToAgent yes
+    IgnoreUnknown UseKeychain
+    UseKeychain yes
+  '';
+
   programs.git.signing.key = config.sops.secrets."primary-ssh-key.pub".path;
   programs.git.extraConfig.gpg.format = "ssh";
   programs.git.signing.signByDefault = true;
@@ -40,10 +46,22 @@
     };
   };
 
+  # Don't forget to run ssh-add -K on new machines
   programs.ssh.matchBlocks = {
     "homelab" = {
       hostname = "homelab";
+      user = "root";
       identityFile = config.sops.secrets."primary-ssh-key".path;
+      forwardAgent = true;
+    };
+  };
+
+  programs.ssh.matchBlocks = {
+    "addisonbeck.com" = {
+      hostname = "addisonbeck.com";
+      user = "root";
+      identityFile = config.sops.secrets."primary-ssh-key".path;
+      forwardAgent = false;
     };
   };
 }
