@@ -211,6 +211,7 @@
           pkgs.sops
           pkgs.yubikey-manager
           pkgs.gnupg
+          pkgs.git-crypt
         ];
       };
       editing = pkgs.mkShell {

@@ -1,8 +1,6 @@
 {...}: {
-  sops.secrets."authorized_keys" = {
-    format = "binary";
-    sopsFile = ../../../secrets/authorized_keys;
-    path = "/etc/.ssh/authorized_keys";
-    mode = "0400";
+  environment.etc."ssh/authorized_keys" = {
+    source = ../../../secrets/authorized_keys;
+    mode = "0444";
   };
 }

@@ -20,7 +20,7 @@
   ];
 
   users.users.root.openssh.authorizedKeys.keyFiles = [
-    config.sops.secrets."authorized_keys".path
+    ../secrets/authorized_keys
   ];
 
   security.sudo = {

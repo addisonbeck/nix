@@ -1,4 +1,7 @@
-{config, ...}: {
+{pkgs, config, ...}: {
+  programs.ssh.enable = true;
+  programs.ssh.package = pkgs.openssh;
+
   sops.secrets."primary-ssh-key.pub" = {
     format = "yaml";
     sopsFile = ../../../secrets/ssh-keys.yaml;
@@ -23,4 +26,24 @@
     #format = "yaml";
     #sopsFile = ../../../secrets/testing.yaml;
   #};
+
+  programs.git.signing.key = config.sops.secrets."primary-ssh-key.pub".path;
+  programs.git.extraConfig.gpg.format = "ssh";
+  programs.git.signing.signByDefault = true;
+  programs.git.userName = "addisonbeck";
+  programs.git.userEmail = "github@addisonbeck.com";
+
+  programs.ssh.matchBlocks = {
+    "github.com" = {
+      hostname = "github.com";
+      identityFile = config.sops.secrets."primary-ssh-key".path;
+    };
+  };
+
+  programs.ssh.matchBlocks = {
+    "homelab" = {
+      hostname = "homelab";
+      identityFile = config.sops.secrets."primary-ssh-key".path;
+    };
+  };
 }
