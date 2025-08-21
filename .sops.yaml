@@ -32,7 +32,7 @@ creation_rules:
       pgp:
       - *admin_gpg
 
-  # Test key
+  # Test key for asserting gpg only works
   - path_regex: secrets/testing.yaml$
     key_groups:
     - pgp:
