@@ -23,7 +23,6 @@ in {
   home-manager.users.steve = {
     imports = [
       inputs.agenix.homeManagerModules.default
-      ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
       ./with/program/git.nix
       ./with/program/d.nix

@@ -34,7 +34,9 @@ in
 
     services.gpg-agent = {
       enable = true;
-      pinentryPackage = pkgs.pinentry-emacs;
+      pinentry = {
+        package = pkgs.pinentry-emacs;
+      };
       defaultCacheTtl = 3600;
       maxCacheTtl = 86400;
     };

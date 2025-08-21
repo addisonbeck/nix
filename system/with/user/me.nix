@@ -30,7 +30,6 @@
     imports = [
       inputs.agenix.homeManagerModules.default
       inputs.sops-nix.homeManagerModules.sops
-      ./with/trait/well-known-hosts.nix
       ./with/program/bash.nix
       ./with/program/git.nix
       ./with/program/direnv.nix
