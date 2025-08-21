@@ -17,7 +17,6 @@
     ../modules/secrets/grafana.nix
     ../modules/secrets/automated-emailing.nix
     ../modules/secrets/freshrss.nix
-    ../modules/secrets/authorized-keys.nix
     ./modules/calibre/default.nix
     ./modules/nginx.nix
   ];
