@@ -1,6 +1,7 @@
 keys:
   - &admin_gpg F21DD334920ECB120F786117366AB9D6FB8574D2
-  - &admin_me age1dxcc6vvv98muzrsv2a8j280088fjrmh22apv942fgfn5g64h6vxsl58vck
+  - &admin_secondary_gpg 22D63219CA650B662B7A1B3C7CD5BEC5074C4BB2
+  - &admin_tertiary_gpg 3E936A82284D97AF53279821567BD1FB14C80DA9
   - &host_homelab age129slta36phpnzzcwl806skp2aqnr9tdtvs8mgjza2ewxhljswvxsewrtm5
   - &host_bw age12708jpycle7nwaenauqgqfum2vgnuj9zr84ngukpv0thrvwm99fq8cw4dn
 
@@ -9,39 +10,44 @@ creation_rules:
   - path_regex: secrets/(.*github-ssh.*|.*authinfo.*|.*ssh-keys.*|.*known_hosts.*)$
     key_groups:
     - age:
-      - *admin_me
       - *host_bw
       pgp:
       - *admin_gpg
+      - *admin_secondary_gpg
+      - *admin_tertiary_gpg
   # Homelab
-  - path_regex: secrets/(.*grafana.*|.*adguard.*|.*vaultwarden.*|.*freshrss.*|.*authorized_keys.*)$
+  - path_regex: secrets/(.*grafana.*|.*adguard.*|.*vaultwarden.*|.*freshrss.*)$
     key_groups:
     - age:
-      - *admin_me
       - *host_homelab
       pgp:
       - *admin_gpg
+      - *admin_secondary_gpg
+      - *admin_tertiary_gpg
 
   # Homelab + Bw Host
   - path_regex: secrets/(.*automated-emailing.*).yaml$
     key_groups:
     - age:
-      - *admin_me
       - *host_homelab
       - *host_bw
       pgp:
       - *admin_gpg
+      - *admin_secondary_gpg
+      - *admin_tertiary_gpg
 
   # Test key for asserting gpg only works
   - path_regex: secrets/testing.yaml$
     key_groups:
     - pgp:
       - *admin_gpg
+      - *admin_secondary_gpg
+      - *admin_tertiary_gpg
 
   # Default
   - path_regex: secrets/.*\.yaml$
     key_groups:
-    - age:
-      - *admin_me
-      pgp:
+    - pgp:
       - *admin_gpg
+      - *admin_secondary_gpg
+      - *admin_tertiary_gpg
