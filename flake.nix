@@ -9,11 +9,6 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    # Deprecated, moved to sops.
-    # Leaving for a bit in case I messed something up
-    agenix.url = "github:ryantm/agenix";
-    agenix.inputs.nixpkgs.follows = "nixpkgs";
-
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -44,7 +39,6 @@
   outputs = {
     self,
     nixpkgs,
-    agenix,
     nix-darwin,
     treefmt-nix,
     emacs-overlay,
@@ -92,7 +86,6 @@
         };
         modules = [
           ./system/homelab
-          agenix.nixosModules.default
           sops-nix.nixosModules.default
         ];
       };
@@ -115,7 +108,6 @@
           };
         };
         modules = [
-          agenix.darwinModules.default
           sops-nix.darwinModules.default
           ./system/bw.nix
         ];
@@ -206,7 +198,6 @@
       };
       managing-secrets = pkgs.mkShell {
         packages = [
-          agenix.packages.${system}.default
           sops-nix.packages.${system}.default
           pkgs.sops
           pkgs.yubikey-manager
