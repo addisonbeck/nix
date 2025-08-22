@@ -12,6 +12,11 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
+    nix-secrets = {
+      url = "git+ssh://git@github.com/addisonbeck/nix-secrets.git?ref=main&shallow=1";
+      inputs = { };
+    };
+
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -156,6 +161,7 @@
         packages =
           [
             pkgs.zstd
+            pkgs.just
             (pkgs.writeScriptBin "update" ''
               nix flake update
             '')
@@ -200,7 +206,6 @@
         packages = [
           sops-nix.packages.${system}.default
           pkgs.sops
-          pkgs.yubikey-manager
           pkgs.gnupg
           pkgs.git-crypt
         ];
