@@ -4,13 +4,14 @@ keys:
   - &admin_tertiary_gpg 3E936A82284D97AF53279821567BD1FB14C80DA9
   - &host_homelab age129slta36phpnzzcwl806skp2aqnr9tdtvs8mgjza2ewxhljswvxsewrtm5
   - &host_bw age12708jpycle7nwaenauqgqfum2vgnuj9zr84ngukpv0thrvwm99fq8cw4dn
+  - &user_me_bw age1ruhpue5f7trlseng7ltmfl7mw678alufawpw5cyl6ehzpfxfy3xqnxf937
 
 creation_rules:
   # User
   - path_regex: secrets/(.*github-ssh.*|.*authinfo.*|.*ssh-keys.*|.*known_hosts.*)$
     key_groups:
     - age:
-      - *host_bw
+      - *user_me_bw
       pgp:
       - *admin_gpg
       - *admin_secondary_gpg

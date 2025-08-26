@@ -96,7 +96,13 @@
       ../../modules/secrets/authinfo.nix
     ];
 
-    sops.gnupg.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+    #sops.gnupg.sshKeyPaths = [ "/Users/me/.ssh/primary-ssh-key" ];
+    # NOTE TO SELF
+    # To set up a new user key on a new host
+    # Generate a key
+    # Use ssh-to-age with the _privtate key_ to generate keys.txt
+    # ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt
+    sops.age.keyFile = "/Users/me/.config/sops/age/keys.txt";
 
     home.packages = [
       #pkgs.packwiz

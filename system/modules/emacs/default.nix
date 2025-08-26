@@ -17,9 +17,12 @@
       cp ${./mode-line.org} mode-line.org
       cp ${./ui.org} ui.org
       cp ${./core.org} core.org
+      cp ${./frame-management.org} frame-management.org
       cp ${./theme.org} theme.org
       cp ${./gptel.org} gptel.org
       cp ${./memory-tools.org} memory-tools.org
+      cp ${./code-reviews.org} code-reviews.org
+      cp ${./emacs-everywhere.org} emacs-everywhere.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
@@ -42,22 +45,30 @@
       echo "Moving tangled file to output..."
       cp init.el $out
     '';
-  emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
-    #!/usr/bin/env bash
-    set -euo pipefail
 
-    if [ "$#" -gt 0 ]; then
-      # Block until editing finishes; create a frame if needed
-      exec ${config.programs.emacs.package}/bin/emacsclient -c -a "" "$@"
+  # Improved emacsclient wrapper that properly handles frame reuse
+  emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
+    # First, ensure the daemon is running
+    ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
+      echo "Starting Emacs daemon..."
+      ${config.programs.emacs.finalPackage}/bin/emacs --daemon
+    }
+
+    # Check if a visible frame exists (excluding terminal/daemon frames)
+    FRAME_EXISTS=$(${config.programs.emacs.finalPackage}/bin/emacsclient -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
+
+    if [ "$FRAME_EXISTS" = "t" ]; then
+      # Frame exists, just focus it
+      ${config.programs.emacs.finalPackage}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))"
     else
-      ${config.programs.emacs.package}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
+      # No frame exists, create one and focus it
+      ${config.programs.emacs.finalPackage}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
     fi
   '';
-
-  puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
+    puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
     # chromium doesn't work on mac from nixpkgs
     chromium = pkgs.google-chrome;
-  };
+    };
 
   mcp-el-src = pkgs.fetchFromGitHub {
     owner = "lizqwerscott";
@@ -73,6 +84,7 @@
       src = mcp-el-src;
     };
   };
+
 in {
   programs.emacs = {
     enable = true;
@@ -169,6 +181,7 @@ in {
           org-roam-ui
           pkgs.aspell
           pkgs.aspellDicts.en
+          emacs-everywhere
         ];
     };
   };
@@ -199,6 +212,11 @@ in {
     ffmpeg
     ledger
     hledger
+(writeShellScriptBin "emacseverywhere" ''
+set -euo pipefail
+
+${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
+'')
   ];
 
   home.sessionVariables.ASPELL_DICT_DIR = "${pkgs.aspellDicts.en}/lib/aspell";
@@ -218,7 +236,7 @@ in {
     config = {
       Label = "org.gnu.emacs.daemon";
       ProgramArguments = [
-        "${config.programs.emacs.package}/bin/emacs"
+        "${config.programs.emacs.finalPackage}/bin/emacs"
         "--daemon"
       ];
       KeepAlive = true;
@@ -229,4 +247,13 @@ in {
       LimitLoadToSessionType = "Aqua";
     };
   };
+
+  #services.emacs = {
+    #enable = true;
+    # maybe i just don't need to specifiy package
+    #package = config.programs.emacs.package;
+    #client.enable = true;
+
+    #socketActivation.enable = true;  # More reliable daemon management
+  #};
 }

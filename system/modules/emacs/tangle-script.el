@@ -13,6 +13,9 @@
                   "theme.org"
                   "gptel.org"
                   "memory-tools.org"
+                  "code-reviews.org"
+                  "frame-management.org"
+                  "emacs-everywhere.org"
                   "core.org"
                   ))
 

@@ -255,4 +255,5 @@
   #environment.loginShell = pkgs.zsh;
   environment.shells = [pkgs.zsh];
   system.primaryUser = "me";
+
 }

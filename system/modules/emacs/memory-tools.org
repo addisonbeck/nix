@@ -96,7 +96,6 @@ The tools defined here are used by [[https://github.com/karthink/gptel][gptel]] 
     (find-file (plist-get res :file))))
 #+end_src
 
-
 #+begin_src emacs-lisp
 (require 'cl-lib)
 
@@ -221,6 +220,66 @@ This way is old, I'm testing out the new version below.
    :category    "memory")
 
   (register-gptel-tool "create_memory")
+#+end_src
+
+* Creating Memories Interactively
+
+#+begin_src emacs-lisp
+(defun my/create-memory-interactive ()
+  "Interactively create a memory node via `my/create-memory' and open the file."
+  (interactive)
+  (let* ((title (read-string "Memory Title: "))
+         (memory-type
+          (intern (completing-read
+                   "Memory Type (episodic/semantic/procedural/associative/working/reflective/reference): "
+                   '(episodic semantic procedural associative working reflective reference)
+                   nil t)))
+         (tags
+          (split-string
+           (read-string "Tags (comma-separated): ") "," t "[ \t\n\r]+"))
+         (aliases
+          (split-string
+           (read-string "Aliases (comma-separated): ") "," t "[ \t\n\r]+"))
+         (content (read-string "Content (org syntax, at least one backlink): "))
+         (res (my/create-memory
+               :title title
+               :memory-type memory-type
+               :tags tags
+               :aliases aliases
+               :content content)))
+    (find-file (plist-get res :file))))
+#+end_src
+
+* Creating Gptel Buffers
+
+#+begin_src emacs-lisp
+  (defun my/create-named-gptel ()
+    "Prompt for a name, create a memory file for the conversation, open it, and enable gptel-mode."
+    (interactive)
+    (let* ((name      (read-string "Enter gptel name: "))
+           (title     (concat "Conversation: " name))
+           ;; Create the memory node first
+           (memory-result 
+            (my/create-memory
+             :title title
+             :memory-type 'episodic
+             :tags '("conversation")
+             :aliases '()  ; Empty list as specified
+             :content "")))
+      
+      ;; Open the memory file
+      (find-file (plist-get memory-result :file))
+      
+      ;; Enable gptel-mode in this buffer
+      (gptel-mode 1)
+      
+      ;; Move to the end of the buffer for conversation
+      (goto-char (point-max))
+      
+      ;; Show the created memory info to user
+      (message "Created conversation memory: %s (ID: %s) - gptel-mode enabled" 
+               (plist-get memory-result :title)
+               (plist-get memory-result :id))))
 #+end_src
 
 * Read A Memory By ID

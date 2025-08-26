@@ -9,6 +9,12 @@
           "value" : "ec"
         },
         {
+          "key" : "w",
+          "label" : "emacs-everywhere",
+          "type" : "command",
+          "value" : "emacseverywhere"
+        },
+        {
           "key" : "s",
           "label" : "",
           "type" : "application",

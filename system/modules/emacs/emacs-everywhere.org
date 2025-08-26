@@ -1,0 +1,42 @@
+#+TITLE: Emacs Everywhere Config
+#+PROPERTY: header-args:emacs-lisp :tangle emacs-everywhere.el :results none
+
+#+begin_src emacs-lisp 
+(use-package emacs-everywhere
+  :config
+  ;; CRITICAL: Override the directory variable to point to writable location
+  ;; This fixes the "Permission denied" error in Nix environments
+  (setq emacs-everywhere--dir 
+        (expand-file-name "emacs-everywhere-scripts/" temporary-file-directory))
+  
+  ;; Ensure directory exists immediately
+  (unless (file-exists-p emacs-everywhere--dir)
+    (make-directory emacs-everywhere--dir t))
+  
+  ;; Additional safety - ensure temp file directory exists  
+  (setq emacs-everywhere-file-dir (expand-file-name "emacs-everywhere/" temporary-file-directory))
+  (unless (file-exists-p emacs-everywhere-file-dir)
+    (make-directory emacs-everywhere-file-dir t))
+  
+  ;; Force recompilation of scripts in the new writable location
+  (when (featurep 'emacs-everywhere)
+    (emacs-everywhere--ensure-oscascript-compiled t)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun emacs-everywhere-with-app-info (app-name window-title geometry-string)
+  "Launch emacs-everywhere with pre-captured app info.
+APP-NAME is the name of the focused application.
+WINDOW-TITLE is the title of the focused window.
+GEOMETRY-STRING is comma-separated x,y,width,height."
+  (let* ((geometry (mapcar #'string-to-number (split-string geometry-string ",")))
+         (app-info (make-emacs-everywhere-app
+                    :id app-name
+                    :class app-name  
+                    :title window-title
+                    :geometry geometry)))
+    ;; Set frame parameter so emacs-everywhere-initialise finds it
+    (set-frame-parameter nil 'emacs-everywhere-app app-info)
+    ;; Call the normal emacs-everywhere function
+    (call-interactively #'emacs-everywhere)))
+#+end_src

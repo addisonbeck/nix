@@ -1,0 +1,110 @@
+#+TITLE: Frame Management
+#+PROPERTY: header-args:emacs-lisp :tangle frame-management.el :results none
+* Custom Server Thing
+This never worked
+#+begin_src emacs-lisp :tangle no
+(defun my-focus-default-frame (&optional frame)
+  "Ensure a single 'default' frame exists and focus it.
+If FRAME is provided, use it; otherwise create one."
+  (let ((default-frame
+         (seq-find (lambda (f)
+                     (string= (frame-parameter f 'name) "default"))
+                   (frame-list))))
+    (cond
+     ;; Case 1: Already have default → focus it
+     (default-frame
+      (with-selected-frame default-frame
+        (raise-frame)
+        (select-frame-set-input-focus default-frame))
+      default-frame)
+
+     ;; Case 2: Use provided frame → rename + focus
+     (frame
+      (modify-frame-parameters frame '((name . "default")))
+      (with-selected-frame frame
+        (raise-frame)
+        (select-frame-set-input-focus frame))
+      frame)
+
+     ;; Case 3: No default and no frame → create one
+     (t
+      (let ((new-frame (make-frame '((name . "default")))))
+        (with-selected-frame new-frame
+          (raise-frame)
+          (select-frame-set-input-focus new-frame))
+        new-frame)))))
+(add-hook 'server-after-make-frame-hook #'my-focus-default-frame)
+#+end_src
+
+* New Way
+
+#+begin_src emacs-lisp
+;; -----------------------------
+;; FRAME MANAGEMENT TOOLKIT
+;; -----------------------------
+
+(defvar my/default-frame-name "default"
+  "Name of the primary frame to reuse.")
+
+(defvar my/max-frames 3
+  "Maximum number of frames to keep open at once.")
+
+(defun my/setup-frame (frame)
+  "Configure a new FRAME according to my rules."
+  ;; Only configure GUI frames
+  (when (display-graphic-p frame)
+    (with-selected-frame frame
+      ;; Name the frame if unnamed
+      (unless (frame-parameter frame 'name)
+        (set-frame-parameter frame 'name my/default-frame-name))
+      ;; Set default size
+      (set-frame-size frame 100 50)
+      ;; Optionally: set font
+      ;; (set-frame-font "Fira Code-14" t t)
+      ;; Focus the new frame
+      (select-frame-set-input-focus frame)
+      ;; Limit total frames
+      (my/limit-frames))))
+
+(defun my/limit-frames ()
+  "Ensure we do not exceed `my/max-frames` frames."
+  (let ((frames (seq-filter
+                 (lambda (f) (display-graphic-p f))
+                 (frame-list))))
+    (when (> (length frames) my/max-frames)
+      ;; Delete oldest frames (skip default frame)
+      (dolist (f (butlast frames 1))
+        (unless (string= (frame-parameter f 'name) my/default-frame-name)
+          (delete-frame f))))))
+
+;; Hook into frame creation
+(defun my/after-make-frame (frame)
+  "Hook function to run after a new frame is created."
+  ;; Use tiny delay for daemon GUI frames
+  (run-with-timer
+   0 nil
+   (lambda () (my/setup-frame frame))))
+
+;;(add-hook 'after-make-frame-functions #'my/after-make-frame)
+
+;; Optional helper to get the default frame
+(defun my/get-default-frame ()
+  "Return the default frame, creating one if needed."
+  (or (seq-find (lambda (f)
+                  (string= (frame-parameter f 'name)
+                           my/default-frame-name))
+                (frame-list))
+      ;; Fallback: create a new frame
+      (make-frame '((name . "default")))))
+
+;; Optional: wrapper for emacsclient usage
+(defun my/emacsclient (&rest files)
+  "Open FILES in the default frame or a new frame."
+  (let ((frame (my/get-default-frame)))
+    (select-frame-set-input-focus frame)
+    (dolist (f files)
+      (find-file f))))
+#+end_src
+
+#+RESULTS:
+: my/emacsclient

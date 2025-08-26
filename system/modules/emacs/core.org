@@ -707,6 +707,7 @@ Don't show DONE items in the agenda
         (expand-file-name "inbox-mobile.org" my-notes-directory)
         (expand-file-name "reminders.org" my-agenda-directory)
         (expand-file-name "meal-plan.org" my-agenda-directory)
+        (expand-file-name "contacts.org" my-notes-directory)
         (expand-file-name "code-reviews.org" my-notes-directory)))
 
 (defun my/set-org-agenda-files ()
@@ -1414,106 +1415,6 @@ Don't show DONE items in the agenda
     ;; Run the command in a compilation buffer
     (compilation-start command nil
                        (lambda (_) "*pandoc-epub*"))))
-#+end_src
-
-* GitHub Integration
-#+begin_src emacs-lisp
-  (require 'ghub)
-
-  (defvar my/github-pr-file "~/notes/code-reviews.org"
-    "File to store GitHub PR todos.")
-
-  (defvar my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
-
-  (defun my/pr-exists-p (url)
-    "Check if PR with URL already exists in the org file."
-    ;;(message "Checking for existing PR: %s" url)
-    (when (file-exists-p my/github-pr-file)
-      ;;(message "File exists, checking content")
-      (with-temp-buffer
-	(insert-file-contents my/github-pr-file)
-	;;(message "File contents loaded")
-	;; Instead of using buffer positions, just check if the string exists
-	(string-match-p (regexp-quote url) (buffer-string)))))
-
-  (defun my/fetch-github-prs ()
-    "Fetch PRs and create new org entries if they don't exist."
-    (interactive)
-    (message "[%s] Fetching PRs to review..." 
-	     (format-time-string "%H:%M:%S"))
-    (let ((buf (find-file-noselect my/github-pr-file)))
-      ;;(message "Buffer created: %S" buf)
-      (with-current-buffer buf
-	;;(message "In buffer")
-	(org-mode)
-	;;(message "Org mode enabled")
-	(let ((max-point (point-max)))
-	  ;;(message "Max point: %S" max-point)
-	  (goto-char max-point)
-	  ;;(message "Moved to end of buffer")
-	  (dolist (query-pair my/github-pr-queries)
-	    (let* ((section-name (car query-pair))
-		   (query (cdr query-pair)))
-	      ;;(message "Processing query: %s" section-name)
-	      (let ((response (ghub-graphql
-			       "query($query: String!) {
-						    search(query: $query, type: ISSUE, first: 100) {
-						      nodes {
-							... on PullRequest {
-							  title
-							  url
-							  repository {
-							    nameWithOwner
-							  }
-							  author {
-							    login
-							  }
-							  updatedAt
-							  state
-							}
-						      }
-						    }
-						  }"
-			       `((query . ,query)))))
-		;;(message "Got GraphQL response")
-		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
-		  ;;(message "Found %d PRs" (length prs))
-		  (dolist (pr prs)
-		    ;;(message "Processing PR: %S" pr)
-		    (let-alist pr
-		      ;;(message "Checking if PR exists: %s" .url)
-		      (let ((exists-result (my/pr-exists-p .url)))
-			;;(message "PR exists check returned: %S" exists-result)
-			(unless exists-result
-			  ;;(message "PR doesn't exist, inserting")
-			  (let ((insert-point (point)))
-			    ;;(message "Current point before insert: %S" insert-point)
-			    (insert (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
-					    .title
-					    (format-time-string "%Y-%m-%d")
-					    .url
-					    .repository.nameWithOwner
-					    .author.login))
-			    ;;(message "Insert completed")
-			    )))))))))))
-      ;;(message "Saving buffer")
-      (with-current-buffer buf
-	(save-buffer))))
-  ;;(message "PR fetch completed")))
-
-  (defun remove-duplicate-org-entries ()
-    (interactive)
-    (let ((seen-urls (make-hash-table :test 'equal)))
-      (org-map-entries
-       (lambda ()
-	 (let ((pr-url (org-entry-get nil "PR_URL")))
-	   (if (and pr-url (gethash pr-url seen-urls))
-	       (org-cut-subtree)
-	     (when pr-url
-	       (puthash pr-url t seen-urls))))))))
-
-  (run-with-timer 0 (* 60 60) #'my/fetch-github-prs)
 #+end_src
 
 * Which Key Configuration
@@ -3078,16 +2979,6 @@ It would be cool if this also had some kind of interactive starting directory / 
     (let* ((name      (read-string "Enter vterm name: "))
 	   (buf-name  (concat name "-vterm")))
       (vterm buf-name)
-      (switch-to-buffer buf-name)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/create-named-gptel ()
-    "Prompt for a name, create a new gptel buffer called NAME-gptel, and open it."
-    (interactive)
-    (let* ((name      (read-string "Enter gptel name: "))
-	   (buf-name  (concat name "-gptel")))
-      (gptel buf-name)
       (switch-to-buffer buf-name)))
 #+end_src
 
