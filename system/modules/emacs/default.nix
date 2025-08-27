@@ -23,6 +23,7 @@
       cp ${./memory-tools.org} memory-tools.org
       cp ${./code-reviews.org} code-reviews.org
       cp ${./emacs-everywhere.org} emacs-everywhere.org
+      cp ${./text.org} emacs-everywhere.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
@@ -256,4 +257,5 @@ ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
 
     #socketActivation.enable = true;  # More reliable daemon management
   #};
+  
 }

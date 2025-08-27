@@ -3041,7 +3041,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 
   (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
   (which-key-add-key-based-replacements "C-a g d" "go to definition")
-  (evil-define-key 'normal 'global (kbd "C-a g e") (lambda () (interactive) (find-file "/users/me/nix/system/with/user/with/program/emacs.org")))
   (which-key-add-key-based-replacements "C-a g e" "emacs config")
 
   (define-prefix-command 'my-compile-prefix)
@@ -3080,35 +3079,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 
   (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
   (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
-  (evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
-			   "Select an org source block, excluding the begin/end lines."
-			   (when (org-in-src-block-p)
-			     (save-excursion
-			       (let* ((element (org-element-at-point))
-				      (begin (org-element-property :begin element))
-				      (end (org-element-property :end element))
-				      (begin-adjusted (progn
-							(goto-char begin)
-							(forward-line 1)
-							(point))))
-				 (goto-char begin)
-				 (re-search-forward "^[ \t]*#\\+end_src" end t)
-				 (forward-line -1)
-				 (let ((end-adjusted (line-end-position)))
-				   (evil-range begin-adjusted end-adjusted 'line))))))
-
-  (evil-define-text-object evil-a-org-src-block (count &optional beg end type)
-			   "Select an org source block, including the begin/end lines."
-			   (when (org-in-src-block-p)
-			     (save-excursion
-			       (let* ((element (org-element-at-point))
-				      (begin (org-element-property :begin element))
-				      (end (org-element-property :end element)))
-				 (evil-range begin end 'line)))))
-
-  (which-key-add-key-based-replacements "is" "inside src block")
-  (which-key-add-key-based-replacements "as" "around src block")
 
   (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
 
@@ -3151,74 +3121,12 @@ It would be cool if this also had some kind of interactive starting directory / 
     (evil-define-key 'normal elfeed-show-mode-map
 		     (kbd "c") #'my/elfeed-show-hn-comments))
 
-  ;;(defun my/open-ripgrep-result-in-split ()
-  ;; "Open the ripgrep result at point in a vertical split."
-  ;;(interactive)
-  ;;(let ((window-count (length (window-list))))
-  ;; (when (= window-count 1)
-  ;;  (split-window-right))
-  ;;(other-window 1)
-  ;;(compile-goto-error)))
-
-  ;;(with-eval-after-load 'rg
-  ;;(evil-define-key 'normal rg-mode-map (kbd "RET") 'my/open-ripgrep-result-in-split))
-
-    ;;;(evil-define-key 'normal 'global (kbd "C-b") 'projectile-switch-to-buffer)
-  ;;(evil-define-key 'normal 'global (kbd "C-p") 'projectile-switch-project)
-  ;;(evil-define-key 'normal 'global (kbd "C-f") 'projectile-find-file)
-  ;;(evil-define-key 'normal magit-mode-map (kbd "C-b") 'projectile-switch-to-buffer)
-  ;;(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-  ;;(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-
   (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
   (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
   (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
   (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
   (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
   (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
-
-  (defun clean-notes-buffer ()
-    "Clean up a notes buffer by:
-      1. Deleting lines starting with '- State'
-      2. Removing extra blank lines
-      3. Converting '- Note taken on [DATE] \\' to '** [DATE]'
-      4. Removing all indentation from the buffer"
-    (interactive)
-    (save-excursion
-      ;; Go to beginning of buffer
-      (goto-char (point-min))
-
-      ;; Delete lines starting with "- State"
-      (while (re-search-forward "^- State.*$" nil t)
-	(replace-match ""))
-
-      ;; Clean up consecutive blank lines
-      (goto-char (point-min))
-      (while (re-search-forward "^\n\\s-*\n" nil t)
-	(replace-match "\n"))
-
-      ;; Convert note lines to new format (fixed to handle backslashes properly)
-      (goto-char (point-min))
-      (while (re-search-forward "^- Note taken on \\(\\[[0-9-]+ [A-Za-z]+\\( [0-9:]+\\)?\\]\\)\\s-*\\\\\\\\.*$" nil t)
-	(replace-match "** \\1"))
-
-      ;; Remove all indentation (leading spaces/tabs) from all lines
-      (goto-char (point-min))
-      (while (re-search-forward "^[ \t]+" nil t)
-	(replace-match "")))
-    (message "Notes cleanup completed!"))
-
-  (defun my/add-tag-to-headings-in-region (tag)
-    "Add TAG to all org headings in the selected region."
-    (interactive "sTag to add: ")
-    (save-excursion
-      (let ((end-marker (copy-marker (region-end)))
-	    (pos (region-beginning)))
-	(goto-char pos)
-	(while (and (< (point) end-marker)
-		    (re-search-forward "^\\*+ " end-marker t))
-	  (org-set-tags (cons tag (org-get-tags)))
-	  (outline-next-heading)))))
 
   (defun my/projectile-find-file-in-all-projects ()
     "Find file across all registered Projectile projects with improved performance."
@@ -3288,91 +3196,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 	      (when file-path
 		(find-file file-path)))
 	  (message "No files found across projects")))))
-
-  (defun my/wikipedia-search-to-org (search-term)
-    "Search Wikipedia for SEARCH-TERM, fetch the first result,
-    and display its content converted to Org format in a new buffer.
-    Requires `pandoc` to be installed."
-    (interactive "sSearch Wikipedia for: ")
-    (unless (executable-find "pandoc")
-      (error "pandoc executable not found. Please install pandoc."))
-
-    (require 'json)
-    (require 'url)
-
-    (let* ((encoded-search-term (url-hexify-string search-term))
-	   (search-api-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=1&namespace=0&format=json"
-				   encoded-search-term))
-	   search-json-string search-data page-title page-url html-content org-output org-buffer-name)
-
-      (with-current-buffer (url-retrieve-synchronously search-api-url)
-	(goto-char (point-min))
-	(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
-	  (kill-buffer (current-buffer))
-	  (error "Could not find HTTP headers in Wikipedia API response"))
-	(setq search-json-string (buffer-substring-no-properties (point) (point-max)))
-	(kill-buffer (current-buffer)))
-
-      (unless (and search-json-string (not (string-empty-p search-json-string)))
-	(error "Failed to fetch or empty search results from Wikipedia API for: %s" search-term))
-
-      (condition-case err
-	  ;; Explicitly use :array-type 'list to ensure lists are returned
-	  (setq search-data (json-parse-string search-json-string :array-type 'list))
-	(error (error "Failed to parse JSON: %s. JSON was: %s" (error-message-string err) search-json-string)))
-
-      ;; Now the checks should work as expected with lists
-      (unless (and (listp search-data)
-		   (>= (length search-data) 4)
-		   (listp (nth 1 search-data)) (consp (nth 1 search-data)) ; Ensure titles list is non-empty
-		   (stringp (car (nth 1 search-data))) ; Ensure first title is a string
-		   (listp (nth 3 search-data)) (consp (nth 3 search-data)) ; Ensure URLs list is non-empty
-		   (stringp (car (nth 3 search-data)))) ; Ensure first URL is a string
-	(error "Unexpected JSON structure, empty result, or non-string title/URL from Wikipedia API. Data: %S" search-data))
-
-      (setq page-title (car (nth 1 search-data)))
-      (setq page-url (car (nth 3 search-data)))
-
-      (with-current-buffer (url-retrieve-synchronously page-url)
-	(goto-char (point-min))
-	(unless (re-search-forward "\n\n" nil t) ; Skip HTTP headers
-	  (kill-buffer (current-buffer))
-	  (error "Could not find HTTP headers in Wikipedia page response for %s" page-url))
-	(setq html-content (buffer-substring-no-properties (point) (point-max)))
-	(kill-buffer (current-buffer)))
-
-      (unless (and html-content (not (string-empty-p html-content)))
-	(error "Failed to fetch or empty page content from URL: %s" page-url))
-
-      (setq org-output
-	    (with-temp-buffer
-	      (insert html-content)
-	      (shell-command-on-region (point-min) (point-max)
-				       "pandoc -f html -t org --wrap=none"
-				       (current-buffer) t) ; t to replace
-	      (buffer-string)))
-
-      (if (or (null org-output) (string-empty-p org-output))
-	  (error "Pandoc conversion resulted in empty output for %s" page-title)
-	(setq org-buffer-name (format "*Wikipedia: %s (Org)*" page-title))
-	(with-current-buffer (get-buffer-create org-buffer-name)
-	  (erase-buffer)
-	  (insert org-output)
-	  (when (fboundp 'org-mode) (org-mode))
-	  (goto-char (point-min)))
-	(switch-to-buffer-other-window org-buffer-name)
-	(message "Wikipedia page '%s' rendered as Org." page-title))))
-
-  (defun my/org-refile-to-new-file ()
-    "Refile current heading to a new file named after the heading."
-    (interactive)
-    (let* ((heading (nth 4 (org-heading-components)))
-	   (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
-	   (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
-      (when (y-or-n-p (format "Create and refile to %s? " new-file))
-	(with-temp-buffer
-	  (write-file new-file))
-	(org-refile nil nil (list heading new-file nil nil)))))
 
   (defun my/open-pr-url-at-point ()
     "Open the PR_URL property of the current org agenda item."
@@ -3643,23 +3466,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
              t)))
 #+end_src
 
-* Config Reloading
-#+begin_src emacs-lisp
-  (defun my/reload-config ()
-    "Tangle emacs.org and reload the resulting init.el."
-    (interactive)
-    (when (file-exists-p "~/nix/system/with/user/with/program/emacs.org")
-      (let ((org-file "~/nix/system/with/user/with/program/emacs.org")
-	    (init-file "~/nix/system/with/user/with/program/init.el"))
-	(with-temp-buffer
-	  (shell-command (format "cd %s && emacs --batch -l org %s --eval '(org-babel-tangle)'" 
-				 (file-name-directory org-file)
-				 (file-name-nondirectory org-file)) 
-			 (current-buffer))
-	  (message "%s" (buffer-string)))
-	(load-file init-file)
-	(message "Configuration reloaded successfully!"))))
-#+end_src
 * Provide Init
 
 #+begin_src emacs-lisp

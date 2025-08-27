@@ -1,0 +1,81 @@
+#+TITLE: Text Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle text.el :results none
+
+#+begin_src emacs-lisp
+(evil-define-text-object evil-inner-org-src-block (count &optional beg end type)
+		   "Select an org source block, excluding the begin/end lines."
+		   (when (org-in-src-block-p)
+		     (save-excursion
+		       (let* ((element (org-element-at-point))
+			      (begin (org-element-property :begin element))
+			      (end (org-element-property :end element))
+			      (begin-adjusted (progn
+						(goto-char begin)
+						(forward-line 1)
+						(point))))
+			 (goto-char begin)
+			 (re-search-forward "^[ \t]*#\\+end_src" end t)
+			 (forward-line -1)
+			 (let ((end-adjusted (line-end-position)))
+			   (evil-range begin-adjusted end-adjusted 'line))))))
+
+(evil-define-text-object evil-a-org-src-block (count &optional beg end type)
+		   "Select an org source block, including the begin/end lines."
+		   (when (org-in-src-block-p)
+		     (save-excursion
+		       (let* ((element (org-element-at-point))
+			      (begin (org-element-property :begin element))
+			      (end (org-element-property :end element)))
+			 (evil-range begin end 'line)))))
+
+(which-key-add-key-based-replacements "is" "inside src block")
+(which-key-add-key-based-replacements "as" "around src block")
+
+  (defun my/add-tag-to-headings-in-region (tag)
+    "Add TAG to all org headings in the selected region."
+    (interactive "sTag to add: ")
+    (save-excursion
+      (let ((end-marker (copy-marker (region-end)))
+	    (pos (region-beginning)))
+	(goto-char pos)
+	(while (and (< (point) end-marker)
+		    (re-search-forward "^\\*+ " end-marker t))
+	  (org-set-tags (cons tag (org-get-tags)))
+	  (outline-next-heading)))))
+
+
+  (defun my/org-refile-to-new-file ()
+    "Refile current heading to a new file named after the heading."
+    (interactive)
+    (let* ((heading (nth 4 (org-heading-components)))
+	   (safe-name (downcase (replace-regexp-in-string "[^a-zA-Z0-9]+" "-" heading)))
+	   (new-file (concat (file-name-as-directory org-directory) safe-name ".org")))
+      (when (y-or-n-p (format "Create and refile to %s? " new-file))
+	(with-temp-buffer
+	  (write-file new-file))
+	(org-refile nil nil (list heading new-file nil nil)))))
+#+end_src
+
+  (defun my/org-to-markdown-src-block ()
+    "Convert selected org text to markdown and wrap in org src block."
+    (interactive)
+    (unless (region-active-p)
+      (user-error "No active region selected"))
+    (let* ((beg (region-beginning))
+           (end (region-end))
+           (org-content (buffer-substring beg end))
+           (markdown-content (with-temp-buffer
+                               (insert org-content)
+                               (org-mode)
+                               ;; Convert org to markdown using org-export
+                               (require 'ox-md)
+                               (let ((org-export-with-toc nil)  ; Disable table of contents
+                                     (org-export-with-author nil)
+                                     (org-export-with-title nil))
+                                 (org-export-as 'md nil nil t)))))
+      ;; Replace the selected region with markdown src block
+      (delete-region beg end)
+      (goto-char beg)
+      (insert "#+begin_src markdown\n"
+              markdown-content
+              "\n#+end_src"))

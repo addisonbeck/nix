@@ -17,6 +17,7 @@
                   "frame-management.org"
                   "emacs-everywhere.org"
                   "core.org"
+                  "text.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)
