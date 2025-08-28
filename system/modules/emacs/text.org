@@ -43,7 +43,6 @@
 	  (org-set-tags (cons tag (org-get-tags)))
 	  (outline-next-heading)))))
 
-
   (defun my/org-refile-to-new-file ()
     "Refile current heading to a new file named after the heading."
     (interactive)
@@ -54,7 +53,6 @@
 	(with-temp-buffer
 	  (write-file new-file))
 	(org-refile nil nil (list heading new-file nil nil)))))
-#+end_src
 
   (defun my/org-to-markdown-src-block ()
     "Convert selected org text to markdown and wrap in org src block."
@@ -78,4 +76,6 @@
       (goto-char beg)
       (insert "#+begin_src markdown\n"
               markdown-content
-              "\n#+end_src"))
+              "\n#+end_src")))
+#+end_src
+

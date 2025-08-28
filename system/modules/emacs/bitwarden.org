@@ -1,0 +1,77 @@
+#+TITLE: Bitwarden Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle bitwarden.el :results none
+
+* Clients
+** Installing Npm Deps
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-npm-ci-command "npm ci"
+  "Commands to run to install npm dependencies in a Bitwarden clients project "
+  :type 'string
+  :group 'tools)
+
+(defun bitwarden/clients-npm-ci ()
+  "Select a project with Projectile and run `bitwarden-clients-npm-ci-command` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-npm-ci-command))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: npm ci" . bitwarden/clients-npm-ci))
+#+end_src
+
+** Typechecking
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-test-types-command "npm run test:types"
+  "Command to run type tests in Bitwarden clients projects."
+  :type 'string
+  :group 'tools)
+
+(defun bitwarden/clients-run-test-types ()
+  "Select a project with Projectile and run `bitwarden-clients-test-types-command` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-test-types-command))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: typechecker" . bitwarden/clients-run-test-types))
+#+end_src
+
+** Building The Cli
+*** With Nx
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-nx-bit-build-cli "npx nx build cli --configuration=bit-dev --outputStyle=stream"
+  "Command to build the Bitwarden CLI locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-nx-bit-build-cli
+      "npx nx build cli --configuration=bit-dev --outputStyle=stream")
+
+(defun bitwarden/cli-nx-build-bit ()
+  "Select a project with Projectile and run `bitwarden-clients-nx-bit-build-cli` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-nx-bit-build-cli))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx bit build cli" . bitwarden/cli-nx-build-bit))
+#+end_src
+
+#+RESULTS:
+: ((bitwarden/clients: classic bit build cli . bitwarden/cli-classic-build-bit) (bitwarden/clients: npm ci . bitwarden/clients-npm-ci) (bitwarden/clients: nx bit build cli . bitwarden/cli-nx-build-bit) (bitwarden/clients: npm ci . bitwarden/cli-npm-ci) (bitwarden/clients: typechecker . bitwarden/clients-run-test-types) (nix: update flake . my/nix/flake-update) (nix: format . my/nix/format) (nix: rebuild . my/nix/rebuild))
+
+*** Classic
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-classic-bit-build-cli "cd apps/cli && npm run build:bit"
+  "Command to build the Bitwaren CLI locally with npm"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-classic-bit-build-cli
+      "cd apps/cli && npm run build:bit")
+
+(defun bitwarden/cli-classic-build-bit ()
+  "Select a project with Projectile and run `bitwarden-clients-classic-bit-build-cli` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-classic-bit-build-cli))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: classic bit build cli" . bitwarden/cli-classic-build-bit))
+#+end_src
+
+#+RESULTS:
+: ((bitwarden/clients: classic bit build cli . bitwarden/cli-classic-build-bit) (bitwarden/clients: npm ci . bitwarden/clients-npm-ci) (bitwarden/clients: nx bit build cli . bitwarden/cli-nx-build-bit) (bitwarden/clients: npm ci . bitwarden/cli-npm-ci) (bitwarden/clients: typechecker . bitwarden/clients-run-test-types) (nix: update flake . my/nix/flake-update) (nix: format . my/nix/format) (nix: rebuild . my/nix/rebuild))
+

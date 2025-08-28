@@ -27,7 +27,7 @@
   (setq sentence-end-double-space nil)
 #+end_src
 
-* Buffer Management Functions
+* Kill Other Buffers
 #+begin_src emacs-lisp
   (defun kill-other-buffers ()
     "Kill all buffers except the current one."
@@ -35,13 +35,6 @@
     (mapc 'kill-buffer
 	  (delq (current-buffer)
 		(buffer-list))))
-
-  (defun my/delete-this-file ()
-    "Delete the file the current buffer is visiting and kill the buffer."
-    (interactive)
-    (when-let ((filename (buffer-file-name)))
-      (delete-file filename)
-      (kill-buffer)))
 #+end_src
 
 * Package Management
@@ -1671,11 +1664,8 @@ Don't show DONE items in the agenda
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
 
 #+begin_src emacs-lisp
-(defvar my/executer-picker-candidates
-  '(("bitwarden/clients: typechecker" . bitwarden/clients-run-test-types)
-    ("nix: update flake"                  . my/nix/flake-update)
-    ("nix: format"                  . my/nix/format)
-    ("nix: rebuild"                  . my/nix/rebuild))
+;; We're going to add to this down the chain
+(defvar my/executer-picker-candidates nil
   "Alist mapping display names to interactive functions for `my/executer-picker'.")
 
 (defun my/executer-picker ()
@@ -1697,6 +1687,40 @@ I use this space to write a bunch of custom commands for interacting with projec
       (if (commandp sym) (call-interactively sym) (funcall sym)))))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/projectile-run-command-in-selected-project (command)
+  "Use `projectile-switch-project` to select a project, then run COMMAND
+in that project's root using `compile` in a project-named buffer.
+Interactively, prompt for COMMAND using `compile-history`."
+  (interactive (list (read-string "Command: " nil 'compile-history)))
+  (require 'projectile)
+  (let* ((cmd command)
+         (projectile-switch-project-action
+          (lambda ()
+            (let* ((root (projectile-project-root))
+                   (default-directory root)
+                   (proj (file-name-nondirectory (directory-file-name root)))
+                   (compilation-buffer-name-function
+                    (lambda (_mode) (format "*compile-%s-%s*" proj command))))
+              (compile cmd t)))))
+    (projectile-switch-project)))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun scan-worktree-projects ()
+    "Scan for all worktree directories and add them to Projectile."
+    (interactive)
+    (let ((base-dir (expand-file-name "~/binwarden/")))
+      (dolist (owner-repo (directory-files base-dir t "^[^.]"))
+	(when (file-directory-p owner-repo)
+	  (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
+	    (when (and (file-directory-p branch-dir)
+		       (file-exists-p (expand-file-name ".git" branch-dir)))
+	      (projectile-add-known-project branch-dir)))))))
+
+  (with-eval-after-load 'projectile
+    (scan-worktree-projects))
+#+end_src
 
 ** Enable complex color support in compile buffers
 
@@ -1933,8 +1957,17 @@ runs 'nix-collect-garbage' and then the rebuild."
       (compile "packwiz " t)))
 #+end_src
 
-#+RESULTS:
-: my/nix-commit
+#+begin_src emacs-lisp
+(add-to-list 'my/executer-picker-candidates
+             '("nix: update flake" . my/nix/flake-update))
+
+(add-to-list 'my/executer-picker-candidates
+             '("nix: format" . my/nix/format))
+
+(add-to-list 'my/executer-picker-candidates
+             '("nix: rebuild" . my/nix/rebuild))
+
+#+end_src
 
 ** My notes
 
@@ -1951,265 +1984,6 @@ runs 'nix-collect-garbage' and then the rebuild."
 
 #+RESULTS:
 : my/nix-commit
-
-** Bitwarden Clients
-
-#+begin_src emacs-lisp
-(defun my/projectile-run-command-in-selected-project (command)
-  "Use `projectile-switch-project` to select a project, then run COMMAND
-in that project's root using `compile` in a project-named buffer.
-Interactively, prompt for COMMAND using `compile-history`."
-  (interactive (list (read-string "Command: " nil 'compile-history)))
-  (require 'projectile)
-  (let* ((cmd command)
-         (projectile-switch-project-action
-          (lambda ()
-            (let* ((root (projectile-project-root))
-                   (default-directory root)
-                   (proj (file-name-nondirectory (directory-file-name root)))
-                   (compilation-buffer-name-function
-                    (lambda (_mode) (format "*compile-%s-%s*" proj command))))
-              (compile cmd t)))))
-    (projectile-switch-project)))
-#+end_src
-
-#+begin_src emacs-lisp
-(defcustom bitwarden-clients-test-types-command "npm run test:types"
-  "Command to run type tests in Bitwarden clients projects."
-  :type 'string
-  :group 'tools)
-
-(defun bitwarden/clients-run-test-types ()
-  "Select a project with Projectile and run `bitwarden-clients-test-types-command` in it."
-  (interactive)
-  (my/projectile-run-command-in-selected-project bitwarden-clients-test-types-command))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/clients/npm/ci-run ()
-    "Run the typeschecker for the clients monorepo"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "clients"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*clients-typechecker*"))))
-      (compile "npm ci" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/clients/browser/chrome/run ()
-    "Watch a chrome dev build of the extension"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "clients") "/apps/browser"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*clients-browser-chrome-run*"))))
-      (compile "npm run build:watch:chrome" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/clients/web/run ()
-    "Watch a build of the web vault"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "clients") "/apps/web"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*clients-web-run*"))))
-      (compile "npm run build:watch" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/server/api/run ()
-    "Watch a build of the bitwarden server api"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "server") "/src/Api"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*bitwarden-server-api-run*"))))
-      (compile "dotnet run" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/server/identity/run ()
-    "Watch a build of the bitwarden server identity"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-      (compile "dotnet run" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/server/identity/run ()
-    "Watch a build of the bitwarden server identity"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "server") "/src/Identity"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-      (compile "dotnet run" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/server/run-sql ()
-    "Watch a build of the bitwarden server identity"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "server") "/src/dev"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*bitwarden-server-identity-run*"))))
-      (compile "dotnet run" t)))
-#+end_src
-
-#+begin_src emacs-lisp 
-  (defun bitwarden/clients/run-tests (&optional test-pattern)
-    "Run Jest tests for the clients monorepo.
-      If TEST-PATTERN is provided, filter tests using the -t option."
-    (interactive "sTest pattern (optional): ")
-    (let* ((default-directory (my/get-project-path "clients"))
-	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
-			(format "npm run test -- -t '%s'" test-pattern)
-		      "npm run test"))
-	   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
-			    (format "*clients-jest-%s*" test-pattern)
-			  "*clients-jest*"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) buffer-name)))
-      (compile command t)))
-
-  (setq ring-bell-function 'ignore)
-  (defun bitwarden/clients/run-tests-interactive (&optional test-pattern)
-    "Run Jest tests for the clients monorepo in interactive mode.
-  If TEST-PATTERN is provided, filter tests using the -t option."
-    (interactive "sTest pattern (optional): ")
-    (let* ((default-directory (my/get-project-path "clients"))
-	   (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
-			    (format "*clients-jest-watch-%s*" test-pattern)
-			  "*clients-jest-watch*"))
-	   (command (if (and test-pattern (not (string-empty-p test-pattern)))
-			(format "npm run test:watch -- -t '%s'" test-pattern)
-		      "npm run test:watch")))
-
-      ;; Create or switch to the terminal buffer
-      (let ((buf (get-buffer buffer-name)))
-	(if buf
-	    (switch-to-buffer buf)
-	  (ansi-term (getenv "SHELL") buffer-name)))
-
-      ;; Change to project directory and run command
-      (term-send-string 
-       (get-buffer-process buffer-name)
-       (format "cd %s && %s\n" default-directory command))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun bitwarden/clients/lint/run ()
-  "Run linter for the clients monorepo"
-  (interactive)
-  (let* ((default-directory (my/get-project-path "clients"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*clients-lint*"))))
-    (compile "npm run lint" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun scan-worktree-projects ()
-    "Scan for all worktree directories and add them to Projectile."
-    (interactive)
-    (let ((base-dir (expand-file-name "~/binwarden/")))
-      (dolist (owner-repo (directory-files base-dir t "^[^.]"))
-	(when (file-directory-p owner-repo)
-	  (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
-	    (when (and (file-directory-p branch-dir)
-		       (file-exists-p (expand-file-name ".git" branch-dir)))
-	      (projectile-add-known-project branch-dir)))))))
-
-  (with-eval-after-load 'projectile
-    (scan-worktree-projects))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun bitwarden/scan-worktrees (project-type)
-  "Scan for worktrees of PROJECT-TYPE (e.g., 'clients' or 'server')."
-  (let ((worktrees '())
-        (base-dir (expand-file-name "~/binwarden/")))
-    (dolist (dir (directory-files base-dir t "^[^.]"))
-      (when (and (file-directory-p dir)
-                 (string-match-p project-type (file-name-nondirectory dir)))
-        (dolist (branch-dir (directory-files dir t "^[^.]"))
-          (when (and (file-directory-p branch-dir)
-                     (file-exists-p (expand-file-name ".git" branch-dir)))
-            (push (cons (format "%s:%s" 
-                                (file-name-nondirectory dir) 
-                                (file-name-nondirectory branch-dir))
-                        branch-dir)
-                  worktrees)))))
-    worktrees))
-
-(defun bitwarden/select-worktree (project-type)
-  "Select a worktree of PROJECT-TYPE with completion."
-  (let* ((worktrees (bitwarden/scan-worktrees project-type))
-         (selection (completing-read 
-                     (format "Select %s worktree: " project-type)
-                     (mapcar #'car worktrees))))
-    (cdr (assoc selection worktrees))))
-
-(defun bitwarden/clients/browser/chrome/run-in-worktree ()
-  "Run Chrome extension build in a selected clients worktree."
-  (interactive)
-  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
-         (default-directory (concat worktree-dir "/apps/browser"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*clients-browser-chrome-run*"))))
-    (compile "pnpm run build:watch:chrome" t)))
-
-(defun bitwarden/clients/typechecker/run-in-worktree ()
-  "Run typechecker in a selected clients worktree."
-  (interactive)
-  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
-         (default-directory worktree-dir)
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*clients-typechecker*"))))
-    (compile "pnpm run test:types" t)))
-
-;; Template for other commands
-(defun bitwarden/clients/run-tests-in-worktree (&optional test-pattern)
-  "Run Jest tests in a selected clients worktree.
-If TEST-PATTERN is provided, filter tests using the -t option."
-  (interactive "sTest pattern (optional): ")
-  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
-         (default-directory worktree-dir)
-         (command (if (and test-pattern (not (string-empty-p test-pattern)))
-                    (format "npm run test -- -t '%s'" test-pattern)
-                  "npm run test"))
-         (buffer-name (if (and test-pattern (not (string-empty-p test-pattern)))
-                         (format "*clients-jest-%s*" test-pattern)
-                       "*clients-jest*"))
-         (compilation-buffer-name-function 
-          (lambda (_mode) buffer-name)))
-    (compile command t)))
-
-(defun bitwarden/clients/npm/ci-run-in-worktree ()
-  "Run pnpm ci in a selected clients worktree."
-  (interactive)
-  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
-         (default-directory worktree-dir)
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*clients-npm-ci*"))))
-    (compile "npm ci" t)))
-
-(defun bitwarden/clients/lint/worktree ()
-  "Run linting in a specific clients worktree"
-  (interactive)
-  (let* ((worktree-dir (bitwarden/select-worktree "bitwarden-clients"))
-         (default-directory worktree-dir)
-         (compilation-buffer-name-function 
-          (lambda (_mode) (format "*clients-npm-lint*"))))
-    (compile "npm run lint" t)))
-
-(direnv-mode)
-#+end_src
-
-
-#+RESULTS:
-: bitwarden/clients/pnpm/ci-run-in-worktree
-
-
-*** Run typechecking
 
 ** Workspace
 

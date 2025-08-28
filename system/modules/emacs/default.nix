@@ -23,7 +23,8 @@
       cp ${./memory-tools.org} memory-tools.org
       cp ${./code-reviews.org} code-reviews.org
       cp ${./emacs-everywhere.org} emacs-everywhere.org
-      cp ${./text.org} emacs-everywhere.org
+      cp ${./text.org} text.org
+      cp ${./bitwarden.org} bitwarden.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
