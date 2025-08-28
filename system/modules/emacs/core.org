@@ -2000,59 +2000,6 @@ runs 'nix-collect-garbage' and then the rebuild."
     (let ((default-directory (projectile-project-root)))
       (compile (or (getenv "TEST_CMD") "make test"))))
 #+end_src
-** Binwarden
-
-#+begin_src emacs-lisp
-  (defun binwarden/create-worktree ()
-    "Create a new worktree in the binwarden directory.
-    1. Select a repository from binwarden directory
-    2. Enter a name for the new worktree
-    3. Optionally select a source branch (sorted by recent commit date)
-    4. Run \'just create-worktree\' with those parameters"
-    (interactive)
-    (let* ((binwarden-dir (expand-file-name "~/binwarden/"))
-	   (repos (directory-files binwarden-dir nil "^[^.]"))
-	   (selected-repo (completing-read "Select repository: " repos))
-	   (worktree-name (read-string "Worktree name: "))
-	   ;; Parse the repo name to find the primary branch from .env file
-	   (owner (car (split-string selected-repo "-")))
-	   (repo (cadr (split-string selected-repo "-")))
-	   (env-var-name (format "PRIMARY_%s_%s_WORKTREE" 
-				 (upcase owner) (upcase repo)))
-	   (env-file (expand-file-name ".env" binwarden-dir))
-	   (primary-branch 
-	    (when (file-exists-p env-file)
-	      (with-temp-buffer
-		(insert-file-contents env-file)
-		(when (re-search-forward (concat "^" env-var-name "=\\(.*\\)$") nil t)
-		  (match-string 1)))))
-	   ;; Set directory to the primary branch worktree for getting branch list
-	   (primary-worktree-dir 
-	    (expand-file-name (concat selected-repo "/" (or primary-branch "main")) 
-			      binwarden-dir))
-	   ;; Get branches sorted by commit date from the primary worktree
-	   (default-directory primary-worktree-dir)
-	   (branches-raw (shell-command-to-string "git branch --sort=-committerdate"))
-	   ;; Clean up branch names - remove any leading symbols (*, +, etc) and whitespace
-	   (branches (mapcar (lambda (branch) 
-			       (string-trim (replace-regexp-in-string "^[\\*\\+ ]+" "" branch)))
-			     (split-string branches-raw "\n" t)))
-	   ;; Prompt for optional source branch
-	   (from-branch (completing-read "Source branch (optional, empty for default): " 
-					 branches nil nil nil nil ""))
-	   (from-branch-arg (if (string-empty-p from-branch)
-				""
-			      (format " %s" from-branch)))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
-      (compile (format "cd %s && just create-worktree %s %s%s" 
-		       (shell-quote-argument binwarden-dir)
-		       selected-repo worktree-name from-branch-arg) t)))
-#+end_src
-
-#+RESULTS:
-: binwarden/create-worktree
-
 * Custom magit functions
 ** Reset current buffer
 #+begin_src emacs-lisp

@@ -22,50 +22,59 @@ I've bitten myself with this one before. Maybe need a confirm prompt.
     "Select a project, then a file, preview it and prompt to delete it."
     (interactive)
     (require 'projectile)
-    (let ((project-root (projectile-completing-read "Switch to project: "
-                                                   (projectile-relevant-known-projects))))
-      (projectile-switch-project-by-name project-root)
-      (let* ((project-files (projectile-current-project-files))
-             (target-file-relative (projectile-completing-read "Select file to delete: "
-                                                              project-files))
-             (target-file (expand-file-name target-file-relative (projectile-project-root))))
-        
-        ;; If we have a file selected, proceed with deletion workflow
-        (when (and target-file (file-exists-p target-file))
-          (let* ((file-name (file-name-nondirectory target-file))
-                 (file-size (file-size-human-readable (file-attribute-size (file-attributes target-file))))
-                 (file-modified (format-time-string "%Y-%m-%d %H:%M:%S" 
-                                                   (file-attribute-modification-time (file-attributes target-file)))))
-            ;; Show file preview in a temporary buffer
-            (with-temp-buffer-window "*File Preview*" nil nil
-              (insert (format "File: %s\n" target-file))
-              (insert (format "Size: %s\n" file-size))
-              (insert (format "Modified: %s\n\n" file-modified))
-              (insert "--- File Contents ---\n")
-              (condition-case nil
-                  (when (< (file-attribute-size (file-attributes target-file)) 10000) ; Only preview small files
-                    (insert-file-contents target-file nil 0 1000) ; First 1000 chars
-                    (when (> (file-attribute-size (file-attributes target-file)) 1000)
-                      (insert "\n\n[... file truncated ...]")))
-                (error (insert "[Could not read file contents]")))
-              (when (>= (file-attribute-size (file-attributes target-file)) 10000)
-                (insert "[File too large for preview]")))
-            
-            ;; Prompt for deletion
-            (when (yes-or-no-p (format "Delete file: %s? " file-name))
-              (condition-case err
-                  (progn
-                    ;; Close the file if it's open in a buffer
-                    (when-let ((buf (find-buffer-visiting target-file)))
-                      (kill-buffer buf))
-                    ;; Delete the file
-                    (delete-file target-file)
-                    (message "File deleted: %s" file-name))
-                (error (message "Error deleting file: %s" (error-message-string err)))))
-            
-            ;; Clean up preview window
-            (when (get-buffer "*File Preview*")
-              (kill-buffer "*File Preview*")))))))
+    (let* ((project-root (projectile-completing-read "Switch to project: "
+                                                    (projectile-relevant-known-projects)))
+           ;; Set the current directory to the project root
+           (default-directory project-root)
+           (project-files (projectile-current-project-files))
+           (target-file-relative (projectile-completing-read "Select file to delete: "
+                                                            project-files))
+           (target-file (expand-file-name target-file-relative project-root)))
+      
+      ;; If we have a file selected, proceed with deletion workflow
+      (when (and target-file (file-exists-p target-file))
+        (let* ((file-name (file-name-nondirectory target-file))
+               (file-size (file-size-human-readable (file-attribute-size (file-attributes target-file))))
+               (file-modified (format-time-string "%Y-%m-%d %H:%M:%S" 
+                                                 (file-attribute-modification-time (file-attributes target-file))))
+               (preview-buffer (get-buffer-create "*File Preview*")))
+          
+          ;; Show file preview in a buffer
+          (with-current-buffer preview-buffer
+            (erase-buffer)
+            (insert (format "File: %s\n" target-file))
+            (insert (format "Size: %s\n" file-size))
+            (insert (format "Modified: %s\n\n" file-modified))
+            (insert "--- File Contents ---\n")
+            (condition-case nil
+                (when (< (file-attribute-size (file-attributes target-file)) 10000) ; Only preview small files
+                  (insert-file-contents target-file nil 0 1000) ; First 1000 chars
+                  (when (> (file-attribute-size (file-attributes target-file)) 1000)
+                    (insert "\n\n[... file truncated ...]")))
+              (error (insert "[Could not read file contents]")))
+            (when (>= (file-attribute-size (file-attributes target-file)) 10000)
+              (insert "[File too large for preview]"))
+            (goto-char (point-min))
+            (read-only-mode 1))
+          
+          ;; Display the preview buffer
+          (pop-to-buffer preview-buffer)
+          
+          ;; Prompt for deletion
+          (when (yes-or-no-p (format "Delete file: %s? " file-name))
+            (condition-case err
+                (progn
+                  ;; Close the file if it's open in a buffer
+                  (when-let ((buf (find-buffer-visiting target-file)))
+                    (kill-buffer buf))
+                  ;; Delete the file
+                  (delete-file target-file)
+                  (message "File deleted: %s" file-name))
+              (error (message "Error deleting file: %s" (error-message-string err)))))
+          
+          ;; Clean up preview window
+          (when (get-buffer "*File Preview*")
+            (kill-buffer "*File Preview*"))))))
 #+end_src
 
 #+RESULTS:

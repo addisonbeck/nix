@@ -20,6 +20,7 @@
                   "text.org"
                   "bitwarden.org"
                   "files.org"
+                  "binwarden.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)
