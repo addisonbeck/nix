@@ -286,10 +286,7 @@ This way is old, I'm testing out the new version below.
 
 #+begin_src emacs-lisp 
 (defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
-  "Return list of plists for ID and its 'Required Reading' tree.
-Each plist: (:id ID :title TITLE :content CONTENT :file FILE).
-Supports org-roam node links (id:ID) and file links (file:/abs/path, file+*:…),
-and raw absolute paths (/abs/path)."
+  "Returns the full text content of a given memory, as well as any memories or files in that memory's 'Required Reading' section. Required Reading is included so Bobert does not go out and read those files manually."
   (interactive)
   (let* ((seen (or seen (list (concat "id:" id))))  ; track 'id:'-prefixed for cycle checks
          (file-seen (or file-seen '()))

@@ -5,7 +5,6 @@
 ** TODO Set up more robust task logging
 
 ** TODO Set up some default folding behavior
-
 ** TODO Set up org clock
 * Basic Settings
 #+begin_src emacs-lisp
@@ -26,6 +25,29 @@
   (global-hl-line-mode -1)
   (setq sentence-end-double-space nil)
 #+end_src
+
+#+begin_src emacs-lisp
+  (require 'transient)
+#+end_src
+
+** Directory Configuration
+Sets the main directory for Org files, stored in iCloud for sync across devices.
+
+#+begin_src emacs-lisp
+(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
+  "Path to my notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
+  "Path to my agenda directory, located in the notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-nix-systems-flake-directory "/Users/me/nix"
+  "Path to my nix directory."
+  :type 'directory
+  :group 'org)
+#+end_src
+
 
 * Kill Other Buffers
 #+begin_src emacs-lisp
@@ -91,8 +113,7 @@
 		(push (format "%s\n\n— %s" quote-text headline) quotes))))))
       (or quotes
 	  ;; Fallback quotes if none found
-	  '("Emacs is the extensible self-documenting editor.\n\n— GNU Emacs"
-	    "The journey of a thousand miles begins with one step.\n\n— Lao Tzu"))))
+	  '("Quotes are broken!"))))
 
   (use-package dashboard
     :ensure t
@@ -350,1066 +371,6 @@
   (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
 #+end_src
 
-* Org Mode Configuration
-** Requried Packages
-
-#+begin_src emacs-lisp
-  (require 'transient)
-#+end_src
-
-** Basic Org Settings
-
-*** Directory Configuration
-Sets the main directory for Org files, stored in iCloud for sync across devices.
-
-#+begin_src emacs-lisp
-(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
-  "Path to my notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
-  "Path to my agenda directory, located in the notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-nix-systems-flake-directory "/Users/me/nix"
-  "Path to my nix directory."
-  :type 'directory
-  :group 'org)
-(setq org-directory my-notes-directory)
-#+end_src
-
-*** Display Settings
-Disables line truncation for better readability of long lines in org files.
-
-#+begin_src emacs-lisp
-  (setq org-startup-truncated nil)
-#+end_src
-
-*** Task Logging
-
-#+begin_src help
-org-log-done is a variable defined in ‘org.el’.
-
-Its value is ‘time’
-Original value was nil
-
-Information to record when a task moves to the DONE state.
-
-Possible values are:
-
-nil     Don’t add anything, just change the keyword
-time    Add a time stamp to the task
-note    Prompt for a note and add it with template ‘org-log-note-headings’
-
-This option can also be set with on a per-file-basis with
-
-   #+STARTUP: nologdone
-   #+STARTUP: logdone
-   #+STARTUP: lognotedone
-
-You can have local logging settings for a subtree by setting the LOGGING
-property to one or more of these keywords.
-#+end_src
-
-#+begin_src emacs-lisp
-  (setq org-log-done 'time)
-#+end_src
-
-*** Logging Drawer
-
-Places logged state changes and notes into a properties drawer to keep entries clean.
-
-#+begin_src emacs-lisp
-  (setq org-log-into-drawer t)
-#+end_src
-
-*** Default Folding
-Sets the initial visibility state to overview when opening org files.
-
-#+begin_src help
-org-startup-folded is a variable defined in ‘org.el’.
-
-Its value is ‘overview’
-Original value was ‘showeverything’
-
-Initial folding state of headings when entering Org mode.
-
-Allowed values are:
-
-symbol ‘nofold’
-  Do not fold headings.
-
-symbol ‘fold’
-  Fold everything, leaving only top-level headings visible.
-
-symbol ‘content’
-  Leave all the headings and sub-headings visible, but hide their
-  text.  This is an equivalent of table of contents.
-
-symbol ‘show2levels’, ‘show3levels’, ‘show4levels’, ‘show5levels’
-  Show headings up to Nth level.
-
-symbol ‘showeverything’ (default)
-  Start Org mode in fully unfolded state.  Unlike all other allowed
-  values, this value prevents drawers, blocks, and archived subtrees
-  from being folded even when ‘org-cycle-hide-block-startup’,
-  ‘org-cycle-open-archived-trees’, or ‘org-cycle-hide-drawer-startup’
-  are non-nil.  Per-subtree visibility settings (see manual node
-  ‘(org)Initial visibility)’) are also ignored.
-
-This can also be configured on a per-file basis by adding one of
-the following lines anywhere in the buffer:
-
-   #+STARTUP: fold              (or ‘overview’, this is equivalent)
-   #+STARTUP: nofold            (or ‘showall’, this is equivalent)
-   #+STARTUP: content
-   #+STARTUP: show<n>levels (<n> = 2..5)
-   #+STARTUP: showeverything
-
-Set ‘org-agenda-inhibit-startup’ to a non-nil value if you want
-to ignore this option when Org opens agenda files for the first
-time.
-#+end_src
-
-#+begin_src emacs-lisp
-  (setq org-startup-folded 'fold)
-#+end_src
-
-*** Tag Display
-Prevents automatic alignment of tags, for functional preference 
-
-#+begin_src emacs-lisp
-  (setq org-auto-align-tags nil)
-#+end_src
-
-*** Export Configuration
-Specifies which export backends are loaded by default.
-
-#+begin_src emacs-lisp
-  (setq org-export-backends '(html icalendar latex man md org json))
-#+end_src
-
-*** Image Display Size
-
-#+begin_src help
-org-image-max-width is a variable defined in ‘org.el’.
-
-Its value is ‘window’
-Original value was ‘fill-column’
-
-When non-nil, limit the displayed image width.
-This setting only takes effect when ‘org-image-actual-width’ is set to
-t or when #+ATTR* is set to t.
-
-Possible values:
-- ‘fill-column’ :: limit width to ‘fill-column’
-- ‘window’      :: limit width to window width
-- integer       :: limit width to number in pixels
-- float         :: limit width to that fraction of window width
-- nil             :: do not limit image width
-
-  This variable was introduced, or its default value was changed, in
-  version 9.7 of the Org package that is part of Emacs 30.1.
-  You can customize this variable.
-#+end_src
-
-#+begin_src emacs-lisp
-  (setq org-image-max-width 120)
-#+end_src
-
-*** Inline Images
-Automatically displays inline images when opening org files.
-
-I noticed that this started creating weird deadlock errors on my images and so I've turned it off
-
-#+begin_src emacs-lisp :tangle no
-  (setq org-startup-with-inline-images t)
-#+end_src
-
-*** Inline Images Cycling
-Toggles display of inline images when cycling visibility.
-
-#+begin_src emacs-lisp
-  (setq org-cycle-inline-images-display t)
-#+end_src
-
-*** Remote Images
-Automatically downloads and displays remote images.
-
-#+begin_src emacs-lisp
-  (setq org-display-remote-inline-images 'download)
-#+end_src
-
-*** <CR> Behavior On Org Links
-
-Makes the Enter key follow links on org fils
-
-#+begin_src emacs-lisp
-  (setq org-return-follows-link t)
-#+end_src
-
-** "TODO" Keyword Behavior
-*** Restrict Closing Unfinished Parent 
-
-Prevents me from changing a TODO to DONE if it has unresolved children or checklist items
-
-#+begin_src emacs-lisp
-  (setq org-enforce-todo-dependencies t)
-  (setq org-enforce-todo-checkbox-dependencies t)
-#+end_src
-
-*** Hide "DONE" Items On The Agenda
-
-Don't show DONE items in the agenda
-
-#+begin_src emacs-lisp
-  (setq org-agenda-skip-scheduled-if-done t)
-  (setq org-agenda-skip-deadline-if-done t)
-  (setq org-agenda-skip-timestamp-if-done t)
-#+end_src
-
-** Font Configuration
-#+begin_src emacs-lisp
-  ;; Define your custom face settings in a function
-  (defun my/apply-custom-faces ()
-    "Apply all my custom face settings."
-    ;; Basic font settings
-    (set-face-attribute 'default nil :family "Iosevka" :height 140)
-    (set-face-attribute 'variable-pitch nil :family "Iosevka Etoile" :height 140)
-    (set-face-attribute 'fixed-pitch nil :family "Iosevka" :height 140)
-
-    ;; Org faces
-    (with-eval-after-load 'org
-      (custom-set-faces
-       '(org-document-info-keyword ((t (:inherit variable-pitch :height 1.0))))
-       '(org-document-title ((t (:inherit variable-pitch :height 1.3))))
-       '(org-level-1 ((t (:inherit variable-pitch :height 1.3))))
-       '(org-level-2 ((t (:inherit variable-pitch :height 1.2))))
-       '(org-level-3 ((t (:inherit variable-pitch :height 1.1))))
-       '(org-level-4 ((t (:inherit variable-pitch :height 1.0))))
-       '(org-level-5 ((t (:inherit variable-pitch :height 1.0))))
-       '(org-level-6 ((t (:inherit variable-pitch :height 1.0))))
-       '(org-level-7 ((t (:inherit variable-pitch :height 1.0))))
-       '(org-level-8 ((t (:inherit variable-pitch :height 1.0))))
-       '(org-agenda-date-today ((t (:inherit variable-pitch :height 1.3))))
-       '(org-super-agenda-header ((t (:inherit variable-pitch :height 1.2))))
-
-       ;; Keep these elements as fixed-pitch even in variable-pitch-mode
-       '(org-block ((t (:inherit fixed-pitch))))
-       '(org-code ((t (:inherit fixed-pitch))))
-       '(org-table ((t (:inherit fixed-pitch))))
-       '(org-verbatim ((t (:inherit fixed-pitch))))
-       '(org-special-keyword ((t (:inherit fixed-pitch :height 140))))
-       '(org-drawer ((t (:inherit fixed-pitch :height 140))))
-       '(org-property-value ((t (:inherit fixed-pitch :height 140))))
-       '(org-modern-label ((t (:inherit fixed-pitch :height 140))))
-       '(org-modern-statistics ((t (:inherit fixed-pitch :height 140))))
-       '(org-modern-tag ((t (:inherit fixed-pitch :height 140)))))))
-
-  ;; Apply custom faces when Emacs starts
-  (add-hook 'after-init-hook 'my/apply-custom-faces)
-
-  (setq org-modern-hide-stars nil)
-  (setq org-modern-star nil)
-
-  (add-hook 'markdown-mode-hook (lambda ()
-				  (breadcrumb-local-mode 1)
-				  (variable-pitch-mode 1)
-				  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
-				  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
-
-  (add-hook 'prog-mode (lambda ()
-			 (breadcrumb-local-mode 1)
-			 (variable-pitch-mode 1)
-			 (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
-			 (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)))
-#+end_src
-
-** Org Babel and Source Blocks
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp :tangle no . t)
-     (shell . t)
-     (org . t)
-     (mermaid . t)
-     ))
-
-  (setq org-babel-sh-command "bash -l -c")
-
-  (setenv "PUPPETEER_EXECUTABLE_PATH" 
-	  (or (executable-find "google-chrome-stable")
-	      (executable-find "google-chrome")))
-
-  (setq org-src-preserve-indentation nil
-	org-edit-src-content-indentation 0)
-
-  (require 'ox-json)
-
-  (use-package ob-mermaid
-    :config
-    ;; Set the path to the mermaid CLI using the custom puppeteer-cli
-    (setq ob-mermaid-cli-path (executable-find "mmdc"))
-    ;; If you need to specify the Chrome executable directly:
-    (setq ob-mermaid-browser-path (executable-find "google-chrome-stable")))
-
-  ;; Enable automatic display of inline images after executing babel blocks
-  (add-hook 'org-babel-after-execute-hook 'org-display-inline-images)
-  (setq org-redisplay-inline-images t)
-
-  ;; Allow evaluation of code blocks without confirmation for safe languages
-  (defun my/org-confirm-babel-evaluate (lang body)
-    (not (member lang '("emacs-lisp :tangle no" "shell"))))
-  ;;(setq org-confirm-babel-evaluate 'my/org-confirm-babel-evaluate)
-  (setq org-confirm-babel-evaluate nil)
-
-  ;; Ensure pretty fontification of source blocks
-  (setq org-src-fontify-natively t)
-
-  ;;(require 'ob-async) ;; Allow for asyncround running of babel blocks
-
-  (require 'org-make-toc)
-#+end_src
-
-** Keybindings and Navigation
-#+begin_src emacs-lisp
-  (define-key org-mode-map (kbd "RET") 'newline)
-
-  ;; These bindings just emulate the defaults instead of doing a bunch of weird org specific stuff.
-  (evil-define-key 'insert org-mode-map (kbd "RET") 'newline)
-  (evil-define-key 'insert org-mode-map (kbd "<tab>") 'tab-to-tab-stop)
-  (defun my-org-evil-open-below ()
-    "Open line below preserving org structure but preventing reformatting."
-    (interactive)
-    ;; Use evil's basic open behavior
-    (evil-open-below 1)
-    ;; Exit insert state then re-enter to avoid auto-formatting
-    (evil-normal-state)
-    (evil-insert-state))
-
-  (evil-define-key 'normal org-mode-map "o" 'my-org-evil-open-below)
-#+end_src
-
-** Org Agenda Files Management
-#+begin_src emacs-lisp
-(defun my/get-org-agenda-files ()
-  "Return a minimal, fixed set of agenda files for performance."
-  (list (expand-file-name "logs.org" my-notes-directory)
-        (expand-file-name "budget.org" my-notes-directory)
-        (expand-file-name "inbox.org" my-notes-directory)
-        (expand-file-name "inbox-mobile.org" my-notes-directory)
-        (expand-file-name "reminders.org" my-agenda-directory)
-        (expand-file-name "meal-plan.org" my-agenda-directory)
-        (expand-file-name "contacts.org" my-notes-directory)
-        (expand-file-name "code-reviews.org" my-notes-directory)))
-
-(defun my/set-org-agenda-files ()
-  "Set org-agenda-files to a minimal, fixed set."
-  (interactive)
-  (setq org-agenda-files (my/get-org-agenda-files)))
-
-(add-hook 'after-init-hook #'my/set-org-agenda-files)
-(add-hook 'org-agenda-mode-hook #'my/set-org-agenda-files)
-#+end_src
-
-** Org Refile
-
-*** Targets
-
-#+begin_src emacs-lisp
-  (setq org-refile-targets '((org-agenda-files :maxlevel . 2)))
-#+end_src
-
-** Org To Jira
-#+begin_src emacs-lisp :tangle no
-  (use-package ox-jira
-    :ensure t
-    :after org)
-#+end_src
-** Org Capture Templates
-#+begin_src emacs-lisp 
-  (setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
-  (setq org-default-notes-file (expand-file-name "inbox.org" my-notes-directory))
-  (setq org-capture-templates
-	'(
-	  ("l" "Log" entry
-	   (file org-default-notes-file)
-	   "* %U \n%?")
-	  ("e" "Event" entry
-	   (file org-default-notes-file)
-	   "* %^{Title}\n%^T\n%?")
-	  ("t" "Todo" entry
-	   (file org-default-notes-file)
-	   "* TODO %^{Title}\nDEADLINE: %t\n%?")
-	  ("a" "A link to the current location in the current file" entry
-	   (file org-default-notes-file)
-	   "* %a")
-	  ("s" "Source block" entry
-	   (file org-default-notes-file)
-	   "* %^{Title}\n#+begin_src org\n%?\n#+end_src" :immediate-finish nil :jump-to-captured t)
-	  ))
-
-  (defgroup my/budget nil
-    "My budget capture settings."
-    :group 'org-capture)
-
-  (defcustom my/budget-file "~/notes/budget.org"
-    "Org file containing my budget."
-    :type 'file
-    :group 'my/budget)
-
-  (defcustom my/budget-payees-heading "Payees"
-    "Heading name under which payees are listed in the org file."
-    :type 'string
-    :group 'my/budget)
-
-  (defcustom my/budget-accounts-heading "Accounts"
-    "Heading name under which accounts are listed in the org file."
-    :type 'string
-    :group 'my/budget)
-
-  (defcustom my/budget-categories-heading "Categories"
-    "Heading name under which categories are listed in the org file."
-    :type 'string
-    :group 'my/budget)
-
-  (defun my/load-budget-items-from-org (heading-name)
-    "Load items from subheadings under the specified HEADING-NAME."
-    (when (file-exists-p my/budget-file)
-      (with-temp-buffer
-	(insert-file-contents my/budget-file)
-	(org-mode)
-	(let (items)
-	  ;; Find the specified heading
-	  (goto-char (point-min))
-	  (when (re-search-forward (format "^\\*+\\s-+%s" (regexp-quote heading-name)) nil t)
-	    (let ((parent-level (org-outline-level)))
-	      (org-map-entries
-	       (lambda ()
-		 (when (= (org-outline-level) (1+ parent-level))
-		   ;; This is a direct child of our heading
-		   (push (org-get-heading t t t t) items)))
-	       nil 'tree)))
-	  (nreverse items)))))
-
-  (defun my/load-budget-payees-from-org ()
-    "Load payees from subheadings under the Payees heading."
-    (my/load-budget-items-from-org my/budget-payees-heading))
-
-  (defun my/load-budget-accounts-from-org ()
-    "Load accounts from subheadings under the Accounts heading."
-    (my/load-budget-items-from-org my/budget-accounts-heading))
-
-  (defun my/load-budget-categories-from-org ()
-    "Load categories from subheadings under the Categories heading."
-    (my/load-budget-items-from-org my/budget-categories-heading))
-
-  (defcustom my/budget-payees (my/load-budget-payees-from-org)
-    "List of payees for budget capture."
-    :type '(repeat string)
-    :group 'my/budget)
-
-  (defcustom my/budget-accounts (my/load-budget-accounts-from-org)
-    "List of accounts for budget capture."
-    :type '(repeat string)
-    :group 'my/budget)
-
-  (defcustom my/budget-categories (my/load-budget-categories-from-org)
-    "List of categories for budget capture."
-    :type '(repeat string)
-    :group 'my/budget)
-
-  (defun my/budget--capture-template ()
-    "Return an org-capture template string for a budget transaction."
-    ;; Refresh lists from org file
-    (setq my/budget-payees (my/load-budget-payees-from-org))
-    (setq my/budget-accounts (my/load-budget-accounts-from-org))
-    (setq my/budget-categories (my/load-budget-categories-from-org))
-
-    (let* ((date     (org-read-date nil nil nil "Date: "))
-	   (amount   (read-string "Amount: "))
-	   (payee    (completing-read "Payee: " my/budget-payees))
-	   (account  (completing-read "Account: " my/budget-accounts))
-	   (category (completing-read "Category: " my/budget-categories)))
-      (concat
-       "** [PENDING] [" date "]: $" amount " @ " payee " on " account "\n"
-       "%^{Description}\n"
-       "#+begin_src ledger\n"
-       date " ! " payee "\n"
-       "    " category "  $" amount "\n"
-       "    " account "\n"
-       "#+end_src\n")))
-
-  (add-to-list 'org-capture-templates `("b" "Budgeting templates"))
-
-  (add-to-list 'org-capture-templates
-	       `("bt" "Budget transaction" entry
-		 (file org-default-notes-file)
-		 (function my/budget--capture-template)
-		 :empty-lines 1))
-
-  (defun my/budget--capture-new-payee ()
-    "Return an org-capture template string for a new budget payee."
-    (let* ((payee (read-string "New Payee Name: ")))
-      (format "* %s%%?" payee)))
-
-  (add-to-list 'org-capture-templates
-	       `("bp" "Budget payee" entry
-		 (file+headline ,my/budget-file ,my/budget-payees-heading)
-		 (function my/budget--capture-new-payee)
-		 :empty-lines 0))
-
-  (defun my/budget--capture-new-account ()
-    "Return an org-capture template string for a new budget account."
-    (let* ((account (read-string "New Account Name: ")))
-      (format "* %s%%?" account)))
-
-  (add-to-list 'org-capture-templates
-	       `("ba" "Budget account" entry
-		 (file+headline ,my/budget-file ,my/budget-accounts-heading)
-		 (function my/budget--capture-new-account)
-		 :empty-lines 0))
-
-  (defun my/budget--capture-new-category ()
-    "Return an org-capture template string for a new budget category."
-    (let* ((category (read-string "New Category Name: ")))
-      (format "* %s\n%%?" category)))
-
-  (add-to-list 'org-capture-templates
-	       `("bc" "Budget category" entry
-		 (file+headline ,my/budget-file ,my/budget-categories-heading)
-		 (function my/budget--capture-new-category)
-		 :empty-lines 0))
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
-(defun finalize-transaction-under-cursor ()
-  "Finalizes a pending transaction by:
-   1. Removing '[PENDING]' from the heading
-   2. Converting '!' to '*' in the ledger transaction"
-  (interactive)
-  (save-excursion
-    ;; Find the heading containing the transaction
-    (while (and (not (org-at-heading-p)) 
-                (not (bobp)))
-      (org-backward-heading-same-level 1 t))
-    
-    ;; Remove [PENDING] from the heading
-    (when (org-at-heading-p)
-      (let ((case-fold-search nil))
-        (beginning-of-line)
-        (when (re-search-forward "\\(\\*+\\s-+\\)\\(\\[PENDING\\]\\s-+\\)" (line-end-position) t)
-          (replace-match "\\1"))))
-    
-    ;; Find the ledger source block
-    (let ((end-of-section (save-excursion
-                            (or (org-get-next-sibling)
-                                (point-max)))))
-      (forward-line)
-      (while (and (< (point) end-of-section)
-                  (not (looking-at "^#\\+begin_src ledger")))
-        (forward-line))
-      
-      ;; If we found a ledger block, change ! to *
-      (when (looking-at "^#\\+begin_src ledger")
-        (forward-line)
-        (when (re-search-forward "^\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) !" 
-                                 (save-excursion 
-                                   (re-search-forward "^#\\+end_src" end-of-section t))
-                                 t)
-          (replace-match "\\1 *"))))))
-#+end_src
-
-** Date Tracking Functions
-
- I'm not using these right now, but might revist in the future.
-
-#+begin_src emacs-lisp :tangle no
-  (defun my/org-set-completed-date ()
-    (when (equal "Done" (org-entry-get nil "STATUS"))
-      (org-entry-put nil "COMPLETED"
-		     (format-time-string "[%Y-%m-%d %a]"))))
-
-  (defun my/org-set-started-date ()
-    (when (equal "In-Progress" (org-entry-get nil "STATUS"))
-      (org-entry-put nil "STARTED"
-		     (format-time-string "[%Y-%m-%d %a]"))))
-
-  (add-hook 'org-property-changed-functions
-	    (lambda (property value)
-	      (when (equal property "STATUS")
-		(my/org-set-completed-date)
-		(my/org-set-started-date))))
-#+end_src
-
-** Conversion Functions
-#+begin_src emacs-lisp
-  (defun convert-to-org ()
-    "Convert current markdown buffer to org format."
-    (interactive)
-    (let* ((md-file (buffer-file-name))
-	   (org-file (concat (file-name-sans-extension md-file) ".org")))
-      (when (and md-file (file-exists-p md-file))
-	(call-process "pandoc" nil nil nil
-		      "-f" "markdown"
-		      "-t" "org"
-		      md-file
-		      "-o" org-file)
-	(find-file org-file))))
-
-  (defun convert-to-markdown ()
-    "Convert current org buffer to markdown format."
-    (interactive)
-    (let* ((org-file (buffer-file-name))
-	   (md-file (concat (file-name-sans-extension org-file) ".md")))
-      (when (and org-file (file-exists-p org-file))
-	(call-process "pandoc" nil nil nil
-		      "-f" "org"
-		      "-t" "markdown"
-		      org-file
-		      "-o" md-file)
-	(find-file md-file))))
-
-  (defun my/move-to-custom-id-file ()
-    "Move selected org item to a new file named after its CUSTOM_ID property."
-    (interactive)
-    (save-excursion
-      (let* ((region-content (buffer-substring (region-beginning) (region-end)))
-	     (custom-id (save-excursion
-			  (goto-char (region-beginning))
-			  (org-entry-get nil "CUSTOM_ID"))))
-	(if custom-id
-	    (let ((new-file (concat "~/notes/" custom-id ".org")))
-	      (with-temp-file new-file
-		(insert "#+TITLE: " custom-id "\n\n")
-		(insert region-content))
-	      (delete-region (region-beginning) (region-end))
-	      (insert (format "[[file:%s][%s]]\n" new-file custom-id))
-	      (message "Moved to %s" new-file))
-	  (message "No CUSTOM_ID property found!")))))
-#+end_src
-
-** Agenda Configuration
-#+begin_src emacs-lisp
-(setq org-agenda-block-separator nil)
-(setq org-agenda-window-setup 'current-window)
-(setq org-agenda-timegrid-use-ampm t)
-(setq org-agenda-time-leading-zero t)
-(setq org-agenda-todo-keyword-format "%s")
-(setq org-agenda-include-diary t)
-(setq org-agenda-hide-tags-regexp ".")
-
-;; Allow creating new nodes (including new files) when refiling
-(setq org-refile-allow-creating-parent-nodes 'confirm)
-
-;; Use the full outline paths for refile targets
-(setq org-refile-use-outline-path nil)
-
-;; Completes in steps so you can select a heading after selecting the file
-(setq org-outline-path-complete-in-steps nil)
-
-(require 'diary-lib)
-
-(use-package org-super-agenda
-  :after org-agenda
-  :config
-  (setq org-super-agenda-header-map nil)  
-  (setq org-super-agenda-header-properties nil)
-  (org-super-agenda-mode))
-
-(setq warning-suppress-types '((org-element)))
-
-(defun my/inherit-meeting-times ()
-  "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
-  (interactive)
-  (org-map-entries
-   (lambda ()
-     (when (and (string= (org-entry-get nil "CATEGORY") "meeting-notes")
-	  (org-get-todo-state))
- (let ((timestamp nil))
-   (save-excursion
-     (when (org-up-heading-safe)
-       (setq timestamp (org-entry-get nil "TIMESTAMP" t))))
-   (when timestamp
-     (org-schedule nil timestamp)))))
-   "+CATEGORY=\"meeting-notes\"+TODO=\"TODO\""))
-
-(setq org-agenda-custom-commands
-'(("d" "daily dashboard"
-   (
-    (tags "+CATEGORY=\"inbox\"" 
-	  ((org-agenda-overriding-header "Inbox")))
-    (agenda "Schedule and Habits"
-	    ((org-agenda-span 'day)
-	     (org-agenda-sorting-strategy '((agenda time-up todo-state-down alpha-up)))
-	     (org-agenda-overriding-header " ")
-	     (org-super-agenda-groups
-	      '(
-		(:name "Happening today" 
-		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-		(:name "Today's Meeting Notes" :category "meeting-notes")
-		(:name "Today's Schedule"
-		       :time-grid t)
-		(:name "High Priority"
-        :and (:deadline today :priority "A")
-        :and (:deadline past :priority "A"))
-		(:name "Cooking"
-        :and (:deadline today :tag "cooking")
-        :and (:deadline past :tag "cooking"))
-		(:name "Code Review"
-        :and (:deadline today :category "code review")
-        :and (:deadline past :category "code review"))
-		(:name "Code Review Bunker"
-        :and (:deadline today :category "code review bunker")
-        :and (:deadline past :category "code review bunker"))
-		(:name "Work"
-        :and (:deadline today :tag "work")
-        :and (:deadline past :tag "work"))
-		(:name "Hard"
-        :and (:deadline today :tag "hard")
-        :and (:deadline past :tag "hard"))
-		(:name "Quick"
-        :and (:deadline today :tag "quick")
-        :and (:deadline past :tag "quick"))
-		(:name "Easy"
-        :and (:deadline today :tag "easy")
-        :and (:deadline past :tag "easy"))
-		(:name "Cleaning"
-        :and (:deadline today :tag "cleaning")
-        :and (:deadline past :tag "cleaning"))
-		(:name "Due Today"
-        :and (:deadline today :tag "cleaning")
-        :and (:deadline past :tag "cleaning"))
-		(:name "Overdue" :deadline past)
-		(:name "Due Today" :deadline today)
-		(:name "High Priority (soon)" :and (:priority "A" :deadline future))
-		(:name "Cooking (soon)" :and (:deadline future :tag "cooking"))
-		(:name "Hard (soon)" :and (:deadline future :tag "hard"))
-		(:name "Quick (soon)" :and (:deadline future :tag "quick"))
-		(:name "Easy (soon)" :and (:deadline future :tag "easy"))
-		(:name "Cleaning (soon)" :and (:deadline future :tag "cleaning"))
-		(:name "Code Review (soon)" :and (:category "code review" :deadline today))
-		(:name "Code Review Bunker (soon)" :and (:category "code review bunker" :deadline future))
-		(:name "Work (soon)" :and (:deadline future :tag "work"))
-		(:name "Due Soon" :deadline future)
-		(:name "Active Bugs" :category "bug")
-		(:name "Active Epics" :category "epic")
-		;; I moved TODOs to a tags component because agenda won't show none todo/event items like logs
-		;;(:name "Inbox" :category "inbox")
-		;;(:name "Poetry" :category "my poems")
-		(:auto-category t)
-		))))))
-  ("w" "Weekly overview with super-agenda"
-   ((agenda ""
-	    ((org-agenda-span 7)                      ;; Show 7 days
-	     (org-agenda-start-on-weekday nil)        ;; Start from current day
-	     (org-agenda-time-grid '((daily today require-timed)
-				     (800 1000 1200 1400 1600 1800 2000)
-				     "......" "----------------"))  ;; Time grid config
-	     (org-agenda-include-deadlines nil)       ;; No deadlines
-	     (org-agenda-skip-scheduled-if-done t)     
-	     (org-agenda-skip-deadline-if-done t)
-	     (org-agenda-skip-scheduled-delay-if-done t)
-	     (org-agenda-skip-function                ;; Skip scheduled items
-	      '(org-agenda-skip-entry-if 'scheduled 'deadline))
-	     (org-agenda-prefix-format '((agenda . "%?-12t ")))  ;; Only show time
-	     (org-agenda-todo-keyword-format "")
-	     (org-agenda-show-all-dates t)
-	     (org-agenda-day-face-function (lambda (date) 'org-agenda-date))
-	     (org-agenda-format-date "%A %Y-%m-%d")
-	     ;; Super agenda groups
-	     (org-super-agenda-groups
-	      '(
-		(:name "Happening today" 
-		       :and(:scheduled nil :deadline nil :not(:time-grid t)))
-		(:name "Today's Schedule"
-		       :time-grid t)
-		))))))
-  ))
-
-(setq org-agenda-time-grid-use-ampm t)
-(setq org-agenda-with-times t)
-(setq org-agenda-time-format "%I:%M%p")
-
-				  ; used with %i
-				  ;(setq org-agenda-category-icon-alist 
-				  ;      `(("bread"  ,(list (propertize "‍🥖")))
-				  ;        ("Music" ,(list (propertize "🎶" )))
-				  ;        ("Home"  ,(list (propertize"🏡" )))))
-
-(setq org-agenda-prefix-format
-'((agenda . "  - %t ")
-  (tags   . "○ ")
-  (todo   . "○ ")))
-#+end_src
-
-** Calfw
-#+begin_src emacs-lisp 
-  (use-package calfw)
-  (use-package google-maps)
-
-  (use-package calfw-org
-    :config
-    (setq cfw:org-agenda-schedule-args '(:timestamp)))
-
-  (defun my/cfw:trim-text (text)
-    "Trim TEXT to fit in WIDTH, without adding ellipsis that breaks formatting."
-    text)
-  ;; Override the default truncation function
-  (advice-add 'cfw:trim :override #'my/cfw:trim-text)
-#+end_src
-
-** Org Face Customizations
-#+begin_src emacs-lisp
-  (use-package org-modern
-    :config
-    ;; Disable org-modern's TODO keyword styling
-    (setq org-modern-todo nil))
-#+end_src
-
-** Quickly Open Files (For The "Go" Menu)
-#+begin_src emacs-lisp
-  (defun my/open-inbox ()
-    (interactive)
-    "Opens the inbox.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "inbox.org" my-notes-directory)))
-  (defun my/open-inbox-mobile ()
-    (interactive)
-    "Opens the inbox-mobile.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "inbox-mobile.org" my-notes-directory)))
-  (defun my/open-emacs-config ()
-    (interactive)
-    "Opens the emacs.org file in the nix directory."
-    (interactive)
-    (find-file (expand-file-name "system/modules/emacs/default.nix" my-nix-systems-flake-directory)))
-  (defun my/open-log ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "logs.org" my-notes-directory)))
-  (defun my/open-prompts ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "prompts.org" my-notes-directory)))
-  (defun my/open-budget ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "budget.org" my-notes-directory)))
-#+end_src
-
-** Working With LLM Prompts
-*** Searching for a project as a prompt variable
-
-#+begin_src emacs-lisp
-  (defun my/get-project-choices ()
-    "Return a list of available projects from Projectile."
-    (if (and (fboundp 'projectile-known-projects)
-	     (fboundp 'projectile-project-root))
-	(let ((projects (projectile-known-projects))
-	      (current (when (projectile-project-p)
-			 (projectile-project-root))))
-	  ;; Put the current project at the beginning if we're in one
-	  (if current
-	      (cons current (delete current projects))
-	    projects))
-      '("default-project")))  ;; Fallback if projectile isn't available
-
-  (defvar my/prompt-placeholder-functions
-    '(("[PROJECT]" . my/get-project-choices))
-    "Alist mapping placeholder strings to functions that return choices.
-  Each function should either return a string (for direct substitution)
-  or a list of strings (for completion-based selection).")
-#+end_src
-
-*** Searching for a note file as a prompt variable
-
-#+begin_src emacs-lisp
-  (defun my/get-notes-files ()
-    "Return a list of org note files."
-    (if (boundp 'my-notes-directory)
-	(let* ((default-directory my-notes-directory)
-	       (all-files (directory-files-recursively my-notes-directory "\.org$" t)))
-	  ;; Return the list with relative paths
-	  (mapcar (lambda (file) (file-relative-name file my-notes-directory)) all-files))
-      (user-error "my-notes-directory is not set")))
-  (defun my/get-memorynode-link ()
-    "Prompt for a Roam node and return it as a [[file:…#id][title]] link."
-    (let ((node (org-roam-node-read)))
-      (let ((org-roam-node-formatter
-	     #'org-roam-node-format--file-link))   ; bind the formatter
-	(org-roam-node-formatted node))))
-
-  (setq my/prompt-placeholder-functions
-	(append my/prompt-placeholder-functions
-		'(("[NOTES]" . my/get-notes-files))))
-#+end_src
-
-*** Searching for a memory file as a prompt variable
-#+begin_src emacs-lisp
-  (defun my/get-memorynode-link ()
-    "Prompt for a Roam node and return an org link [[file:…::#ID][TITLE]]."
-    (let* ((node  (org-roam-node-read))
-	   (id    (org-roam-node-id    node))
-	   (title (org-roam-node-title node)))
-      (format "[[id:%s][%s]]"
-	      id
-	      title)))
-
-  (setq my/prompt-placeholder-functions
-	(append
-	 (assoc-delete-all "[MEMORYNODE]" my/prompt-placeholder-functions)
-	 '(("[MEMORYNODE]" . my/get-memorynode-link))))
-#+end_src
-
-*** Replacing placeholder
-
-#+begin_src emacs-lisp
-  (defun my/replace-prompt-placeholders (content)
-    "Replace placeholders in CONTENT string.
-  Placeholders are of the form [NAME], where NAME is alphanumeric or underscore.
-  Use functions in `my/prompt-placeholder-functions` for special placeholders."
-    (if (null content)
-	nil  ;; Return nil if content is nil
-      (let ((regex "\\[\\([A-Z0-9_]+\\)\\]")
-	    (result content))
-	(while (and result (string-match regex result))
-	  (let* ((full (match-string 0 result))
-		 (name (match-string 1 result))
-		 (entry (assoc full my/prompt-placeholder-functions))
-		 (choice
-		  (if entry
-		      ;; If we have a special handler function
-		      (let ((res (funcall (cdr entry))))
-			(if (listp res)
-			    ;; If it returns a list, use completing-read
-			    (completing-read (format "%s: " name) res nil t)
-			  ;; Otherwise use the direct result
-			  res))
-		    ;; No special handler, just ask the user
-		    (read-string (format "%s: " name)))))
-	    ;; Replace all occurrences of this placeholder with chosen value
-	    (setq result (replace-regexp-in-string
-			  (regexp-quote full) choice result t t))))
-	result)))
-#+end_src
-
-*** Searching for a prompt from the library
-
-#+begin_src emacs-lisp 
-(require 'consult)
-
-(defvar my/llm-prompts-file
-  (expand-file-name "prompts.org" my-notes-directory)
-  "Path to your prompts.org library.")
-
-(defun my--build-llm-prompt-alist ()
-  "Return an alist of (DISPLAY . RAW-CONTENT) for each src-block in prompts.org."
-  (with-temp-buffer
-    (insert-file-contents my/llm-prompts-file)
-    (goto-char (point-min))
-    (let (alist)
-      ;; Simple regex based approach rather than using org-element
-      (while (re-search-forward "^#\\+begin_src \\(.*?\\)$" nil t)
-        (let* ((begin-pos (point))
-               (language (match-string-no-properties 1))
-               (heading "No heading") ;; Default heading if none found
-               (val nil))
-          ;; Find the parent heading for this src block
-          (save-excursion
-            (goto-char begin-pos)
-            (when (re-search-backward "^\\*+ \\(.*?\\)$" nil t)
-              (setq heading (match-string-no-properties 1))))
-          
-          ;; Get the content until end_src
-          (when (re-search-forward "^#\\+end_src" nil t)
-            (setq val (buffer-substring-no-properties 
-                       begin-pos
-                       (match-beginning 0)))
-            ;; Create a preview of the content
-            (let ((preview (truncate-string-to-width
-                            (replace-regexp-in-string "\n" " " val)
-                            60 nil nil "…")))
-              (push (cons (format "%s  [%s]" heading preview) val) alist)))))
-      (nreverse alist))))
-
-(defun my/search-llm-prompts ()
-  "Pick a prompt from `my/llm-prompts-file', fill placeholders, and insert at point."
-  (interactive)
-  (unless (file-readable-p my/llm-prompts-file)
-    (user-error "Cannot read prompts file %s" my/llm-prompts-file))
-  ;; 1) mark our insertion point
-
-  (let ((insert-marker (point-marker))
-        prompt-alist choice raw filled)
-    ;; 2) build + pick
-    (setq prompt-alist (my--build-llm-prompt-alist))
-    (unless prompt-alist
-      (user-error "No src-blocks found in %s" my/llm-prompts-file))
-    (setq choice (consult--read prompt-alist
-                                :prompt        "Select prompt: "
-                                :require-match t))
-    (setq raw    (cdr (assoc choice prompt-alist)))
-    (unless raw
-      (user-error "Internal error: %S not in prompt list" choice))
-    ;; 3) replace placeholders if any
-    (setq filled (my/replace-prompt-placeholders raw))
-    ;; 4) finally go back to the original buffer/point and insert
-    (with-current-buffer (marker-buffer insert-marker)
-      (goto-char (marker-position insert-marker))
-      (insert (or filled raw)))))
-#+end_src
-
-** Org to epub
-#+begin_src emacs-lisp :tangle no
-(defun my-org-roam-to-epub ()
-  "Convert current Org-roam file and its linked Roam ID files into a single EPUB using Pandoc."
-  (interactive)
-  (unless (and buffer-file-name (featurep 'org-roam))
-    (error "Must be visiting a file with Org-roam loaded"))
-  (let* ((base-file (file-truename buffer-file-name))
-         (base-dir (file-name-directory base-file))
-         (css-file (expand-file-name "~/Documents/epub-style.css"))
-         (meta-file (expand-file-name "~/Documents/epub-meta.yaml"))
-         (epub-file (concat (file-name-sans-extension base-file) ".epub"))
-
-         ;; Collect all `id:` links and resolve to file paths
-         (id-files
-          (save-excursion
-            (goto-char (point-min))
-            (let (files)
-              (while (re-search-forward "\\[\\[id:\\([A-Za-z0-9-]+\\)\\]" nil t)
-                (let* ((id (match-string 1))
-                       (file (org-roam-node-file (org-roam-node-from-id id))))
-                  (when file (push (file-truename file) files))))
-              (delete-dups (cons base-file files)))))
-
-         ;; Build pandoc command
-         (command (mapconcat #'identity
-                   (remove nil
-                    (append
-                     '("pandoc"
-                       "--from=org"
-                       "--to=epub3"
-                       "--toc"
-                       "--toc-depth=2"
-                       "--epub-chapter-level=1")
-                     (when (file-exists-p css-file)
-                       (list (concat "--epub-stylesheet=" (shell-quote-argument css-file))))
-                     (when (file-exists-p meta-file)
-                       (list (shell-quote-argument meta-file)))
-                     (mapcar #'shell-quote-argument id-files)
-                     (list "-o" (shell-quote-argument epub-file))))
-                   " ")))
-
-    ;; Run the command in a compilation buffer
-    (compilation-start command nil
-                       (lambda (_) "*pandoc-epub*"))))
-#+end_src
-
 * Which Key Configuration
 #+begin_src emacs-lisp
   (use-package which-key
@@ -1580,44 +541,6 @@ Don't show DONE items in the agenda
 					  ;(setq elfeed-search-title-min-width 120)
 					  ;(setq elfeed-search-date-format '("%Y/%m-%d %H:%M" :left))
 					  ;(setq elfeed-search-filter "+unread")
-#+end_src
-
-* Org Roam Configuration
-#+begin_src emacs-lisp
-  (use-package org-roam
-    :ensure t
-    :custom
-    (org-roam-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam")
-    (org-roam-completion-everywhere t)
-    :config
-    (org-roam-db-autosync-mode)
-    (setq org-roam-dailies-directory "daily/")
-    (setq org-roam-dailies-capture-templates
-	  '(("d" "default" entry
-	     "* %?"
-	     :target (file+head "%<%Y-%m-%d>.org"
-				"#+title: %<%Y-%m-%d>\n")))))
-#+end_src
-
-**  Org Roam UI Configuration
-#+begin_src emacs-lisp
-  (use-package org-roam-ui
-    :ensure t
-    :after org-roam
-    :custom
-    (org-roam-ui-sync-theme t)
-    (org-roam-ui-follow nil)
-    (org-roam-ui-update-on-save t)
-    (org-roam-ui-open-on-start nil)
-    (org-roam-ui-find-ref-title t)
-    (org-roam-ui-retitle-ref-nodes t)
-    :config
-    (defun org-roam-ui-open ()
-      "Ensure the server is active, then open the roam graph."
-      (interactive)
-      (unless org-roam-ui-mode
-	(org-roam-ui-mode 1))
-      (browse-url (format "http://localhost:%d" org-roam-ui-port))))
 #+end_src
 
 * Path Copying Functions
@@ -2588,6 +1511,41 @@ This cool and lame at the same time
 
 * Transient Menus
 ** The "Go" Menu
+
+*** Quickly Open Files (For The "Go" Menu)
+#+begin_src emacs-lisp
+  (defun my/open-inbox ()
+    (interactive)
+    "Opens the inbox.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "inbox.org" my-notes-directory)))
+  (defun my/open-inbox-mobile ()
+    (interactive)
+    "Opens the inbox-mobile.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "inbox-mobile.org" my-notes-directory)))
+  (defun my/open-emacs-config ()
+    (interactive)
+    "Opens the emacs.org file in the nix directory."
+    (interactive)
+    (find-file (expand-file-name "system/modules/emacs/default.nix" my-nix-systems-flake-directory)))
+  (defun my/open-log ()
+    (interactive)
+    "Opens the logs.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "logs.org" my-notes-directory)))
+  (defun my/open-prompts ()
+    (interactive)
+    "Opens the logs.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "prompts.org" my-notes-directory)))
+  (defun my/open-budget ()
+    (interactive)
+    "Opens the logs.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "budget.org" my-notes-directory)))
+#+end_src
+
 #+begin_src emacs-lisp
 (defun my/projectile-magit-status ()
   "Select a project via Projectile, then open Magit in that project."
@@ -2596,25 +1554,28 @@ This cool and lame at the same time
   (let ((projectile-switch-project-action #'magit-status))
     (projectile-switch-project)))
 #+end_src
-#+begin_src emacs-lisp
-(transient-define-prefix my/inbox-menu ()
-  "Transient menu for getting to my inboxes"
-  ["Submenu Actions"
-   ("i" "Inbox" my/open-inbox)
-   ("m" "Mobile Inbox" my/open-inbox-mobile)])
 
-(transient-define-prefix my/go-menu ()
-  "Transient menu for navigating key files."
-  ["Go To"
-   ("i" "Inboxes" my/inbox-menu)
-   ("a" "Agenda" my/org-agenda-daily-dashboard)
-   ("e" "Emacs Config" my/open-emacs-config)
-   ("g" "Follow link" org-open-at-point)
-   ("p" "Prompts" my/open-prompts)
-   ("b" "Budget" my/open-budget)
-   ("m" "Magit" my/projectile-magit-status)
-   ("l" "Log" my/open-log)])
+*** Go Menu Definition
+
+#+begin_src emacs-lisp
+  (transient-define-prefix my/inbox-menu ()
+    "Transient menu for getting to my inboxes"
+    ["Submenu Actions"
+     ("i" "Inbox" my/open-inbox)
+     ("m" "Mobile Inbox" my/open-inbox-mobile)])
+
+  (transient-define-prefix my/go-menu ()
+    "Transient menu for navigating key files."
+    ["Go To"
+     ("i" "Inboxes" my/inbox-menu)
+     ("e" "Emacs Config" my/open-emacs-config)
+     ("g" "Follow link" org-open-at-point)
+     ("p" "Prompts" my/open-prompts)
+     ("b" "Budget" my/open-budget)
+     ("m" "Magit" my/projectile-magit-status)
+     ("l" "Log" my/open-log)])
 #+end_src
+
 ** The "Insert" Menu
 #+begin_src emacs-lisp
 (defun my/projectile-insert-org-link-to-file ()
@@ -2803,11 +1764,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 
   (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
 
-  (defun my/org-agenda-daily-dashboard ()
-    "Open the custom 'daily dashboard' org-agenda view."
-    (interactive)
-    (org-agenda nil "d"))
-
   (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
   (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
 
@@ -2969,40 +1925,6 @@ These are usually called from a mode init hook
     )
 #+end_src
 
-*** Org Mode Keymaps
-
-#+begin_src emacs-lisp
-  (defun my/org-mode-set-keybindings ()
-    (interactive)
-    "Sets all my org mode specific keybindings"
-    (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
-    (evil-define-key 'normal org-mode-map (kbd "<backtab>") 'org-cycle-global)
-    (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
-#+end_src
-
-*** Org Agenda Keymaps
-
-Using evil-mode based mappings don't work on the agenda, for same reason
-
-#+begin_src emacs-lisp
-  (defun my/org-agenda-mode-set-keybindings ()
-    (interactive)
-    "Sets all my org mode specific keybindings"
-    ;; Using local-set-key ensures the binding takes precedence in the current buffer
-    (local-set-key (kbd "C-b") #'my/create-menu)
-    (local-set-key (kbd "C-g") #'my/go-menu)
-    (local-set-key (kbd "C-<return>") #'my/insert-menu)
-    (local-set-key (kbd "C-s") #'my/search-menu)
-    (local-set-key (kbd "C-x") #'my/execute-menu)
-
-    ;; Also set the evil motion state map as a backup approach
-    (evil-define-key '(normal visual motion) org-agenda-mode-map
-		     (kbd "C-g") #'my/go-menu
-		     (kbd "C-s") #'my/search-menu
-		     (kbd "C-x") #'my/execute-menu
-		     (kbd "C-b") #'my/create-menu))
-#+end_src
-
 *** Magit Status Keymaps
 
 Using evil-mode based mappings don't work on the agenda, for same reason
@@ -3044,34 +1966,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     "Function to run on cominit mode init"
     (my/cominit-mode-set-keybindings))
   (add-hook cominit-mode-hook #'cominit-mode-init)
-#+end_src
-
-** Org Mode Init Hook
-
-#+begin_src emacs-lisp
-  (defun org-mode-init ()
-    "Function to run on org mode init"
-    (org-display-inline-images)
-    (variable-pitch-mode)
-    (breadcrumb-local-mode)
-    (org-indent-mode)
-    ;; I want to like you org-modern, I really do.
-    ;;(org-modern-mode)
-    (setq-local line-spacing 0.5)
-    (my/toggle-olivetti)
-    (my/org-mode-set-keybindings))
-  (add-hook 'org-mode-hook #'org-mode-init)
-#+end_src
-
-** Org Agenda Mode Init Hook
-
-#+begin_src emacs-lisp
-  (defun org-agenda-mode-init ()
-    "Function to run on org agenda mode init"
-    (variable-pitch-mode)
-    (my/org-agenda-mode-set-keybindings)
-    (my/toggle-olivetti))
-  (add-hook 'org-agenda-mode-hook #'org-agenda-mode-init)
 #+end_src
 
 ** Olivetti Mode Init Hook

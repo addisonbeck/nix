@@ -1,0 +1,102 @@
+#+TITLE: Gptel Shell Command Tools
+#+PROPERTY: header-args:emacs-lisp :tangle gptel-shell-command-tools.el 
+
+#+begin_src emacs-lisp
+  (require 'json)
+
+  (defun my/gptel-run-shell-command (command purpose)
+    "Run COMMAND in the shell with PURPOSE explanation and return a JSON string with `exit_code` and `output`."
+    ;; Step 1: Preview command and get user confirmation
+    (let* ((preview-result (gptel-shell-command--preview-and-confirm command purpose))
+           (confirmed (car preview-result))
+           (user-feedback (cdr preview-result)))
+      (if (not confirmed)
+          ;; User declined - return failure with feedback info
+          (let ((rejection-details `(("rejection_reason" . "user_declined")
+                                   ("command_preview" . ,command))))
+            ;; Add user feedback if provided
+            (when user-feedback
+              (push `("user_feedback" . ,user-feedback) rejection-details))
+            (json-encode `(("success" . nil)
+                          ("exit_code" . -1)
+                          ("output" . "")
+                          ("message" . ,(if user-feedback
+                                            (format "Command execution declined by user: %s" user-feedback)
+                                          "Command execution declined by user"))
+                          ("rejection_info" . ,rejection-details))))
+        ;; Step 2: Execute the command
+        (let* ((buffer (generate-new-buffer " *gptel-shell-output*"))
+               (exit-code (call-process-shell-command command nil buffer t))
+               (output
+                (with-current-buffer buffer
+                  (prog1
+                      (buffer-string)
+                    (kill-buffer)))))
+          (json-encode `(("exit_code" . ,exit-code)
+                        ("output"    . ,output)))))))
+
+(defun gptel-shell-command--preview-and-confirm (command purpose)
+  "Show shell command preview and get user confirmation.
+Returns cons cell (CONFIRMED . FEEDBACK) where:
+- CONFIRMED: t if user confirms, nil if user declines  
+- FEEDBACK: user feedback string if rejected and feedback collected, nil otherwise"
+  (let ((confirmed
+         ;; Display command preview in a temporary buffer
+         (let ((preview-buffer (get-buffer-create "*GPTel Shell Command Preview*")))
+           (with-current-buffer preview-buffer
+             (erase-buffer)
+             (insert "GPTel wants to execute shell command:\n\n")
+             (insert (format "Purpose: %s\n\n" purpose))
+             (insert "Command to be executed:\n")
+             (insert "=====================\n\n")
+             (insert command)
+             (insert "\n\n")
+             (insert "⚠️  WARNING: This command will have full access to your system!\n")
+             (insert "Only proceed if you trust and understand this command.\n\n")
+             (shell-script-mode)
+             (goto-char (point-min)))
+           ;; Show the preview buffer
+           (display-buffer preview-buffer)
+           ;; Get user confirmation
+           (let ((response (y-or-n-p "Execute this shell command? ")))
+             ;; Clean up preview buffer
+             (kill-buffer preview-buffer)
+             response))))
+    ;; If user declined, collect feedback
+    (if confirmed
+        (cons confirmed nil)
+      (let ((feedback (gptel-shell-command--collect-rejection-feedback command)))
+        (cons confirmed feedback)))))
+
+(defun gptel-shell-command--collect-rejection-feedback (command)
+  "Collect user feedback about why they rejected the shell command execution.
+Returns feedback string or nil if user skips feedback."
+  (let* ((prompt "Why did you reject this shell command execution? (Enter for skip): ")
+         (feedback (read-string prompt)))
+    (if (string-empty-p feedback)
+        nil
+      feedback)))
+#+end_src
+
+#+RESULTS:
+: gptel-shell-command--collect-rejection-feedback
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name        "shell_command"
+ :function    #'my/gptel-run-shell-command
+ :description "Run an arbitrary shell COMMAND and return JSON with exit_code and output."
+ :include t
+ :args        '((:name "command"
+		 :type string
+		 :description "The shell command to execute (as you would type it in a terminal)")
+                (:name "purpose"
+                 :type string
+                 :description "Required explanation of why this shell command execution is being performed"))
+ :category    "system")
+#+end_src
+
+#+begin_src emacs-lisp
+(register-gptel-tool "shell_command")
+#+end_src
+

@@ -1,0 +1,1010 @@
+#+TITLE: Gptel File Tools
+#+PROPERTY: header-args:emacs-lisp :tangle gptel-file-tools.el 
+
+#+begin_src emacs-lisp
+;; GPTel Buffer Editing Framework - Core Infrastructure
+;; Implementation based on specification: Buffer Editing Framework Specification
+
+(require 'json)
+
+;;; Configuration Variables
+
+(defvar gptel-do-file-confirmation t
+  "When non-nil, prompt for confirmation before applying file edits.
+When nil, edits are applied without user confirmation.")
+
+(defvar gptel-preview-show-diff t
+  "When non-nil, show diff preview during confirmation.
+Requires gptel-do-file-confirmation to be enabled.")
+
+(defvar gptel-collect-rejection-feedback t
+  "When non-nil, prompt for feedback when user rejects an edit.
+Requires gptel-do-file-confirmation to be enabled.")
+
+(defvar gptel-do-read-confirmation t
+  "When non-nil, prompt for confirmation before reading file content.
+Independent from gptel-do-file-confirmation for edit operations.")
+
+(defvar gptel-collect-read-rejection-feedback t
+  "When non-nil, prompt for feedback when user rejects a read operation.
+Independent from edit feedback collection.")
+#+end_src
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--generate-diff (original-file current-buffer)
+  "Generate diff between original file and current buffer state.
+Returns diff string or nil if generation fails."
+  (condition-case err
+      (let* ((original-content (with-temp-buffer
+                                (insert-file-contents original-file)
+                                (buffer-string)))
+             (current-content (with-current-buffer current-buffer
+                               (buffer-string)))
+             (temp-original (make-temp-file "gptel-diff-original-"))
+             (temp-current (make-temp-file "gptel-diff-current-"))
+             (diff-result nil))
+        ;; Write contents to temp files
+        (with-temp-file temp-original
+          (insert original-content))
+        (with-temp-file temp-current
+          (insert current-content))
+        ;; Generate diff using Emacs built-in diff
+        (let ((diff-buffer (get-buffer-create "*gptel-diff*")))
+          (with-current-buffer diff-buffer
+            (erase-buffer)
+            (call-process "diff" nil t nil "-u" temp-original temp-current)
+            (setq diff-result (buffer-string)))
+          ;; Clean up temp files
+          (delete-file temp-original)
+          (delete-file temp-current)
+          ;; Return diff if non-empty, otherwise indicate no changes
+          (if (string-empty-p diff-result)
+              "No differences found"
+            diff-result)))
+    (error
+     (message "Failed to generate diff: %s" (error-message-string err))
+     nil)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--preview-changes (operation file-path current-buffer backup-file purpose)
+  "Show diff preview of changes and get user confirmation.
+Returns cons cell (CONFIRMED . FEEDBACK) where:
+- CONFIRMED: t if user confirms, nil if user declines
+- FEEDBACK: user feedback string if rejected and feedback collected, nil otherwise"
+  (if (not gptel-do-file-confirmation)
+      ;; If confirmation is disabled, proceed automatically with no feedback
+      (cons t nil)
+    (let ((confirmed 
+           (if gptel-preview-show-diff
+               ;; Show diff preview
+               (let ((diff (gptel-buffer-framework--generate-diff backup-file current-buffer)))
+                 (if diff
+                     (progn
+                       ;; Display diff in a temporary buffer
+                       (let ((diff-buffer (get-buffer-create "*GPTel File Preview*")))
+                         (with-current-buffer diff-buffer
+                           (erase-buffer)
+                           (insert (format "GPTel wants to %s in: %s\n\n" 
+                                         operation (file-name-nondirectory file-path)))
+                           (insert (format "Purpose: %s\
+\
+" purpose))
+                           (insert "Changes to be made:\
+")
+                           (insert "==================\n\n")
+                           (insert diff)
+                           (diff-mode)
+                           (goto-char (point-min)))
+                         ;; Show the diff buffer
+                         (display-buffer diff-buffer)
+                         ;; Get user confirmation
+                         (let ((response (y-or-n-p "Apply these changes? ")))
+                           ;; Clean up diff buffer
+                           (kill-buffer diff-buffer)
+                           response)))
+                   ;; Fallback to simple confirmation if diff fails
+                   (gptel-buffer-framework--confirm-edit operation file-path)))
+             ;; Simple confirmation when diff preview is disabled
+             (gptel-buffer-framework--confirm-edit operation file-path))))
+      ;; If user declined, collect feedback
+      (if confirmed
+          (cons confirmed nil)
+        (let ((feedback (gptel-buffer-framework--collect-rejection-feedback operation file-path)))
+          (cons confirmed feedback))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--confirm-edit (operation file-path)
+  "Prompt user to confirm file edit operation.
+Returns t if user confirms, nil if user declines."
+  (when gptel-do-file-confirmation
+    (let* ((short-path (file-name-nondirectory file-path))
+           (prompt (format "GPTel wants to %s in '%s'. Proceed? (y/n) " 
+                          operation short-path)))
+      (y-or-n-p prompt))))
+
+(defun gptel-buffer-framework--collect-rejection-feedback (operation file-path)
+  "Collect user feedback about why they rejected the edit.
+Returns feedback string or nil if user skips feedback."
+  (when gptel-collect-rejection-feedback
+    (let* ((short-path (file-name-nondirectory file-path))
+           (prompt (format "Why did you reject the %s for '%s'? (Enter for skip): " 
+                          operation short-path))
+           (feedback (read-string prompt)))
+      (if (string-empty-p feedback)
+          nil
+        feedback))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--collect-rejection-feedback
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--confirm-read (operation file-path purpose)
+  "Prompt user to confirm file read operation before opening buffer.
+Returns t if user confirms, nil if user declines."
+  (when gptel-do-read-confirmation
+    (let* ((short-path (file-name-nondirectory file-path))
+           (prompt (format "GPTel wants to %s '%s'\\nPurpose: %s\\nProceed? (y/n) " 
+                          operation short-path purpose)))
+      (y-or-n-p prompt))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--confirm-read
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--collect-read-rejection-feedback (operation file-path)
+  "Collect user feedback about why they rejected the read.
+Returns feedback string or nil if user skips feedback."
+  (when gptel-collect-read-rejection-feedback
+    (let* ((short-path (file-name-nondirectory file-path))
+           (prompt (format "Why did you reject reading '%s'? (Enter for skip): " 
+                          short-path))
+           (feedback (read-string prompt)))
+      (if (string-empty-p feedback)
+          nil
+        feedback))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--collect-read-rejection-feedback
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--validate-read-file (file-path)
+  "Validate file exists and is readable for read operations.
+Returns t on success, error message string on failure."
+  (let ((expanded-path (expand-file-name file-path)))
+    (cond
+     ((not (file-exists-p expanded-path))
+      (format "File does not exist: %s" expanded-path))
+     ((not (file-readable-p expanded-path))
+      (format "File is not readable: %s" expanded-path))
+     (t t))))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Buffer Management Functions
+;;:description "Operation: search-replace, goto-line-insert, replace-region, find-function-replace, add-import, indent-region")
+(defun gptel-buffer-framework--get-buffer (file-path)
+  "Get or create buffer for FILE-PATH. Auto-opens if not already open.
+   Returns buffer object or nil on failure."
+  (condition-case err
+      (let* ((expanded-path (expand-file-name file-path))
+             (existing-buffer (get-file-buffer expanded-path)))
+        (if existing-buffer
+            (progn
+              (gptel-buffer-framework--log "get-buffer" expanded-path t "Found existing buffer")
+              existing-buffer)
+          ;; Need to open the file
+          (let ((new-buffer (find-file-noselect expanded-path)))
+            (gptel-buffer-framework--log "get-buffer" expanded-path t "Opened new buffer")
+            new-buffer)))
+    (error
+     (gptel-buffer-framework--log "get-buffer" file-path nil (error-message-string err))
+     nil)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--get-buffer
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--validate-file (file-path)
+  "Validate file exists, is readable and writable.
+   Returns t on success, error message string on failure."
+  (let ((expanded-path (expand-file-name file-path)))
+    (cond
+     ((not (file-exists-p expanded-path))
+      (format "File does not exist: %s" expanded-path))
+     ((not (file-readable-p expanded-path))
+      (format "File is not readable: %s" expanded-path))
+     ((not (file-writable-p expanded-path))
+      (format "File is not writable: %s" expanded-path))
+     (t t))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--validate-file
+
+;;; Safety & Backup System
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--create-backup (file-path)
+  "Create temporary backup file. Returns backup file path or nil on failure."
+  (condition-case err
+      (let* ((expanded-path (expand-file-name file-path))
+             (backup-path (make-temp-file "gptel-buffer-backup-" nil ".bak")))
+        (copy-file expanded-path backup-path t)
+        (gptel-buffer-framework--log "create-backup" expanded-path t 
+                                   (format "Created backup: %s" backup-path))
+        backup-path)
+    (error
+     (gptel-buffer-framework--log "create-backup" file-path nil (error-message-string err))
+     nil)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--create-backup
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--restore-backup (file-path backup-path)
+  "Restore file from backup. Returns t on success, nil on failure."
+  (condition-case err
+      (let ((expanded-path (expand-file-name file-path)))
+        (copy-file backup-path expanded-path t)
+        ;; If buffer exists, revert it to show the restored content
+        (when-let ((buffer (get-file-buffer expanded-path)))
+          (with-current-buffer buffer
+            (revert-buffer t t t)))
+        (gptel-buffer-framework--log "restore-backup" expanded-path t 
+                                   (format "Restored from backup: %s" backup-path))
+        t)
+    (error
+     (gptel-buffer-framework--log "restore-backup" file-path nil (error-message-string err))
+     nil)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--restore-backup
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--cleanup-backup (backup-path)
+  "Remove backup file safely."
+  (when (and backup-path (file-exists-p backup-path))
+    (condition-case err
+        (progn
+          (delete-file backup-path)
+          (message "Cleaned up backup file: %s" backup-path)
+          t)
+      (error
+       (message "Warning: Failed to cleanup backup %s: %s" 
+                backup-path (error-message-string err))
+       nil))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--cleanup-backup
+
+#+begin_src emacs-lisp
+;;; Logging System
+
+(defun gptel-buffer-framework--log (operation file-path success &optional details)
+  "Log operation to Emacs messages.
+   OPERATION: string describing operation
+   FILE-PATH: file being operated on  
+   SUCCESS: t/nil
+   DETAILS: optional additional info"
+  (let* ((status-str (if success "SUCCESS" "FAILED"))
+         (short-path (if (stringp file-path)
+                        (file-name-nondirectory file-path)
+                      "<no-file>"))
+         (log-msg (format "[GPTel Buffer Framework] %s %s: %s%s"
+                         operation
+                         status-str  
+                         short-path
+                         (if details (format " - %s" details) ""))))
+    (message "%s" log-msg)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--log
+
+#+begin_src emacs-lisp
+;;; Standardized Return Format
+
+(defun gptel-buffer-framework--make-result (operation file-path success message &optional details error)
+  "Create standardized JSON result for buffer editing operations."
+  (let ((result-data `(("success" . ,success)
+                      ("operation" . ,operation)
+                      ("file" . ,(expand-file-name file-path))
+                      ("message" . ,message))))
+    (when details
+      (push `("details" . ,details) result-data))
+    (when error
+      (push `("error" . ,error) result-data))
+    (json-encode result-data)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--make-result
+
+#+begin_src emacs-lisp
+;;; Implementation Pattern Template
+(defun gptel-buffer-framework--implementation-pattern (operation file-path operation-fn purpose)
+  "Template implementation pattern for buffer editing tools.
+OPERATION: string name of operation
+FILE-PATH: path to file to edit
+OPERATION-FN: function that performs the actual editing operation in buffer
+PURPOSE: explanation of why this operation is being performed"
+  (let ((backup-path nil))
+    (condition-case err
+        ;; Step 1: Validate file
+        (let ((validation-result (gptel-buffer-framework--validate-file file-path)))
+          (if (stringp validation-result)
+              ;; Validation failed
+              (progn
+                (gptel-buffer-framework--log operation file-path nil validation-result)
+                (gptel-buffer-framework--make-result operation file-path nil 
+                                                    "File validation failed" nil validation-result))
+            ;; Step 2: Get/open buffer
+            (let ((buffer (gptel-buffer-framework--get-buffer file-path)))
+              (if (not buffer)
+                  (gptel-buffer-framework--make-result operation file-path nil
+                                                      "Failed to open buffer" nil "Could not get buffer")
+                ;; Step 3: Create backup
+                (setq backup-path (gptel-buffer-framework--create-backup file-path))
+                (if (not backup-path)
+                    (gptel-buffer-framework--make-result operation file-path nil
+                                                        "Failed to create backup" nil "Backup creation failed")
+                  ;; Step 4: Perform operation in buffer
+                  (with-current-buffer buffer
+                    (let ((result (funcall operation-fn)))
+                      ;; Step 5: Preview changes and get confirmation (if enabled)
+                      (let* ((preview-result (gptel-buffer-framework--preview-changes operation file-path buffer backup-path purpose))
+                             (confirmed (car preview-result))
+                             (user-feedback (cdr preview-result)))
+                        (if (not confirmed)
+                            ;; User declined - restore backup and return failure with diff and feedback info
+                            (let* ((diff-for-llm (gptel-buffer-framework--generate-diff backup-path buffer))
+                                   (rejection-details `((diff . ,diff-for-llm)
+                                                       (rejection_reason . "user_declined"))))
+                              ;; Add user feedback if provided
+                              (when user-feedback
+                                (push `(user_feedback . ,user-feedback) rejection-details))
+                              (gptel-buffer-framework--restore-backup file-path backup-path)
+                              (gptel-buffer-framework--cleanup-backup backup-path)
+                              (gptel-buffer-framework--log operation file-path nil 
+                                                          (if user-feedback
+                                                              (format "User declined edit: %s" user-feedback)
+                                                            "User declined edit"))
+                              (gptel-buffer-framework--make-result 
+                               operation file-path nil
+                               (if user-feedback
+                                   (format "Edit declined by user: %s" user-feedback)
+                                 "Edit declined by user")
+                               `((rejection_info . ,rejection-details))
+                               "User chose not to proceed after reviewing changes"))
+                          ;; Step 6: Save buffer and cleanup
+                          (save-buffer)
+                          (gptel-buffer-framework--cleanup-backup backup-path)
+                          (gptel-buffer-framework--log operation file-path t "Operation completed successfully")
+                          (gptel-buffer-framework--make-result operation file-path t
+                                                              "Operation completed successfully" result))))))))))
+      ;; Error handling - restore backup if it exists
+      (error
+       (when backup-path
+         (gptel-buffer-framework--restore-backup file-path backup-path)
+         (gptel-buffer-framework--cleanup-backup backup-path))
+       (let ((error-msg (error-message-string err)))
+         (gptel-buffer-framework--log operation file-path nil error-msg)
+         (gptel-buffer-framework--make-result operation file-path nil
+                                             "Operation failed" nil error-msg))))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--implementation-pattern
+
+#+begin_src emacs-lisp
+;;; Buffer Search and Replace Tool
+
+(defun gptel-buffer-search-replace (file-path search-text replace-text purpose)
+  "Perform case-sensitive plain text search and replace across entire buffer.
+Returns JSON with operation results."
+  (gptel-buffer-framework--implementation-pattern 
+   "buffer_search_replace" file-path
+   (lambda ()
+     ;; Perform search and replace operation with case-sensitive search
+     (let ((replacements 0)
+           (case-fold-search nil)) ; Force case-sensitive search
+       (goto-char (point-min))
+       (while (search-forward search-text nil t)
+         (replace-match replace-text nil t)
+         (setq replacements (1+ replacements)))
+       ;; Return details for the result
+       `(("search_text" . ,search-text)
+         ("replace_text" . ,replace-text)
+         ("replacements" . ,replacements))))
+   purpose))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-search-replace
+
+#+begin_src emacs-lisp
+;; Register the search-replace tool with GPTel
+(gptel-make-tool
+ :name "buffer_search_replace"
+ :function #'gptel-buffer-search-replace
+ :description "Perform case-sensitive plain text search and replace across entire buffer. Creates backup before editing and restores on failure."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path to the file to edit")
+         (:name "search_text" 
+          :type string  
+          :description "Text to search for (case-sensitive)")
+         (:name "replace_text"
+          :type string
+          :description "Text to replace with")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this search and replace operation is being performed"))
+ :category "file-editing")
+#+end_src
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_search_replace"))
+#+end_src
+
+#+RESULTS:
+
+#+begin_src emacs-lisp
+;;; Line Editing Helper Functions
+
+(defun gptel-buffer-framework--validate-line-number (line-number total-lines &optional allow-append)
+  "Validate line number is within file bounds.
+LINE-NUMBER: 1-based line number to validate
+TOTAL-LINES: total number of lines in buffer
+ALLOW-APPEND: if t, allow line-number = total-lines + 1 for append behavior
+Returns t on success, error message string on failure."
+  (cond
+   ((< line-number 1)
+    (format "Invalid line number: %d (must be >= 1)" line-number))
+   ((and allow-append (= line-number (1+ total-lines)))
+    t) ; Allow appending after last line
+   ((> line-number total-lines)
+    (format "Line number %d exceeds file length (%d lines)" line-number total-lines))
+   (t t)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--validate-line-number
+
+#+begin_src emacs-lisp
+(defun gptel-buffer-framework--count-lines-in-buffer ()
+  "Count total lines in current buffer.
+Returns number of lines, with minimum of 1 for empty buffers."
+  (max 1 (count-lines (point-min) (point-max))))
+
+(defun gptel-buffer-framework--goto-line-safe (line-number)
+  "Go to LINE-NUMBER safely, handling edge cases.
+LINE-NUMBER: 1-based line number
+Returns t on success, nil on failure."
+  (condition-case err
+      (progn
+        (goto-char (point-min))
+        (forward-line (1- line-number)) ; forward-line uses 0-based indexing
+        t)
+    (error
+     (gptel-buffer-framework--log "goto-line-safe" "" nil (error-message-string err))
+     nil)))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--goto-line-safe
+
+#+begin_src emacs-lisp
+;;; Buffer Line Insert Tool
+
+(defun gptel-buffer-line-insert (file-path line-number content purpose)
+  "Insert content at specified line number in buffer.
+FILE-PATH: path to file to edit
+LINE-NUMBER: 1-based line number where to insert (existing line will be pushed down)
+CONTENT: text content to insert (can contain newlines)
+Returns JSON with operation results."
+  (gptel-buffer-framework--implementation-pattern 
+   "buffer_line_insert" file-path
+   (lambda ()
+     ;; Count lines and validate line number
+     (let* ((total-lines (gptel-buffer-framework--count-lines-in-buffer))
+            (validation-result (gptel-buffer-framework--validate-line-number line-number total-lines t)))
+       (if (stringp validation-result)
+           ;; Return validation error - this will be caught by implementation pattern
+           (error validation-result)
+         ;; Perform line insertion
+         (let ((content-lines (split-string content "\n" t)) ; Split on newlines, remove empty strings
+               (lines-inserted 0))
+           ;; Handle empty content case
+           (when (zerop (length content-lines))
+             (setq content-lines (list "")))
+           
+           ;; Go to target line
+           (if (not (gptel-buffer-framework--goto-line-safe line-number))
+               (error "Failed to navigate to line %d" line-number)
+             
+             ;; Special case: inserting after last line (append)
+             (when (= line-number (1+ total-lines))
+               (goto-char (point-max))
+               (unless (bolp) ; If not at beginning of line, add newline first
+                 (insert "\n")))
+             
+             ;; Insert content
+             (dolist (line content-lines)
+               (insert line "\n")
+               (setq lines-inserted (1+ lines-inserted)))
+             
+             ;; Return details for the result
+             `(("line_number" . ,line-number)
+               ("content_preview" . ,(if (> (length content) 50)
+                                       (concat (substring content 0 47) "...")
+                                     content))
+               ("lines_inserted" . ,lines-inserted)
+               ("total_lines_after" . ,(+ total-lines lines-inserted))))))))
+   purpose))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-line-insert
+
+#+begin_src emacs-lisp
+;; Register the line insert tool with GPTel
+(gptel-make-tool
+ :name "buffer_line_insert"
+ :function #'gptel-buffer-line-insert
+ :description "Insert content at specified line number. Existing lines at and after the target line are shifted down. Line numbers are 1-based. Creates backup before editing and restores on failure."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path to the file to edit")
+         (:name "line_number" 
+          :type integer  
+          :description "1-based line number where to insert content (existing line will be pushed down)")
+         (:name "content"
+          :type string
+          :description "Content to insert (can contain newlines for multi-line insertion)")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this line insertion is being performed"))
+ :category "file-editing")
+#+end_src
+
+#+RESULTS:
+: #s(gptel-tool gptel-buffer-line-insert "buffer_line_insert" "Insert content at specified line number. Existing lines at and after the target line are shifted down. Line numbers are 1-based. Creates backup before editing and restores on failure." ((:name "file_path" :type "string" :description "Path to the file to edit") (:name "line_number" :type "integer" :description "1-based line number where to insert content (existing line will be pushed down)") (:name "content" :type "string" :description "Content to insert (can contain newlines for multi-line insertion)") (:name "purpose" :type "string" :description "Required explanation of why this line insertion is being performed")) nil "file-editing" nil nil)
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_line_insert"))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Buffer Line Replace Tool
+
+(defun gptel-buffer-line-replace (file-path line-number content purpose)
+  "Replace content of specified line number in buffer.
+FILE-PATH: path to file to edit
+LINE-NUMBER: 1-based line number to replace
+CONTENT: text content to replace the line with (can contain newlines)
+Returns JSON with operation results."
+  (gptel-buffer-framework--implementation-pattern 
+   "buffer_line_replace" file-path
+   (lambda ()
+     ;; Count lines and validate line number
+     (let* ((total-lines (gptel-buffer-framework--count-lines-in-buffer))
+            (validation-result (gptel-buffer-framework--validate-line-number line-number total-lines nil)))
+       (if (stringp validation-result)
+           ;; Return validation error - this will be caught by implementation pattern
+           (error validation-result)
+         ;; Perform line replacement
+         (let ((original-line nil)
+               (actual-lines-inserted 0))
+           
+           ;; Go to target line and capture original content
+           (if (not (gptel-buffer-framework--goto-line-safe line-number))
+               (error "Failed to navigate to line %d" line-number)
+             
+             ;; Capture original line content for reporting
+             (setq original-line (buffer-substring-no-properties 
+                                 (line-beginning-position) 
+                                 (line-end-position)))
+             
+             ;; Delete the original line completely (including newline)
+             (delete-region (line-beginning-position) 
+                           (progn (forward-line 1) (point)))
+             
+             ;; Convert escaped newlines to actual newlines if present
+             (let ((processed-content (replace-regexp-in-string "\\\\n" "\n" content)))
+               ;; Insert the processed content
+               (insert processed-content)
+               ;; Ensure we end with a newline
+               (unless (string-suffix-p "\n" processed-content)
+                 (insert "\n"))
+               
+               ;; Count actual lines by splitting the processed content
+               (setq actual-lines-inserted 
+                     (if (string-empty-p processed-content)
+                         1  ; empty content counts as one empty line
+                       (length (split-string processed-content "\n" t)))))
+             
+             ;; Return details for the result
+             `(("line_number" . ,line-number)
+               ("original_content" . ,(if (> (length original-line) 50)
+                                        (concat (substring original-line 0 47) "...")
+                                      original-line))
+               ("new_content_preview" . ,(if (> (length content) 50)
+                                           (concat (substring content 0 47) "...")
+                                         content))
+               ("lines_replaced" . 1)
+               ("lines_inserted" . ,actual-lines-inserted)
+               ("total_lines_after" . ,(+ total-lines actual-lines-inserted -1))))))))
+   purpose))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-line-replace
+
+#+begin_src emacs-lisp
+;; Register the line replace tool with GPTel
+(gptel-make-tool
+ :name "buffer_line_replace"
+ :function #'gptel-buffer-line-replace
+ :description "Replace content of specified line number with new content. Line numbers are 1-based. Creates backup before editing and restores on failure."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path to the file to edit")
+         (:name "line_number" 
+          :type integer  
+          :description "1-based line number to replace")
+         (:name "content"
+          :type string
+          :description "Content to replace the line with (can contain newlines for multi-line replacement)")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this line replacement is being performed"))
+ :category "file-editing")
+#+end_src
+
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_line_replace"))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Buffer File Creation Tool - Broken into smaller functions
+
+(defun gptel-buffer-create-file--check-existing (file-path)
+  "Check if file already exists and return error result if it does."
+  (when (file-exists-p file-path)
+    (gptel-buffer-framework--log "buffer_create_file" file-path nil "File already exists")
+    (gptel-buffer-framework--make-result "buffer_create_file" file-path nil
+                                         "File creation failed - file already exists" 
+                                         nil "File already exists and will not be overwritten")))
+
+(defun gptel-buffer-create-file--ensure-parent-directory (file-path)
+  "Ensure parent directory exists for FILE-PATH, creating if needed."
+  (let ((parent-dir (file-name-directory file-path)))
+    (when parent-dir
+      (unless (file-exists-p parent-dir)
+        (condition-case dir-err
+            (progn
+              (make-directory parent-dir t) ; t = create parents
+              (gptel-buffer-framework--log "buffer_create_file" file-path t 
+                                           (format "Created parent directory: %s" parent-dir)))
+          (error
+           (gptel-buffer-framework--log "buffer_create_file" file-path nil 
+                                        (format "Failed to create parent directory: %s" (error-message-string dir-err)))
+           (error "Failed to create parent directory: %s" (error-message-string dir-err))))))))
+
+(defun gptel-buffer-create-file--create-empty-baseline (file-path)
+  "Create empty file to establish baseline for diff."
+  (with-temp-buffer
+    (write-region (point-min) (point-max) file-path nil 'quiet)))
+
+(defun gptel-buffer-create-file--operation (content)
+  "Return the operation function for file creation with CONTENT."
+  (lambda ()
+    (let* ((temp-content (if (string-empty-p content) "" content))
+           (content-lines (if (string-empty-p temp-content) 
+                             0 
+                             (length (split-string temp-content "\n" t))))
+           (file-size (length temp-content)))
+      
+      ;; Clear buffer and insert new content
+      (erase-buffer)
+      (insert temp-content)
+      
+      ;; Return details for the result
+      `(("file_path" . ,file-path)
+        ("content_lines" . ,content-lines)
+        ("content_size_bytes" . ,file-size)
+        ("content_preview" . ,(if (> (length temp-content) 100)
+                                 (concat (substring temp-content 0 97) "...")
+                               temp-content))
+        ("operation_type" . "file_creation")))))
+
+(defun gptel-buffer-create-file (file-path content purpose)
+  "Create new file with specified content at FILE-PATH.
+FILE-PATH: path for the new file to create
+CONTENT: initial content for the new file (can be empty string)
+PURPOSE: explanation of why this operation is being performed
+Returns JSON with operation results.
+Fails if file already exists - will not overwrite existing files."
+  (let ((expanded-path (expand-file-name file-path)))
+    (condition-case err
+        ;; Step 1: Check if file already exists
+        (let ((existing-check (gptel-buffer-create-file--check-existing expanded-path)))
+          (if existing-check
+              existing-check  ; Return the error result
+            ;; Step 2: Ensure parent directory exists
+            (gptel-buffer-create-file--ensure-parent-directory expanded-path)
+            
+            ;; Step 3: Create empty file baseline
+            (gptel-buffer-create-file--create-empty-baseline expanded-path)
+            
+            ;; Step 4: Use implementation pattern - NOTE: purpose goes INSIDE the parentheses
+            (gptel-buffer-framework--implementation-pattern 
+             "buffer_create_file" 
+             expanded-path
+             (gptel-buffer-create-file--operation content)
+             purpose)))  ; <-- This was the issue! purpose was outside the function call
+      
+      ;; Error handling
+      (error
+       (let ((error-msg (error-message-string err)))
+         (gptel-buffer-framework--log "buffer_create_file" file-path nil error-msg)
+         (gptel-buffer-framework--make-result "buffer_create_file" file-path nil
+                                             "File creation failed" nil error-msg))))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-create-file
+
+#+begin_src emacs-lisp
+;; Register the file creation tool with GPTel
+(gptel-make-tool
+ :name "buffer_create_file"
+ :function #'gptel-buffer-create-file
+ :description "Create new file with specified content. Fails if file already exists - will not overwrite existing files. Creates parent directories if needed."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path for the new file to create")
+         (:name "content"
+          :type string
+          :description "Initial content for the new file (can be empty string for empty file)")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this file creation is being performed"))
+ :category "file-editing")
+#+end_src
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_create_file"))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Read Implementation Pattern
+
+(defun gptel-buffer-framework--read-implementation-pattern (operation file-path read-operation-fn purpose)
+  "Template implementation pattern for buffer reading tools.
+OPERATION: string name of operation
+FILE-PATH: path to file to read
+READ-OPERATION-FN: function that performs the actual reading operation in buffer
+PURPOSE: explanation of why this read operation is being performed"
+  (condition-case err
+      ;; Step 1: Validate file for reading
+      (let ((validation-result (gptel-buffer-framework--validate-read-file file-path)))
+        (if (stringp validation-result)
+            ;; Validation failed
+            (progn
+              (gptel-buffer-framework--log operation file-path nil validation-result)
+              (gptel-buffer-framework--make-result operation file-path nil 
+                                                  "File validation failed" nil validation-result))
+          ;; Step 2: Get user confirmation BEFORE opening buffer
+          (if (not (gptel-buffer-framework--confirm-read operation file-path purpose))
+              ;; User declined - collect feedback and return failure
+              (let ((user-feedback (gptel-buffer-framework--collect-read-rejection-feedback operation file-path)))
+                (gptel-buffer-framework--log operation file-path nil 
+                                            (if user-feedback
+                                                (format "User declined read: %s" user-feedback)
+                                              "User declined read"))
+                (gptel-buffer-framework--make-result 
+                 operation file-path nil
+                 (if user-feedback
+                     (format "Read declined by user: %s" user-feedback)
+                   "Read declined by user")
+                 `(("rejection_info" . (("rejection_reason" . "user_declined")
+                                       ("user_feedback" . ,user-feedback))))
+                 "User chose not to proceed with file read"))
+            ;; Step 3: Get/open buffer (after confirmation)
+            (let ((buffer (gptel-buffer-framework--get-buffer file-path)))
+              (if (not buffer)
+                  (gptel-buffer-framework--make-result operation file-path nil
+                                                      "Failed to open buffer" nil "Could not get buffer")
+                ;; Step 4: Perform read operation in buffer
+                (with-current-buffer buffer
+                  (let ((result (funcall read-operation-fn)))
+                    (gptel-buffer-framework--log operation file-path t "Read operation completed successfully")
+                    (gptel-buffer-framework--make-result operation file-path t
+                                                        "Read operation completed successfully" result))))))))
+    ;; Error handling
+    (error
+     (let ((error-msg (error-message-string err)))
+       (gptel-buffer-framework--log operation file-path nil error-msg)
+       (gptel-buffer-framework--make-result operation file-path nil
+                                           "Read operation failed" nil error-msg)))))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-framework--read-implementation-pattern
+
+#+begin_src emacs-lisp
+;;; Buffer File Reading Tool
+
+(defun gptel-buffer-read-file (file-path purpose)
+  "Read entire file content and return in JSON response.
+FILE-PATH: path to file to read
+Returns JSON with file content and metadata."
+  (gptel-buffer-framework--read-implementation-pattern 
+   "read entire file" file-path
+   (lambda ()
+     ;; Read entire buffer content and collect metadata
+     (let* ((content (buffer-string))
+            (total-lines (gptel-buffer-framework--count-lines-in-buffer))
+            (content-size (length content))
+            (file-name (buffer-file-name))
+            (encoding (symbol-name buffer-file-coding-system))
+            ;; Determine if content should be truncated for very large files
+            (max-content-size 51200) ; 50KB limit
+            (content-truncated (> content-size max-content-size))
+            (final-content (if content-truncated
+                              (concat (substring content 0 max-content-size)
+                                     "\n... [Content truncated - file too large] ...")
+                            content)))
+       ;; Return comprehensive details including content
+       `(("content" . ,final-content)
+         ("total_lines" . ,total-lines)
+         ("content_size_bytes" . ,content-size)
+         ("encoding" . ,encoding)
+         ("read_range" . "full")
+         ("content_truncated" . ,content-truncated)
+         ("file_path" . ,file-name))))
+   purpose))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-read-file
+
+#+begin_src emacs-lisp
+;; Register the file reading tool with GPTel
+(gptel-make-tool
+ :name "buffer_read_file"
+ :function #'gptel-buffer-read-file
+ :description "Read entire file content and return in response. Prompts for confirmation before reading file contents."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path to the file to read")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this file read is being performed"))
+ :category "file-reading")
+#+end_src
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_read_file"))
+#+end_src
+
+#+begin_src emacs-lisp
+;;; Buffer Line Range Reading Tool
+
+(defun gptel-buffer-read-lines (file-path start-line end-line purpose)
+  "Read specific line range from file and return in JSON response.
+FILE-PATH: path to file to read
+START-LINE: 1-based starting line number (inclusive)
+END-LINE: 1-based ending line number (inclusive)
+Returns JSON with line range content and metadata."
+  (gptel-buffer-framework--read-implementation-pattern 
+   "read line range" file-path
+   (lambda ()
+     ;; Validate and read line range
+     (let* ((total-lines (gptel-buffer-framework--count-lines-in-buffer))
+            (start-validation (gptel-buffer-framework--validate-line-number start-line total-lines nil))
+            (end-validation (gptel-buffer-framework--validate-line-number end-line total-lines nil)))
+       
+       ;; Validate both line numbers
+       (when (stringp start-validation)
+         (error start-validation))
+       (when (stringp end-validation)
+         (error end-validation))
+       
+       ;; Validate range order
+       (when (> start-line end-line)
+         (error "Invalid range: start_line (%d) must be <= end_line (%d)" start-line end-line))
+       
+       ;; Extract line range content
+       (let* ((range-content "")
+              (lines-read 0)
+              (file-name (buffer-file-name))
+              (encoding (symbol-name buffer-file-coding-system)))
+         
+         ;; Navigate to start line and extract range
+         (goto-char (point-min))
+         (forward-line (1- start-line)) ; forward-line uses 0-based indexing
+         
+         ;; Read each line in the range
+         (let ((current-line start-line))
+           (while (<= current-line end-line)
+             (let ((line-start (line-beginning-position))
+                   (line-end (line-end-position)))
+               ;; Add line content
+               (setq range-content 
+                     (concat range-content 
+                             (buffer-substring-no-properties line-start line-end)))
+               ;; Add newline except for the last line
+               (when (< current-line end-line)
+                 (setq range-content (concat range-content "\n")))
+               (setq lines-read (1+ lines-read))
+               (setq current-line (1+ current-line))
+               ;; Move to next line if not at end
+               (when (<= current-line end-line)
+                 (forward-line 1)))))
+         
+         ;; Return comprehensive details including range content
+         `(("content" . ,range-content)
+           ("total_lines" . ,total-lines)
+           ("content_size_bytes" . ,(length range-content))
+           ("encoding" . ,encoding)
+           ("read_range" . (("start_line" . ,start-line)
+                           ("end_line" . ,end-line)
+                           ("lines_read" . ,lines-read)))
+           ("content_truncated" . nil)
+           ("file_path" . ,file-name)))))
+   purpose))
+#+end_src
+
+#+RESULTS:
+: gptel-buffer-read-lines
+
+#+begin_src emacs-lisp
+;; Register the line range reading tool with GPTel
+(gptel-make-tool
+ :name "buffer_read_lines"
+ :function #'gptel-buffer-read-lines
+ :description "Read specific line range from file and return content. Line numbers are 1-based and inclusive. Prompts for confirmation before reading file contents."
+ :args '((:name "file_path" 
+          :type string
+          :description "Path to the file to read")
+         (:name "start_line" 
+          :type integer  
+          :description "1-based starting line number (inclusive)")
+         (:name "end_line"
+          :type integer
+          :description "1-based ending line number (inclusive)")
+         (:name "purpose"
+          :type string
+          :description "Required explanation of why this line range read is being performed"))
+ :category "file-reading")
+#+end_src
+
+#+begin_src emacs-lisp
+;; Add to the gptel-tools list  
+(add-to-list 'gptel-tools (gptel-get-tool "buffer_read_lines"))
+#+end_src
+
+
+
+
+
+
+

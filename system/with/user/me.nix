@@ -115,7 +115,7 @@
 
     home.sessionPath = [];
     home.sessionVariables = {
-      EDITOR = "ec";
+      EDITOR = "emacsclient -r";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";
 
       VISUAL = "ec";

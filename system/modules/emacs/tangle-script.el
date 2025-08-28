@@ -13,14 +13,18 @@
                   "theme.org"
                   "gptel.org"
                   "memory-tools.org"
-                  "code-reviews.org"
                   "frame-management.org"
                   "emacs-everywhere.org"
                   "core.org"
+                  "org.org"
+                  "code-reviews.org"
                   "text.org"
                   "bitwarden.org"
                   "files.org"
                   "binwarden.org"
+                  "gptel-file-tools.org"
+                  "gptel-execute-elisp-tools.org"
+                  "gptel-shell-command-tools.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)

@@ -52,9 +52,6 @@
              '("bitwarden/clients: nx bit build cli" . bitwarden/cli-nx-build-bit))
 #+end_src
 
-#+RESULTS:
-: ((bitwarden/clients: classic bit build cli . bitwarden/cli-classic-build-bit) (bitwarden/clients: npm ci . bitwarden/clients-npm-ci) (bitwarden/clients: nx bit build cli . bitwarden/cli-nx-build-bit) (bitwarden/clients: npm ci . bitwarden/cli-npm-ci) (bitwarden/clients: typechecker . bitwarden/clients-run-test-types) (nix: update flake . my/nix/flake-update) (nix: format . my/nix/format) (nix: rebuild . my/nix/rebuild))
-
 *** Classic
 #+begin_src emacs-lisp
 (defcustom bitwarden-clients-classic-bit-build-cli "cd apps/cli && npm run build:bit"
@@ -74,4 +71,40 @@
 
 #+RESULTS:
 : ((bitwarden/clients: classic bit build cli . bitwarden/cli-classic-build-bit) (bitwarden/clients: npm ci . bitwarden/clients-npm-ci) (bitwarden/clients: nx bit build cli . bitwarden/cli-nx-build-bit) (bitwarden/clients: npm ci . bitwarden/cli-npm-ci) (bitwarden/clients: typechecker . bitwarden/clients-run-test-types) (nix: update flake . my/nix/flake-update) (nix: format . my/nix/format) (nix: rebuild . my/nix/rebuild))
+
+
+** Building Web 
+*** With Nx
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-nx-bit-build-web "npx nx build web --configuration=bit-dev --outputStyle=stream"
+  "Command to build the Bitwarden WEB locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-nx-bit-build-web
+      "npx nx build web --configuration=bit-dev --outputStyle=stream")
+
+(defun bitwarden/web-nx-build-bit ()
+  "Select a project with Projectile and run `bitwarden-clients-nx-bit-build-web` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-nx-bit-build-web))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx bit build web" . bitwarden/web-nx-build-bit))
+#+end_src
+
+*** Classic
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-classic-bit-build-web "cd apps/web && npm run build:bit"
+  "Command to build the Bitwaren web locally with npm"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-classic-bit-build-web
+      "cd apps/web && npm run build:bit")
+
+(defun bitwarden/web-classic-build-bit ()
+  "Select a project with Projectile and run `bitwarden-clients-classic-bit-build-web` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-classic-bit-build-web))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: classic bit build web" . bitwarden/web-classic-build-bit))
+#+end_src
 

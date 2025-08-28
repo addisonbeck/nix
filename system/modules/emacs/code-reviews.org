@@ -1,103 +1,319 @@
 #+TITLE: Code Reviews
 #+PROPERTY: header-args:emacs-lisp :tangle code-reviews.el :results none
 
-This emacs configuration section enables me to begin review PRs in emacs, and gives me easy tools for accessing PRs on the Github web UI when emacs fails to meet a need.
+* Fetching New PRs And Adding Them To The Org Agenda
 
 #+begin_src emacs-lisp
   (require 'ghub)
+  (require 'cl-lib)
+  (require 'pr-review nil t)  ; Optional require for pr-review package
 
-  (defvar my/github-pr-file "~/notes/code-reviews.org"
-    "File to store GitHub PR todos.")
+  ;; Configuration
+  (defgroup my/code-reviews nil
+    "Configuration for GitHub PR review automation."
+    :group 'external)
 
-  (defvar my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck")))
+  (defcustom my/github-pr-file "~/notes/code-reviews.org"
+    "File to store GitHub PR todos."
+    :type 'file
+    :group 'my/code-reviews)
 
-  (defun my/pr-exists-p (url)
-    "Check if PR with URL already exists in the org file."
-    ;;(message "Checking for existing PR: %s" url)
+  (defcustom my/github-pr-queries
+    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck"))
+    "List of GitHub search queries for PRs.
+  Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
+    :type '(alist :key-type string :value-type string)
+    :group 'my/code-reviews)
+
+  (defcustom my/code-reviews-fetch-interval (* 60 60)
+    "Interval in seconds between automatic PR fetches."
+    :type 'integer
+    :group 'my/code-reviews)
+
+  ;; Internal variables
+  (defvar my/code-reviews--timer nil
+    "Timer object for periodic PR fetching.")
+
+  (defvar my/code-reviews--url-cache nil
+    "Cache of existing PR URLs to avoid file I/O.")
+
+  ;; Utility functions
+  (defun my/code-reviews--log (level message &rest args)
+    "Log MESSAGE at LEVEL with optional ARGS."
+    (when (>= (length args) 0)
+      (setq message (apply #'format message args)))
+    (message "[%s] Code Reviews: %s" 
+             (format-time-string "%H:%M:%S")
+             message))
+
+  (defun my/code-reviews--validate-config ()
+    "Validate that required configuration is set."
+    (unless my/github-pr-file
+      (error "my/github-pr-file must be set"))
+    (unless my/github-pr-queries
+      (error "my/github-pr-queries must be set"))
+    (unless (file-directory-p (file-name-directory my/github-pr-file))
+      (error "Directory for PR file does not exist: %s" 
+             (file-name-directory my/github-pr-file))))
+
+  (defun my/code-reviews--build-url-cache ()
+    "Build cache of existing PR URLs from the org file."
+    (setq my/code-reviews--url-cache (make-hash-table :test 'equal))
     (when (file-exists-p my/github-pr-file)
-      ;;(message "File exists, checking content")
       (with-temp-buffer
-	(insert-file-contents my/github-pr-file)
-	;;(message "File contents loaded")
-	;; Instead of using buffer positions, just check if the string exists
-	(string-match-p (regexp-quote url) (buffer-string)))))
+        (insert-file-contents my/github-pr-file)
+        (goto-char (point-min))
+        (while (re-search-forward ":PR_URL: \\(https://[^\n]+\\)" nil t)
+          (puthash (match-string 1) t my/code-reviews--url-cache)))))
 
+  (defun my/code-reviews--pr-exists-p (url)
+    "Check if PR with URL already exists using cache."
+    (unless my/code-reviews--url-cache
+      (my/code-reviews--build-url-cache))
+    (gethash url my/code-reviews--url-cache))
+
+  (defun my/code-reviews--add-pr-to-cache (url)
+    "Add URL to the PR cache."
+    (unless my/code-reviews--url-cache
+      (my/code-reviews--build-url-cache))
+    (puthash url t my/code-reviews--url-cache))
+
+  (defun my/code-reviews--fetch-prs-for-query (query-name query-string)
+    "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
+  Returns list of PR data structures."
+    (condition-case err
+        (let ((response (ghub-graphql
+                         "query($query: String!) {
+                            search(query: $query, type: ISSUE, first: 100) {
+                              nodes {
+                                ... on PullRequest {
+                                  title
+                                  url
+                                  repository {
+                                    nameWithOwner
+                                  }
+                                  author {
+                                    login
+                                  }
+                                  updatedAt
+                                  state
+                                }
+                              }
+                            }
+                          }"
+                         \`((query . ,query-string)))))
+          (alist-get 'nodes (alist-get 'search (alist-get 'data response))))
+      (error 
+       (my/code-reviews--log "ERROR" "Failed to fetch PRs for query '%s': %s" 
+                             query-name (error-message-string err))
+       nil)))
+
+  (defun my/code-reviews--format-pr-entry (pr)
+    "Format a single PR data structure into org-mode entry text."
+    (let-alist pr
+      (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
+              .title
+              (format-time-string "%Y-%m-%d")
+              .url
+              .repository.nameWithOwner
+              .author.login)))
+
+  (defun my/code-reviews--insert-new-prs (prs)
+    "Insert new PRs into the org file.
+  PRS should be a list of PR data structures."
+    (let ((new-count 0))
+      (dolist (pr prs)
+        (let-alist pr
+          (unless (my/code-reviews--pr-exists-p .url)
+            (goto-char (point-max))
+            (insert (my/code-reviews--format-pr-entry pr))
+            (my/code-reviews--add-pr-to-cache .url)
+            (cl-incf new-count))))
+      new-count))
+
+  (defun my/code-reviews--process-queries ()
+    "Process all configured PR queries and return total new PRs added."
+    (let ((total-new 0))
+      (dolist (query-pair my/github-pr-queries)
+        (let* ((section-name (car query-pair))
+               (query-string (cdr query-pair))
+               (prs (my/code-reviews--fetch-prs-for-query section-name query-string)))
+          (when prs
+            (let ((new-count (my/code-reviews--insert-new-prs prs)))
+              (cl-incf total-new new-count)
+              (when (> new-count 0)
+                (my/code-reviews--log "INFO" "Added %d new PRs from query '%s'" 
+                                      new-count section-name))))))
+      total-new))
+
+  ;; Public interface
   (defun my/fetch-github-prs ()
     "Fetch PRs and create new org entries if they don't exist."
     (interactive)
-    (message "[%s] Fetching PRs to review..." 
-	     (format-time-string "%H:%M:%S"))
-    (let ((buf (find-file-noselect my/github-pr-file)))
-      ;;(message "Buffer created: %S" buf)
-      (with-current-buffer buf
-	;;(message "In buffer")
-	(org-mode)
-	;;(message "Org mode enabled")
-	(let ((max-point (point-max)))
-	  ;;(message "Max point: %S" max-point)
-	  (goto-char max-point)
-	  ;;(message "Moved to end of buffer")
-	  (dolist (query-pair my/github-pr-queries)
-	    (let* ((section-name (car query-pair))
-		   (query (cdr query-pair)))
-	      ;;(message "Processing query: %s" section-name)
-	      (let ((response (ghub-graphql
-			       "query($query: String!) {
-						    search(query: $query, type: ISSUE, first: 100) {
-						      nodes {
-							... on PullRequest {
-							  title
-							  url
-							  repository {
-							    nameWithOwner
-							  }
-							  author {
-							    login
-							  }
-							  updatedAt
-							  state
-							}
-						      }
-						    }
-						  }"
-			       `((query . ,query)))))
-		;;(message "Got GraphQL response")
-		(when-let ((prs (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
-		  ;;(message "Found %d PRs" (length prs))
-		  (dolist (pr prs)
-		    ;;(message "Processing PR: %S" pr)
-		    (let-alist pr
-		      ;;(message "Checking if PR exists: %s" .url)
-		      (let ((exists-result (my/pr-exists-p .url)))
-			;;(message "PR exists check returned: %S" exists-result)
-			(unless exists-result
-			  ;;(message "PR doesn't exist, inserting")
-			  (let ((insert-point (point)))
-			    ;;(message "Current point before insert: %S" insert-point)
-			    (insert (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n"
-					    .title
-					    (format-time-string "%Y-%m-%d")
-					    .url
-					    .repository.nameWithOwner
-					    .author.login))
-			    ;;(message "Insert completed")
-			    )))))))))))
-      ;;(message "Saving buffer")
-      (with-current-buffer buf
-	(save-buffer))))
-  ;;(message "PR fetch completed")))
+    (condition-case err
+        (progn
+          (my/code-reviews--validate-config)
+          (my/code-reviews--log "INFO" "Fetching PRs to review...")
+          
+          (let ((buf (find-file-noselect my/github-pr-file))
+                (total-new 0))
+            (with-current-buffer buf
+              (org-mode)
+              (setq total-new (my/code-reviews--process-queries))
+              (save-buffer))
+            
+            (if (> total-new 0)
+                (my/code-reviews--log "INFO" "Completed: %d new PRs added" total-new)
+              (my/code-reviews--log "INFO" "Completed: No new PRs found"))))
+      (error
+       (my/code-reviews--log "ERROR" "Failed to fetch PRs: %s" 
+                             (error-message-string err)))))
 
-  (defun remove-duplicate-org-entries ()
+  (defun my/code-reviews-remove-duplicates ()
+    "Remove duplicate org entries based on PR_URL."
     (interactive)
-    (let ((seen-urls (make-hash-table :test 'equal)))
+    (let ((seen-urls (make-hash-table :test 'equal))
+          (removed-count 0))
       (org-map-entries
        (lambda ()
-	 (let ((pr-url (org-entry-get nil "PR_URL")))
-	   (if (and pr-url (gethash pr-url seen-urls))
-	       (org-cut-subtree)
-	     (when pr-url
-	       (puthash pr-url t seen-urls))))))))
+         (let ((pr-url (org-entry-get nil "PR_URL")))
+           (if (and pr-url (gethash pr-url seen-urls))
+               (progn
+                 (org-cut-subtree)
+                 (cl-incf removed-count))
+             (when pr-url
+               (puthash pr-url t seen-urls))))))
+      (when (> removed-count 0)
+        (my/code-reviews--log "INFO" "Removed %d duplicate entries" removed-count)
+        (save-buffer))
+      removed-count))
 
-  (run-with-timer 0 (* 60 60) #'my/fetch-github-prs)
+  (defun my/code-reviews-start-timer ()
+    "Start the automatic PR fetching timer."
+    (interactive)
+    (my/code-reviews-stop-timer)
+    (setq my/code-reviews--timer
+          (run-with-timer 0 my/code-reviews-fetch-interval #'my/fetch-github-prs))
+    (my/code-reviews--log "INFO" "Started automatic PR fetching (interval: %d seconds)" 
+                          my/code-reviews-fetch-interval))
+
+  (defun my/code-reviews-stop-timer ()
+    "Stop the automatic PR fetching timer."
+    (interactive)
+    (when my/code-reviews--timer
+      (cancel-timer my/code-reviews--timer)
+      (setq my/code-reviews--timer nil)
+      (my/code-reviews--log "INFO" "Stopped automatic PR fetching")))
+
+  (defun my/code-reviews-clear-cache ()
+    "Clear the PR URL cache, forcing a rebuild on next access."
+    (interactive)
+    (setq my/code-reviews--url-cache nil)
+    (my/code-reviews--log "INFO" "Cleared PR URL cache"))
+
+  ;; Initialize
+  (my/code-reviews-start-timer)
 #+end_src
+* Reviewing PRs
+** pr-review package declaration
+#+begin_src emacs-lisp 
+  ;; PR Review package setup
+  (use-package pr-review
+    ;;:config
+    ;;(setq pr-review-ghub-auth-name "ghub")
+    
+    ;;(with-eval-after-load 'evil
+      ;;(evil-define-key 'normal pr-review-mode-map
+        ;;(kbd "q") 'pr-review-quit
+        ;;(kbd "r") 'pr-review-refresh
+        ;;(kbd "c") 'pr-review-comment-add
+        ;;(kbd "C") 'pr-review-comment-reply
+        ;;(kbd "d") 'pr-review-comment-delete
+        ;;(kbd "e") 'pr-review-comment-edit
+        ;;(kbd "s") 'pr-review-submit-review
+        ;;(kbd "a") 'pr-review-approve
+        ;;(kbd "R") 'pr-review-request-changes
+        ;;(kbd "TAB") 'pr-review-next-comment
+        ;;(kbd "<backtab>") 'pr-review-prev-comment
+        ;;(kbd "o") 'pr-review-open-file-at-point
+        ;;(kbd "RET") 'pr-review-view-comment-at-point))
+    )
+#+end_src
+
+** pr-review mode hook
+
+#+begin_src emacs-lisp
+  (defun pr-review-mode-init ()
+    "Function to run on pr-review mode init"
+    (my/toggle-olivetti))
+  (add-hook 'pr-review-mode-hook #'pr-review-mode-init)
+#+end_src
+
+** Helper Functions For Getting To PRs
+#+begin_src emacs-lisp 
+(defun my/pr-review-from-org-entry ()
+  "Start pr-review from current org entry's PR_URL property.
+Works from both org-mode buffers and org-agenda."
+  (interactive)
+  (let ((pr-url 
+         (cond
+          ;; If in agenda, go to the actual org entry
+          ((eq major-mode 'org-agenda-mode)
+           (org-agenda-check-no-diary)
+           (let* ((marker (or (org-get-at-bol 'org-marker)
+                             (org-agenda-error)))
+                  (buffer (marker-buffer marker))
+                  (pos (marker-position marker)))
+             (with-current-buffer buffer
+               (save-excursion
+                 (goto-char pos)
+                 (org-entry-get nil "PR_URL")))))
+          ;; If in org-mode, use directly
+          ((derived-mode-p 'org-mode)
+           (org-entry-get nil "PR_URL"))
+          ;; Otherwise error
+          (t (user-error "Must be called from org-mode or org-agenda")))))
+    (if pr-url
+        (progn
+          (my/code-reviews--log "INFO" "Starting PR review for: %s" pr-url)
+          (pr-review pr-url))
+      (user-error "No PR_URL property found in current org entry"))))
+  
+  ;; Keybinding to start review from org entry
+  (with-eval-after-load 'org
+    (define-key org-mode-map (kbd "C-c r") 'my/pr-review-from-org-entry))
+  
+  ;; Add evil keybinding for org mode
+  (with-eval-after-load 'evil-org
+    (evil-define-key 'normal org-mode-map
+      (kbd "<leader>r") 'my/pr-review-from-org-entry))
+  
+  ;; Test function for pr-review setup
+  (defun my/test-pr-review-setup ()
+    "Test pr-review package configuration and authentication."
+    (interactive)
+    (cond
+     ((not (featurep 'pr-review))
+      (if (require 'pr-review nil t)
+          (my/code-reviews--log "INFO" "pr-review package loaded successfully")
+        (my/code-reviews--log "ERROR" "pr-review package not available")))
+     (t (my/code-reviews--log "INFO" "pr-review package already loaded")))
+    
+    ;; Test ghub authentication (same auth used by pr-review)
+    (condition-case err
+        (progn
+          (ghub-get "/user")
+          (my/code-reviews--log "INFO" "GitHub authentication working"))
+      (error 
+       (my/code-reviews--log "ERROR" "GitHub authentication failed: %s" 
+                             (error-message-string err)))))
+
+(with-eval-after-load 'transient
+  (transient-append-suffix 'my/go-menu "l"
+    '("z" "PR Review" my/pr-review-from-org-entry)))
+
+;;(add-to-list 'browse-url-default-handlers
+ ;;            '(pr-review-url-parse . pr-review-open-url))
+#+end_src
+
+

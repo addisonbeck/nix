@@ -1,0 +1,121 @@
+#+TITLE: Gptel Execute Elisp Tools
+#+PROPERTY: header-args:emacs-lisp :tangle gptel-execute-elisp-tools.el 
+
+This tool allows LLMs to execute arbitrary elisp code in the currently running Emacs process.
+
+* Backing Function
+
+#+begin_src emacs-lisp
+(defun my/gptel-execute-elisp (elisp-code purpose)
+  "Execute arbitrary elisp CODE with PURPOSE explanation and return the result as a string.
+The code is evaluated in the current Emacs process after user confirmation."
+  (condition-case err
+      (if (null elisp-code)
+          (json-encode `(("success" . nil)
+                        ("error" . "No elisp code provided")))
+        ;; Step 1: Preview code and get user confirmation
+        (let* ((preview-result (gptel-execute-elisp--preview-and-confirm elisp-code purpose))
+               (confirmed (car preview-result))
+               (user-feedback (cdr preview-result)))
+          (if (not confirmed)
+              ;; User declined - return failure with feedback info
+              (let ((rejection-details `(("rejection_reason" . "user_declined")
+                                       ("code_preview" . ,elisp-code))))
+                ;; Add user feedback if provided
+                (when user-feedback
+                  (push `("user_feedback" . ,user-feedback) rejection-details))
+                (json-encode `(("success" . nil)
+                              ("message" . ,(if user-feedback
+                                                (format "Execution declined by user: %s" user-feedback)
+                                              "Execution declined by user"))
+                              ("rejection_info" . ,rejection-details))))
+            ;; Step 2: Execute the code
+            (let* ((result (eval (read elisp-code) t))
+                   (result-string (format "%S" result)))
+              (json-encode `(("success" . t)
+                            ("result" . ,result-string)))))))
+    (error
+     (json-encode `(("success" . nil)
+                   ("error" . ,(error-message-string err)))))))
+#+end_src
+
+#+RESULTS:
+: my/gptel-execute-elisp
+
+#+begin_src emacs-lisp
+(defun gptel-execute-elisp--preview-and-confirm (elisp-code purpose)
+  "Show elisp code preview and get user confirmation.
+Returns cons cell (CONFIRMED . FEEDBACK) where:
+- CONFIRMED: t if user confirms, nil if user declines  
+- FEEDBACK: user feedback string if rejected and feedback collected, nil otherwise"
+  (let ((confirmed
+         ;; Display code preview in a temporary buffer
+         (let ((preview-buffer (get-buffer-create "*GPTel Execute Elisp Preview*")))
+           (with-current-buffer preview-buffer
+             (erase-buffer)
+             (insert "GPTel wants to execute elisp code:\n\n")
+             (insert (format "Purpose: %s\n\n" purpose))
+             (insert "Code to be executed:\n")
+             (insert "==================\n\n")
+             (insert elisp-code)
+             (insert "\n\n")
+             (insert "⚠️  WARNING: This code will have full access to your Emacs environment!\n")
+             (insert "Only proceed if you trust and understand this code.\n\n")
+             (emacs-lisp-mode)
+             (goto-char (point-min)))
+           ;; Show the preview buffer
+           (display-buffer preview-buffer)
+           ;; Get user confirmation
+           (let ((response (y-or-n-p "Execute this elisp code? ")))
+             ;; Clean up preview buffer
+             (kill-buffer preview-buffer)
+             response))))
+    ;; If user declined, collect feedback
+    (if confirmed
+        (cons confirmed nil)
+      (let ((feedback (gptel-execute-elisp--collect-rejection-feedback elisp-code)))
+        (cons confirmed feedback)))))
+
+(defun gptel-execute-elisp--collect-rejection-feedback (elisp-code)
+  "Collect user feedback about why they rejected the elisp execution.
+Returns feedback string or nil if user skips feedback."
+  (let* ((prompt "Why did you reject this elisp code execution? (Enter for skip): ")
+         (feedback (read-string prompt)))
+    (if (string-empty-p feedback)
+        nil
+      feedback)))
+#+end_src
+
+#+RESULTS:
+: gptel-execute-elisp--collect-rejection-feedback
+
+* Tool Definition
+
+#+begin_src emacs-lisp
+(gptel-make-tool
+ :name        "execute_elisp"
+ :include t
+ :function    #'my/gptel-execute-elisp
+ :description "Execute arbitrary elisp code in the current Emacs process and return the result.
+	 Use with extreme caution as this has full access to the Emacs environment."
+ :args        '((:name "code"
+		 :type string
+		 :description "The elisp code to evaluate")
+                (:name "purpose"
+                 :type string
+                 :description "Required explanation of why this elisp code execution is being performed"))
+ :category    "development")
+#+end_src
+
+#+RESULTS:
+: #s(gptel-tool my/gptel-execute-elisp "execute_elisp" "Execute arbitrary elisp code in the current Emacs process and return the result.
+: 	 Use with extreme caution as this has full access to the Emacs environment." ((:name "code" :type "string" :description "The elisp code to evaluate") (:name "purpose" :type "string" :description "Required explanation of why this elisp code execution is being performed")) nil "development" nil t)
+
+* Tool Registration
+
+#+begin_src emacs-lisp
+(register-gptel-tool "execute_elisp")
+#+end_src
+
+#+RESULTS:
+| #s(gptel-tool my/gptel-execute-elisp execute_elisp Execute arbitrary elisp code in the current Emacs process and return the result. |

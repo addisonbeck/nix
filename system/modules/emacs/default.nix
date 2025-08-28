@@ -25,6 +25,12 @@
       cp ${./emacs-everywhere.org} emacs-everywhere.org
       cp ${./text.org} text.org
       cp ${./bitwarden.org} bitwarden.org
+      cp ${./binwarden.org} binwarden.org
+      cp ${./org.org} org.org
+      cp ${./files.org} files.org
+      cp ${./gptel-file-tools.org} gptel-file-tools.org
+      cp ${./gptel-execute-elisp-tools.org} gptel-execute-elisp-tools.org
+      cp ${./gptel-shell-command-tools.org} gptel-shell-command-tools.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
@@ -61,10 +67,10 @@
 
     if [ "$FRAME_EXISTS" = "t" ]; then
       # Frame exists, just focus it
-      ${config.programs.emacs.finalPackage}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))"
+      ${config.programs.emacs.finalPackage}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))" $@
     else
       # No frame exists, create one and focus it
-      ${config.programs.emacs.finalPackage}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))'
+      ${config.programs.emacs.finalPackage}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))' $@
     fi
   '';
     puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
@@ -184,6 +190,7 @@ in {
           pkgs.aspell
           pkgs.aspellDicts.en
           emacs-everywhere
+          pr-review
         ];
     };
   };
