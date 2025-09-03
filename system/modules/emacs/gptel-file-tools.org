@@ -710,7 +710,7 @@ Returns JSON with operation results."
   (with-temp-buffer
     (write-region (point-min) (point-max) file-path nil 'quiet)))
 
-(defun gptel-buffer-create-file--operation (content)
+(defun gptel-buffer-create-file--operation (content file-path)
   "Return the operation function for file creation with CONTENT."
   (lambda ()
     (let* ((temp-content (if (string-empty-p content) "" content))
@@ -755,8 +755,8 @@ Fails if file already exists - will not overwrite existing files."
             (gptel-buffer-framework--implementation-pattern 
              "buffer_create_file" 
              expanded-path
-             (gptel-buffer-create-file--operation content)
-             purpose)))  ; <-- This was the issue! purpose was outside the function call
+             (gptel-buffer-create-file--operation content expanded-path)
+             purpose)))
       
       ;; Error handling
       (error
