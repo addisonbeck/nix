@@ -712,6 +712,9 @@ Don't show DONE items in the agenda
 		(:name "Due Today"
         :and (:deadline today :tag "cleaning")
         :and (:deadline past :tag "cleaning"))
+		(:name "Code Reviews To Mostly Ignore"
+        :and (:deadline today :category "code review ignore")
+        :and (:deadline past :category "code review ignore"))
 		(:name "Overdue" :deadline past)
 		(:name "Due Today" :deadline today)
 		(:name "High Priority (soon)" :and (:priority "A" :deadline future))
