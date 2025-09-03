@@ -101,7 +101,7 @@
                               }
                             }
                           }"
-                         \`((query . ,query-string)))))
+                         `((query . ,query-string)))))
           (alist-get 'nodes (alist-get 'search (alist-get 'data response))))
       (error 
        (my/code-reviews--log "ERROR" "Failed to fetch PRs for query '%s': %s" 
