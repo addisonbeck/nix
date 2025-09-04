@@ -141,7 +141,7 @@ Returns a plist with :id, :title, :file or nil on error."
                       (repo-org (downcase (car repo-parts)))
                       (repo-name (downcase (cadr repo-parts)))
                       (pr-author (downcase .author.login))
-                      (pr-title (format "Pull Request: %s" .title))
+                      (pr-title (format "CR: %s" .title))
                       (tags (list repo-org repo-name pr-author))
                       )
             (my/code-reviews--log "INFO" "Creating memory for PR: %s" pr-title)
@@ -345,7 +345,7 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
     (my/code-reviews--log "INFO" "Cleared PR URL cache"))
 
   ;; Initialize
-  (my/code-reviews-start-timer)
+;  (my/code-reviews-start-timer)
 #+end_src
 
 * Reviewing PRs
