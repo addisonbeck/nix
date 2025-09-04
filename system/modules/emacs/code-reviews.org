@@ -98,43 +98,37 @@
   Returns list of PR data structures."
     (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
                           query-name query-string)
-    (condition-case err
-        (let* ((response (ghub-graphql
-                          "query($query: String!) {
-                            search(query: $query, type: ISSUE, first: 100) {
-                              nodes {
-                                ... on PullRequest {
-                                  title
-                                  url
-                                  repository {
-                                    nameWithOwner
-                                  }
-                                  author {
-                                    login
-                                  }
-                                  updatedAt
-                                  state
-                                }
+    (let* ((response (ghub-graphql
+                      "query($query: String!) {
+                        search(query: $query, type: ISSUE, first: 100) {
+                          nodes {
+                            ... on PullRequest {
+                              title
+                              url
+                              repository {
+                                nameWithOwner
                               }
+                              author {
+                                login
+                              }
+                              updatedAt
+                              state
                             }
-                          }"
-                          `((query . ,query-string))))
-               (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
-          (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
-                                query-name (length nodes))
-          (when (> (length nodes) 0)
-            (my/code-reviews--log "DEBUG" "First PR sample: %s" 
-                                  (prin1-to-string (car nodes))))
-          nodes)
-      (error 
-       (my/code-reviews--log "ERROR" "Failed to fetch PRs for query '%s': %s" 
-                             query-name (error-message-string err))
-       nil)))
+                          }
+                        }
+                      }"
+                      `((query . ,query-string))))
+           (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
+      (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
+                            query-name (length nodes))
+      (when (> (length nodes) 0)
+        (my/code-reviews--log "DEBUG" "First PR sample: %s" 
+                              (prin1-to-string (car nodes))))
+      nodes))
 
   (defun my/code-reviews--create-pr-memory (pr)
     "Create an org-roam memory for PR data structure.
 Returns a plist with :id, :title, :file or nil on error."
-    (condition-case err
         (let-alist pr
           (when-let* ((pr-path (pr-review-url-parse .url))
                       (repo-parts (split-string .repository.nameWithOwner "/"))
@@ -196,10 +190,7 @@ Returns a plist with :id, :title, :file or nil on error."
                  (my/code-reviews--log "ERROR" "Failed to create review file for PR %s: %s" 
                                        pr-title (error-message-string review-file-err))
                  memory-result))))))
-      (error 
-       (my/code-reviews--log "ERROR" "Failed to create memory for PR %s: %s" 
-                             (alist-get 'title pr) (error-message-string err))
-       nil))
+)
 
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
@@ -278,29 +269,24 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
   (defun my/fetch-github-prs ()
     "Fetch PRs and create new org entries if they don't exist."
     (interactive)
-    (condition-case err
-        (progn
-          (my/code-reviews--validate-config)
-          (my/code-reviews--log "INFO" "Fetching PRs to review...")
-          (my/code-reviews--log "DEBUG" "Using PR file: %s" my/github-pr-file)
-          (my/code-reviews--log "DEBUG" "Configured queries: %s" 
-                                (mapcar #'car my/github-pr-queries))
-          
-          (let ((buf (find-file-noselect my/github-pr-file))
-                (total-new 0))
-            (with-current-buffer buf
-              (org-mode)
-              (my/code-reviews--log "DEBUG" "Processing queries in buffer: %s" 
-                                    (buffer-name))
-              (setq total-new (my/code-reviews--process-queries))
-              (save-buffer))
-            
-            (if (> total-new 0)
-                (my/code-reviews--log "INFO" "Completed: %d new PRs added" total-new)
-              (my/code-reviews--log "INFO" "Completed: No new PRs found"))))
-      (error
-       (my/code-reviews--log "ERROR" "Failed to fetch PRs: %s" 
-                             (error-message-string err)))))
+    (my/code-reviews--validate-config)
+    (my/code-reviews--log "INFO" "Fetching PRs to review...")
+    (my/code-reviews--log "DEBUG" "Using PR file: %s" my/github-pr-file)
+    (my/code-reviews--log "DEBUG" "Configured queries: %s" 
+                          (mapcar #'car my/github-pr-queries))
+    
+    (let ((buf (find-file-noselect my/github-pr-file))
+          (total-new 0))
+      (with-current-buffer buf
+        (org-mode)
+        (my/code-reviews--log "DEBUG" "Processing queries in buffer: %s" 
+                              (buffer-name))
+        (setq total-new (my/code-reviews--process-queries))
+        (save-buffer))
+      
+      (if (> total-new 0)
+          (my/code-reviews--log "INFO" "Completed: %d new PRs added" total-new)
+        (my/code-reviews--log "INFO" "Completed: No new PRs found"))))
 
   (defun my/code-reviews-remove-duplicates ()
     "Remove duplicate org entries based on PR_URL."
