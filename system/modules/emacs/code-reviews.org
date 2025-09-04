@@ -143,47 +143,63 @@ Returns a plist with :id, :title, :file or nil on error."
                       (pr-author (downcase .author.login))
                       (pr-title (format "Pull Request: %s" .title))
                       (tags (list repo-org repo-name pr-author))
-                      (content (format ":PROPERTIES:
-:PR_PATH: %s
-:CURRENT_SHOW_LEVEL: 3
-:SELECTED_COMMITS: nil
-:SELECTED_COMMIT_BASE: nil
-:SELECTED_COMMIT_HEAD: nil
-:END:
-
-This is a cached pull request for code review.
-
-,** PR Details
-- **Repository**: %s
-- **Author**: %s
-- **URL**: %s
-
-,** Review Notes
-" 
-                                       (prin1-to-string pr-path)
-                                       .repository.nameWithOwner
-                                       .author.login
-                                       .url)))
+                      )
             (my/code-reviews--log "INFO" "Creating memory for PR: %s" pr-title)
             (let ((memory-result (my/create-memory
                                   :title pr-title
                                   :memory-type 'episodic
                                   :tags tags
                                   :aliases '()
-                                  :content content)))
-              ;; Call pr-review-restore-and-refresh to populate with live content
-              (condition-case refresh-err
-                  (with-current-buffer (find-file-noselect (plist-get memory-result :file))
-                    (pr-review-restore-and-refresh)
-                    (save-buffer))
+                                  :content "")))
+              
+              ;; Create separate .pr-review file for workflow
+              (condition-case review-file-err
+                  (let* ((memory-file (plist-get memory-result :file))
+                         (memory-dir (file-name-directory memory-file))
+                         (hyphenated-title (replace-regexp-in-string
+                                           "[^a-z0-9]+" "-" 
+                                           (downcase .title)))
+                         (review-filename (format "code-review-%s.pr-review" 
+                                                 hyphenated-title))
+                         (review-filepath (expand-file-name review-filename memory-dir))
+                         (review-content (concat ":PROPERTIES:\n"
+                                                ":PR_PATH: " (prin1-to-string pr-path) "\n"
+                                                ":CURRENT_SHOW_LEVEL: 3\n"
+                                                ":SELECTED_COMMITS: nil\n" 
+                                                ":SELECTED_COMMIT_BASE: nil\n"
+                                                ":SELECTED_COMMIT_HEAD: nil\n"
+                                                ":END:\n")))
+                    
+                    ;; Create the .pr-review file
+                    (with-temp-file review-filepath
+                      (insert review-content))
+                    
+                    ;; Add link to review file in the memory
+                    (with-current-buffer (find-file-noselect memory-file)
+                      (goto-char (point-max))
+                      (insert (concat "* Required Reading\n"
+                                     "- [[file:" review-filepath "][" pr-title" ]]\n"))
+                      (save-buffer))
+                    
+                    ;; Populate review file with live GitHub content
+                    (condition-case refresh-err
+                        (with-current-buffer (find-file-noselect review-filepath)
+                          (pr-review-restore-and-refresh)
+                          (save-buffer))
+                      (error 
+                       (my/code-reviews--log "WARNING" "Failed to populate PR review file %s: %s" 
+                                             review-filepath (error-message-string refresh-err))))
+                    
+                    (my/code-reviews--log "INFO" "Created review file for PR: %s" review-filepath)
+                    memory-result)
                 (error 
-                 (my/code-reviews--log "WARNING" "Failed to populate PR memory %s: %s" 
-                                       pr-title (error-message-string refresh-err))))
-              memory-result)))
+                 (my/code-reviews--log "ERROR" "Failed to create review file for PR %s: %s" 
+                                       pr-title (error-message-string review-file-err))
+                 memory-result))))))
       (error 
        (my/code-reviews--log "ERROR" "Failed to create memory for PR %s: %s" 
                              (alist-get 'title pr) (error-message-string err))
-       nil)))
+       nil))
 
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
@@ -191,20 +207,21 @@ This is a cached pull request for code review.
 If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
       (if memory-id
-          (format "* TODO [[id:%s][Code Review: %s]]\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
-                  memory-id
-                  .title
-                  (format-time-string "%Y-%m-%d")
-                  .url
-                  .repository.nameWithOwner
-                  .author.login)
+          (concat "* TODO [[id:" memory-id "][Code Review: " .title "]]\n"
+                  "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
+                  ":PROPERTIES:\n"
+                  ":PR_URL: " .url "\n"
+                  ":REPO: " .repository.nameWithOwner "\n" 
+                  ":AUTHOR: " .author.login "\n"
+                  ":END:\n\n")
         ;; Fallback to plain text if memory creation failed
-        (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
-                .title
-                (format-time-string "%Y-%m-%d")
-                .url
-                .repository.nameWithOwner
-                .author.login))))
+        (concat "* TODO " .title "\n"
+                "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
+                ":PROPERTIES:\n"
+                ":PR_URL: " .url "\n"
+                ":REPO: " .repository.nameWithOwner "\n"
+                ":AUTHOR: " .author.login "\n"
+                ":END:\n\n"))))
 
   (defun my/code-reviews--insert-new-prs (prs)
     "Insert new PRs into the org file.
