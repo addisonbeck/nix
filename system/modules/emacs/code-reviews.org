@@ -162,11 +162,27 @@ Returns a plist with :id, :title, :file or nil on error."
                                                 ":SELECTED_COMMITS: nil\n" 
                                                 ":SELECTED_COMMIT_BASE: nil\n"
                                                 ":SELECTED_COMMIT_HEAD: nil\n"
-                                                ":END:\n")))
+                                                ":END:\n"))
+                          (conversation-initial-memory-result 
+                            (my/create-memory
+                            :title (concat "Conversation: Intake: " "")
+                            :memory-type 'episodic
+                            :tags '("conversation codereview intake")
+                            :aliases '()  
+                            :content ""))
+                          (conversation-quiz-memory-result 
+                            (my/create-memory
+                            :title (concat "Conversation: Quiz: " "")
+                            :memory-type 'episodic
+                            :tags '("conversation codereview quiz")
+                            :aliases '()  
+                            :content "")))
                     
                     ;; Create the .pr-review file
                     (with-temp-file review-filepath
                       (insert review-content))
+
+                    ;; Create some conversation nodes
                     
                     ;; Add link to review file in the memory
                     (with-current-buffer (find-file-noselect memory-file)
@@ -174,17 +190,20 @@ Returns a plist with :id, :title, :file or nil on error."
                       (insert (concat "* Required Reading\n"
                                      "- [[file:" review-filepath "][" pr-title" ]]\n\n"
                                      "* Conversation History\n"
-                                     "- \n\n"
+                                     "- [[id:" conversation-initial-memory-result :id "][" conversation-initial-memory-result :title "]]\n"
+                                     "- [[id:" conversation-quiz-memory-result :id "][" conversation-quiz-memory-result :title "]]\n\n"
                                      "* TODO CR: " pr-title "\n"
                                      "** TODO Initial Review\n"
                                      "*** Goal\n"
-                                     "Develop an understanding of the changes presented in this PR"
+                                     "Develop an understanding of the changes presented in this PR\n"
                                      "*** Prompt\n"
-                                     "ELI5 the changes being proposed by this PR. Give an initial code review of the change, and indicate if it should be approved or if Bobert thingks it needs refinement. Save this initial review to memory and link it here as an Outcome\n\n"
+                                     "ELI5 the changes being proposed by this PR. Give an initial code review of the change, and indicate if it should be approved or if Bobert thingks it needs refinement. Save this initial review to memory and link it here as an Outcome\n"
                                      "*** Outcomes\n\n"
                                      "** TODO Quiz!\n"
-                                     "*** Goal"
-                                     "Bobert should ensure the human understands the changes being made. This helps us both stay accountable. Bobert should ask the human a series of questions about the PR meant to gauge technical understanding, language concepts, security practices, etc. At the end of the quiz Bobert should grade the human and propose learning resources for any that was missed. Bobert should save a graded test to memory and link it here as an Outcome.\n\n"
+                                     "*** Goal\n"
+                                     "Ensure Bobert and the human both really understand these changes\n"
+                                     "*** Prompt\n"
+                                     "Bobert should ensure the human understands the changes being made. This helps us both stay accountable. Bobert should ask the human a series of questions about the PR meant to gauge technical understanding, language concepts, security practices, etc. At the end of the quiz Bobert should grade the human and propose learning resources for any that was missed. Bobert should save a graded test to memory and link it here as an Outcome.\n"
                                      "*** Outcomes\n\n"
                                      ))
                       (save-buffer))
