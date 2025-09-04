@@ -40,13 +40,26 @@
     "Cache of existing PR URLs to avoid file I/O.")
 
   ;; Utility functions
+  (defcustom my/code-reviews-debug nil
+    "Enable debug logging for code reviews."
+    :type 'boolean
+    :group 'my/code-reviews)
+
   (defun my/code-reviews--log (level message &rest args)
     "Log MESSAGE at LEVEL with optional ARGS."
-    (when (>= (length args) 0)
-      (setq message (apply #'format message args)))
-    (message "[%s] Code Reviews: %s" 
-             (format-time-string "%H:%M:%S")
-             message))
+    (when (or (not (equal level "DEBUG")) my/code-reviews-debug)
+      (when (>= (length args) 0)
+        (setq message (apply #'format message args)))
+      (message "[%s] Code Reviews %s: %s" 
+               (format-time-string "%H:%M:%S")
+               level
+               message)))
+
+  (defun my/code-reviews-enable-debug ()
+    "Enable debug logging for code reviews."
+    (interactive)
+    (setq my/code-reviews-debug t)
+    (message "Code reviews debug logging enabled"))
 
   (defun my/code-reviews--validate-config ()
     "Validate that required configuration is set."
@@ -83,9 +96,11 @@
   (defun my/code-reviews--fetch-prs-for-query (query-name query-string)
     "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
   Returns list of PR data structures."
+    (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
+                          query-name query-string)
     (condition-case err
-        (let ((response (ghub-graphql
-                         "query($query: String!) {
+        (let* ((response (ghub-graphql
+                          "query($query: String!) {
                             search(query: $query, type: ISSUE, first: 100) {
                               nodes {
                                 ... on PullRequest {
@@ -103,8 +118,14 @@
                               }
                             }
                           }"
-                         `((query . ,query-string)))))
-          (alist-get 'nodes (alist-get 'search (alist-get 'data response))))
+                          `((query . ,query-string))))
+               (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
+          (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
+                                query-name (length nodes))
+          (when (> (length nodes) 0)
+            (my/code-reviews--log "DEBUG" "First PR sample: %s" 
+                                  (prin1-to-string (car nodes))))
+          nodes)
       (error 
        (my/code-reviews--log "ERROR" "Failed to fetch PRs for query '%s': %s" 
                              query-name (error-message-string err))
@@ -122,9 +143,23 @@ Returns a plist with :id, :title, :file or nil on error."
                       (pr-author (downcase .author.login))
                       (pr-title (format "Pull Request: %s" .title))
                       (tags (list repo-org repo-name pr-author))
-                      (aliases '()) ; Empty list as per spec
-                      ;; Create content with pr-review properties
-                      (content (format ":PROPERTIES:\n:PR_PATH: %s\n:CURRENT_SHOW_LEVEL: 3\n:SELECTED_COMMITS: nil\n:SELECTED_COMMIT_BASE: nil\n:SELECTED_COMMIT_HEAD: nil\n:END:\n\nThis is a cached pull request for code review.\n\n** PR Details\n- **Repository**: %s\n- **Author**: %s\n- **URL**: %s\n\n** Review Notes" 
+                      (content (format ":PROPERTIES:
+:PR_PATH: %s
+:CURRENT_SHOW_LEVEL: 3
+:SELECTED_COMMITS: nil
+:SELECTED_COMMIT_BASE: nil
+:SELECTED_COMMIT_HEAD: nil
+:END:
+
+This is a cached pull request for code review.
+
+,** PR Details
+- **Repository**: %s
+- **Author**: %s
+- **URL**: %s
+
+,** Review Notes
+" 
                                        (prin1-to-string pr-path)
                                        .repository.nameWithOwner
                                        .author.login
@@ -134,7 +169,7 @@ Returns a plist with :id, :title, :file or nil on error."
                                   :title pr-title
                                   :memory-type 'episodic
                                   :tags tags
-                                  :aliases aliases
+                                  :aliases '()
                                   :content content)))
               ;; Call pr-review-restore-and-refresh to populate with live content
               (condition-case refresh-err
@@ -149,6 +184,7 @@ Returns a plist with :id, :title, :file or nil on error."
        (my/code-reviews--log "ERROR" "Failed to create memory for PR %s: %s" 
                              (alist-get 'title pr) (error-message-string err))
        nil)))
+
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
     "Format a single PR data structure into org-mode entry text.
@@ -173,41 +209,52 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
   (defun my/code-reviews--insert-new-prs (prs)
     "Insert new PRs into the org file.
   PRS should be a list of PR data structures."
+    (my/code-reviews--log "DEBUG" "Processing %d PRs for insertion" (length prs))
     (let ((new-count 0))
       (dolist (pr prs)
         (let-alist pr
-          (unless (my/code-reviews--pr-exists-p .url)
-            (goto-char (point-max))
-            ;; Phase 2: Create org-roam memory for this PR
-            (let* ((memory-result (my/code-reviews--create-pr-memory pr))
-                   (memory-id (plist-get memory-result :id)))
-              (if memory-id
+          (my/code-reviews--log "DEBUG" "Checking PR: %s (URL: %s)" .title .url)
+          (if (my/code-reviews--pr-exists-p .url)
+              (my/code-reviews--log "DEBUG" "PR already exists, skipping: %s" .title)
+            (progn
+              (my/code-reviews--log "DEBUG" "New PR found, processing: %s" .title)
+              (goto-char (point-max))
+              ;; Phase 2: Create org-roam memory for this PR
+              (let* ((memory-result (my/code-reviews--create-pr-memory pr))
+                     (memory-id (plist-get memory-result :id)))
+                (if memory-id
+                    (progn
+                      (my/code-reviews--log "INFO" "Created memory for PR: %s (ID: %s)" 
+                                            .title memory-id)
+                      (insert (my/code-reviews--format-pr-entry pr memory-id)))
+                  ;; Fallback to plain text if memory creation failed
                   (progn
-                    (my/code-reviews--log "INFO" "Created memory for PR: %s (ID: %s)" 
-                                          .title memory-id)
-                    (insert (my/code-reviews--format-pr-entry pr memory-id)))
-                ;; Fallback to plain text if memory creation failed
-                (progn
-                  (my/code-reviews--log "WARNING" "Memory creation failed for PR: %s, using plain text" 
-                                        .title)
-                  (insert (my/code-reviews--format-pr-entry pr)))))
-            (my/code-reviews--add-pr-to-cache .url)
-            (cl-incf new-count))))
+                    (my/code-reviews--log "WARNING" "Memory creation failed for PR: %s, using plain text" 
+                                          .title)
+                    (insert (my/code-reviews--format-pr-entry pr)))))
+              (my/code-reviews--add-pr-to-cache .url)
+              (cl-incf new-count)))))
+      (my/code-reviews--log "DEBUG" "Inserted %d new PRs" new-count)
       new-count))
 
   (defun my/code-reviews--process-queries ()
     "Process all configured PR queries and return total new PRs added."
+    (my/code-reviews--log "DEBUG" "Starting to process %d configured queries" 
+                          (length my/github-pr-queries))
     (let ((total-new 0))
       (dolist (query-pair my/github-pr-queries)
         (let* ((section-name (car query-pair))
-               (query-string (cdr query-pair))
-               (prs (my/code-reviews--fetch-prs-for-query section-name query-string)))
-          (when prs
-            (let ((new-count (my/code-reviews--insert-new-prs prs)))
-              (cl-incf total-new new-count)
-              (when (> new-count 0)
-                (my/code-reviews--log "INFO" "Added %d new PRs from query '%s'" 
-                                      new-count section-name))))))
+               (query-string (cdr query-pair)))
+          (my/code-reviews--log "DEBUG" "Processing query '%s'" section-name)
+          (let ((prs (my/code-reviews--fetch-prs-for-query section-name query-string)))
+            (if prs
+                (let ((new-count (my/code-reviews--insert-new-prs prs)))
+                  (cl-incf total-new new-count)
+                  (when (> new-count 0)
+                    (my/code-reviews--log "INFO" "Added %d new PRs from query '%s'" 
+                                          new-count section-name)))
+              (my/code-reviews--log "DEBUG" "No PRs returned from query '%s'" section-name)))))
+      (my/code-reviews--log "DEBUG" "Total new PRs added across all queries: %d" total-new)
       total-new))
 
   ;; Public interface
@@ -218,11 +265,16 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
         (progn
           (my/code-reviews--validate-config)
           (my/code-reviews--log "INFO" "Fetching PRs to review...")
+          (my/code-reviews--log "DEBUG" "Using PR file: %s" my/github-pr-file)
+          (my/code-reviews--log "DEBUG" "Configured queries: %s" 
+                                (mapcar #'car my/github-pr-queries))
           
           (let ((buf (find-file-noselect my/github-pr-file))
                 (total-new 0))
             (with-current-buffer buf
               (org-mode)
+              (my/code-reviews--log "DEBUG" "Processing queries in buffer: %s" 
+                                    (buffer-name))
               (setq total-new (my/code-reviews--process-queries))
               (save-buffer))
             
@@ -382,5 +434,6 @@ Works from both org-mode buffers and org-agenda."
 (add-to-list 'browse-url-default-handlers
              '(pr-review-url-parse . pr-review-open-url))
 #+end_src
+
 
 
