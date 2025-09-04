@@ -6,7 +6,9 @@
 #+begin_src emacs-lisp
   (require 'ghub)
   (require 'cl-lib)
-  (require 'pr-review nil t)  ; Optional require for pr-review package
+  (require 'pr-review nil t)  
+  (require 'org-roam nil t)
+  (require 'org-id nil t)
 
   ;; Configuration
   (defgroup my/code-reviews nil
@@ -108,15 +110,65 @@
                              query-name (error-message-string err))
        nil)))
 
-  (defun my/code-reviews--format-pr-entry (pr)
-    "Format a single PR data structure into org-mode entry text."
+  (defun my/code-reviews--create-pr-memory (pr)
+    "Create an org-roam memory for PR data structure.
+Returns a plist with :id, :title, :file or nil on error."
+    (condition-case err
+        (let-alist pr
+          (when-let* ((pr-path (pr-review-url-parse .url))
+                      (repo-parts (split-string .repository.nameWithOwner "/"))
+                      (repo-org (downcase (car repo-parts)))
+                      (repo-name (downcase (cadr repo-parts)))
+                      (pr-author (downcase .author.login))
+                      (pr-title (format "Pull Request: %s" .title))
+                      (tags (list repo-org repo-name pr-author))
+                      (aliases '()) ; Empty list as per spec
+                      ;; Create content with pr-review properties
+                      (content (format ":PROPERTIES:\n:PR_PATH: %s\n:CURRENT_SHOW_LEVEL: 3\n:SELECTED_COMMITS: nil\n:SELECTED_COMMIT_BASE: nil\n:SELECTED_COMMIT_HEAD: nil\n:END:\n\nThis is a cached pull request for code review.\n\n** PR Details\n- **Repository**: %s\n- **Author**: %s\n- **URL**: %s\n\n** Review Notes" 
+                                       (prin1-to-string pr-path)
+                                       .repository.nameWithOwner
+                                       .author.login
+                                       .url)))
+            (my/code-reviews--log "INFO" "Creating memory for PR: %s" pr-title)
+            (let ((memory-result (my/create-memory
+                                  :title pr-title
+                                  :memory-type 'episodic
+                                  :tags tags
+                                  :aliases aliases
+                                  :content content)))
+              ;; Call pr-review-restore-and-refresh to populate with live content
+              (condition-case refresh-err
+                  (with-current-buffer (find-file-noselect (plist-get memory-result :file))
+                    (pr-review-restore-and-refresh)
+                    (save-buffer))
+                (error 
+                 (my/code-reviews--log "WARNING" "Failed to populate PR memory %s: %s" 
+                                       pr-title (error-message-string refresh-err))))
+              memory-result)))
+      (error 
+       (my/code-reviews--log "ERROR" "Failed to create memory for PR %s: %s" 
+                             (alist-get 'title pr) (error-message-string err))
+       nil)))
+
+  (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
+    "Format a single PR data structure into org-mode entry text.
+If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
-      (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
-              .title
-              (format-time-string "%Y-%m-%d")
-              .url
-              .repository.nameWithOwner
-              .author.login)))
+      (if memory-id
+          (format "* TODO [[id:%s][Code Review: %s]]\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
+                  memory-id
+                  .title
+                  (format-time-string "%Y-%m-%d")
+                  .url
+                  .repository.nameWithOwner
+                  .author.login)
+        ;; Fallback to plain text if memory creation failed
+        (format "* TODO %s\nDEADLINE: <%s -0d>\n:PROPERTIES:\n:PR_URL: %s\n:REPO: %s\n:AUTHOR: %s\n:END:\n\n"
+                .title
+                (format-time-string "%Y-%m-%d")
+                .url
+                .repository.nameWithOwner
+                .author.login))))
 
   (defun my/code-reviews--insert-new-prs (prs)
     "Insert new PRs into the org file.
@@ -126,7 +178,19 @@
         (let-alist pr
           (unless (my/code-reviews--pr-exists-p .url)
             (goto-char (point-max))
-            (insert (my/code-reviews--format-pr-entry pr))
+            ;; Phase 2: Create org-roam memory for this PR
+            (let* ((memory-result (my/code-reviews--create-pr-memory pr))
+                   (memory-id (plist-get memory-result :id)))
+              (if memory-id
+                  (progn
+                    (my/code-reviews--log "INFO" "Created memory for PR: %s (ID: %s)" 
+                                          .title memory-id)
+                    (insert (my/code-reviews--format-pr-entry pr memory-id)))
+                ;; Fallback to plain text if memory creation failed
+                (progn
+                  (my/code-reviews--log "WARNING" "Memory creation failed for PR: %s, using plain text" 
+                                        .title)
+                  (insert (my/code-reviews--format-pr-entry pr)))))
             (my/code-reviews--add-pr-to-cache .url)
             (cl-incf new-count))))
       new-count))
@@ -214,6 +278,7 @@
   ;; Initialize
   (my/code-reviews-start-timer)
 #+end_src
+
 * Reviewing PRs
 ** pr-review package declaration
 #+begin_src emacs-lisp 
