@@ -190,7 +190,7 @@ in {
           pkgs.aspell
           pkgs.aspellDicts.en
           emacs-everywhere
-          pr-review
+          #pr-review
         ];
     };
   };

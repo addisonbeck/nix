@@ -217,27 +217,29 @@
 * Reviewing PRs
 ** pr-review package declaration
 #+begin_src emacs-lisp 
-  ;; PR Review package setup
-  (use-package pr-review
-    ;;:config
-    ;;(setq pr-review-ghub-auth-name "ghub")
-    
-    ;;(with-eval-after-load 'evil
-      ;;(evil-define-key 'normal pr-review-mode-map
-        ;;(kbd "q") 'pr-review-quit
-        ;;(kbd "r") 'pr-review-refresh
-        ;;(kbd "c") 'pr-review-comment-add
-        ;;(kbd "C") 'pr-review-comment-reply
-        ;;(kbd "d") 'pr-review-comment-delete
-        ;;(kbd "e") 'pr-review-comment-edit
-        ;;(kbd "s") 'pr-review-submit-review
-        ;;(kbd "a") 'pr-review-approve
-        ;;(kbd "R") 'pr-review-request-changes
-        ;;(kbd "TAB") 'pr-review-next-comment
-        ;;(kbd "<backtab>") 'pr-review-prev-comment
-        ;;(kbd "o") 'pr-review-open-file-at-point
-        ;;(kbd "RET") 'pr-review-view-comment-at-point))
-    )
+;; PR Review package setup
+(use-package pr-review
+  :ensure nil
+  :load-path "/Users/me/binwarden/blahgeek-emacs-pr-review/master"
+  ;;:config
+  ;;(setq pr-review-ghub-auth-name "ghub")
+  
+  ;;(with-eval-after-load 'evil
+    ;;(evil-define-key 'normal pr-review-mode-map
+      ;;(kbd "q") 'pr-review-quit
+      ;;(kbd "r") 'pr-review-refresh
+      ;;(kbd "c") 'pr-review-comment-add
+      ;;(kbd "C") 'pr-review-comment-reply
+      ;;(kbd "d") 'pr-review-comment-delete
+      ;;(kbd "e") 'pr-review-comment-edit
+      ;;(kbd "s") 'pr-review-submit-review
+      ;;(kbd "a") 'pr-review-approve
+      ;;(kbd "R") 'pr-review-request-changes
+      ;;(kbd "TAB") 'pr-review-next-comment
+      ;;(kbd "<backtab>") 'pr-review-prev-comment
+      ;;(kbd "o") 'pr-review-open-file-at-point
+      ;;(kbd "RET") 'pr-review-view-comment-at-point))
+  )
 #+end_src
 
 ** pr-review mode hook
@@ -312,8 +314,8 @@ Works from both org-mode buffers and org-agenda."
   (transient-append-suffix 'my/go-menu "l"
     '("z" "PR Review" my/pr-review-from-org-entry)))
 
-;;(add-to-list 'browse-url-default-handlers
- ;;            '(pr-review-url-parse . pr-review-open-url))
+(add-to-list 'browse-url-default-handlers
+             '(pr-review-url-parse . pr-review-open-url))
 #+end_src
 
 
