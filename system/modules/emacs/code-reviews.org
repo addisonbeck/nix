@@ -190,15 +190,13 @@ Returns a plist with :id, :title, :file or nil on error."
                  (my/code-reviews--log "ERROR" "Failed to create review file for PR %s: %s" 
                                        pr-title (error-message-string review-file-err))
                  memory-result))))))
-)
-
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
     "Format a single PR data structure into org-mode entry text.
 If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
       (if memory-id
-          (concat "* TODO [[id:" memory-id "][Code Review: " .title "]]\n"
+          (concat "* TODO [[id:" memory-id "][CR: " .title "]]\n"
                   "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
                   ":PROPERTIES:\n"
                   ":PR_URL: " .url "\n"
@@ -421,14 +419,10 @@ Works from both org-mode buffers and org-agenda."
         (my/code-reviews--log "ERROR" "pr-review package not available")))
      (t (my/code-reviews--log "INFO" "pr-review package already loaded")))
     
-    ;; Test ghub authentication (same auth used by pr-review)
-    (condition-case err
-        (progn
           (ghub-get "/user")
           (my/code-reviews--log "INFO" "GitHub authentication working"))
-      (error 
-       (my/code-reviews--log "ERROR" "GitHub authentication failed: %s" 
-                             (error-message-string err)))))
+    ;; Test ghub authentication (same auth used by pr-review)
+    
 
 (with-eval-after-load 'transient
   (transient-append-suffix 'my/go-menu "l"
