@@ -165,14 +165,14 @@ Returns a plist with :id, :title, :file or nil on error."
                                                 ":END:\n"))
                           (conversation-initial-memory-result 
                             (my/create-memory
-                            :title (concat "Conversation: Intake: " "")
+                            :title (concat "Conversation: Intake: " pr-title "")
                             :memory-type 'episodic
                             :tags '("conversation codereview intake")
                             :aliases '()  
                             :content ""))
                           (conversation-quiz-memory-result 
                             (my/create-memory
-                            :title (concat "Conversation: Quiz: " "")
+                            :title (concat "Conversation: Quiz: " pr-title "")
                             :memory-type 'episodic
                             :tags '("conversation codereview quiz")
                             :aliases '()  
@@ -188,10 +188,11 @@ Returns a plist with :id, :title, :file or nil on error."
                     (with-current-buffer (find-file-noselect memory-file)
                       (goto-char (point-max))
                       (insert (concat "* Required Reading\n"
-                                     "- [[file:" review-filepath "][" pr-title" ]]\n\n"
+                                     "- [[file:" review-filepath "][" pr-title " ]]\n"
+                                     "- [[id:A747158F-494D-479C-A962-2C1A93BF5E52][On Reviewing Code]]\n\n"
                                      "* Conversation History\n"
-                                     "- [[id:" conversation-initial-memory-result :id "][" conversation-initial-memory-result :title "]]\n"
-                                     "- [[id:" conversation-quiz-memory-result :id "][" conversation-quiz-memory-result :title "]]\n\n"
+                                     "- [[id:" (format "%s" (plist-get conversation-initial-memory-result :id)) "][" (format "%s" (plist-get conversation-initial-memory-result :title)) "]]\n"
+                                     "- [[id:" (format "%s" (plist-get conversation-quiz-memory-result :id)) "][" (format "%s" (plist-get conversation-quiz-memory-result :title)) "]]\n\n"
                                      "* TODO CR: " pr-title "\n"
                                      "** TODO Initial Review\n"
                                      "*** Goal\n"
@@ -362,7 +363,7 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
     (my/code-reviews--log "INFO" "Cleared PR URL cache"))
 
   ;; Initialize
-  (my/code-reviews-start-timer)
+;;  (my/code-reviews-start-timer)
 #+end_src
 
 * Reviewing PRs
