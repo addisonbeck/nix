@@ -21,7 +21,7 @@
     :group 'my/code-reviews)
 
   (defcustom my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck"))
+    '(("Involved PRs" . "is:open is:pr involves:addisonbeck"))
     "List of GitHub search queries for PRs.
   Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
     :type '(alist :key-type string :value-type string)
