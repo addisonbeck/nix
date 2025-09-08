@@ -1573,6 +1573,7 @@ This cool and lame at the same time
      ("p" "Prompts" my/open-prompts)
      ("b" "Budget" my/open-budget)
      ("m" "Magit" my/projectile-magit-status)
+     ("r" "Elfreed" elfeed)
      ("l" "Log" my/open-log)])
 #+end_src
 
