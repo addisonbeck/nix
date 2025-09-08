@@ -221,6 +221,7 @@ in {
     ffmpeg
     ledger
     hledger
+    jira-cli-go
 (writeShellScriptBin "emacseverywhere" ''
 set -euo pipefail
 
@@ -248,7 +249,7 @@ ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
         "${config.programs.emacs.finalPackage}/bin/emacs"
         "--daemon"
       ];
-      KeepAlive = true;
+      KeepAlive = false;
       RunAtLoad = true;
       StandardOutPath = "${config.home.homeDirectory}/.emacs.d/daemon.log";
       StandardErrorPath = "${config.home.homeDirectory}/.emacs.d/daemon.error.log";
