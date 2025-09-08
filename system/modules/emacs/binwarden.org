@@ -41,10 +41,10 @@
 					 branches nil nil nil nil ""))
 	   (from-branch-arg (if (string-empty-p from-branch)
 				""
-			      (format " %s" from-branch)))
+			      (format "%s" from-branch)))
 	   (compilation-buffer-name-function 
 	    (lambda (_mode) (format "*create-worktree-%s-%s*" selected-repo worktree-name))))
-      (compile (format "cd %s && nix develop -c just create-worktree %s %s %s" 
+      (compile (format "cd %s && nix develop -c just branch \"%s\" \"%s\" %s" 
 		       (shell-quote-argument binwarden-dir)
 		       selected-repo worktree-name from-branch-arg) t)))
 #+end_src
