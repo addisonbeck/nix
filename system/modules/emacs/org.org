@@ -688,7 +688,10 @@ Don't show DONE items in the agenda
 		(:name "Cooking"
         :and (:deadline today :tag "cooking")
         :and (:deadline past :tag "cooking"))
-		(:name "Code Review"
+		(:name "My Pull Requests"
+        :and (:deadline today :category "code review" :property ("AUTHOR" "addisonbeck"))
+        :and (:deadline past :category "code review" :property ("AUTHOR" "addisonbeck")))
+		(:name "Code Review Inbox"
         :and (:deadline today :category "code review")
         :and (:deadline past :category "code review"))
 		(:name "Code Review Bunker"
