@@ -29,7 +29,31 @@
 
   (gptel-make-anthropic "Claude"
 		  :stream t
-		  :key (lambda () (my/get-api-key "api.anthropic.com")))
+		  :key (lambda () (my/get-api-key "api.anthropic.com"))
+      :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805)
+      :request-params '(:thinking (:type "enabled" :budget_tokens 4000)
+        :max_tokens 31999))
+
+  (gptel-make-anthropic "Claude: Think Hard"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com"))
+      :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805)
+      :request-params '(:thinking (:type "enabled" :budget_tokens 10000)
+        :max_tokens 31999))
+
+  (gptel-make-anthropic "Claude: Think Harder"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com"))
+      :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805)
+      :request-params '(:thinking (:type "enabled" :budget_tokens 16000)
+        :max_tokens 31999))
+
+  (gptel-make-anthropic "Claude: Ultrathink"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com"))
+      :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805)
+      :request-params '(:thinking (:type "enabled" :budget_tokens 30000)
+        :max_tokens 31999))
 
   (gptel-make-gemini "Gemini"
 	       :key (lambda () (my/get-api-key "api.gemini.com")))
