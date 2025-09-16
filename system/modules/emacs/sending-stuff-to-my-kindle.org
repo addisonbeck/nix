@@ -1,0 +1,83 @@
+#+TITLE: Emacs Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle sending-stuff-to-my-kindle.el :results none
+
+* Sending Stuff To My Kindle
+#+begin_src emacs-lisp
+(defun my/wikipedia-search (search-term)
+  "Prompt for SEARCH-TERM, select an article using consult, and return its URL."
+  (interactive "sSearch Wikipedia for: ")
+  (let* ((search-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=15&namespace=0&format=json"
+                             (url-hexify-string search-term)))
+         (buffer (url-retrieve-synchronously search-url t t 5))
+         articles result-alist selected)
+    (unless buffer (error "Failed to fetch Wikipedia results"))
+    (with-current-buffer buffer
+      (goto-char (point-min))
+      (re-search-forward "^$" nil t) 
+      (let* ((json-array-type 'list)   
+             (json-object-type 'alist) 
+             (json-data (json-read))
+             (titles (nth 1 json-data))
+             (desc   (nth 2 json-data))
+             (urls   (nth 3 json-data)))
+        (setq articles
+              (cl-mapcar (lambda (title desc url)
+                           (cons (format "%s — %s" title url) url))
+                         titles desc urls))))
+    (kill-buffer buffer)
+    (setq result-alist articles)
+    (setq selected (consult--read (mapcar #'car result-alist)
+                                  :prompt "Pick article: "
+                                  :require-match t))
+    (let ((url (cdr (assoc selected result-alist))))
+      (when (called-interactively-p 'any)
+        (when url (browse-url url)))
+      url)))
+
+(defun my/wikipedia-send-to-kindle ()
+  "Prompt for a Wikipedia search, select an article, and send its URL to Kindle."
+  (interactive)
+  (let* ((search-term (read-string "Search Wikipedia for: "))
+         (url (my/wikipedia-search search-term))
+         (compilation-buffer-name-function
+          (lambda (_mode)
+            (format "*wikipedia-to-kindle-%s*" (or search-term "search")))))
+    (when url
+      (compile (format "sudo wikipedia-to-kindle-generate %s" (shell-quote-argument url)) t))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/cookbook-to-kindle-generate ()
+  "Generate and send the Org-roam cookbook EPUB to Kindle, running in a compilation buffer."
+  (interactive)
+  (let ((cmd "cookbook-to-kindle-generate"))
+    (let ((compilation-buffer-name-function (lambda (_mode) "*cookbook-to-kindle*")))
+      (compile (format "sudo %s" cmd) t))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/memory-to-kindle-send (&optional id)
+  "Prompt for an Org-roam node (or use current buffer) and send it to Kindle."
+  (interactive)
+  (let* ((node-id (or id
+                      (when (and (fboundp 'org-roam-id-at-point)
+                                 (org-roam-id-at-point))
+                        (org-roam-id-at-point))
+                      (when (fboundp 'org-roam-node-read)
+                        (org-roam-node-id (org-roam-node-read))))))
+    (unless node-id (user-error "No Org-roam ID available"))
+    (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
+      (compile (format "sudo memory-to-kindle-generate %s"
+                       (shell-quote-argument node-id))
+               t))))
+
+(defun my/current-org-file-to-kindle ()
+  "Send the current Org file to Kindle by path."
+  (interactive)
+  (unless buffer-file-name (user-error "Not visiting a file"))
+  (when (buffer-modified-p) (save-buffer))
+  (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
+    (compile (format "sudo memory-to-kindle-generate %s"
+                     (shell-quote-argument (file-truename buffer-file-name)))
+             t)))
+#+end_src

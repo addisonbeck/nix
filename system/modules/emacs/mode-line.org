@@ -2,8 +2,7 @@
 #+PROPERTY: header-args:emacs-lisp :tangle mode-line.el :results none
 
 #+begin_src emacs-lisp
-(setq-default mode-line-format
-	(list
+(defvar my/default-modeline (list
 	 ;; Current project (if any)
 	 '(:eval (when-let ((project (my/current-project-name)))
 		   (propertize (format "%s/" project) 'face 'mode-line-emphasis)))
@@ -24,5 +23,8 @@
 		      (propertize (if (vc-state buffer-file-name) " ++" "") 'face
 				  (if (vc-state buffer-file-name) 'error 'success))
 		      (propertize " " 'face 'buffer-file-name)))))
-	 ))
+	 )
+  "My default modeline")
+
+(setq-default mode-line-format my/default-modeline)
 #+end_src

@@ -95,6 +95,7 @@
       ../../modules/secrets/ssh-keys.nix
       ../../modules/secrets/authinfo.nix
       ../../modules/secrets/jira-api-token.nix
+      ./with/program/gimp.nix
     ];
 
     #sops.gnupg.sshKeyPaths = [ "/Users/me/.ssh/primary-ssh-key" ];

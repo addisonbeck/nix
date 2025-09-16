@@ -1,0 +1,29 @@
+#+TITLE: Olivetti Config
+#+PROPERTY: header-args:emacs-lisp :tangle olivetti.el :results none
+
+* Olivetti
+#+begin_src emacs-lisp
+  (use-package olivetti
+    :config
+    (setq olivetti-style 'fancy))
+
+  (defun my/toggle-olivetti ()
+    "Toggle olivetti mode with my preferred settings."
+    (interactive)
+    (if (bound-and-true-p olivetti-mode)
+      (olivetti-mode -1)
+      (progn
+        (olivetti-mode 1)
+        (olivetti-set-width 120))))
+
+  (defun my/enable-olivetti ()
+    "Turn on olivetti mode with my preferred settings."
+    (interactive)
+    (olivetti-mode 1)
+    (olivetti-set-width 120))
+
+(global-set-key (kbd "<f1>") 'my/toggle-olivetti)
+#+end_src
+
+#+RESULTS:
+: my/toggle-olivetti
