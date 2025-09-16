@@ -1,0 +1,250 @@
+#+TITLE: Org-Present Config
+#+PROPERTY: header-args:emacs-lisp :tangle org-present.el :results none
+
+* Timer & Modeline
+#+begin_src emacs-lisp
+(defvar my/org-present-duration 30
+  "Presentation duration in minutes.")
+
+(defvar my/org-present-end-time nil
+  "When the countdown should reach zero.")
+
+(defvar my/org-present-countdown-string ""
+  "String shown in the modeline for countdown.")
+
+(defun my/org-present-update-countdown ()
+  "Update `my/org-present-countdown-string` with remaining time."
+  (when my/org-present-end-time
+    (let* ((remaining (float-time (time-subtract my/org-present-end-time
+                                                 (current-time))))
+           (minutes (floor (/ (abs remaining) 60)))
+           (seconds (floor (mod (abs remaining) 60)))
+           (face (cond
+                  ((> remaining 300) '(:foreground "green"))
+                  ((> remaining 0)   '(:foreground "orange"))
+                  (t                 '(:foreground "red" :weight bold)))))
+      (setq my/org-present-countdown-string
+            (propertize (format " ⏱ %s%02d:%02d "
+                                (if (< remaining 0) "-" "")
+                                minutes seconds)
+                        'face face))
+      (force-mode-line-update))))
+
+(defvar my/org-present-countdown-timer nil
+  "Holds the repeating timer object for countdown.")
+
+(defun my/org-present-start-countdown (&optional minutes)
+  "Start a countdown timer for MINUTES (prompted, default `my/org-present-duration`)."
+  (interactive)
+  (let ((minutes (or minutes
+                     (read-number (format "Minutes (default %d): " my/org-present-duration)
+                                  my/org-present-duration))))
+    (setq my/org-present-duration minutes)
+    (setq my/org-present-end-time
+          (time-add (current-time) (seconds-to-time (* 60 my/org-present-duration))))
+    (setq my/org-present-countdown-timer
+          (run-at-time t 1 #'my/org-present-update-countdown))))
+
+
+(defun my/org-present-stop-countdown ()
+  (interactive)
+  "Stop the countdown timer."
+  (when my/org-present-countdown-timer
+    (cancel-timer my/org-present-countdown-timer)
+    (setq my/org-present-countdown-timer nil))
+  (setq my/org-present-countdown-string "")
+  (force-mode-line-update))
+
+(defun my/org-present-document-title ()
+  "Return the document title (#+TITLE) as plain string, or buffer name."
+  (or (car (cdr (assoc "TITLE" (org-collect-keywords '("TITLE")))))
+      (buffer-name)))
+
+(defun my/org-present-title-string ()
+  "Return the presentation title formatted for the modeline."
+  (propertize (my/org-present-document-title)
+              'face 'mode-line-buffer-id))  ;; or '(:weight bold) for custom
+
+(defvar my/org-present-speaker-notes ""
+  "Current slide's speaker notes for display in modeline.")
+
+(defun my/org-present-get-speaker-notes ()
+  "Extract speaker notes from current heading's SPEAKER_NOTES property or document properties."
+  (save-excursion
+    (condition-case nil
+        (progn
+          ;; Try to get heading-level speaker notes first  
+          (org-back-to-heading t)
+          (or (org-entry-get (point) "SPEAKER_NOTES") ""))
+      (error 
+        ;; If we can't find a heading (like on title slide), check file properties
+        (save-excursion
+          (goto-char (point-min))
+          ;; Look for the first properties drawer
+          (when (re-search-forward "^[ \t]*:PROPERTIES:" nil t)
+            (org-entry-get (point) "SPEAKER_NOTES")))))))
+
+(defface my/org-present-speaker-note-prefix
+  '((t (:foreground "grey")))
+  "Face for the speaker notes prefix.")
+
+(defface my/org-present-speaker-note-content
+  '((t (:foreground "grey")))
+  "Face for speaker notes content.")
+
+(defun my/org-present-update-speaker-notes ()
+  "Update speaker notes and display in echo area with colors."
+  (let ((notes (let ((inhibit-message t)) ; This suppresses error messages
+                 (my/org-present-get-speaker-notes))))
+    (if (and notes (not (string-empty-p notes)))
+        (progn
+          (setq my/org-present-speaker-notes notes)
+          (message "%s %s"
+                   (propertize "Speaker notes: " 'face '(:inherit (shadow bold)))
+                   (propertize notes 'face '(:inherit shadow))))
+      (setq my/org-present-speaker-notes "")
+      (message ""))))
+
+(defun my/org-present-setup-modeline ()
+  "Set up a minimal custom modeline for org-present with speaker notes."
+  (setq my/org-present-original-modeline mode-line-format)
+  (setq mode-line-format
+        '(" "
+          ;; Document title
+          (:eval (my/org-present-title-string))
+          "   "
+          ;; Timer
+          my/org-present-countdown-string
+          )))
+
+(defun my/org-present-document-title ()
+  "Return the document title (#+TITLE) as plain string, or buffer name."
+  (or (car (cdr (assoc "TITLE" (org-collect-keywords '("TITLE")))))
+      (buffer-name)))
+
+(defun my/org-present-restore-modeline ()
+  "Restore the original modeline after org-present."
+  (setq mode-line-format my/org-present-original-modeline)) 
+#+end_src
+
+* Mode Config
+#+begin_src emacs-lisp
+(defun my/org-present-mode-set-keybindings ()
+  (interactive)
+  "Sets all my org present mode specific keybindings"
+  (evil-define-key 'normal org-present-mode-keymap (kbd "<left>") 'org-present-prev)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "<right>") 'org-present-next)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "1") 'my/org-present-start-countdown)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "2") 'my/org-present-stop-countdown)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "3") 'org-present-hide-cursor)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "4") 'org-present-show-cursor)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "n") 'my/org-present-toggle-speaker-notes)
+  ;; evil-normal-state is required to get these keybindings to set for some reason.
+  (evil-normal-state))
+
+(defvar my/org-present-slide-overlays nil
+  "List of overlays created for slide formatting.")
+
+(defun my/org-present-cleanup-slide-overlays ()
+  "Clean up all slide formatting overlays."
+  (mapc 'delete-overlay my/org-present-slide-overlays)
+  (setq my/org-present-slide-overlays nil))
+
+(defun my/org-present-prepare-slide (buffer-name heading)
+  ;; Show only top-level headlines
+  (my/org-present-cleanup-slide-overlays)
+  ;; Show only top-level headlines
+  (org-overview)
+  ;; Unfold the current entry
+  (org-show-entry)
+  ;; Show only direct subheadings of the slide but don't expand them
+  (org-show-children)
+  ;; Update speaker notes in echo area
+  (my/org-present-update-speaker-notes)
+  ;; Add some top margin - but only if we're on an actual heading
+  (save-excursion
+    (condition-case nil
+        (progn
+          (org-back-to-heading t)
+          (let ((overlay (make-overlay (line-beginning-position) (line-beginning-position))))
+            (overlay-put overlay 'before-string "\n")
+            (push overlay my/org-present-slide-overlays)))
+      (error nil))) ; Silently ignore if no heading (title slide)
+  ;; Update speaker notes in echo area
+  (my/org-present-update-speaker-notes))
+(add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide)
+
+(defun my/org-present-close-all-drawers ()
+  "Close all property drawers in the current buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (org-cycle-hide-drawers 'all)))
+
+(defun my/org-present-start ()
+  (setq org-present-hide-stars-in-headings nil)
+  (setq org-present-startup-folded nil)
+  (my/org-present-close-all-drawers)
+  (setq org-fontify-whole-heading-line t
+      org-fontify-done-headline t)
+
+  (let ((bg-color (face-background 'default)))
+    (setq-local face-remapping-alist 
+          `((org-default (:height 180) variable-pitch)
+            ;(variable-pitch (:height 180) variable-pitch)
+            ;(header-line (:height 180) variable-pitch)
+            ;(org-document-title (:height 340) org-document-title)
+            (org-code (:height 140) org-code)
+            ;;(org-verbatim (:height 1.55) org-verbatim)
+            ;(org-level-1 (:height 300) org-level-1)
+            ;(org-level-1 (:height 200 :box (:line-width (0 . 20) :color ,bg-color :style nil)) org-level-1)
+            (org-level-1 (:height 300) org-level-1)
+            (org-block (:height 140) org-block)
+            (org-block-begin-line (:height 160) org-block)
+            (org-block-end-line (:height 160) org-block)
+            
+            ;; Hide property drawers by matching background
+            (org-drawer (:foreground ,bg-color :background ,bg-color))
+            (org-special-keyword (:foreground ,bg-color :background ,bg-color)))))
+
+  (set-face-attribute 'default nil :family my/variable-width-font)
+  (text-scale-adjust 2)  
+  (breadcrumb-local-mode 0)
+  (my/org-present-mode-set-keybindings)
+  (my/enable-olivetti)
+  (my/org-present-setup-modeline)
+  (olivetti-set-width 80)
+  (setq-local org-image-max-width 700)
+  (org-redisplay-inline-images)
+  (org-indent-mode 0)
+  (blink-cursor-mode 0)
+  (org-modern-mode 1)
+  (org-present-hide-cursor)
+  (setq-local shr-color-visible-luminance-min 0)
+  (setq-local shr-color-visible-distance-min 0))
+
+(defun my/org-present-end ()
+  (my/org-present-stop-countdown)
+  (org-present-show-cursor)
+  (my/org-present-restore-modeline)
+  (setq-local face-remapping-alist '((default variable-pitch default)))
+  (setq-local org-image-max-width 120)
+  (org-redisplay-inline-images)
+  (org-mode-init)
+  (org-indent-mode 1)
+  (blink-cursor-mode 1)
+  (org-modern-mode 0)
+  (my/org-present-cleanup-slide-overlays))
+
+(add-hook 'org-present-mode-hook 'my/org-present-start)
+(add-hook 'org-present-mode-quit-hook 'my/org-present-end)
+
+(defun my/org-present-toggle-speaker-notes ()
+  "Toggle speaker notes display in echo area."
+  (interactive)
+  (if (string-empty-p my/org-present-speaker-notes)
+      (my/org-present-update-speaker-notes)
+    (progn
+      (setq my/org-present-speaker-notes "")
+      (message ""))))
+#+end_src
+

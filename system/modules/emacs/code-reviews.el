@@ -1,10 +1,4 @@
-#+TITLE: Code Reviews
-#+PROPERTY: header-args:emacs-lisp :tangle code-reviews.el :results none
-
-* Fetching New PRs And Adding Them To The Org Agenda
-
-#+begin_src emacs-lisp
-  (require 'ghub)
+(require 'ghub)
   (require 'cl-lib)
   (require 'pr-review nil t)  
   (require 'org-roam nil t)
@@ -21,8 +15,7 @@
     :group 'my/code-reviews)
 
   (defcustom my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck")
-      ("My Drafts" . "is:pr is:draft is:open author:addisonbeck"))
+    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck"))
     "List of GitHub search queries for PRs.
   Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
     :type '(alist :key-type string :value-type string)
@@ -163,51 +156,17 @@ Returns a plist with :id, :title, :file or nil on error."
                                                 ":SELECTED_COMMITS: nil\n" 
                                                 ":SELECTED_COMMIT_BASE: nil\n"
                                                 ":SELECTED_COMMIT_HEAD: nil\n"
-                                                ":END:\n"))
-                          (conversation-initial-memory-result 
-                            (my/create-memory
-                            :title (concat "Conversation: Intake: " pr-title "")
-                            :memory-type 'episodic
-                            :tags '("conversation codereview intake")
-                            :aliases '()  
-                            :content ""))
-                          (conversation-quiz-memory-result 
-                            (my/create-memory
-                            :title (concat "Conversation: Quiz: " pr-title "")
-                            :memory-type 'episodic
-                            :tags '("conversation codereview quiz")
-                            :aliases '()  
-                            :content "")))
+                                                ":END:\n")))
                     
                     ;; Create the .pr-review file
                     (with-temp-file review-filepath
                       (insert review-content))
-
-                    ;; Create some conversation nodes
                     
                     ;; Add link to review file in the memory
                     (with-current-buffer (find-file-noselect memory-file)
                       (goto-char (point-max))
                       (insert (concat "* Required Reading\n"
-                                     "- [[file:" review-filepath "][" pr-title " ]]\n"
-                                     "- [[id:A747158F-494D-479C-A962-2C1A93BF5E52][On Reviewing Code]]\n\n"
-                                     "* Conversation History\n"
-                                     "- [[id:" (format "%s" (plist-get conversation-initial-memory-result :id)) "][" (format "%s" (plist-get conversation-initial-memory-result :title)) "]]\n"
-                                     "- [[id:" (format "%s" (plist-get conversation-quiz-memory-result :id)) "][" (format "%s" (plist-get conversation-quiz-memory-result :title)) "]]\n\n"
-                                     "* TODO CR: " pr-title "\n"
-                                     "** TODO Initial Review\n"
-                                     "*** Goal\n"
-                                     "Develop an understanding of the changes presented in this PR\n"
-                                     "*** Prompt\n"
-                                     "ELI5 the changes being proposed by this PR. Give an initial code review of the change, and indicate if it should be approved or if Bobert thingks it needs refinement. Save this initial review to memory and link it here as an Outcome\n"
-                                     "*** Outcomes\n\n"
-                                     "** TODO Quiz!\n"
-                                     "*** Goal\n"
-                                     "Ensure Bobert and the human both really understand these changes\n"
-                                     "*** Prompt\n"
-                                     "Bobert should ensure the human understands the changes being made. This helps us both stay accountable. Bobert should ask the human a series of questions about the PR meant to gauge technical understanding, language concepts, security practices, etc. At the end of the quiz Bobert should grade the human and propose learning resources for any that was missed. Bobert should save a graded test to memory and link it here as an Outcome.\n"
-                                     "*** Outcomes\n\n"
-                                     ))
+                                     "- [[file:" review-filepath "][" pr-title" ]]\n"))
                       (save-buffer))
                     
                     ;; Populate review file with live GitHub content
@@ -231,7 +190,7 @@ Returns a plist with :id, :title, :file or nil on error."
 If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
       (if memory-id
-          (concat "* TODO [[id:" memory-id "][CR: " .title "]]\n"
+          (concat "* TODO [[id:" memory-id "][Code Review: " .title "]]\n"
                   "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
                   ":PROPERTIES:\n"
                   ":PR_URL: " .url "\n"
@@ -364,12 +323,8 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
     (my/code-reviews--log "INFO" "Cleared PR URL cache"))
 
   ;; Initialize
-;;  (my/code-reviews-start-timer)
-#+end_src
+;  (my/code-reviews-start-timer)
 
-* Reviewing PRs
-** pr-review package declaration
-#+begin_src emacs-lisp 
 ;; PR Review package setup
 (use-package pr-review
   :ensure nil
@@ -393,19 +348,12 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
       ;;(kbd "o") 'pr-review-open-file-at-point
       ;;(kbd "RET") 'pr-review-view-comment-at-point))
   )
-#+end_src
 
-** pr-review mode hook
+(defun pr-review-mode-init ()
+  "Function to run on pr-review mode init"
+  (my/toggle-olivetti))
+(add-hook 'pr-review-mode-hook #'pr-review-mode-init)
 
-#+begin_src emacs-lisp
-  (defun pr-review-mode-init ()
-    "Function to run on pr-review mode init"
-    (my/toggle-olivetti))
-  (add-hook 'pr-review-mode-hook #'pr-review-mode-init)
-#+end_src
-
-** Helper Functions For Getting To PRs
-#+begin_src emacs-lisp 
 (defun my/pr-review-from-org-entry ()
   "Start pr-review from current org entry's PR_URL property.
 Works from both org-mode buffers and org-agenda."
@@ -465,7 +413,3 @@ Works from both org-mode buffers and org-agenda."
 
 (add-to-list 'browse-url-default-handlers
              '(pr-review-url-parse . pr-review-open-url))
-#+end_src
-
-
-

@@ -132,7 +132,7 @@
              ((string-match-p "^\\*+" line)
               (push line outline-lines)
               (cookbook--log "Heading: %s" line))
-             ;; Org-roam ID links: expand
+             ;; Org-roam ID links: expand only level 3 recipe links (one level down)
              ((string-match "\\[\\[id:\\([A-F0-9-]+\\)\\]" line)
               (let* ((link-id (match-string 1 line))
                      (child-node (ignore-errors (org-roam-node-from-id link-id)))
@@ -142,10 +142,18 @@
                                    (when (re-search-backward "^\\*+" nil t)
                                      (+ 1 (length (match-string 0))))
                                    2)))  ; fallback = 2
-                (cookbook--log "Found id-link: %s -> file=%s" link-id child-file)
-                (if (and child-file (file-exists-p child-file))
-                    (push (cookbook--expand-node-content child-file link-id base-level id-table) outline-lines)
-                  (cookbook--log "WARNING: Could not expand ID=%s at line: %s" link-id line))))
+                (cookbook--log "Found id-link: %s -> file=%s, level=%d" link-id child-file base-level)
+                ;; Only expand links that are at level 3 (*** headings) - these are the actual recipes
+                ;; This limits expansion to "one level down" from the main cookbook structure
+                (if (= base-level 3)
+                    (progn
+                      (cookbook--log "Expanding level 3 recipe link: %s" link-id)
+                      (if (and child-file (file-exists-p child-file))
+                          (push (cookbook--expand-node-content child-file link-id base-level id-table) outline-lines)
+                        (cookbook--log "WARNING: Could not expand ID=%s at line: %s" link-id line)))
+                  (progn
+                    (cookbook--log "Skipping expansion of level %d link: %s" base-level link-id)
+                    (push line outline-lines)))))
              ;; Otherwise, copy as is
              (t
               (push line outline-lines)))

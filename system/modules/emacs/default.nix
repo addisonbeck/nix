@@ -31,6 +31,9 @@
       cp ${./gptel-file-tools.org} gptel-file-tools.org
       cp ${./gptel-execute-elisp-tools.org} gptel-execute-elisp-tools.org
       cp ${./gptel-shell-command-tools.org} gptel-shell-command-tools.org
+      cp ${./sending-stuff-to-my-kindle.org} sending-stuff-to-my-kindle.org
+      cp ${./org-present.org} org-present.org
+      cp ${./olivetti.org} olivetti.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
@@ -99,6 +102,7 @@ in {
     package = pkgs.emacsWithPackagesFromUsePackage {
       package = pkgs.emacs-unstable.override {
         withTreeSitter = true;
+        withImageMagick = true;
       };
       override = emacsPackagesOverlay;
       config = tangledInit;
@@ -191,6 +195,7 @@ in {
           pkgs.aspellDicts.en
           emacs-everywhere
           #pr-review
+          org-present
         ];
     };
   };

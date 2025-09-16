@@ -27,11 +27,21 @@ def write_file(path, content):
 def grep_id_file(roam_id):
     pat = f':ID: {roam_id}'
     logging.debug(f"Searching for roam node with id={roam_id}")
-    for org_file in glob(os.path.join(ROAM_DIR, "*.org")):
+    # Look specifically for the file where this is the main ID (appears early in file)
+    for org_file in sorted(glob(os.path.join(ROAM_DIR, "*.org"))):
+        with open(org_file, encoding="utf-8") as fh:
+            content = fh.read()
+            # Check if this ID appears in the first 300 characters (in the properties drawer)
+            if pat in content[:300]:
+                logging.info(f"Found node {roam_id} as primary ID at {org_file}")
+                return org_file
+    
+    # Fallback: look for the pattern anywhere in any file
+    for org_file in sorted(glob(os.path.join(ROAM_DIR, "*.org"))):
         with open(org_file, encoding="utf-8") as fh:
             content = fh.read()
             if pat in content:
-                logging.info(f"Found node {roam_id} at {org_file}")
+                logging.info(f"Found node {roam_id} at {org_file} (fallback)")
                 return org_file
     logging.warning(f"Node id={roam_id} not found in roam dir")
     return None
@@ -120,9 +130,15 @@ def build_org_cookbook(template_path):
         if link_match:
             roam_id = link_match.group(1)
             base_level = get_head_depth(line) or 1
-            # Expand the entire line (heading + link) with the recipe content
-            expanded = expand_link(roam_id, base_level)
-            results.append(expanded)
+            # Only expand links that are at level 3 (*** headings) - these are the actual recipes
+            # This limits expansion to "one level down" from the main cookbook structure
+            if base_level == 3:
+                logging.info(f"Expanding level 3 recipe link: {roam_id}")
+                expanded = expand_link(roam_id, base_level)
+                results.append(expanded)
+            else:
+                logging.info(f"Skipping expansion of level {base_level} link: {roam_id}")
+                results.append(line)
         else:
             results.append(line)
     logging.info("Finished building cookbook content with links expanded")

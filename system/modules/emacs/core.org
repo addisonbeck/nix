@@ -8,22 +8,23 @@
 ** TODO Set up org clock
 * Basic Settings
 #+begin_src emacs-lisp
-  ;; Disable backup files and configure indentation
-  (setq make-backup-files nil)
-  (setq-default indent-tabs-mode nil)
-  (electric-indent-mode 1)
-  (setq-default tab-width 2
-		indent-tabs-mode nil
-		tab-stop-list (number-sequence 2 120 2))
-  (setq confirm-kill-emacs nil)
-  (setq auto-save-default nil
-	create-lockfiles nil)
-  (setq select-enable-clipboard t)
-  (setq case-fold-search t)
-  (xterm-mouse-mode 1)
-  (setq-default fill-column 77)
-  (global-hl-line-mode -1)
-  (setq sentence-end-double-space nil)
+;; Disable backup files and configure indentation
+(setq make-backup-files nil)
+(setq-default indent-tabs-mode nil)
+(electric-indent-mode 1)
+(setq-default tab-width 2
+	indent-tabs-mode nil
+	tab-stop-list (number-sequence 2 120 2))
+(setq confirm-kill-emacs nil)
+(setq auto-save-default nil
+create-lockfiles nil)
+(setq select-enable-clipboard t)
+(setq case-fold-search t)
+(xterm-mouse-mode 1)
+(setq-default fill-column 77)
+(global-hl-line-mode -1)
+(setq sentence-end-double-space nil)
+(setq ring-bell-function 'ignore)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -405,36 +406,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
   :ensure nil 
   :config
   (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
-#+end_src
-
-* Olivetti
-#+begin_src emacs-lisp
-  (use-package olivetti
-    :config
-    ;; Use both margins and fringes for fancy "page" look
-    (setq olivetti-style 'fancy)
-
-    ;; Define custom fringe face that works with both light/dark themes
-    )
-
-  (defun my/toggle-olivetti ()
-    "Toggle olivetti mode with my preferred settings."
-    (interactive)
-    (if (bound-and-true-p olivetti-mode)
-	(olivetti-mode -1)
-      (progn
-	(olivetti-mode)
-	(olivetti-set-width 120))))
-
-  (defun my/update-olivetti-fringe-face ()
-    "Update olivetti-fringe face based on current theme."
-    (let ((bg-color (if (eq my/current-theme 'gruvbox-light-hard)
-			"#f0ead8"  
-		      "#161819"))) 
-      (set-face-attribute 'olivetti-fringe nil :background bg-color)))
-#+end_src
-
-(global-set-key (kbd "<f1>") 'my/toggle-olivetti)
 #+end_src
 
 * Elfeed Configuration
@@ -1555,26 +1526,44 @@ This cool and lame at the same time
     (projectile-switch-project)))
 #+end_src
 
+*** The Org Opener Thing
+#+begin_src emacs-lisp
+;; This makes org-open-at-point just reuse the current split
+;; by default it tries to intelligently create one
+;; (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+(defun org-force-open-current-window ()
+  "Opens the link at point in the current window."
+  (interactive)
+  (let ((org-link-frame-setup (quote ((file . find-file)))))
+    (org-open-at-point)))
+#+end_src
 *** Go Menu Definition
 
 #+begin_src emacs-lisp
-  (transient-define-prefix my/inbox-menu ()
-    "Transient menu for getting to my inboxes"
-    ["Submenu Actions"
-     ("i" "Inbox" my/open-inbox)
-     ("m" "Mobile Inbox" my/open-inbox-mobile)])
+(transient-define-prefix my/inbox-menu ()
+  "Transient menu for getting to my inboxes"
+  ["Submenu Actions"
+   ("i" "Inbox" my/open-inbox)
+   ("m" "Mobile Inbox" my/open-inbox-mobile)])
 
-  (transient-define-prefix my/go-menu ()
-    "Transient menu for navigating key files."
-    ["Go To"
-     ("i" "Inboxes" my/inbox-menu)
-     ("e" "Emacs Config" my/open-emacs-config)
-     ("g" "Follow link" org-open-at-point)
-     ("p" "Prompts" my/open-prompts)
-     ("b" "Budget" my/open-budget)
-     ("m" "Magit" my/projectile-magit-status)
-     ("r" "Elfreed" elfeed)
-     ("l" "Log" my/open-log)])
+;; Define a submenu for "Go To Link"
+(transient-define-prefix my/go-to-link-menu ()
+  "Go to link submenu."
+  ["Go To Link"
+   ("g" "Follow link in same window" org-open-at-point)
+   ("h" "Force open in current window" org-force-open-current-window)])
+
+(transient-define-prefix my/go-menu ()
+  "Transient menu for navigating key files."
+  ["Go To"
+   ("i" "Inboxes" my/inbox-menu)
+   ("e" "Emacs Config" my/open-emacs-config)
+   ("g" "Follow link" my/go-to-link-menu)
+   ("p" "Prompts" my/open-prompts)
+   ("b" "Budget" my/open-budget)
+   ("m" "Magit" my/projectile-magit-status)
+   ("r" "Elfreed" elfeed)
+   ("l" "Log" my/open-log)])
 #+end_src
 
 ** The "Insert" Menu
@@ -2001,87 +1990,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 #+begin_src emacs-lisp
   (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 #+end_src
-* Sending Stuff To My Kindle
-#+begin_src emacs-lisp
-(defun my/wikipedia-search (search-term)
-  "Prompt for SEARCH-TERM, select an article using consult, and return its URL."
-  (interactive "sSearch Wikipedia for: ")
-  (let* ((search-url (format "https://en.wikipedia.org/w/api.php?action=opensearch&search=%s&limit=15&namespace=0&format=json"
-                             (url-hexify-string search-term)))
-         (buffer (url-retrieve-synchronously search-url t t 5))
-         articles result-alist selected)
-    (unless buffer (error "Failed to fetch Wikipedia results"))
-    (with-current-buffer buffer
-      (goto-char (point-min))
-      (re-search-forward "^$" nil t) 
-      (let* ((json-array-type 'list)   
-             (json-object-type 'alist) 
-             (json-data (json-read))
-             (titles (nth 1 json-data))
-             (desc   (nth 2 json-data))
-             (urls   (nth 3 json-data)))
-        (setq articles
-              (cl-mapcar (lambda (title desc url)
-                           (cons (format "%s — %s" title url) url))
-                         titles desc urls))))
-    (kill-buffer buffer)
-    (setq result-alist articles)
-    (setq selected (consult--read (mapcar #'car result-alist)
-                                  :prompt "Pick article: "
-                                  :require-match t))
-    (let ((url (cdr (assoc selected result-alist))))
-      (when (called-interactively-p 'any)
-        (when url (browse-url url)))
-      url)))
-
-(defun my/wikipedia-send-to-kindle ()
-  "Prompt for a Wikipedia search, select an article, and send its URL to Kindle."
-  (interactive)
-  (let* ((search-term (read-string "Search Wikipedia for: "))
-         (url (my/wikipedia-search search-term))
-         (compilation-buffer-name-function
-          (lambda (_mode)
-            (format "*wikipedia-to-kindle-%s*" (or search-term "search")))))
-    (when url
-      (compile (format "sudo wikipedia-to-kindle-generate %s" (shell-quote-argument url)) t))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/cookbook-to-kindle-generate ()
-  "Generate and send the Org-roam cookbook EPUB to Kindle, running in a compilation buffer."
-  (interactive)
-  (let ((cmd "cookbook-to-kindle-generate"))
-    (let ((compilation-buffer-name-function (lambda (_mode) "*cookbook-to-kindle*")))
-      (compile (format "sudo %s" cmd) t))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/memory-to-kindle-send (&optional id)
-  "Prompt for an Org-roam node (or use current buffer) and send it to Kindle."
-  (interactive)
-  (let* ((node-id (or id
-                      (when (and (fboundp 'org-roam-id-at-point)
-                                 (org-roam-id-at-point))
-                        (org-roam-id-at-point))
-                      (when (fboundp 'org-roam-node-read)
-                        (org-roam-node-id (org-roam-node-read))))))
-    (unless node-id (user-error "No Org-roam ID available"))
-    (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
-      (compile (format "sudo memory-to-kindle-generate %s"
-                       (shell-quote-argument node-id))
-               t))))
-
-(defun my/current-org-file-to-kindle ()
-  "Send the current Org file to Kindle by path."
-  (interactive)
-  (unless buffer-file-name (user-error "Not visiting a file"))
-  (when (buffer-modified-p) (save-buffer))
-  (let ((compilation-buffer-name-function (lambda (_mode) "*memory-to-kindle*")))
-    (compile (format "sudo memory-to-kindle-generate %s"
-                     (shell-quote-argument (file-truename buffer-file-name)))
-             t)))
-#+end_src
-
 * Provide Init
 
 #+begin_src emacs-lisp

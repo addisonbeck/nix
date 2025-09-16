@@ -25,6 +25,9 @@
                   "gptel-file-tools.org"
                   "gptel-execute-elisp-tools.org"
                   "gptel-shell-command-tools.org"
+                  "sending-stuff-to-my-kindle.org"
+                  "org-present.org"
+                  "olivetti.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)

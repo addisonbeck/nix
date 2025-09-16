@@ -1,47 +1,76 @@
 #+TITLE: Theme Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle theme.el :results none
 
+* Iosevka
+
 #+begin_src emacs-lisp
-  (use-package gruvbox-theme
-    :ensure t
-    :config
-    (load-theme 'gruvbox-dark-hard t))
+(defvar my/variable-width-font "Iosevka Etoile"
+  "The font to use for variable-pitch (document) text.")
 
+(defvar my/fixed-width-font "Iosevka"
+  "The font to use for monospaced (fixed width) text.")
 
-  (defvar my/current-theme 'gruvbox-light-hard
-    "Current theme state, either 'gruvbox-dark-hard or 'gruvbox-light-hard.")
+(defun my/apply-default-fonts ()
+  "Apply my default fonts."
+  (set-face-attribute 'default nil :family my/fixed-width-font)
+  (set-face-attribute 'variable-pitch nil :family my/variable-width-font)
+  (set-face-attribute 'fixed-pitch nil :family my/fixed-width-font))
 
-  (defun my/toggle-theme ()
-    "Toggle between gruvbox light and dark themes."
-    (interactive)
-    ;; First disable all custom-enabled themes to start fresh
-    (mapc #'disable-theme custom-enabled-themes)
+;; Sets up the default font size.
+;; I feel like there should be a better way to do this.
+(add-to-list 'default-frame-alist '(font . "Iosevka-14"))
+(add-hook 'after-init-hook 'my/apply-default-fonts)
+#+end_src
 
-    ;; Toggle and load the appropriate theme
-    (if (eq my/current-theme 'gruvbox-light-hard)
-	(progn
-	  (setq my/current-theme 'gruvbox-dark-hard)
-	  (load-theme 'gruvbox-dark-hard t)
-	  (message "Switched to dark theme"))
-      (progn
-	(setq my/current-theme 'gruvbox-light-hard)
-	(load-theme 'gruvbox-light-hard t)
-	(message "Switched to light theme")))
+* Gruvbox
 
-    ;; Reapply all custom face settings
-    (my/apply-custom-faces))
+#+begin_src emacs-lisp
+(defvar my/current-theme 'gruvbox-dark-hard
+  "Current theme state, either gruvbox-dark-hard or gruvbox-light-hard.")
 
-  ;; Make sure custom faces are applied after any theme is loaded
-  (advice-add 'load-theme :after
-	      (lambda (&rest _) (my/apply-custom-faces)))
+(use-package gruvbox-theme
+  :ensure t
+  :config
+  (load-theme my/current-theme t))
 
-  (custom-set-faces
-					  ;`(org-warning ((t (:foreground ,(if (eq 'dark (frame-parameter nil 'background-mode))
-					  ;"#ffffff"  ; gruvbox-dark white
-					  ;"#000000")  ; gruvbox-light black
-					  ;))))
-   '(org-agenda-deadline-face ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-upcoming-deadline ((t (:inherit org-warning :foreground nil :background nil :weight bold))))
-   '(org-scheduled-previously ((t (:inherit org-warning :foreground nil :background nil :weight normal))))
-   )
+(defun my/toggle-theme ()
+  "Toggle between gruvbox light and dark themes."
+  (interactive)
+  (mapc #'disable-theme custom-enabled-themes)
+  (if (eq my/current-theme 'gruvbox-light-hard)
+    (progn
+      (setq my/current-theme 'gruvbox-dark-hard)
+      (load-theme 'gruvbox-dark-hard t)
+      (message "Switched to dark theme"))
+    (progn
+      (setq my/current-theme 'gruvbox-light-hard)
+      (load-theme 'gruvbox-light-hard t)
+      (message "Switched to light theme"))))
+
+;; Set the fringe for olivetti mode correctly
+(defun my/update-olivetti-fringe-face ()
+  "Update olivetti-fringe face based on current theme."
+  (let ((bg-color (if (eq my/current-theme 'gruvbox-light-hard)
+                      "#f0ead8"  
+                    "#161819"))
+        (fg-color (if (eq my/current-theme 'gruvbox-light-hard)
+                      "#000000"  ; black for light theme
+                    "#ffffff"))) ; white for dark theme
+    (set-face-attribute 'olivetti-fringe nil :background bg-color)
+    (set-face-attribute 'avy-lead-face nil 
+                        :background bg-color
+                        :foreground fg-color)
+    (set-face-attribute 'avy-lead-face-0 nil 
+                        :background bg-color
+                        :foreground fg-color)
+    (set-face-attribute 'avy-lead-face-1 nil 
+                        :background bg-color
+                        :foreground fg-color)
+    (set-face-attribute 'avy-lead-face-2 nil 
+                        :background bg-color
+                        :foreground fg-color)
+    ))
+(advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
+(advice-add 'my/toggle-olivetti :before 'my/update-olivetti-fringe-face)
+(advice-add 'my/enable-olivetti :before 'my/update-olivetti-fringe-face)
 #+end_src

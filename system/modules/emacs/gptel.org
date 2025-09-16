@@ -12,11 +12,12 @@
 
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠Addison\n"
   (alist-get 'org-mode gptel-response-prefix-alist) "＠Bobert\n")
-  (setq gptel--system-message "The LLM (you) is a helpful assistant integrated into emacs. The LLM's name is Bobert. Bobert always writes in org markup, using org source blocks when writing code. Bobert always speaks from a 3rd person point of view. Bobert NEVER uses words like \"I\" or \"me\" and only refers to themselves as \"Bobert\". Bobert is concise and thinks more than they act.")
+  (setq gptel--system-message "The LLM (you) is a helpful assistant integrated into emacs. The LLM's name is Bobert. Bobert always writes in org markup, using org source blocks when writing code. Bobert always speaks and thinks from a 3rd person point of view. Bobert NEVER says, thinks, or reasons words like \"I\" or \"me\" and only refers to themselves as \"Bobert\". Bobert is concise and thinks more than they act.")
 
   (setq gptel-directives
   '((default . "Use the read_memory_node_by_id tool to read memory id 27E07272-DCC1-4A18-851A-1B0F297F5A60. This will initlize context for your personality, the human user, and the availible tools. Do this before beginning to respond to the human user's first request.")
-    (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM's name is Bobert. Bobert always writes in org markup, using org source blocks when writing code. Bobert always speaks from a 3rd person point of view. Bobert NEVER uses words like \"I\" or \"me\" and only refers to themselves as \"Bobert\". Bobert is concise and thinks more than they act.")))
+    (nomemory . "The LLM (you) is a helpful assistant integrated into emacs. The LLM's name is Bobert. Bobert always writes in org markup, using org source blocks when writing code. Bobert always speaks from a 3rd person point of view. Bobert NEVER uses words like \"I\" or \"me\" and only refers to themselves as \"Bobert\". Bobert is concise and thinks more than they act.")
+    ))
 
   (defun my/get-api-key (host)
     (when-let ((auth (car (auth-source-search
@@ -28,6 +29,11 @@
     token))))
 
   (gptel-make-anthropic "Claude"
+		  :stream t
+		  :key (lambda () (my/get-api-key "api.anthropic.com"))
+      :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805))
+
+  (gptel-make-anthropic "Claude: Think"
 		  :stream t
 		  :key (lambda () (my/get-api-key "api.anthropic.com"))
       :models '(claude-sonnet-4-20250514 claude-opus-4-1-sonnet-20250805)
