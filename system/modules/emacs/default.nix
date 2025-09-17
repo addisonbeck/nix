@@ -196,6 +196,7 @@ in {
           emacs-everywhere
           #pr-review
           org-present
+          org-inline-anim
         ];
     };
   };

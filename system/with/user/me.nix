@@ -96,6 +96,9 @@
       ../../modules/secrets/authinfo.nix
       ../../modules/secrets/jira-api-token.nix
       ./with/program/gimp.nix
+      # This is actually just chrome beacuse chromium doensn't build on nix darwin
+      # I need chrome installed via nix for mermaid's cli
+      ./with/program/ungoogled-chromium.nix
     ];
 
     #sops.gnupg.sshKeyPaths = [ "/Users/me/.ssh/primary-ssh-key" ];
