@@ -154,8 +154,79 @@
 
 (defun my/org-present-restore-modeline ()
   "Restore the original modeline after org-present."
-  (setq mode-line-format my/org-present-original-modeline)) 
+  (setq mode-line-format my/org-present-original-modeline))
+
+(defun my/org-present-parse-time-string (time-str)
+  "Parse a time string like '2m', '30s', '1.5m' and return minutes as float."
+  (when time-str
+    (cond
+     ((string-match "\\([0-9.]+\\)m" time-str)
+      (string-to-number (match-string 1 time-str)))
+     ((string-match "\\([0-9]+\\)s" time-str)
+      (/ (string-to-number (match-string 1 time-str)) 60.0))
+     (t (string-to-number time-str)))))
+
+(defun my/org-present-calculate-total-time ()
+  "Calculate total presentation time by summing all TARGET_TIME properties."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (let ((total-minutes 0.0)
+          (slide-count 0))
+      ;; Iterate through all headings
+      (while (re-search-forward "^\\*+ " nil t)
+        (let ((target-time (org-entry-get (point) "TARGET_TIME")))
+          (when target-time
+            (let ((minutes (my/org-present-parse-time-string target-time)))
+              (when minutes
+                (setq total-minutes (+ total-minutes minutes))
+                (setq slide-count (1+ slide-count)))))))
+      ;; Format and display result
+      (let* ((total-seconds (* total-minutes 60))
+             (hours (floor (/ total-seconds 3600)))
+             (minutes (floor (/ (mod total-seconds 3600) 60)))
+             (seconds (floor (mod total-seconds 60))))
+        (if (> hours 0)
+            (message "Total presentation time: %dh %dm %ds (%d slides with timing)"
+                     hours minutes seconds slide-count)
+          (message "Total presentation time: %dm %ds (%d slides with timing)"
+                   minutes seconds slide-count))
+        ;; Return the total for programmatic use
+        total-minutes)))) 
 #+end_src
+
+* Playing Audio
+#+begin_src elisp
+
+(defvar presentation-audio-process nil
+  "Stores the current audio process for stopping.")
+
+;; Route audio to both speakers and a virtual device
+(defun setup-presentation-audio-mac ()
+  "Setup audio routing for Mac presentations."
+  (interactive)
+  (shell-command "SwitchAudioSource -s 'BlackHole 2ch'")
+  (message "Audio routed for presentation"))
+
+(defun my/toggle-presentation-song ()
+  "Toggle presentation song on/off."
+  (interactive)
+  ;(setup-presentation-audio-mac)
+  (if (and presentation-audio-process 
+           (process-live-p presentation-audio-process))
+      (progn
+        (delete-process presentation-audio-process)
+        (message "Audio stopped"))
+    (progn
+      (setq presentation-audio-process
+            (start-process "presentation-audio" nil "ffplay" 
+                           "-nodisp" "-autoexit" 
+                           "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/audio/mario-sunshine-secret-course.mp3"))
+      (message "Audio started"))))
+#+end_src
+
+#+RESULTS:
+: my/toggle-presentation-song
 
 * Mode Config
 #+begin_src emacs-lisp
@@ -169,6 +240,7 @@
   (evil-define-key 'normal org-present-mode-keymap (kbd "3") 'org-present-hide-cursor)
   (evil-define-key 'normal org-present-mode-keymap (kbd "4") 'org-present-show-cursor)
   (evil-define-key 'normal org-present-mode-keymap (kbd "n") 'my/org-present-toggle-speaker-notes)
+  (evil-define-key 'normal org-present-mode-keymap (kbd "p") 'my/toggle-presentation-song)
   ;; evil-normal-state is required to get these keybindings to set for some reason.
   (evil-normal-state))
 

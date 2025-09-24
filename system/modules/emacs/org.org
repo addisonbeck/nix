@@ -664,6 +664,9 @@ Don't show DONE items in the agenda
 		(:name "Easy"
         :and (:deadline today :tag "easy")
         :and (:deadline past :tag "easy"))
+		(:name "Contacts"
+        :and (:deadline today :category "contacts")
+        :and (:deadline past :category "contacts"))
 		(:name "Cleaning"
         :and (:deadline today :tag "cleaning")
         :and (:deadline past :tag "cleaning"))
@@ -1122,3 +1125,71 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (transient-append-suffix 'my/go-menu "l"
     '("a" "Agenda" my/org-agenda-daily-dashboard)))
 #+end_src
+
+* Converting Logs To Roam
+#+begin_src emacs-lisp
+(defun convert-log-heading-to-roam-node ()
+  "Convert current org heading to an org-roam node file."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((heading (org-get-heading t t t t))
+           (tags (org-get-tags))
+           ;; Better content extraction
+           (content (save-excursion
+                     (org-back-to-heading t)
+                     (let ((start (progn (forward-line 1) (point)))
+                           (end (progn (org-end-of-subtree t t) (point))))
+                       (buffer-substring-no-properties start end))))
+           ;; Extract date and time from heading (time optional)
+           (date-time-match (string-match "\\[\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\) \\w+\\(?: \\([0-9]\\{2\\}:[0-9]\\{2\\}\\)\\)?\\]" heading))
+           (date-str (when date-time-match (match-string 1 heading)))
+           (time-str (if date-time-match 
+                        (or (match-string 2 heading)  ; Use time from heading if present
+                            (format-time-string "%H:%M"))  ; Otherwise use current time
+                      nil))
+           (time-formatted (when time-str (replace-regexp-in-string ":" "-" time-str)))
+           (filename (when (and date-str time-str) 
+                       (concat date-str "-" time-formatted "-00.log.org")))
+           (title (concat "Log Date " date-str))
+           (id (org-id-new))
+           (timestamp (format-time-string "<%Y-%m-%d %H:%M>")))
+      
+      ;; Debug output
+      (message "DEBUG: heading = %s" heading)
+      (message "DEBUG: date-time-match = %s" date-time-match)
+      (message "DEBUG: date-str = %s" date-str)
+      (message "DEBUG: time-str = %s" time-str)
+      (message "DEBUG: org-roam-directory = %s" (bound-and-true-p org-roam-directory))
+      
+      (cond
+       ((not date-time-match)
+        (message "ERROR: No date-time found in heading. Expected format: [YYYY-MM-DD DDD HH:MM]"))
+       ((not (bound-and-true-p org-roam-directory))
+        (message "ERROR: org-roam-directory not set"))
+       ((and date-str filename)
+        ;; Create new file
+        (let ((filepath (expand-file-name filename org-roam-directory)))
+          (message "Creating file: %s" filepath)
+          (with-temp-file filepath
+            (insert ":PROPERTIES:\n")
+            (insert (format ":ID: %s\n" id))
+            (insert ":ROAM_TAGS: episodic log\n")
+            (insert ":ROAM_ALIASES: nil\n")
+            (insert (format ":CREATED: %s\n" timestamp))
+            (insert (format ":LAST_MODIFIED: %s\n" timestamp))
+            (insert ":END:\n")
+            (insert (format "#+TITLE: %s\n\n" title))
+            (insert (string-trim content)))
+          
+          ;; Delete original heading
+          (org-back-to-heading t)
+          (org-cut-subtree)
+          
+          ;; Open new file
+          (find-file filepath)
+          (message "Created org-roam node: %s" filename)))
+       (t
+        (message "ERROR: Unknown issue - date-str=%s, filename=%s" date-str filename))))))
+#+end_src
+
