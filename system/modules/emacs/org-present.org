@@ -98,6 +98,12 @@
 (defvar my/org-present-speaker-notes ""
   "Current slide's speaker notes for display in modeline.")
 
+(defvar my/org-present-notes-window nil
+  "Window used to display persistent speaker notes.")
+
+(defvar my/org-present-notes-buffer nil
+  "Buffer used to display persistent speaker notes.")
+
 (defun my/org-present-get-speaker-notes ()
   "Extract speaker notes from current heading's SPEAKER_NOTES property or document properties."
   (save-excursion
@@ -123,17 +129,11 @@
   "Face for speaker notes content.")
 
 (defun my/org-present-update-speaker-notes ()
-  "Update speaker notes and display in echo area with colors."
+  "Update speaker notes and display in fake echo area."
   (let ((notes (let ((inhibit-message t)) ; This suppresses error messages
                  (my/org-present-get-speaker-notes))))
-    (if (and notes (not (string-empty-p notes)))
-        (progn
-          (setq my/org-present-speaker-notes notes)
-          (message "%s %s"
-                   (propertize "Speaker notes: " 'face '(:inherit (shadow bold)))
-                   (propertize notes 'face '(:inherit shadow))))
-      (setq my/org-present-speaker-notes "")
-      (message ""))))
+    (setq my/org-present-speaker-notes (or notes ""))
+    (my/org-present-update-fake-echo-area my/org-present-speaker-notes)))
 
 (defun my/org-present-setup-modeline ()
   "Set up a minimal custom modeline for org-present with speaker notes."
@@ -272,8 +272,14 @@
   (org-show-children)
   ;; Start gifs
   (org-inline-anim-animate-all)
-  ;; Update speaker notes in echo area
-  (my/org-present-update-speaker-notes)
+  ;; Update speaker notes and resize window only on slide changes
+  (let ((notes (let ((inhibit-message t))
+                 (my/org-present-get-speaker-notes))))
+    (setq my/org-present-speaker-notes (or notes ""))
+    ;; Resize the window based on new content
+    (my/org-present-resize-notes-window my/org-present-speaker-notes)
+    ;; Update the display
+    (my/org-present-update-fake-echo-area my/org-present-speaker-notes))
   ;; Auto-start timer for this slide if TARGET_TIME exists
   (my/org-present-start-slide-countdown))
 (add-hook 'org-present-after-navigate-functions 'my/org-present-prepare-slide)
@@ -287,6 +293,13 @@
 (defun my/org-present-start ()
   (setq org-present-hide-stars-in-headings nil)
   (setq org-present-startup-folded nil)
+  (setq my/org-present-notes-visible t)
+  ;; Prevent real echo area from expanding and interfering with fake echo area
+  (setq-local resize-mini-windows nil)  ; Don't resize minibuffer
+  (setq-local max-mini-window-height 1)  ; Limit to 1 line
+  (my/org-present-create-fake-echo-area)
+  ;; Add hooks to clean up fake echo area when transient menus interfere
+  (add-hook 'transient-exit-hook #'my/org-present-cleanup-fake-echo-area nil t)
   (my/org-present-close-all-drawers)
   ;(setq org-fontify-whole-heading-line t
   ;    org-fontify-done-headline t)
@@ -331,6 +344,9 @@
   (my/org-present-stop-countdown)
   (org-present-show-cursor)
   (my/org-present-restore-modeline)
+  (my/org-present-destroy-fake-echo-area)
+  ;; Clean up transient hooks
+  (remove-hook 'transient-exit-hook #'my/org-present-cleanup-fake-echo-area t)
   (setq-local face-remapping-alist '((default variable-pitch default)))
   (setq-local org-image-max-width 120)
   (org-redisplay-inline-images)
@@ -344,13 +360,119 @@
 (add-hook 'org-present-mode-hook 'my/org-present-start)
 (add-hook 'org-present-mode-quit-hook 'my/org-present-end)
 
+(defvar my/org-present-notes-window nil
+  "Window used to display persistent speaker notes.")
+
+(defvar my/org-present-notes-buffer nil
+  "Buffer used to display persistent speaker notes.")
+
+(defvar my/org-present-notes-visible t
+  "Whether speaker notes should be displayed.")
+
+(defun my/org-present-cleanup-fake-echo-area ()
+  "Clean up fake echo area after transient menu interference."
+  (when (bound-and-true-p org-present-mode)
+    ;; Refresh the fake echo area with current speaker notes
+    (my/org-present-update-fake-echo-area my/org-present-speaker-notes)))
+
+(defun my/org-present-create-fake-echo-area ()
+  "Create a fake echo area window for persistent speaker notes."
+  (when (not my/org-present-notes-buffer)
+    ;; Create the buffer
+    (setq my/org-present-notes-buffer (get-buffer-create " *Org Present Notes*"))
+    (with-current-buffer my/org-present-notes-buffer
+      (setq buffer-read-only t)
+      (setq mode-line-format nil)  ; No mode line
+      (setq header-line-format nil) ; No header line
+      (setq cursor-type nil)       ; No cursor
+      ;; Style it like the echo area
+      (face-remap-add-relative 'default :inherit 'minibuffer-prompt)))
+  
+  (when (not (and my/org-present-notes-window 
+                  (window-live-p my/org-present-notes-window)))
+    ;; Create window at bottom, starting small (will resize dynamically)
+    (setq my/org-present-notes-window
+          (split-window (frame-root-window) -1 'below))
+    (set-window-buffer my/org-present-notes-window my/org-present-notes-buffer)
+    (set-window-dedicated-p my/org-present-notes-window t)
+    ;; Prevent it from being selected during window cycling
+    (set-window-parameter my/org-present-notes-window 'no-other-window t)))
+
+(defun my/org-present-destroy-fake-echo-area ()
+  "Clean up the fake echo area window and buffer."
+  (when (and my/org-present-notes-window 
+             (window-live-p my/org-present-notes-window))
+    (delete-window my/org-present-notes-window))
+  (setq my/org-present-notes-window nil)
+  (when my/org-present-notes-buffer
+    (kill-buffer my/org-present-notes-buffer))
+  (setq my/org-present-notes-buffer nil))
+
+(defun my/org-present-calculate-window-height (text)
+  "Calculate the needed window height for TEXT."
+  (if (or (not text) (string-empty-p text))
+      1  ; Minimum 1 line for empty notes
+    (let* ((window-width (if (and my/org-present-notes-window 
+                                  (window-live-p my/org-present-notes-window))
+                             (window-width my/org-present-notes-window)
+                           80)) ; Fallback width
+           (formatted-text (format "%s%s"
+                                  "Speaker notes: " ; Don't count face properties for length
+                                  text))
+           ;; Count explicit newlines + word wrapping
+           (explicit-lines (1+ (length (split-string text "\n" t))))
+           (text-length (length formatted-text))
+           (wrapped-lines (ceiling (/ (float text-length) window-width)))
+           (total-lines (max explicit-lines wrapped-lines)))
+      ;; Cap at reasonable limits: minimum 1, maximum 6
+      (min 6 (max 1 total-lines)))))
+
+(defun my/org-present-resize-notes-window (text)
+  "Resize the notes window by recreating it with the correct size."
+  (when (and my/org-present-notes-window 
+             (window-live-p my/org-present-notes-window))
+    (let* ((needed-height (my/org-present-calculate-window-height text))
+           (current-height (window-height my/org-present-notes-window))
+           ;; Check available space - make sure we don't take more than 1/3 of frame
+           (frame-height (frame-height))
+           (max-notes-height (max 1 (min 6 (/ frame-height 3))))
+           (final-height (min needed-height max-notes-height)))
+      (when (and (not (= final-height current-height))
+                 (> final-height 0)  ; Sanity check
+                 (>= (abs (- final-height current-height)) 1))
+        (condition-case err
+            ;; Always recreate the window with the correct size
+            (let ((old-buffer my/org-present-notes-buffer))
+              (delete-window my/org-present-notes-window)
+              (setq my/org-present-notes-window
+                    (split-window (frame-root-window) (- final-height) 'below))
+              (set-window-buffer my/org-present-notes-window old-buffer)
+              (set-window-dedicated-p my/org-present-notes-window t)
+              (set-window-parameter my/org-present-notes-window 'no-other-window t))
+          (error
+           ;; If recreation fails, just continue silently
+           nil))))))
+
+(defun my/org-present-update-fake-echo-area (text)
+  "Update the fake echo area with TEXT (content only, no resizing)."
+  (when (and my/org-present-notes-buffer 
+             (buffer-live-p my/org-present-notes-buffer)
+             my/org-present-notes-visible)
+    ;; Only update content, resizing happens separately on slide changes
+    (with-current-buffer my/org-present-notes-buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (when (and text (not (string-empty-p text)))
+          (insert (format "%s%s"
+                         (propertize "Speaker notes: " 'face '(:inherit (shadow bold)))
+                         (propertize text 'face '(:inherit shadow)))))))))
+
 (defun my/org-present-toggle-speaker-notes ()
-  "Toggle speaker notes display in echo area."
+  "Toggle speaker notes display in fake echo area."
   (interactive)
-  (if (string-empty-p my/org-present-speaker-notes)
-      (my/org-present-update-speaker-notes)
-    (progn
-      (setq my/org-present-speaker-notes "")
-      (message ""))))
+  (setq my/org-present-notes-visible (not my/org-present-notes-visible))
+  (if my/org-present-notes-visible
+      (my/org-present-update-fake-echo-area my/org-present-speaker-notes)
+    (my/org-present-update-fake-echo-area "")))
 #+end_src
 
