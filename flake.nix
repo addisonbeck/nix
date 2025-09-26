@@ -94,6 +94,13 @@
           sops-nix.nixosModules.default
         ];
       };
+      vm = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = {
+          inherit inputs outputs nixpkgs rootPath conf;
+        };
+        modules = [./system/vm.nix];
+      };
     };
     darwinConfigurations = {
       bw = nix-darwin.lib.darwinSystem {
