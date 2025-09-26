@@ -386,7 +386,7 @@
       (setq header-line-format nil) ; No header line
       (setq cursor-type nil)       ; No cursor
       ;; Style it like the echo area
-      (face-remap-add-relative 'default :inherit 'minibuffer-prompt)))
+      (face-remap-add-relative 'default :inherit 'shadow)))
   
   (when (not (and my/org-present-notes-window 
                   (window-live-p my/org-present-notes-window)))
@@ -464,7 +464,7 @@
         (erase-buffer)
         (when (and text (not (string-empty-p text)))
           (insert (format "%s%s"
-                         (propertize "Speaker notes: " 'face '(:inherit (shadow bold)))
+                         (propertize "Speaker notes: " 'face '(:inherit shadow))
                          (propertize text 'face '(:inherit shadow)))))))))
 
 (defun my/org-present-toggle-speaker-notes ()
