@@ -35,8 +35,7 @@
     ];
   };
 
-  # Use mainline kernel instead of rpi4 kernel for better stability
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Mainline kernel is provided by sd-image-aarch64-new-kernel.nix module
 
   nixpkgs.crossSystem = {
     system = "aarch64-linux";
@@ -44,25 +43,8 @@
   };
 
   hardware.enableRedistributableFirmware = true;
-  boot.kernelParams = ["console=ttyS0,115200n8" "console=ttyAMA0,115200n8" "console=tty0"];
-
-  # GPU memory split for 2GB Pi 4 (reduces RAM pressure)
-  boot.loader.raspberryPi = {
-    enable = true;
-    version = 4;
-    firmwareConfig = ''
-      gpu_mem=16
-      dtparam=audio=on
-      # Reduce memory pressure on 2GB Pi
-      disable_camera_led=1
-      camera_auto_detect=0
-      display_auto_detect=0
-    '';
-  };
-
-  # Add more boot options for stability
-  boot.loader.grub.enable = false;
-  boot.loader.generic-extlinux-compatible.enable = true;
+  
+  # Boot loader configuration and console params already provided by base SD module
   boot.initrd.availableKernelModules = lib.mkForce [
     "mmc_block"
     "sdhci"
