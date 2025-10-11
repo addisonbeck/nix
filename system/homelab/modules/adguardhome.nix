@@ -4,6 +4,11 @@
   lib,
   ...
 }: let
+  customBlocklist = pkgs.writeText "custom-blocklist.txt" ''
+    ||characterai.io^
+    ||character.ai^
+  '';
+
   adguard-exporter = pkgs.buildGoModule rec {
     pname = "adguard-exporter";
     version = "1.2.0";
@@ -147,6 +152,12 @@ in {
             url = "https://nsfw.oisd.nl";
             name = "OISD NSFW";
             id = 5;
+          }
+          {
+            enabled = true;
+            url = "file://${customBlocklist}"; 
+            name = "Custom Local Blocklist";
+            id = 6; 
           }
         ];
         stats = {
