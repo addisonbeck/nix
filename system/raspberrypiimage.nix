@@ -35,7 +35,8 @@
     ];
   };
 
-  # Mainline kernel is provided by sd-image-aarch64-new-kernel.nix module
+  # Use stable kernel to avoid ZFS compatibility issues
+  boot.kernelPackages = pkgs.linuxPackages_6_6;
 
   nixpkgs.crossSystem = {
     system = "aarch64-linux";
