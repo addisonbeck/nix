@@ -82,7 +82,9 @@
         };
         modules = [
           ./system/raspberrypiimage.nix
-          "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel.nix"
+          "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+          # Use older kernel to avoid ZFS compatibility issues
+          { boot.kernelPackages = pkgs.linuxPackages_6_6; }
         ];
       };
       homelab = nixpkgs.lib.nixosSystem {
