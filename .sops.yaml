@@ -2,9 +2,11 @@ keys:
   - &admin_gpg F21DD334920ECB120F786117366AB9D6FB8574D2
   - &admin_secondary_gpg 22D63219CA650B662B7A1B3C7CD5BEC5074C4BB2
   - &admin_tertiary_gpg 3E936A82284D97AF53279821567BD1FB14C80DA9
-  - &host_homelab age129slta36phpnzzcwl806skp2aqnr9tdtvs8mgjza2ewxhljswvxsewrtm5
+  - &host_homelab age1hzjpuqzdx2l0hp407hkhd74rfysepf04v8g2d7ajzw8nxujzycuq076mc2
   - &host_bw age12708jpycle7nwaenauqgqfum2vgnuj9zr84ngukpv0thrvwm99fq8cw4dn
   - &user_me_bw age1ruhpue5f7trlseng7ltmfl7mw678alufawpw5cyl6ehzpfxfy3xqnxf937
+  # To convert ssh to age:
+  # $ nix-shell -p ssh-to-age --run "ssh-to-age < ~/.ssh/id_ed25519.pub"
 
 creation_rules:
   # User
