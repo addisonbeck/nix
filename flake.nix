@@ -82,7 +82,7 @@
         };
         modules = [
           ./system/raspberrypiimage.nix
-          "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+          "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64-new-kernel.nix"
         ];
       };
       homelab = nixpkgs.lib.nixosSystem {
