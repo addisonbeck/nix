@@ -50,7 +50,7 @@
     "mmc_block"
     "sdhci"
     "sdhci_pci" 
-    "sdhci_bcm2835"
+    "sdhci_iproc"    # Mainline kernel uses sdhci_iproc for Pi SD
     "bcm2835_dma"
     "i2c_bcm2835"
     "virtio_net"
