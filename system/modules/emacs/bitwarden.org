@@ -108,3 +108,92 @@
              '("bitwarden/clients: classic bit build web" . bitwarden/web-classic-build-bit))
 #+end_src
 
+
+** Serving Web 
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-serve-web-commercial "npx nx serve web --configuration=commercial-dev"
+  "Command to build the Bitwarden WEB locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-serve-web-web-commercial
+      "npx nx serve web --configuration=commercial-dev")
+
+(defun bitwarden/serve-web-commercial ()
+  "Select a project with Projectile and run `bitwarden-clients-serve-web-commercial` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-serve-web-commercial))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx serve web commercial" . bitwarden/serve-web-commercial))
+#+end_src
+
+** Serving Browser
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-serve-browser "npx nx serve browser"
+  "Command to build the Bitwarden BROWSERR locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-serve-web-web-commercial
+      "npx nx serve browser")
+
+(defun bitwarden/serve-browser ()
+  "Select a project with Projectile and run `bitwarden-clients-serve-browser` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-serve-browser))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx serve browser" . bitwarden/serve-browser))
+#+end_src
+
+** Testing Browser
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-test-browser "npx nx test browser"
+  "Command to build the Bitwarden BROWSERR locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-test-web-web-commercial
+      "npx nx test browser")
+
+(defun bitwarden/test-browser ()
+  "Select a project with Projectile and run `bitwarden-clients-test-browser` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-test-browser))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx test browser" . bitwarden/test-browser))
+#+end_src
+
+** Linting Browser
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-lint-browser "npx nx lint browser"
+  "Command to build the Bitwarden BROWSERR locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-lint-web-web-commercial
+      "npx nx lint browser")
+
+(defun bitwarden/lint-browser ()
+  "Select a project with Projectile and run `bitwarden-clients-lint-browser` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-lint-browser))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx lint browser" . bitwarden/lint-browser))
+#+end_src
+** Building Browser
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-build-browser "npx nx build browser"
+  "Command to build the Bitwarden BROWSERR locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-build-web-web-commercial
+      "npx nx build browser")
+
+(defun bitwarden/build-browser ()
+  "Select a project with Projectile and run `bitwarden-clients-build-browser` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-browser))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build browser" . bitwarden/build-browser))
+#+end_src

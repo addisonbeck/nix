@@ -1,0 +1,12 @@
+#+TITLE: Autosave Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle autosave.el :results none
+
+#+begin_src emacs-lisp
+(global-auto-revert-mode 1)      ; Auto-reload changed files
+(auto-save-visited-mode 1)       ; Auto-save files periodically
+(setq auto-save-visited-interval 5)  ; Save every 5 seconds
+(setq auto-revert-interval 2)        ; Check for changes every 2 seconds
+(setq auto-revert-verbose nil)       ; Less noise in messages
+#+end_src
+
+#+RESULTS:

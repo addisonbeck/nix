@@ -1039,6 +1039,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (interactive)
     "Sets all my org mode specific keybindings"
     ;; Using local-set-key ensures the binding takes precedence in the current buffer
+    (local-set-key (kbd "s") #'avy-goto-char-timer)
     (local-set-key (kbd "C-b") #'my/create-menu)
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
@@ -1047,6 +1048,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 
     ;; Also set the evil motion state map as a backup approach
     (evil-define-key '(normal visual motion) org-agenda-mode-map
+		     (kbd "s") #'avy-goto-char-timer
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-s") #'my/search-menu
 		     (kbd "C-x") #'my/execute-menu

@@ -74,6 +74,7 @@
         };
         modules = [./system/minecraft.nix];
       };
+      # nix build .#nixosConfigurations.raspberrypiimage.config.system.build.sdImage --system aarch64-linux
       raspberrypiimage = nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
         specialArgs = {

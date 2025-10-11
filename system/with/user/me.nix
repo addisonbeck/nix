@@ -116,6 +116,7 @@
       pkgs.uv
       pkgs.wget
       pkgs.ssh-to-age
+      pkgs.rustup
     ];
 
     home.sessionPath = [];

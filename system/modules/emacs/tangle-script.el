@@ -28,6 +28,8 @@
                   "sending-stuff-to-my-kindle.org"
                   "org-present.org"
                   "olivetti.org"
+                  "autosave.org"
+                  "spellcheck.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)

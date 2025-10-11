@@ -1,0 +1,31 @@
+name: Build NixOS Raspberry Pi Image
+
+on:
+  workflow_dispatch:  # Manual trigger
+  push:
+    branches: [ main ]
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        
+      - name: Install Nix
+        uses: cachix/install-nix-action@v23
+        with:
+          extra_nix_config: |
+            extra-platforms = aarch64-linux
+            
+      - name: Build SD Image
+        run: |
+          nix build .#nixosConfigurations.raspberrypiimage.config.system.build.sdImage
+          
+      - name: Upload Image Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nixos-sd-image
+          path: result/sd-image/*.img*

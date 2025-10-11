@@ -385,29 +385,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 	  which-key-side-window-max-height 0.25))
 #+end_src
 
-* Spell Checking
-
-#+begin_src emacs-lisp 
-(use-package flyspell
-  :ensure nil 
-  :config
-  (setq ispell-program-name "aspell"))
-
-(setq ispell-personal-dictionary "~/nix/system/with/user/with/program/emacs-dictionary.pws")
-
-;(add-hook 'text-mode-hook
-          ;(lambda ()
-            ;(when (and buffer-file-name  ; Ensure it's a real file
-                       ;(not (string-match-p "org-agenda-files" buffer-file-name))
-                       ;(not (derived-mode-p 'org-agenda-mode)))  ; Exclude agenda buffers
-              ;(flyspell-mode 1))))
-
-(use-package flyspell-correct
-  :ensure nil 
-  :config
-  (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
-#+end_src
-
 * Elfeed Configuration
 #+begin_src emacs-lisp
   (use-package elfeed
@@ -584,9 +561,9 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp
 (defun my/projectile-run-command-in-selected-project (command)
   "Use `projectile-switch-project` to select a project, then run COMMAND
-in that project's root using `compile` in a project-named buffer.
-Interactively, prompt for COMMAND using `compile-history`."
-  (interactive (list (read-string "Command: " nil 'compile-history)))
+in that project's root using `vterm` in a project-named buffer.
+Interactively, prompt for COMMAND using `shell-command-history`."
+  (interactive (list (read-string "Command: " nil 'shell-command-history)))
   (require 'projectile)
   (let* ((cmd command)
          (projectile-switch-project-action
@@ -594,9 +571,10 @@ Interactively, prompt for COMMAND using `compile-history`."
             (let* ((root (projectile-project-root))
                    (default-directory root)
                    (proj (file-name-nondirectory (directory-file-name root)))
-                   (compilation-buffer-name-function
-                    (lambda (_mode) (format "*compile-%s-%s*" proj command))))
-              (compile cmd t)))))
+                   (buffer-name (format "*async-%s-%s*" proj command)))
+              (vterm buffer-name)
+              (vterm-send-string cmd)
+              (vterm-send-return)))))
     (projectile-switch-project)))
 #+end_src
 

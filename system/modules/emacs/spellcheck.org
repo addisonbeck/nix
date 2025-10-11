@@ -1,0 +1,32 @@
+#+TITLE: Spellcheck Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle spellcheck.el :results none
+
+#+begin_src emacs-lisp 
+(use-package flyspell
+  :ensure nil 
+  :config
+  (setq ispell-program-name "aspell")
+  ;; Import the ASPELL_DICT_DIR environment variable and configure aspell to use it
+  (when (and (fboundp 'exec-path-from-shell-copy-env)
+             (not (getenv "ASPELL_DICT_DIR")))
+    (exec-path-from-shell-copy-env "ASPELL_DICT_DIR"))
+  (when (getenv "ASPELL_DICT_DIR")
+    (setq ispell-extra-args (list (concat "--dict-dir=" (getenv "ASPELL_DICT_DIR"))))))
+
+(setq ispell-personal-dictionary "~/nix/system/with/user/with/program/emacs-dictionary.pws")
+
+(add-hook 'text-mode-hook
+          (lambda ()
+            (when (and buffer-file-name  ; Ensure it's a real file
+                       (not (string-match-p "org-agenda-files" buffer-file-name))
+                       (not (derived-mode-p 'org-agenda-mode)))  ; Exclude agenda buffers
+              (flyspell-mode 1))))
+
+(use-package flyspell-correct
+  :ensure nil 
+  :config
+  (define-key flyspell-mode-map (kbd "C-;") #'flyspell-correct-wrapper))
+#+end_src
+
+#+RESULTS:
+: t

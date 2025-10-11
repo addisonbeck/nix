@@ -1,20 +1,25 @@
-personal_ws-1.1 en 25 
+personal_ws-1.1 en 31 
 Bitwarden
+Bobert
 CTO
 LLM
 Nx
 PoC
+PostCSS
 README
 RSVPd
 Rebase
+Shevek
 TODOs
 ToC
 bitwarden
 codebase
+config
 dsafs
 fsadkjf
 hotline
 ing
+jsons
 libs
 md
 monorepo
@@ -23,4 +28,5 @@ namedInputs
 nx
 rebase
 targetDefaults
+unstaged
 worktree
