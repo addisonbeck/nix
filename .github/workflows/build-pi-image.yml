@@ -25,7 +25,7 @@ jobs:
           nix build .#nixosConfigurations.raspberrypiimage.config.system.build.sdImage
           
       - name: Upload Image Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nixos-sd-image
           path: result/sd-image/*.img*
