@@ -12,7 +12,7 @@
     extensions = [pkgs.freshrss-extensions.youtube];
   };
   services.nginx.virtualHosts = {
-    "homelab-server".locations = {
+    "homelab".locations = {
       "/rss/" = {
         alias = "${pkgs.freshrss}/p/";
         index = "index.php";
