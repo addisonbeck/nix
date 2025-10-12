@@ -214,7 +214,7 @@ in {
     };
 
     services.nginx.virtualHosts = {
-      "homelab-server".locations = {
+      "homelab".locations = {
         "/adguard/" = {
           extraConfig = ''
             proxy_pass http://127.0.0.1:3000/;

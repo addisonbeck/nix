@@ -30,7 +30,7 @@
   };
 
   services.nginx.virtualHosts = {
-    "homelab-server".locations = {
+    "homelab".locations = {
       "/grafana/" = {
         proxyWebsockets = true;
         extraConfig = ''

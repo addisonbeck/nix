@@ -45,7 +45,7 @@
     recommendedGzipSettings = true;
 
     virtualHosts = {
-      "homelab-server" = {
+      "homelab" = {
         serverName = "homelab homelab.tail357e32.ts.net";
         forceSSL = true;
         sslCertificate = "/etc/nginx/ssl/homelab.tail357e32.ts.net.crt";

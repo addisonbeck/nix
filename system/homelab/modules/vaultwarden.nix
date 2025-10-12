@@ -36,7 +36,7 @@
 
   services.nginx = {
     virtualHosts = {
-      "homelab-server" = {
+      "homelab" = {
         locations = {
           "/vaultwarden" = {
             proxyPass = "http://127.0.0.1:8222";

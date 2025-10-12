@@ -31,7 +31,7 @@
   };
   services.nginx = {
     virtualHosts = {
-      "homelab-server" = {
+      "homelab" = {
         locations = {
           "/prometheus/" = {
             proxyWebsockets = true;

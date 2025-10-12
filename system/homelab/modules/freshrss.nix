@@ -8,12 +8,11 @@
     defaultUser = "me";
     passwordFile = config.sops.secrets.freshrss.path;
     baseUrl = "https://homelab/rss/";
-    authType = "none";
     virtualHost = "homelab";
     extensions = [pkgs.freshrss-extensions.youtube];
   };
   services.nginx.virtualHosts = {
-    "homelab-server".locations = {
+    "homelab".locations = {
       "/rss/" = {
         alias = "${pkgs.freshrss}/p/";
         index = "index.php";
