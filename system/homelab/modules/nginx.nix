@@ -15,26 +15,26 @@
     "d /etc/nginx/ssl 0755 root root -"
   ];
 
-  systemd.services.nginx-init = {
-    description = "Initialize Nginx SSL certificates";
-    wantedBy = ["multi-user.target"];
-    before = ["nginx.service"]; #
-    script = ''
-      if [ ! -f /etc/nginx/ssl/homelab.key ]; then
-        ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 \
-          -keyout /etc/nginx/ssl/homelab.key \
-          -out /etc/nginx/ssl/homelab.crt \
-          -days 365 -nodes -subj '/CN=homelab'
-      fi
-      chown nginx:nginx /etc/nginx/ssl/homelab.key /etc/nginx/ssl/homelab.crt
-      chmod 400 /etc/nginx/ssl/homelab.key
-      chmod 444 /etc/nginx/ssl/homelab.crt
-    '';
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-  };
+  #systemd.services.nginx-init = {
+    #description = "Initialize Nginx SSL certificates";
+    #wantedBy = ["multi-user.target"];
+    #before = ["nginx.service"]; #
+    #script = ''
+      #if [ ! -f /etc/nginx/ssl/homelab.key ]; then
+        #${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:4096 \
+          #-keyout /etc/nginx/ssl/homelab.key \
+          #-out /etc/nginx/ssl/homelab.crt \
+          ##-days 365 -nodes -subj '/CN=homelab'
+      #fi
+      #chown nginx:nginx /etc/nginx/ssl/homelab.key /etc/nginx/ssl/homelab.crt
+      #chmod 400 /etc/nginx/ssl/homelab.key
+      #chmod 444 /etc/nginx/ssl/homelab.crt
+    #'';
+    #serviceConfig = {
+      #Type = "oneshot";
+      #RemainAfterExit = true;
+    #};
+  #};
 
   services.nginx = {
     user = "nginx";
