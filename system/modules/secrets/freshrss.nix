@@ -3,6 +3,7 @@
     format = "yaml";
     sopsFile = ../../../secrets/freshrss.yaml;
     key = "password";
-    mode = "0600";
+    mode = "0444";
+    owner = "freshrss";
   };
 }
