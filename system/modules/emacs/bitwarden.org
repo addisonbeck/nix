@@ -5,17 +5,17 @@
 ** Installing Npm Deps
 
 #+begin_src emacs-lisp
-(defcustom bitwarden-clients-npm-ci-command "npm ci"
+(defcustom bitwarden-clients-npm-i-command "npm i"
   "Commands to run to install npm dependencies in a Bitwarden clients project "
   :type 'string
   :group 'tools)
 
-(defun bitwarden/clients-npm-ci ()
-  "Select a project with Projectile and run `bitwarden-clients-npm-ci-command` in it."
+(defun bitwarden/clients-npm-i ()
+  "Select a project with Projectile and run `bitwarden-clients-npm-i-command` in it."
   (interactive)
-  (my/projectile-run-command-in-selected-project bitwarden-clients-npm-ci-command))
+  (my/projectile-run-command-in-selected-project bitwarden-clients-npm-i-command))
 (add-to-list 'my/executer-picker-candidates
-             '("bitwarden/clients: npm ci" . bitwarden/clients-npm-ci))
+             '("bitwarden/clients: npm i" . bitwarden/clients-npm-i))
 #+end_src
 
 ** Typechecking
@@ -72,7 +72,6 @@
 #+RESULTS:
 : ((bitwarden/clients: classic bit build cli . bitwarden/cli-classic-build-bit) (bitwarden/clients: npm ci . bitwarden/clients-npm-ci) (bitwarden/clients: nx bit build cli . bitwarden/cli-nx-build-bit) (bitwarden/clients: npm ci . bitwarden/cli-npm-ci) (bitwarden/clients: typechecker . bitwarden/clients-run-test-types) (nix: update flake . my/nix/flake-update) (nix: format . my/nix/format) (nix: rebuild . my/nix/rebuild))
 
-
 ** Building Web 
 *** With Nx
 #+begin_src emacs-lisp
@@ -108,7 +107,6 @@
              '("bitwarden/clients: classic bit build web" . bitwarden/web-classic-build-bit))
 #+end_src
 
-
 ** Serving Web 
 
 #+begin_src emacs-lisp
@@ -134,7 +132,7 @@
   "Command to build the Bitwarden BROWSERR locally with Nx"
   :type 'string
   :group 'tools)
-(setq bitwarden-clients-serve-web-web-commercial
+(setq bitwarden-clients-serve-browser
       "npx nx serve browser")
 
 (defun bitwarden/serve-browser ()
@@ -152,7 +150,7 @@
   "Command to build the Bitwarden BROWSERR locally with Nx"
   :type 'string
   :group 'tools)
-(setq bitwarden-clients-test-web-web-commercial
+(setq bitwarden-clients-test-browser
       "npx nx test browser")
 
 (defun bitwarden/test-browser ()
@@ -170,7 +168,7 @@
   "Command to build the Bitwarden BROWSERR locally with Nx"
   :type 'string
   :group 'tools)
-(setq bitwarden-clients-lint-web-web-commercial
+(setq bitwarden-clients-lint-browser
       "npx nx lint browser")
 
 (defun bitwarden/lint-browser ()
@@ -187,7 +185,7 @@
   "Command to build the Bitwarden BROWSERR locally with Nx"
   :type 'string
   :group 'tools)
-(setq bitwarden-clients-build-web-web-commercial
+(setq bitwarden-clients-build-browser
       "npx nx build browser")
 
 (defun bitwarden/build-browser ()
@@ -196,4 +194,128 @@
   (my/projectile-run-command-in-selected-project bitwarden-clients-build-browser))
 (add-to-list 'my/executer-picker-candidates
              '("bitwarden/clients: nx build browser" . bitwarden/build-browser))
+#+end_src
+
+* Desktop
+** Testing Desktop
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-test-desktop "npx nx test desktop"
+  "Command to build the Bitwarden DESKTOP locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-test-desktop
+      "npx nx test desktop")
+
+(defun bitwarden/test-desktop ()
+  "Select a project with Projectile and run `bitwarden-clients-test-desktop` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-test-desktop))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx test desktop" . bitwarden/test-desktop))
+#+end_src
+
+** Linting Desktop
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-lint-desktop "npx nx lint desktop"
+  "Command to build the Bitwarden DESKTOP locally with Nx"
+  :type 'string
+  :group 'tools)
+(setq bitwarden-clients-lint-desktop
+      "npx nx lint desktop")
+
+(defun bitwarden/lint-desktop ()
+  "Select a project with Projectile and run `bitwarden-clients-lint-desktop` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-lint-desktop))
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx lint desktop" . bitwarden/lint-desktop))
+#+end_src
+
+** Build Native
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-build-desktop-native "npx nx build-native desktop"
+  "Command to build the Bitwarden DESKTOP native module locally with Nx"
+  :type 'string
+  :group 'tools)
+
+(setq bitwarden-clients-build-desktop-native
+      "npx nx build-native desktop")
+
+(defun bitwarden/build-desktop-native ()
+  "Select a project with Projectile and run `bitwarden-clients-build-desktop-native` in it."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-desktop-native))
+
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build-native desktop" . bitwarden/build-desktp-native))
+#+end_src
+
+** Build Webpack
+
+#+begin_src emacs-lisp
+;; Individual process build commands
+(defcustom bitwarden-clients-build-desktop-main "npx nx run desktop:build-main"
+  "Command to build the Bitwarden DESKTOP main process with Nx"
+  :type 'string
+  :group 'tools)
+
+(defcustom bitwarden-clients-build-desktop-renderer "npx nx run desktop:build-renderer"
+  "Command to build the Bitwarden DESKTOP renderer process with Nx"
+  :type 'string
+  :group 'tools)
+
+(defcustom bitwarden-clients-build-desktop-preload "npx nx run desktop:build-preload"
+  "Command to build the Bitwarden DESKTOP preload process with Nx"
+  :type 'string
+  :group 'tools)
+
+;; Full coordinated build command
+(defcustom bitwarden-clients-build-desktop "npx nx build desktop"
+  "Command to build all Bitwarden DESKTOP processes with Nx"
+  :type 'string
+  :group 'tools)
+
+;; Set the variables
+(setq bitwarden-clients-build-desktop-main "npx nx run desktop:build-main")
+(setq bitwarden-clients-build-desktop-renderer "npx nx run desktop:build-renderer")
+(setq bitwarden-clients-build-desktop-preload "npx nx run desktop:build-preload")
+(setq bitwarden-clients-build-desktop "npx nx build desktop")
+
+;; Individual process build functions
+(defun bitwarden/build-desktop-main ()
+  "Build the Bitwarden desktop main process with Nx."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-desktop-main))
+
+(defun bitwarden/build-desktop-renderer ()
+  "Build the Bitwarden desktop renderer process with Nx."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-desktop-renderer))
+
+(defun bitwarden/build-desktop-preload ()
+  "Build the Bitwarden desktop preload process with Nx."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-desktop-preload))
+
+;; Full build function
+(defun bitwarden/build-desktop ()
+  "Build all Bitwarden desktop processes with Nx (coordinated build)."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-build-desktop))
+
+;; Add to executer picker candidates
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build desktop (full)" . bitwarden/build-desktop))
+
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build desktop:main" . bitwarden/build-desktop-main))
+
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build desktop:renderer" . bitwarden/build-desktop-renderer))
+
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx build desktop:preload" . bitwarden/build-desktop-preload))
 #+end_src
