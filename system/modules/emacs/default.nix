@@ -36,6 +36,7 @@
       cp ${./olivetti.org} olivetti.org
       cp ${./autosave.org} autosave.org
       cp ${./spellcheck.org} spellcheck.org
+      cp ${./jira.org} jira.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el

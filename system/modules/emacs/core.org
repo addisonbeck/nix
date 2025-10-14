@@ -1618,6 +1618,7 @@ This cool and lame at the same time
 			    ("f" "Find" consult-find)
 			    ("o" "Org Heading" consult-org-heading)
 			    ("m" "Memory" org-roam-node-find)
+			    ("j" "Jira" jira-search-issues-advanced)
 			    ("r" "Ripgrep" consult-ripgrep)
 			    ("n" "Notes" my/search-notes)])
 #+end_src

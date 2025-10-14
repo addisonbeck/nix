@@ -315,7 +315,7 @@ This way is old, I'm testing out the new version below.
                         (insert section)
                         (goto-char (point-min))
                         (while (re-search-forward
-                                "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
+                                "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\|jira:[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
                                 nil t)
                           (let ((link (match-string 1))
                                 (desc (or (match-string 2) "(No description)")))
@@ -334,6 +334,20 @@ This way is old, I'm testing out the new version below.
                          (child-results (my/gptel-org-roam-node-content-by-id
                                          real-id (cons raw seen) file-seen)))
                     (setq result (append result child-results))))
+                 ;; Jira ticket pattern: jira:PM-N format
+                 ((string-prefix-p "jira:" raw)
+                  (let* ((ticket-key (substring raw 5)))
+                    (condition-case err
+                        (let ((jira-content (shell-command-to-string
+                                           (format "jira issue view %s --raw" ticket-key))))
+                          (when (and jira-content (> (length jira-content) 0))
+                            (push (list :id ticket-key
+                                        :title (format "Jira Ticket: %s (Raw JSON)" ticket-key) 
+                                        :content jira-content
+                                        :file (format "jira://%s" ticket-key))
+                                  result)))
+                      (error
+                       (message "Failed to fetch Jira ticket %s: %s" ticket-key (error-message-string err))))))
                  ;; File links: support file:, file+*, and raw absolute paths
                  (t
                   (let* ((abs

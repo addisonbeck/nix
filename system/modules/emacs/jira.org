@@ -1,1984 +1,624 @@
-#+TITLE: Emacs Configuration
-#+PROPERTY: header-args:emacs-lisp :tangle core.el :results none
+#+TITLE: Jira Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle jira.el :results none
 
-* TODOs
-** TODO Set up more robust task logging
+These wrapper functions provide a programmatic interface to the jira cli. 
+- Most functions use `shell-command` for interactive operations and `shell-command-to-string` for data retrieval
+- Interactive prompts are handled by the underlying jira cli when parameters are omitted
+- Optional parameters allow for scriptable, non-interactive usage
+- Error handling is delegated to the jira cli tool itself
+- All functions require the jira cli to be installed and configured (`jira init`)
 
-** TODO Set up some default folding behavior
-** TODO Set up org clock
-* Basic Settings
+To use these functions, first ensure you have:
+1. jira cli installed and in your PATH
+2. Run `jira init` to configure authentication
+3. Load this file or tangle it to jira.el and require it
+
+Example usage:
+- `(jira-issue-list "--created week -a$(jira me)")` - List your issues from this week
+- `(jira-issue-view "PROJ-123" 5)` - View issue with 5 recent comments
+- `(jira-epic-list nil "--table")` - List epics in table format
+
+* Issue Operations
+
+The core functionality for working with Jira issues - listing, viewing, creating and editing tickets.
+
+** List Issues
+
+Basic function to list issues with optional filtering parameters. Returns the raw output from jira cli.
+
 #+begin_src emacs-lisp
-;; Disable backup files and configure indentation
-(setq make-backup-files nil)
-(setq-default indent-tabs-mode nil)
-(electric-indent-mode 1)
-(setq-default tab-width 2
-	indent-tabs-mode nil
-	tab-stop-list (number-sequence 2 120 2))
-(setq confirm-kill-emacs nil)
-(setq auto-save-default nil
-create-lockfiles nil)
-(setq select-enable-clipboard t)
-(setq case-fold-search t)
-(xterm-mouse-mode 1)
-(setq-default fill-column 77)
-(global-hl-line-mode -1)
-(setq sentence-end-double-space nil)
-(setq ring-bell-function 'ignore)
+(defun jira-issue-list (&optional args)
+  "List Jira issues with optional ARGS for filtering.
+ARGS can be a string of jira cli flags like '--created week -a$(jira me)'."
+  (interactive)
+  (let ((cmd (if args
+                 (format "jira issue list %s" args)
+               "jira issue list")))
+    (shell-command-to-string cmd)))
 #+end_src
 
+** View Issue Details
+
+Display detailed information about a specific issue in a dedicated buffer with preserved formatting.
+
 #+begin_src emacs-lisp
-  (require 'transient)
+(defun jira-issue-view (issue-key &optional comments)
+  "View details for ISSUE-KEY in a dedicated buffer with preserved formatting.
+Optional COMMENTS specifies number of recent comments to show."
+  (interactive "sIssue key: ")
+  (let* ((cmd (if comments
+                  (format "jira issue view %s --comments %s" issue-key comments)
+                (format "jira issue view %s" issue-key)))
+         (buffer-name (format "*Jira: %s*" issue-key)))
+    ;; Use shell-command with output buffer to preserve formatting
+    (with-current-buffer (get-buffer-create buffer-name)
+      (when (bound-and-true-p view-mode)
+        (view-mode -1))  ; Disable view-mode so we can edit the buffer
+      (erase-buffer)
+      (let ((default-directory default-directory))
+        (shell-command cmd (current-buffer)))
+      ;; Apply ANSI color formatting
+      (ansi-color-apply-on-region (point-min) (point-max))
+      (goto-char (point-min))
+      (view-mode 1))  ; Enable view-mode for easy navigation
+    (switch-to-buffer buffer-name)))
 #+end_src
 
-** Directory Configuration
-Sets the main directory for Org files, stored in iCloud for sync across devices.
+** Create Issue
+
+Create a new Jira issue with interactive prompts or specified parameters.
 
 #+begin_src emacs-lisp
-(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
-  "Path to my notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
-  "Path to my agenda directory, located in the notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-nix-systems-flake-directory "/Users/me/nix"
-  "Path to my nix directory."
-  :type 'directory
-  :group 'org)
+(defun jira-issue-create (&optional type summary priority labels body no-input)
+  "Create a new Jira issue.
+TYPE: issue type (e.g., 'Bug', 'Task', 'Story')
+SUMMARY: issue summary/title
+PRIORITY: issue priority (e.g., 'High', 'Medium', 'Low')  
+LABELS: comma-separated list of labels
+BODY: issue description
+NO-INPUT: if t, skip interactive prompts"
+  (interactive)
+  (let ((cmd "jira issue create"))
+    (when type (setq cmd (format "%s -t%s" cmd type)))
+    (when summary (setq cmd (format "%s -s\"%s\"" cmd summary)))
+    (when priority (setq cmd (format "%s -y%s" cmd priority)))
+    (when labels (setq cmd (format "%s -l%s" cmd labels)))
+    (when body (setq cmd (format "%s -b\"%s\"" cmd body)))
+    (when no-input (setq cmd (format "%s --no-input" cmd)))
+    (shell-command cmd)))
 #+end_src
 
+** Edit Issue
 
-* Kill Other Buffers
+Edit an existing Jira issue.
+
 #+begin_src emacs-lisp
-  (defun kill-other-buffers ()
-    "Kill all buffers except the current one."
-    (interactive)
-    (mapc 'kill-buffer
-	  (delq (current-buffer)
-		(buffer-list))))
+(defun jira-issue-edit (issue-key &optional summary priority labels body no-input)
+  "Edit ISSUE-KEY with optional parameters.
+SUMMARY: new summary/title
+PRIORITY: new priority 
+LABELS: new labels (use -label to remove)
+BODY: new description
+NO-INPUT: if t, skip interactive prompts"
+  (interactive "sIssue key: ")
+  (let ((cmd (format "jira issue edit %s" issue-key)))
+    (when summary (setq cmd (format "%s -s\"%s\"" cmd summary)))
+    (when priority (setq cmd (format "%s -y%s" cmd priority)))
+    (when labels (setq cmd (format "%s -l%s" cmd labels)))
+    (when body (setq cmd (format "%s -b\"%s\"" cmd body)))
+    (when no-input (setq cmd (format "%s --no-input" cmd)))
+    (shell-command cmd)))
 #+end_src
 
-* Package Management
+** Assign Issue
+
+Assign a Jira issue to a user.
+
 #+begin_src emacs-lisp
-  (require 'package)
-
-  ;; Use Package Configuration
-  (use-package nerd-icons)
-
-  (use-package exec-path-from-shell
-    :ensure t
-    :config
-    (when (memq window-system '(mac ns x))
-      (exec-path-from-shell-initialize)))
-
-  (when (daemonp)
-    (exec-path-from-shell-initialize))
+(defun jira-issue-assign (issue-key assignee)
+  "Assign ISSUE-KEY to ASSIGNEE.
+ASSIGNEE can be a username, 'default' for default assignee, or 'x' to unassign."
+  (interactive "sIssue key: \nsAssignee (username, 'default', or 'x' to unassign): ")
+  (let ((cmd (format "jira issue assign %s \"%s\"" issue-key assignee)))
+    (shell-command cmd)))
 #+end_src
 
-* Dashboard Configuration
-#+begin_src emacs-lisp
-  (defun my/extract-quotes-from-org-files ()
-    "Extract headlines tagged with :quote: from org files in notes directory."
-    (let ((quotes '())
-	  (notes-dir "~/notes"))
-      (dolist (file (directory-files-recursively notes-dir "\\.org$"))
-	(with-temp-buffer
-	  (insert-file-contents file)
-	  (org-mode)
-	  (goto-char (point-min))
-	  (while (re-search-forward "^\\*+\\s-+\\(.*?\\)\\s-+:quote:" nil t)
-	    (let* ((headline (match-string-no-properties 1))
-		   (element (org-element-at-point))
-		   (content (org-element-property :contents-begin element))
-		   (end (org-element-property :contents-end element))
-		   (raw-text (when (and content end)
-			       (string-trim (buffer-substring-no-properties content end))))
-		   (quote-text
-		    (when raw-text
-		      ;; Process text to handle quote blocks
-		      (with-temp-buffer
-			(insert raw-text)
-			;; Replace #+begin_quote and #+end_quote with empty strings
-			(goto-char (point-min))
-			(while (re-search-forward "^[ \t]*#\\+begin_quote[ \t]*$" nil t)
-			  (replace-match ""))
-			(goto-char (point-min))
-			(while (re-search-forward "^[ \t]*#\\+end_quote[ \t]*$" nil t)
-			  (replace-match ""))
-			;; Return the cleaned text
-			(string-trim (buffer-string))))))
-	      (when (and headline (not (string-empty-p headline))
-			 quote-text (not (string-empty-p quote-text)))
-		(push (format "%s\n\n— %s" quote-text headline) quotes))))))
-      (or quotes
-	  ;; Fallback quotes if none found
-	  '("Quotes are broken!"))))
+** Move/Transition Issue
 
-  (use-package dashboard
-    :ensure t
-    :init
-    (setq dashboard-icon-type 'nerd-icons)
-    (setq dashboard-projects-backend 'projectile)
-    :config
-    (dashboard-setup-startup-hook)
-    (setq dashboard-center-content t
-	  dashboard-items '((recents . 5)
-			    (projects . 5)
-			    (bookmarks . 5))
-	  dashboard-set-heading-icons t
-	  dashboard-set-file-icons t
-	  dashboard-show-shortcuts t
-	  dashboard-set-footer t
-	  dashboard-footer-messages (my/extract-quotes-from-org-files))
-    (setq dashboard-heading-icons '((recents   . "nf-oct-history")
-				    (bookmarks . "nf-oct-bookmark")
-				    (projects  . "nf-oct-project"))))
+Move an issue from one state to another.
+
+#+begin_src emacs-lisp
+(defun jira-issue-move (issue-key status &optional comment resolution assignee)
+  "Move ISSUE-KEY to STATUS.
+Optional COMMENT to add during transition.
+Optional RESOLUTION to set.
+Optional ASSIGNEE to assign during move."
+  (interactive "sIssue key: \nsNew status: ")
+  (let ((cmd (format "jira issue move %s \"%s\"" issue-key status)))
+    (when comment (setq cmd (format "%s --comment \"%s\"" cmd comment)))
+    (when resolution (setq cmd (format "%s -R%s" cmd resolution)))
+    (when assignee (setq cmd (format "%s -a%s" cmd assignee)))
+    (shell-command cmd)))
 #+end_src
 
-* Evil Mode Configuration
+** Clone Issue
+
+Clone an existing issue with optional modifications.
+
 #+begin_src emacs-lisp
-;; Test
-(setq evil-want-integration t)
-(setq evil-want-keybinding nil)
-(setq evil-want-C-u-scroll t)
-
-(use-package evil
-  :ensure t
-  :config
-  (evil-mode 1)
-
-  ;; Custom movement functions
-  (defun evil-move-half-page-down ()
-    "Move cursor half page down"
-    (interactive)
-    (evil-next-line (/ (window-height) 4))
-    (evil-scroll-line-to-center nil))
-
-  (defun evil-move-half-page-up ()
-    "Move cursor half page up"
-    (interactive)
-    (evil-previous-line (/ (window-height) 4))
-    (evil-scroll-line-to-center nil))
-
-  ;; Bind J and K to half-page movement
-  (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
-  (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
-
-(define-key evil-normal-state-map (kbd "z t") 'evil-scroll-line-to-top)
-(define-key evil-normal-state-map (kbd "z z") 'evil-scroll-line-to-center)
-(define-key evil-normal-state-map (kbd "z b") 'evil-scroll-line-to-bottom)
-
-(use-package evil-collection
-  :ensure t
-  :after evil
-  :config
-  (evil-collection-init))
-
-;; Configure evil-collection for magit
-(with-eval-after-load 'evil-collection-magit
-  (evil-collection-define-key 'normal 'magit-status-mode-map
-			"V" #'magit-start-region-select))
-(require 'evil-org-agenda)
-(evil-org-agenda-set-keys)
-(evil-define-key 'motion org-agenda-mode-map
-	   (kbd "C-p") 'projectile-switch-project
-	   (kbd "C-f") 'projectile-find-file
-	   (kbd "<left>") 'org-agenda-earlier
-	   (kbd "<right>") 'org-agenda-later
-	   (kbd "gx")  'org-agenda-open-link
-	   (kbd "t") 'org-agenda-todo
-	   (kbd "T") 'org-agenda-todo-yesterday)
+(defun jira-issue-clone (issue-key &optional summary priority assignee labels replace-text)
+  "Clone ISSUE-KEY with optional modifications.
+SUMMARY: new summary for cloned issue
+PRIORITY: new priority 
+ASSIGNEE: new assignee
+LABELS: new labels
+REPLACE-TEXT: find:replace pattern for summary/description"
+  (interactive "sIssue key to clone: ")
+  (let ((cmd (format "jira issue clone %s" issue-key)))
+    (when summary (setq cmd (format "%s -s\"%s\"" cmd summary)))
+    (when priority (setq cmd (format "%s -y%s" cmd priority)))
+    (when assignee (setq cmd (format "%s -a%s" cmd assignee)))
+    (when labels (setq cmd (format "%s -l%s" cmd labels)))
+    (when replace-text (setq cmd (format "%s -H\"%s\"" cmd replace-text)))
+    (shell-command cmd)))
 #+end_src
 
-* Cycle Line Number Function
+** Delete Issue
+
+Delete a Jira issue.
+
 #+begin_src emacs-lisp
-  (defun cycle-line-numbers ()
-    "Cycle through line number modes: off -> relative -> normal -> off."
-    (interactive)
+(defun jira-issue-delete (issue-key &optional cascade)
+  "Delete ISSUE-KEY.
+If CASCADE is t, also delete all subtasks."
+  (interactive "sIssue key to delete: ")
+  (let ((cmd (format "jira issue delete %s" issue-key)))
+    (when cascade (setq cmd (format "%s --cascade" cmd)))
+    (shell-command cmd)))
+#+end_src
+
+* Issue Linking and Comments
+
+Functions for linking issues together and managing comments.
+
+** Link Issues
+
+Link two issues together with a relationship type.
+
+#+begin_src emacs-lisp
+(defun jira-issue-link (from-issue to-issue link-type)
+  "Link FROM-ISSUE to TO-ISSUE with LINK-TYPE.
+LINK-TYPE examples: 'Blocks', 'Relates to', 'Duplicates'."
+  (interactive "sFrom issue: \nsTo issue: \nsLink type: ")
+  (let ((cmd (format "jira issue link %s %s \"%s\"" from-issue to-issue link-type)))
+    (shell-command cmd)))
+#+end_src
+
+** Add Remote Link
+
+Add a remote web link to an issue.
+
+#+begin_src emacs-lisp
+(defun jira-issue-link-remote (issue-key url title)
+  "Add remote web link to ISSUE-KEY.
+URL: the web URL to link
+TITLE: display text for the link"
+  (interactive "sIssue key: \nsURL: \nsLink title: ")
+  (let ((cmd (format "jira issue link remote %s \"%s\" \"%s\"" issue-key url title)))
+    (shell-command cmd)))
+#+end_src
+
+** Unlink Issues
+
+Remove link between two issues.
+
+#+begin_src emacs-lisp
+(defun jira-issue-unlink (from-issue to-issue)
+  "Unlink FROM-ISSUE and TO-ISSUE."
+  (interactive "sFrom issue: \nsTo issue: ")
+  (let ((cmd (format "jira issue unlink %s %s" from-issue to-issue)))
+    (shell-command cmd)))
+#+end_src
+
+** Add Comment
+
+Add a comment to an issue.
+
+#+begin_src emacs-lisp
+(defun jira-issue-comment-add (issue-key comment &optional internal template)
+  "Add COMMENT to ISSUE-KEY.
+INTERNAL: if t, make comment internal
+TEMPLATE: path to template file or '-' for stdin"
+  (interactive "sIssue key: \nsComment: ")
+  (let ((cmd (format "jira issue comment add %s" issue-key)))
     (cond
-     ;; If currently off, switch to relative
-     ((not display-line-numbers)
-      (setq display-line-numbers 'relative)
-      (message "Line numbers: RELATIVE"))
-
-     ;; If currently relative, switch to normal
-     ((eq display-line-numbers 'relative)
-      (setq display-line-numbers t)
-      (message "Line numbers: NORMAL"))
-
-     ;; If currently normal, switch to off
-     (t
-      (setq display-line-numbers nil)
-      (message "Line numbers: OFF"))))
-
-  ;; Bind to "N" in evil normal mode
-  (with-eval-after-load 'evil
-    (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
-#+end_src
-* Server Configuration
-#+begin_src emacs-lisp
-(require 'server)
-(unless (server-running-p)
-  (server-start))
+     (template (setq cmd (format "%s --template \"%s\"" cmd template)))
+     (comment (setq cmd (format "%s \"%s\"" cmd comment))))
+    (when internal (setq cmd (format "%s --internal" cmd)))
+    (shell-command cmd)))
 #+end_src
 
-* Project Management
+** Add Worklog
+
+Add time logging to an issue.
+
 #+begin_src emacs-lisp
-  (use-package projectile
-    :ensure t
-    :config
-    (projectile-mode +1)
-    (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
-    (define-key projectile-command-map (kbd "P") 'my/projectile-find-file-in-all-projects)
-    (setq projectile-indexing-method 'alien)
-    (setq projectile-git-command "git ls-files -zco -X ~/.gitignore")
-    (setq projectile-known-projects
-	  (mapcar (lambda (project)
-		    (expand-file-name (my/get-project-path (car project))))
-		  my/projects))
-    (setq projectile-auto-discover nil)
-    (projectile-save-known-projects))
+(defun jira-issue-worklog-add (issue-key time-spent &optional comment no-input)
+  "Add worklog to ISSUE-KEY for TIME-SPENT.
+TIME-SPENT: duration like '2d 3h 30m' or '1h 15m'
+COMMENT: optional comment for the worklog
+NO-INPUT: if t, skip interactive prompts"
+  (interactive "sIssue key: \nsTime spent (e.g., '2h 30m'): ")
+  (let ((cmd (format "jira issue worklog add %s \"%s\"" issue-key time-spent)))
+    (when comment (setq cmd (format "%s --comment \"%s\"" cmd comment)))
+    (when no-input (setq cmd (format "%s --no-input" cmd)))
+    (shell-command cmd)))
 #+end_src
 
-* Consult
-#+begin_src emacs-lisp
-  (require 'consult)
-#+end_src
-* Completion Framework
-#+begin_src emacs-lisp
-  (use-package vertico
-    :ensure t
-    :init
-    (vertico-mode))
+* Epic Operations
 
-  (use-package orderless
-    :ensure t
-    :custom
-    (completion-styles '(orderless basic))
-    (completion-category-overrides '((file (styles . (partial-completion))))))
+Functions for working with Jira epics - larger work containers that group related issues.
 
-  (use-package marginalia
-    :ensure t
-    :init
-    (marginalia-mode))
+** List Epics
 
-  ;; Custom find-from-here function
-  (defun find-from-here ()
-    "Find files from current buffer's directory."
-    (interactive)
-    (when buffer-file-name
-      (consult-find (file-name-directory buffer-file-name))))
-#+end_src
-
-* Tree-sitter Configuration
-#+begin_src emacs-lisp
-  (use-package treesit-auto
-    :config
-    (global-treesit-auto-mode)
-    (setq treesit-auto-install 'prompt)
-    (setq treesit-auto-langs '(typescript javascript tsx jsx yaml)))
-
-  (use-package typescript-ts-mode
-    :ensure t
-    :mode (("\\.ts\\'" . typescript-ts-mode)
-	   ("\\.tsx\\'" . tsx-ts-mode))
-    :init
-    (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
-    (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
-
-  ;; Note: Tree-sitter grammars are provided by Nix configuration
-#+end_src
-
-* LSP Configuration
-#+begin_src emacs-lisp
-  (use-package lsp-mode
-    :ensure t
-    :hook ((typescript-ts-mode . lsp)
-	   (tsx-ts-mode . lsp)
-	   (typescript-mode . lsp)
-	   (csharp-mode . lsp)
-	   (rust-mode . lsp)
-	   (nix-mode . lsp)
-	   (json-mode . lsp)
-	   (sql-mode . lsp)
-	   (lua-mode . lsp))
-    :commands lsp
-    :config
-    ;;(setq lsp-nix-nixd-server-path "nixd")
-    ;;(setq lsp-enabled-clients '(nixd-lsp))
-    (setq lsp-auto-guess-root t)
-    (setq lsp-enable-symbol-highlighting t)
-    (setq lsp-enable-on-type-formatting t)
-    (setq lsp-modeline-code-actions-enable t)
-    (setq lsp-modeline-diagnostics-enable t)
-    (setq lsp-diagnostics-provider :flycheck)
-    (setq lsp-ui-doc-enable t)
-    (setq lsp-ui-doc-show-with-cursor t)
-    (add-to-list 'lsp-disabled-clients 'copilot-ls)
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\chats\\'")
-    (setq lsp-headerline-breadcrumb-enable nil)
-    (setq lsp-headerline-breadcrumb-mode nil)
-    (lsp-enable-which-key-integration t))
-
-  (use-package lsp-ui
-    :ensure t
-    :commands lsp-ui-mode)
-
-  ;; Company mode for completions
-  (use-package company
-    :ensure t
-    :config
-    (setq company-minimum-prefix-length 1
-	  company-idle-delay 0.0))
-
-  ;; Add flycheck configuration
-  (use-package flycheck
-    :ensure t
-    :init
-    (global-flycheck-mode))
-#+end_src
-
-* Magit and Forge Configuration
-#+begin_src emacs-lisp
-  (defun magit-status-project ()
-    "Switch project and open magit."
-    (interactive)
-    (let ((projectile-switch-project-action 'magit-status))
-      (projectile-switch-project)))
-
-  (use-package forge
-    :ensure t
-    :after magit
-    :config
-    ;; Configure GitHub authentication
-    (setq auth-sources '("~/.authinfo"))
-    ;; Optionally set the number of items to fetch
-    (setq forge-topic-list-limit '(60 . 0)))
-#+end_src
-
-* Basic Settings and Markdown Configuration
-#+begin_src emacs-lisp
-;; Basic settings
-(setq notes-directory "~/notes")
-(setq markdown-command "pandoc")
-
-;; Markdown configuration
-(use-package markdown-mode
-  :ensure t
-  :mode (("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode)))
-
-(defun org-region-to-markdown (start end)
-  "Convert the selected region from Org to Markdown using pandoc."
-  (interactive "r")
-  (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
-#+end_src
-
-* Which Key Configuration
-#+begin_src emacs-lisp
-  (use-package which-key
-    :ensure t
-    :config
-    (which-key-mode)
-    (setq which-key-idle-delay 0.3
-	  which-key-prefix-prefix "→"
-	  which-key-sort-order 'which-key-key-order-alpha
-	  which-key-side-window-location 'bottom
-	  which-key-side-window-max-height 0.25))
-#+end_src
-
-* Elfeed Configuration
-#+begin_src emacs-lisp
-  (use-package elfeed
-    :ensure t
-    :bind
-    ("C-x w" . elfeed)
-    :config
-    (evil-define-key 'normal elfeed-search-mode-map
-		     (kbd "r") 'elfeed-search-untag-all-unread
-		     (kbd "u") 'elfeed-search-tag-all-unread
-		     (kbd "RET") 'elfeed-search-show-entry
-		     (kbd "q") 'quit-window
-		     (kbd "g") 'elfeed-update
-		     (kbd "G") 'elfeed-search-update--force)
-
-    (evil-define-key 'normal elfeed-show-mode-map
-		     (kbd "r") 'elfeed-show-untag-unread
-		     (kbd "u") 'elfeed-show-tag-unread
-		     (kbd "q") 'quit-window
-		     (kbd "n") 'elfeed-show-next
-		     (kbd "p") 'elfeed-show-prev
-		     (kbd "b") 'elfeed-show-visit)
-
-    (setq elfeed-search-filter "+unread")
-    (setq elfeed-sort-order 'descending))
-
-  (use-package elfeed-protocol
-    :ensure t
-    :after elfeed
-    :custom
-    (elfeed-use-curl t)
-    (elfeed-protocol-enabled-protocols '(fever))
-    (setq elfeed-protocol-log-trace t)
-    (elfeed-protocol-fever-update-unread-only t)
-    (elfeed-protocol-fever-fetch-category-as-tag t)
-    (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
-			      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
-			      :use-authinfo t)))
-    (elfeed-protocol-enabled-protocols '(fever))
-    :config
-    (elfeed-protocol-enable))
-
-  (defun my/elfeed-reset ()
-    "Reset elfeed database and update."
-    (interactive)
-    (when (yes-or-no-p "Really reset elfeed database? ")
-      (let ((db (expand-file-name "~/.elfeed/index"))
-	    (data (expand-file-name "~/.elfeed/data")))
-	(message "Checking paths: index=%s data=%s" db data)
-
-	;; Try to close elfeed first
-	(elfeed-db-unload)
-	(message "Database unloaded")
-
-	;; Delete files with error checking
-	(condition-case err
-	    (progn
-	      (when (file-exists-p db)
-		(delete-file db)
-		(message "Deleted index file"))
-	      (when (file-exists-p data)
-		(delete-directory data t)
-		(message "Deleted data directory")))
-	  (error (message "Error during deletion: %s" err)))
-
-	;; Restart elfeed
-	(elfeed)
-	(elfeed-search-update--force)
-	(message "Reset complete"))))
-
-  ;; Set elfeed-show-entry-switch to display in a side window
-  (setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
-
-  ;; Define the display function for right split
-  (defun elfeed-display-buffer-right (buf)
-    (let ((display-buffer-mark-dedicated t))
-      (display-buffer 
-       buf
-       '((display-buffer-reuse-window display-buffer-in-side-window)
-	 (side . right)
-	 (window-width . 0.5)))))
-
-  ;; Optional: Make elfeed respect this two-pane setup when updating
-  (defadvice elfeed-search-update (after configure-windows activate)
-    (when (get-buffer "*elfeed-entry*")
-      (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
-
-  ;; Optional: Return focus to search buffer after showing entry
-  (defadvice elfeed-show-entry (after switch-to-search activate)
-    (select-window (get-buffer-window "*elfeed-search*")))
-
-  ;;(require 'elfeed-tube)
-  ;;(elfeed-tube-setup)
-  ;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
-  ;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
-  ;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
-  ;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
-  ;;(require 'elfeed-tube-mpv)
-  ;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
-  ;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
-					  ;(setq elfeed-search-title-max-width 120)
-					  ;(setq elfeed-search-title-min-width 120)
-					  ;(setq elfeed-search-date-format '("%Y/%m-%d %H:%M" :left))
-					  ;(setq elfeed-search-filter "+unread")
-#+end_src
-
-* Path Copying Functions
+List epics with optional filtering, or list issues in a specific epic.
 
 #+begin_src emacs-lisp
-  (defun copy-file-path ()
-    "Copy the current buffer file path to the kill ring."
-    (interactive)
-    (let ((filepath (buffer-file-name)))
-      (when filepath
-	(kill-new filepath)
-	(message "Copied: %s" filepath))))
-
-  (defun copy-file-name ()
-    "Copy the current buffer file name to the kill ring."
-    (interactive)
-    (let ((filename (file-name-nondirectory (buffer-file-name))))
-      (when filename
-	(kill-new filename)
-	(message "Copied: %s" filename))))
-
-  (defun copy-directory-path ()
-    "Copy the current buffer directory path to the kill ring."
-    (interactive)
-    (let ((dirpath (file-name-directory (buffer-file-name))))
-      (when dirpath
-	(kill-new dirpath)
-	(message "Copied: %s" dirpath))))
-#+end_src
-
-* Avy
-#+begin_src emacs-lisp
-  (require 'avy)
-  (define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
-#+end_src
-
-* rg
-#+begin_src emacs-lisp
-  (require 'rg)
-#+end_src
-
-* Custom Commands For Projects
-
-I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
-
-#+begin_src emacs-lisp
-;; We're going to add to this down the chain
-(defvar my/executer-picker-candidates nil
-  "Alist mapping display names to interactive functions for `my/executer-picker'.")
-
-(defun my/executer-picker ()
-  "Pick a function via Consult and run it (interactively if possible)."
+(defun jira-epic-list (&optional epic-key args table-view)
+  "List epics or issues in EPIC-KEY.
+If EPIC-KEY is provided, lists issues in that epic.
+ARGS: optional filtering arguments
+TABLE-VIEW: if t, display in table format instead of explorer view"
   (interactive)
-  (let* ((alist (seq-filter (lambda (p) (fboundp (cdr p)))
-                            my/executer-picker-candidates))
-         (choice (consult--read
-                  (mapcar #'car alist)
-                  :prompt "Run function: "
-                  :require-match t
-                  :annotate (lambda (cand)
-                              (let* ((sym (cdr (assoc cand alist)))
-                                     (doc (and sym (documentation sym))))
-                                (when doc
-                                  (concat "  " (car (split-string doc "\n")))))))))
-    (let ((sym (cdr (assoc choice alist))))
-      (unless sym (user-error "No function for choice: %s" choice))
-      (if (commandp sym) (call-interactively sym) (funcall sym)))))
+  (let ((cmd "jira epic list"))
+    (when epic-key (setq cmd (format "%s %s" cmd epic-key)))
+    (when table-view (setq cmd (format "%s --table" cmd)))
+    (when args (setq cmd (format "%s %s" cmd args)))
+    (shell-command-to-string cmd)))
 #+end_src
 
+** Create Epic
+
+Create a new epic with the specified parameters.
+
 #+begin_src emacs-lisp
-(defun my/projectile-run-command-in-selected-project (command)
-  "Use `projectile-switch-project` to select a project, then run COMMAND
-in that project's root using `vterm` in a project-named buffer.
-Interactively, prompt for COMMAND using `shell-command-history`."
-  (interactive (list (read-string "Command: " nil 'shell-command-history)))
-  (require 'projectile)
-  (let* ((cmd command)
-         (projectile-switch-project-action
-          (lambda ()
-            (let* ((root (projectile-project-root))
-                   (default-directory root)
-                   (proj (file-name-nondirectory (directory-file-name root)))
-                   (buffer-name (format "*async-%s-%s*" proj command)))
-              (vterm buffer-name)
-              (vterm-send-string cmd)
-              (vterm-send-return)))))
-    (projectile-switch-project)))
+(defun jira-epic-create (epic-name summary &optional priority labels body)
+  "Create a new epic.
+EPIC-NAME: name of the epic (separate from summary)
+SUMMARY: epic summary/title
+PRIORITY: epic priority
+LABELS: comma-separated labels
+BODY: epic description"
+  (interactive "sEpic name: \nsSummary: ")
+  (let ((cmd (format "jira epic create -n\"%s\" -s\"%s\"" epic-name summary)))
+    (when priority (setq cmd (format "%s -y%s" cmd priority)))
+    (when labels (setq cmd (format "%s -l%s" cmd labels)))
+    (when body (setq cmd (format "%s -b\"%s\"" cmd body)))
+    (shell-command cmd)))
 #+end_src
 
-#+begin_src emacs-lisp
-  (defun scan-worktree-projects ()
-    "Scan for all worktree directories and add them to Projectile."
-    (interactive)
-    (let ((base-dir (expand-file-name "~/binwarden/")))
-      (dolist (owner-repo (directory-files base-dir t "^[^.]"))
-	(when (file-directory-p owner-repo)
-	  (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
-	    (when (and (file-directory-p branch-dir)
-		       (file-exists-p (expand-file-name ".git" branch-dir)))
-	      (projectile-add-known-project branch-dir)))))))
+** Add Issues to Epic
 
-  (with-eval-after-load 'projectile
-    (scan-worktree-projects))
+Add one or more issues to an epic.
+
+#+begin_src emacs-lisp
+(defun jira-epic-add (epic-key &rest issue-keys)
+  "Add ISSUE-KEYS to EPIC-KEY.
+Can add up to 50 issues at once."
+  (interactive "sEpic key: ")
+  (when (called-interactively-p 'any)
+    (let ((issues (read-string "Issue keys (space-separated): ")))
+      (setq issue-keys (split-string issues))))
+  (let ((cmd (format "jira epic add %s %s" epic-key (string-join issue-keys " "))))
+    (shell-command cmd)))
 #+end_src
 
-** Enable complex color support in compile buffers
+** Remove Issues from Epic
+
+Remove one or more issues from an epic.
 
 #+begin_src emacs-lisp
-  (use-package ansi-color
-    :config
-    (defun my/colorize-compilation ()
-      "Colorize from `compilation-filter-start' to `point'."
-      (let ((inhibit-read-only t))
-	(ansi-color-apply-on-region
-	 compilation-filter-start (point))))
-
-    (add-hook 'compilation-filter-hook #'my/colorize-compilation)
-
-    (setq ansi-color-for-comint-mode t)
-    (setq comint-terminfo-terminal "xterm-256color"))
-#+end_src
-
-#+RESULTS:
-: t
-
-** Builds for the Bitwarden Nx PoC project
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx-poc-npm-i ()
-    "Run npm ci in the nx PoC"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-functionl 
-	    (lambda (_mode) (format "*nx-poc-npm-i*"))))
-      (compile "npm i" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/run-nx-poc-web ()
-    "Build the web vault of the nx poc project with a uniquely named buffer."
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/web"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-web-build*"))))
-      (compile "npm run build:watch" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/run-nx-poc-browser-chrome ()
-    "Build the chrome extension of the nx poc project with a uniquely named buffer."
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-chrome-build*"))))
-      (compile "npm run build:watch:chrome" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/run-nx-poc-browser-firefox ()
-    "Build the chrome extension of the nx poc project with a uniquely named buffer."
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-firefox-build*"))))
-      (compile "npm run build:watch:firefox" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/run-nx-poc-desktop ()
-    "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/desktop"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-desktop-build*"))))
-      (compile "npm run build:watch" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/build-nx-poc-cli ()
-    "Build the cli in the nx poc project with a uniquely named buffer."
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/cli"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-cli-build*"))))
-      (compile "npm run build" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx-poc-nx-report ()
-    "Runs nx report in the poc project"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-nx-report*"))))
-      (compile "npx nx report" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx/build (target)
-    "Build the NX poc using NX for TARGET"
-    (interactive
-     (list (completing-read "Target to build: " 
-			    '("common" "angular" "web" "cli" "desktop" "browser")
-			    nil nil nil nil "common")))
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-pox-%s-build*" target))))
-      (compile (format "npx nx build %s" target) t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx/serve (target)
-    "Serve the NX poc using NX for TARGET"
-    (interactive
-     (list (completing-read "Target to build: " 
-			    '("web" "desktop" "browser")
-			    nil nil nil nil "web")))
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
-      (compile (format "npx nx serve %s" target) t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx/start (target)
-    "Start the NX poc using NX for TARGET"
-    (interactive
-     (list (completing-read "Target to build: " 
-			    '("cli")
-			    nil nil nil nil "cli")))
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-pox-%s-start*" target))))
-      (compile (format "npx nx start %s --verbose" target) t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun bitwarden/nx/cleanup ()
-    "Clean up the nx poc project"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nx-poc"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nx-poc-cleanup*"))))
-      (compile "rm -rf node_modules ; rm -rf .nx" t)))
-#+end_src
-
-** My Nix Systems Configuration
-
-#+begin_src emacs-lisp
-(defun my/nix/rebuild (system)
-  "Rebuild my nix config for the specified SYSTEM.
-If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
-runs 'nix-collect-garbage' and then the rebuild."
-  (interactive
-   (list (completing-read "System to rebuild: " 
-			  '("air" "bw" "homelab")
-			  nil nil nil nil "air")))
-  (let* ((default-directory (my/get-project-path "nix"))
-	 (compilation-buffer-name-function 
-	  (lambda (_mode) (format "*nix-%s-rebuild*" system)))
-	 command)
-    (if (string= system "homelab")
-	(setq command 
-	      (string-join
-	       '("ssh -o StrictHostKeyChecking=no"
-		 "-i ~/.ssh/me"
-		 "root@homelab"
-		 "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
-	       " "))
-      (setq command (format "nix develop --command sudo rebuild %s" system)))
-    (compile command t)))
-#+end_src
-
-#+RESULTS:
-: my/nix-rebuild
-
-#+begin_src emacs-lisp
-  (defun my/nix/format ()
-    "Run the formatters in my nix systems configuration"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-systems-format*"))))
-      (compile "nix develop --command apply formatting" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/nix/collect-garbage ()
-    "Run the nix garbage collector"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-flake-update*"))))
-      (compile "nix-collect-garbage -d" t)))
-#+end_src
-
-#+RESULTS:
-: my/nix-format
-
-#+begin_src emacs-lisp
-  (defun my/nix/commit (message)
-    "Commit all files in my nix config with MESSAGE"
-    (interactive
-     (list (read-string "Commit message: " nil nil nil)))
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-systems-commit*"))))
-      (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/nix/flake-update ()
-    "Update flake lock in my nix systems config"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
-      (compile "nix flake update" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/nix/check-status ()
-    "Check the git status of my nix systems config"
-    (interactive)
-    (let* ((default-directory (my/get-project-path "nix"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-systems-git-status*"))))
-      (compile "git status" t)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/nix/update-minecraft-packwize ()
-    "Update the pacckages for the packwiz server for my kids"
-    (interactive)
-    (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
-      (compile "packwiz " t)))
-#+end_src
-
-#+begin_src emacs-lisp
-(add-to-list 'my/executer-picker-candidates
-             '("nix: update flake" . my/nix/flake-update))
-
-(add-to-list 'my/executer-picker-candidates
-             '("nix: format" . my/nix/format))
-
-(add-to-list 'my/executer-picker-candidates
-             '("nix: rebuild" . my/nix/rebuild))
-
-#+end_src
-
-** My notes
-
-#+begin_src emacs-lisp
-  (defun my/quick-commit (message)
-    "Commit all files in my notes with MESSAGE"
-    (interactive
-     (list (read-string "Commit message: " nil nil nil)))
-    (let* ((default-directory (my/get-project-path "notes"))
-	   (compilation-buffer-name-function 
-	    (lambda (_mode) (format "*notes-commit*"))))
-      (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
-#+end_src
-
-#+RESULTS:
-: my/nix-commit
-
-** Workspace
-
-#+begin_src emacs-lisp
-  (defun my/worktree-build ()
-    (interactive)
-    (let ((default-directory (projectile-project-root)))
-      (compile (or (getenv "BUILD_CMD") "make"))))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/worktree-test ()
-    (interactive)
-    (let ((default-directory (projectile-project-root)))
-      (compile (or (getenv "TEST_CMD") "make test"))))
-#+end_src
-* Custom magit functions
-** Reset current buffer
-#+begin_src emacs-lisp
-  (defun reset-file-to-revision ()
-    "Reset the current buffer's file to a specified revision using Magit."
-    (interactive)
-    (require 'magit)
-    (let* ((file-path (buffer-file-name))
-	   (default-directory (magit-toplevel))
-	   (revision (magit-read-branch-or-commit "Reset file to revision")))
-      (when (and file-path revision)
-	(let ((relative-file-path (file-relative-name file-path default-directory)))
-	  (magit-run-git "checkout" revision "--" relative-file-path)
-	  (revert-buffer t t t)
-	  (message "File reset to %s" revision)))))
-#+end_src
-** View PR Check
-
-#+begin_src emacs-lisp
-  (defun my/run-gh-pr-checks ()
-    "Run 'gh pr checks' for the current PR with better formatting."
-    (interactive)
-    (when (eq major-mode 'forge-pullreq-mode)
-      (let* ((pr (forge-current-topic))
-	     (pr-number (oref pr number))
-	     (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
-	     (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
-	(with-current-buffer (get-buffer-create buffer-name)
-	  (let ((inhibit-read-only t))
-	    (erase-buffer)
-	    (shell-command cmd (current-buffer))
-	    (goto-char (point-min))
-	    (let* ((json-data (json-read))
-		   (checks (append json-data nil))
-		   (passed 0)
-		   (failed 0)
-		   (pending 0)
-		   (failed-jobs '()))
-
-	      ;; Count statuses and collect failed jobs
-	      (dolist (check checks)
-		(let ((state (cdr (assoc 'state check))))
-		  (cond
-		   ((string= state "SUCCESS") (cl-incf passed))
-		   ((string= state "FAILURE") 
-		    (cl-incf failed)
-		    (push check failed-jobs))
-		   (t (cl-incf pending)))))
-
-	      ;; Clear and format buffer
-	      (erase-buffer)
-	      (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
-				  'face '(:weight bold :height 1.2)))
-	      (insert (format "Total: %d | " (length checks)))
-	      (insert (propertize (format "Passed: %d | " passed)
-				  'face '(:foreground "green")))
-	      (insert (propertize (format "Failed: %d | " failed)
-				  'face '(:foreground "red" :weight bold)))
-	      (insert (propertize (format "Pending: %d\n\n" pending)
-				  'face '(:foreground "orange")))
-
-	      ;; Add detailed listing
-	      (insert (propertize "All Checks:\n" 'face '(:weight bold)))
-	      (dolist (check checks)
-		(let* ((name (cdr (assoc 'name check)))
-		       (state (cdr (assoc 'state check)))
-		       (link (cdr (assoc 'link check)))
-		       (state-face (cond
-				    ((string= state "SUCCESS") '(:foreground "green"))
-				    ((string= state "FAILURE") '(:foreground "red"))
-				    (t '(:foreground "orange")))))
-		  (insert "• ")
-		  (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
-				      'face '(:weight bold)))
-		  (insert " - ")
-		  (insert (propertize state 'face state-face))
-		  (when link
-		    (insert " [")
-		    (insert-text-button "Link"
-					'action (lambda (_) (browse-url link))
-					'follow-link t)
-		    (insert "]"))
-		  (insert "\n")))
-
-	      ;; Add failed jobs section
-	      (when failed-jobs
-		(insert "\n")
-		(insert (propertize "Failed Jobs:\n" 
-				    'face '(:foreground "red" :weight bold)))
-		(dolist (job failed-jobs)
-		  (let ((name (cdr (assoc 'name job)))
-			(link (cdr (assoc 'link job))))
-		    (insert "• ")
-		    (insert (propertize name 'face '(:foreground "red")))
-		    (when link
-		      (insert " → ")
-		      (insert-text-button "Open in Browser"
-					  'action (lambda (_) (browse-url link))
-					  'follow-link t))
-		    (insert "\n")))))
-
-	    (special-mode)
-	    (goto-char (point-min))
-	    (display-buffer (current-buffer)))))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/rerun-failed-gh-pr-checks ()
-  "Rerun failed checks for the current PR using GitHub CLI."
+(defun jira-epic-remove (&rest issue-keys)
+  "Remove ISSUE-KEYS from their epic.
+Can remove up to 50 issues at once."
   (interactive)
-  (when (eq major-mode 'forge-pullreq-mode)
-    (let* ((pr (forge-current-topic))
-           (pr-number (oref pr number))
-           ;; Use the JSON format that matches what gh pr checks outputs
-           (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
-           failed-jobs)
-      
-      ;; Get failed jobs
-      (message "Fetching checks for PR #%s..." pr-number)
-      (let ((json-output (shell-command-to-string cmd)))
-        (condition-case err
-            (let ((json-object (json-read-from-string json-output)))
-              (setq failed-jobs
-                    (seq-filter (lambda (job)
-                                  (and (alist-get 'conclusion job nil nil #'equal)
-                                       (string= (alist-get 'conclusion job) "failure")))
-                                json-object)))
-          (error
-           (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
-           (setq failed-jobs nil))))
-      
-      (if (null failed-jobs)
-          (message "No failed jobs to rerun!")
-        (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
-          (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
-                (counter 0))
-            (with-current-buffer rerun-buffer
-              (let ((inhibit-read-only t))
-                (erase-buffer)
-                (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
-                
-                (dolist (job failed-jobs)
-                  (let* ((name (alist-get 'name job))
-                         (id (alist-get 'databaseId job))
-                         (rerun-cmd (format "gh run rerun %s" id)))
-                    (insert (format "• Rerunning: %s (ID: %s)..." name id))
-                    (let ((result (shell-command-to-string rerun-cmd)))
-                      (if (string-match-p "Failed\\|Error" result)
-                          (insert (propertize " Failed\n" 'face '(:foreground "red")))
-                        (progn
-                          (cl-incf counter)
-                          (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
-                
-                (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
-                                           counter (length failed-jobs))
-                                   'face '(:weight bold)))
-                (special-mode)
-                (goto-char (point-min))
-                (display-buffer (current-buffer)))))))))))
+  (when (called-interactively-p 'any)
+    (let ((issues (read-string "Issue keys to remove (space-separated): ")))
+      (setq issue-keys (split-string issues))))
+  (let ((cmd (format "jira epic remove %s" (string-join issue-keys " "))))
+    (shell-command cmd)))
 #+end_src
 
-** View reviews for PR
+* Sprint Operations
 
-#+begin_src elisp
-(defun my/gh-pr-reviewers ()
-  "Fetch and display reviewers for the current PR using GitHub CLI."
+Functions for working with agile sprints and sprint planning.
+
+** List Sprints
+
+List sprints or issues in a specific sprint.
+
+#+begin_src emacs-lisp
+(defun jira-sprint-list (&optional sprint-id args table-view current prev next state)
+  "List sprints or issues in SPRINT-ID.
+SPRINT-ID: specific sprint to show issues for
+ARGS: additional filtering arguments for issues
+TABLE-VIEW: if t, show in table format
+CURRENT: if t, show current active sprint
+PREV: if t, show previous sprint  
+NEXT: if t, show next planned sprint
+STATE: comma-separated sprint states (future,active,closed)"
   (interactive)
-  (when (eq major-mode 'forge-pullreq-mode)
-    (let* ((pr (forge-current-topic))
-           (pr-number (oref pr number))
-           (buffer-name (format "*gh-pr-reviewers:#%s*" pr-number))
-           (cmd-reviews (format "gh pr view %s --json reviews,reviewRequests,latestReviews" pr-number))
-           (cmd-raw (format "gh pr view %s --json isDraft,title" pr-number)))
-      (with-current-buffer (get-buffer-create buffer-name)
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          
-          ;; Get basic PR data first
-          (shell-command cmd-raw (current-buffer))
-          (goto-char (point-min))
-          
-          (condition-case raw-err
-              (let* ((raw-data (json-read))
-                     (is-draft (cdr (assoc 'isDraft raw-data)))
-                     (title (cdr (assoc 'title raw-data))))
-                
-                ;; Get review data
-                (erase-buffer)
-                (shell-command cmd-reviews (current-buffer))
-                (goto-char (point-min))
-                
-                (condition-case review-err
-                    (let* ((json-data (json-read))
-                           (reviews (or (cdr (assoc 'reviews json-data)) []))
-                           (latest-reviews (or (cdr (assoc 'latestReviews json-data)) []))
-                           (review-requests (or (cdr (assoc 'reviewRequests json-data)) []))
-                           (approved 0)
-                           (changes-requested 0)
-                           (commented 0)
-                           (pending (length review-requests)))
-                      
-                      ;; Count latest review statuses
-                      (dotimes (i (length latest-reviews))
-                        (let* ((review (aref latest-reviews i))
-                               (state (cdr (assoc 'state review))))
-                          (cond
-                           ((string= state "APPROVED") (cl-incf approved))
-                           ((string= state "CHANGES_REQUESTED") (cl-incf changes-requested))
-                           ((string= state "COMMENTED") (cl-incf commented)))))
-                      
-                      ;; Clear and format buffer
-                      (erase-buffer)
-                      (insert (propertize (format "PR #%s Reviewers Summary %s\n\n" 
-                                                 pr-number 
-                                                 (if is-draft "[DRAFT]" ""))
-                                         'face '(:weight bold :height 1.2)))
-                      (insert (format "Title: %s\n\n" title))
-                      (insert (format "Total Reviews: %d | " (length reviews)))
-                      (insert (propertize (format "Approved: %d | " approved)
-                                         'face '(:foreground "green" :weight bold)))
-                      (insert (propertize (format "Changes Requested: %d | " changes-requested)
-                                         'face '(:foreground "red" :weight bold)))
-                      (insert (propertize (format "Commented: %d\n" commented)
-                                         'face '(:foreground "blue")))
-                      (insert (propertize (format "Requested Reviews: %d\n" pending)
-                                         'face '(:foreground "orange")))
-                      
-                      ;; Add latest reviews section
-                      (when (> (length latest-reviews) 0)
-                        (insert "\n")
-                        (insert (propertize "Latest Reviews by Reviewer:\n" 'face '(:weight bold)))
-                        (dotimes (i (length latest-reviews))
-                          (let* ((review (aref latest-reviews i))
-                                 (author (cdr (assoc 'author review)))
-                                 (login (cdr (assoc 'login author)))
-                                 (state (cdr (assoc 'state review)))
-                                 (submitted-at (cdr (assoc 'submittedAt review)))
-                                 (body (cdr (assoc 'body review)))
-                                 (state-face (cond
-                                              ((string= state "APPROVED") '(:foreground "green"))
-                                              ((string= state "CHANGES_REQUESTED") '(:foreground "red"))
-                                              (t '(:foreground "blue")))))
-                            (insert "• ")
-                            (insert (propertize (format "%-20s" login)
-                                               'face '(:weight bold)))
-                            (insert " - ")
-                            (insert (propertize 
-                                     (format "%-15s" 
-                                            (cond
-                                             ((string= state "APPROVED") "Approved")
-                                             ((string= state "CHANGES_REQUESTED") "Changes Requested")
-                                             (t "Commented")))
-                                     'face state-face))
-                            (insert " - ")
-                            (insert (format "%s" (format-time-string "%Y-%m-%d" 
-                                                                    (date-to-time submitted-at))))
-                            (when (and body (not (string= body "")))
-                              (insert "\n    ")
-                              (insert (propertize (truncate-string-to-width 
-                                                  (replace-regexp-in-string "\n" " " body) 70)
-                                                 'face '(:slant italic))))
-                            (insert "\n"))))
-                      
-                      ;; Add pending/requested reviewers section
-                      (when (> pending 0)
-                        (insert "\n")
-                        (insert (propertize (if is-draft 
-                                              "Assigned Reviewers (will be notified when ready):\n" 
-                                             "Requested Reviewers:\n")
-                                           'face '(:foreground "orange" :weight bold)))
-                        
-                        (dotimes (i (length review-requests))
-                          (let* ((request (aref review-requests i))
-                                 (requestee (cdr (assoc 'requestedReviewer request))))
-                            (when requestee
-                              (let ((login (cdr (assoc 'login requestee)))
-                                    (team-slug (and (assoc 'slug requestee) (cdr (assoc 'slug requestee)))))
-                                (when (or login team-slug)
-                                  (insert "• ")
-                                  (insert (propertize (or login (concat "Team: " team-slug))
-                                                     'face '(:foreground "orange")))
-                                  (insert "\n")))))))
-                      
-                      (special-mode)
-                      (goto-char (point-min)))
-                  (error
-                   (erase-buffer)
-                   (insert (format "Error parsing review data: %s\n\n" review-err))
-                   (insert "Raw output from gh command:\n\n")
-                   (insert (shell-command-to-string cmd-reviews)))))
-            (error
-             (erase-buffer)
-             (insert (format "Error parsing basic PR data: %s\n\n" raw-err))
-             (insert "Raw output from gh command:\n\n")
-             (insert (shell-command-to-string cmd-raw)))))
-          
-        (display-buffer (current-buffer))))))
+  (let ((cmd "jira sprint list"))
+    (cond
+     (current (setq cmd (format "%s --current" cmd)))
+     (prev (setq cmd (format "%s --prev" cmd)))
+     (next (setq cmd (format "%s --next" cmd)))
+     (sprint-id (setq cmd (format "%s %s" cmd sprint-id))))
+    (when table-view (setq cmd (format "%s --table" cmd)))
+    (when state (setq cmd (format "%s --state %s" cmd state)))
+    (when args (setq cmd (format "%s %s" cmd args)))
+    (shell-command-to-string cmd)))
 #+end_src
 
-#+RESULTS:
-: my/gh-pr-reviewers
+** Add Issues to Sprint
 
-* Rustis
-
-#+begin_src
-(use-package rust-mode
-  :init
-  (setq rust-mode-treesitter-derive t))
-#+end_src
-* Ledger
-#+begin_src elisp
-(require 'ledger-mode)
-(add-to-list 'auto-mode-alist '("\\.ledger\\'" . ledger-mode))
-(setq ledger-default-date-format "%Y-%m-%d")
-(add-hook 'ledger-mode-hook
-          (lambda ()
-            (setq-local completion-cycle-threshold t)
-            (setq-local tab-always-indent 'complete)))
-#+end_src
-
-* gnus
-#+begin_src emacs-lisp
-  (require 'gnus)
-  (require 'smtpmail)
-  (require 'message)
-  (require 'oauth2) ;; For OAuth2 support with Gmail
-
-  (setq user-full-name "Addison Beck")
-  (setq user-mail-address "me@addisonbeck.com")
-
-  ;; Show all messages in all groups
-  (setq gnus-parameters
-	'((".*" (display . all))))  
-
-  ;; Show all groups, including empty ones
-  (setq gnus-permanently-visible-groups ".*")
-
-  ;; This shows all kinds of neat but verbose and annoying header information
-  ;;(setq gnus-show-all-headers t)
-
-  ;; Make 'A r' (gnus-summary-refer-article) the default listing function
-  (setq gnus-summary-goto-unread nil)
-
-  ;; Always start with 'A A' behavior (show all articles)
-  (add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
-
-    ;;; Main Select Method (Primary Account)
-  (setq gnus-select-method
-	'(nnimap "primary-account"
-		 (nnimap-address "box.addisonbeck.com")
-		 (nnimap-server-port 993)
-		 (nnimap-stream ssl)
-		 (nnmail-expiry-wait immediate)))
-#+end_src
-
-#+begin_src emacs-lisp 
-  ;;; OAuth2 setup for Gmail
-  (defun get-gmail-oauth2-token ()
-    "Get OAuth2 access token for Gmail."
-    (let* ((auth-info (nth 0 (auth-source-search :host "oauth2.googleapis.com" 
-						 :user "935901585839-b1c4q3mmjb4tuutgpd3aratopq7tf85k.apps.googleusercontent.com" 
-						 :service "oauth2")))
-	   (client-id (plist-get auth-info :user))
-	   (client-secret (let ((secret (plist-get auth-info :secret)))
-			    (if (functionp secret)
-				(funcall secret)
-			      secret)))
-	   (token (oauth2-token-access-token
-		   (oauth2-refresh-access
-		    (oauth2-auth-and-store
-		     "https://accounts.google.com/o/oauth2/auth"
-		     "https://oauth2.googleapis.com/token"
-		     client-id
-		     client-secret
-		     "https://mail.google.com/" nil)))))
-      token))
-
-  ;; Override auth function for Gmail accounts
-  (defun gmail-oauth2-auth (server)
-    "Return the OAuth2 string for SERVER."
-    (when (string-match "imap.gmail.com" server)
-      (let ((token (get-gmail-oauth2-token)))
-	(when token
-	  (concat "user=addison@bitwarden.com\001auth=Bearer " 
-		  token "\001\001")))))
-
-  ;; Register auth function
-  ;;(add-to-list 'nnimap-authenticator-alist
-  ;;'(gmail-oauth2 gmail-oauth2-auth))
-
-  ;; Use the OAuth2 authenticator with Gmail
-  (setq nnimap-authinfo-file "~/.authinfo")
-					  ;(setq nnimap-authenticator 'gmail-oauth2)
-#+end_src
-
-#+begin_src emacs-lisp 
-(defun nnimap-xoauth2-oauth2-request (user server)
-  "Return the OAuth2 string for USER on SERVER."
-  (when (string-match "imap.gmail.com" server)
-    (let ((token (get-gmail-oauth2-token)))
-      (when token
-        (concat "user=" user "\001auth=Bearer " token "\001\001")))))
-
-;;; Secondary Accounts
-(add-to-list 'gnus-secondary-select-methods
-             '(nnimap "work-gmail"
-               (nnimap-address "imap.gmail.com")
-               (nnimap-server-port 993)
-               (nnimap-authenticator xoauth2)  
-               (nnimap-stream ssl)
-               (nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
-               (nnmail-expiry-wait immediate)))
-
-;;; Add more accounts as needed
-;;(add-to-list 'gnus-secondary-select-methods
-             ;;'(nnimap "personal"
-               ;;(nnimap-address "imap.personal.com")
-               ;;(nnimap-server-port 993)
-               ;;(nnimap-stream ssl)))
-#+end_src
+Add one or more issues to a sprint.
 
 #+begin_src emacs-lisp
-  ;;; SMTP configuration with account selection
-  (require 'smtpmail-multi)
-
-  ;; Define email accounts
-  (setq smtpmail-multi-accounts
-	'((personal . ("me@addisonbeck.com"
-		       "box.addisonbeck.com"
-		       465
-		       "me@addisonbeck.com"
-		       nil
-		       starttls))
-	  (work-gmail . ("addison@bitwarden.com"
-			 "smtp.gmail.com" 
-			 587
-			 "addison@bitwarden.com"
-			 nil
-			 starttls))))
-
-  ;; Set default account
-  (setq smtpmail-multi-default-account 'personal)
-
-  ;; Use smtpmail-multi as the send function
-  (setq send-mail-function 'smtpmail-multi-send-it
-	message-send-mail-function 'smtpmail-multi-send-it)
+(defun jira-sprint-add (sprint-id &rest issue-keys)
+  "Add ISSUE-KEYS to SPRINT-ID.
+Can add up to 50 issues at once."
+  (interactive "sSprint ID: ")
+  (when (called-interactively-p 'any)
+    (let ((issues (read-string "Issue keys (space-separated): ")))
+      (setq issue-keys (split-string issues))))
+  (let ((cmd (format "jira sprint add %s %s" sprint-id (string-join issue-keys " "))))
+    (shell-command cmd)))
 #+end_src
 
-#+begin_src emacs-lisp 
-;;; Posting Styles - automatically set From, signature, etc. based on context
-(setq gnus-posting-styles
-      '((".*" ;; Default style
-         (name "Addison Beck")
-         (address "me@addisonbeck.com")
-         (signature "Thanks,\nAddison"))
-        ("work-gmail"
-         (name "Addison Beck") 
-         (address "addison@bitwarden.com")
-         (organization "Bitwarden"))
-        ;; Match based on recipient address
-        ((header "to" "client@example\\.com")
-         (address "work@gmail.com")
-         (signature "Professional signature for clients"))
-        ;; Add more context-specific styles as needed
-        ))
-#+end_src
+* Project and Navigation Utilities
+
+Helper functions for project management and quick navigation.
+
+** Get Current User
+
+Get the current authenticated user's account information.
 
 #+begin_src emacs-lisp
-  ;;; Gmail-specific settings
-  (setq gnus-parameters
-	'(("work-gmail"
-	   (display . all)
-	   (posting-style
-	    (name "Addison Beck")
-	    (address "addison@bitwarden.com")
-	    (signature "Thanks,\nAddison")))
-	  ("nnimap\\+work-gmail:\\[Gmail\\]/Sent Mail"
-	   (gcc-self . none))
-	  ("nnimap\\+work-gmail:\\[Gmail\\]/Trash"
-	   (expiry-wait . immediate))))
-
-  ;; Gmail doesn't need to save sent mail (it does this automatically)
-  (setq gnus-message-archive-group
-	'((if (string-match "gmail\\.com" (message-sendmail-envelope-from))
-	      nil  ;; No need to save for Gmail
-	    "sent"))) ;; Archive for other accounts
-#+end_src
-
-#+begin_src emacs-lisp 
-(setq gnus-topic-topology 
-      '(("Gnus" visible)
-        (("Personal" visible)
-         (("personal" visible)))
-        (("Work" visible)
-         (("work-gmail" visible)))))
-
-(setq gnus-topic-alist
-      '(("personal" . ("nnimap+personal:INBOX"))
-        ("work-gmail" . ("nnimap+work-gmail:INBOX"
-                         "nnimap+work-gmail:[Gmail]/Sent Mail"
-                         "nnimap+work-gmail:[Gmail]/All Mail"))
-        ("Gnus" . ("nndraft:drafts"))))
-#+end_src
-
-#+begin_src emacs-lisp
-  ;; Open articles in a vertical split
-  (gnus-add-configuration
-   '(article
-     (horizontal 1.0
-		 (summary 0.5 point)
-		 (article 1.0))))
-
-  ;; Sort by reverse number (newest first)
-  (setq gnus-thread-sort-functions
-	'((not gnus-thread-sort-by-number)))
-  (setq gnus-article-sort-functions
-	'((not gnus-article-sort-by-number)))
-#+end_src
-
-#+begin_src emacs-lisp
-  (gnus-demon-add-handler 'gnus-group-get-new-news 5 t)
-  (gnus-demon-init)
-#+end_src
-
-* Magit
-#+begin_src emacs-lisp
-  (setq magit-git-executable "/Users/me/.nix-profile/bin/git")
-#+end_src
-
-* Minibuffer Enhancement
-
-This cool and lame at the same time
-
-#+begin_src emacs-lisp :tangle no
-;; Make minibuffer more comfortable for text entry
-;; Allow the minibuffer to be resized automatically
-;;(setq resize-mini-windows t)
-(setq max-mini-window-height 0.5) ;; Allow up to half the frame height
-
-;; Improved minibuffer appearance
-				  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
-
-;; Use miniedit for better text editing in minibuffer
-(use-package miniedit
-  :ensure t
-  :config
-  (miniedit-install)
-  ;; Add a message to show usage in minibuffer prompts
-  (add-hook 'minibuffer-setup-hook
-      (lambda ()
-	(when (> (frame-width) 80) ;; Only show if we have room
-	  (message "Use C-M-e for full buffer editing")))))
-
-;; Floating minibuffer with mini-frame
-(use-package mini-frame
-  ;;:if window-system  ;; Only use in GUI mode
-  :ensure t
-  :custom
-  (mini-frame-show-parameters
-   '((top . 0.35)
-     (width . 0.7)
-     (left . 0.5)))
-  :config
-  ;; Specify which commands should NOT use mini-frame
-  (setq mini-frame-ignore-commands
-  '(consult-line
-    consult-outline
-    consult-mark
-    consult-imenu
-    eval-expression
-    "^ivy-"
-    "^swiper$"))
-  (mini-frame-mode 1))
-
-;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
-(defun my/setup-miniedit-buffer ()
-  "Set up the miniedit buffer for comfortable editing."
-  (when (string-match "\\*MiniEdit\\*" (buffer-name))
-    (when (fboundp 'olivetti-mode)
-(olivetti-mode 1)
-(setq-local olivetti-body-width 80))
-    (visual-line-mode 1)))
-
-(add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
-#+end_src
-
-* Transient Menus
-** The "Go" Menu
-
-*** Quickly Open Files (For The "Go" Menu)
-#+begin_src emacs-lisp
-  (defun my/open-inbox ()
-    (interactive)
-    "Opens the inbox.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "inbox.org" my-notes-directory)))
-  (defun my/open-inbox-mobile ()
-    (interactive)
-    "Opens the inbox-mobile.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "inbox-mobile.org" my-notes-directory)))
-  (defun my/open-emacs-config ()
-    (interactive)
-    "Opens the emacs.org file in the nix directory."
-    (interactive)
-    (find-file (expand-file-name "system/modules/emacs/default.nix" my-nix-systems-flake-directory)))
-  (defun my/open-log ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "logs.org" my-notes-directory)))
-  (defun my/open-prompts ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "prompts.org" my-notes-directory)))
-  (defun my/open-budget ()
-    (interactive)
-    "Opens the logs.org file in the notes directory."
-    (interactive)
-    (find-file (expand-file-name "budget.org" my-notes-directory)))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/projectile-magit-status ()
-  "Select a project via Projectile, then open Magit in that project."
+(defun jira-me ()
+  "Get current user's account name/email."
   (interactive)
-  (require 'projectile)
-  (let ((projectile-switch-project-action #'magit-status))
-    (projectile-switch-project)))
+  (string-trim (shell-command-to-string "jira me")))
 #+end_src
 
-*** The Org Opener Thing
+** Open in Browser
+
+Open Jira project or specific issue in the web browser.
+
 #+begin_src emacs-lisp
-;; This makes org-open-at-point just reuse the current split
-;; by default it tries to intelligently create one
-;; (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-(defun org-force-open-current-window ()
-  "Opens the link at point in the current window."
+(defun jira-open (&optional issue-key)
+  "Open Jira project or ISSUE-KEY in browser."
+  (interactive "sIssue key (optional): ")
+  (let ((cmd (if (and issue-key (not (string-empty-p issue-key)))
+                 (format "jira open %s" issue-key)
+               "jira open")))
+    (shell-command cmd)))
+#+end_src
+
+** List Projects
+
+List all accessible Jira projects.
+
+#+begin_src emacs-lisp
+(defun jira-project-list ()
+  "List all accessible Jira projects."
   (interactive)
-  (let ((org-link-frame-setup (quote ((file . find-file)))))
-    (org-open-at-point)))
-#+end_src
-*** Go Menu Definition
-
-#+begin_src emacs-lisp
-(transient-define-prefix my/inbox-menu ()
-  "Transient menu for getting to my inboxes"
-  ["Submenu Actions"
-   ("i" "Inbox" my/open-inbox)
-   ("m" "Mobile Inbox" my/open-inbox-mobile)])
-
-;; Define a submenu for "Go To Link"
-(transient-define-prefix my/go-to-link-menu ()
-  "Go to link submenu."
-  ["Go To Link"
-   ("g" "Follow link in same window" org-open-at-point)
-   ("h" "Force open in current window" org-force-open-current-window)])
-
-(transient-define-prefix my/go-menu ()
-  "Transient menu for navigating key files."
-  ["Go To"
-   ("i" "Inboxes" my/inbox-menu)
-   ("e" "Emacs Config" my/open-emacs-config)
-   ("g" "Follow link" my/go-to-link-menu)
-   ("p" "Prompts" my/open-prompts)
-   ("b" "Budget" my/open-budget)
-   ("m" "Magit" my/projectile-magit-status)
-   ("r" "Elfreed" elfeed)
-   ("l" "Log" my/open-log)])
+  (shell-command-to-string "jira project list"))
 #+end_src
 
-** The "Insert" Menu
+** List Boards
+
+List all boards in the current project.
+
 #+begin_src emacs-lisp
-(defun my/projectile-insert-org-link-to-file ()
-  "Pick a project, then a file, and insert an Org link at point in the original buffer."
+(defun jira-board-list ()
+  "List all boards in the current project."
   (interactive)
-  (require 'projectile)
-  (require 'org)
-  (let* ((origin-buf (current-buffer))
-         (origin-pos (copy-marker (point) t))
-         (projectile-switch-project-action
-          (lambda ()
-            (let* ((root (projectile-project-root))
-                   (file (projectile-completing-read
-                          "File: " (projectile-project-files root)))
-                   (abs  (expand-file-name file root))
-                   (link (org-link-make-string
-                          (concat "file:" (file-truename abs))
-                          (file-name-nondirectory abs))))
-              (when (buffer-live-p origin-buf)
-                (with-current-buffer origin-buf
-                  (goto-char origin-pos)
-                  (insert link)))))))
-    (unwind-protect
-        (save-window-excursion
-          (projectile-switch-project))
-      (set-marker origin-pos nil))))
+  (shell-command-to-string "jira board list"))
 #+end_src
+
+** List Releases
+
+List project releases/versions.
+
 #+begin_src emacs-lisp
-(transient-define-prefix my/insert-menu ()
-		   "Transient menu for inserting stuff places (usually under the cursor)."
-		   ["Insert"
-		    ("l" "LLM Prompt" my/search-llm-prompts)
-        ("p" "Projectile File" my/projectile-insert-org-link-to-file)
-		    ("m" "Memory Link" org-roam-node-insert)])
-#+end_src
-#+begin_src emacs-lisp :tangle no
-(defun my/org-send-current-buffer-to-kindle (&optional title)
-  "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
+(defun jira-release-list (&optional project)
+  "List releases for PROJECT (or default project if not specified)."
   (interactive)
-  (when (buffer-modified-p) (save-buffer))
-  (let* ((file (buffer-file-name))
-         (ttl (or title (or (save-excursion
-                              (goto-char (point-min))
-                              (when (re-search-forward "^#\\\\+TITLE: *\\\\(.*\\\\)$" nil t)
-                                (match-string 1)))
-                            (file-name-nondirectory file))))
-         (cmd (format "org-to-kindle-send --file %s --title %s"
-                      (shell-quote-argument file)
-                      (shell-quote-argument ttl))))
-    (message "Sending to Kindle: %s" ttl)
-    (let ((ret (call-process-shell-command cmd)))
-      (if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
+  (let ((cmd "jira release list"))
+    (when project (setq cmd (format "%s --project %s" cmd project)))
+    (shell-command-to-string cmd)))
 #+end_src
-** The "Search" Menu
+
+* Search and Discovery
+
+Enhanced search functions that provide interactive interfaces for finding and selecting Jira issues.
+
+** Browse and View Issues
+
+Main function for searching issues with vertico and automatically viewing the selection.
 
 #+begin_src emacs-lisp
-  (defun my/search-notes ()
-    "Run projectile ripgrep search in the notes directory."
-    (interactive)
-    (let ((default-directory (my/get-project-path "notes")))
-      (projectile-find-file)))
-
-  (transient-define-prefix my/search-menu ()
-			   "Transient menu for searching around the buffer(s), project, and filesystem."
-			   ["Search"
-			    ("s" "Line" consult-line)
-			    ("b" "Buffer" consult-buffer)
-			    ("f" "Find" consult-find)
-			    ("o" "Org Heading" consult-org-heading)
-			    ("m" "Memory" org-roam-node-find)
-			    ("r" "Ripgrep" consult-ripgrep)
-			    ("n" "Notes" my/search-notes)])
+(defun jira-browse-issues (&optional query)
+  "Browse and view Jira issues with vertico completion.
+Searches issues, presents them in vertico for selection, then automatically views the chosen issue.
+QUERY can pre-filter the results with jira cli arguments.
+Display format: [TYPE] [ID] [STATUS] [ASSIGNED TO] | [TITLE]"
+  (interactive)
+  (let* ((columns "--plain --columns type,key,status,assignee,summary --no-headers")
+         (raw-output (jira-issue-list (if query 
+                                          (format "%s %s" query columns)
+                                        columns)))
+         (lines (split-string raw-output "\n" t))
+         (issues (mapcar (lambda (line)
+                          (let ((parts (split-string line "\t" t)))
+                            (when (>= (length parts) 5)
+                              (let* ((type (or (nth 0 parts) "Unknown"))
+                                     (key (or (nth 1 parts) ""))
+                                     (status (or (nth 2 parts) "No Status"))
+                                     (assignee (or (nth 3 parts) "Unassigned"))
+                                     (summary (or (nth 4 parts) "No Summary"))
+                                     (display (format "[%s] [%s] [%s] [%s] | %s" 
+                                                     type key status assignee summary)))
+                                (cons display key)))))
+                        lines))
+         (filtered-issues (seq-filter #'identity issues)))
+    (if filtered-issues
+        (let* ((selection (completing-read "Browse issue: " filtered-issues nil t))
+               (issue-key (cdr (assoc selection filtered-issues))))
+          (when issue-key
+            (jira-issue-view issue-key)))
+      (message "No issues found"))))
 #+end_src
 
-** The "Create" Menu
+** Interactive Issue Search
 
-It would be cool if this also had some kind of interactive starting directory / starting command thing, but alas.
+Search and select issues with completion-based interface. Returns the selected issue key without viewing.
 
 #+begin_src emacs-lisp
-  (defun my/create-named-vterm ()
-    "Prompt for a name, create a new vterm buffer called NAME-vterm, and open it."
-    (interactive)
-    (let* ((name      (read-string "Enter vterm name: "))
-	   (buf-name  (concat name "-vterm")))
-      (vterm buf-name)
-      (switch-to-buffer buf-name)))
+(defun jira-search-issues (&optional query)
+  "Interactive search for Jira issues with completion.
+Returns the selected issue key. QUERY can pre-filter the results."
+  (interactive)
+  (let* ((raw-output (jira-issue-list (or query "--plain --columns key,summary --no-headers")))
+         (lines (split-string raw-output "\n" t))
+         (issues (mapcar (lambda (line)
+                          (let ((parts (split-string line "\t" t)))
+                            (when (>= (length parts) 2)
+                              (cons (format "%s: %s" (car parts) (cadr parts))
+                                    (car parts)))))
+                        lines))
+         (filtered-issues (seq-filter #'identity issues)))
+    (if filtered-issues
+        (let ((selection (completing-read "Select issue: " filtered-issues nil t)))
+          (cdr (assoc selection filtered-issues)))
+      (message "No issues found")
+      nil)))
 #+end_src
+
+** Advanced Search with Filters
+
+Comprehensive search function with vertico completion for common options.
 
 #+begin_src emacs-lisp
-  (transient-define-prefix my/create-menu ()
-			   "Create menu"
-			   [["Create"
-			     ("t" "terminal buffer" my/create-named-vterm)
-			     ("g" "gptel buffer" my/create-named-gptel)
-			     ("m" "memory" my/create-memory-interactive)
-			     ("c" "Capture" org-capture)]])
+(defun jira-search-issues-advanced ()
+  "Advanced interactive search with vertico completion for common options."
+  (interactive)
+  (let* (;; Get recent assignees and reporters from actual issues
+         (recent-issues (jira-issue-list "--plain --columns assignee,reporter --no-headers"))
+         (issue-lines (split-string recent-issues "\n" t))
+         
+         ;; Extract unique assignees and reporters from recent issues
+         ;; Note: jira CLI includes issue key as first column even when not requested
+         (recent-assignees (delete-dups
+                           (mapcar (lambda (line)
+                                    (let ((parts (split-string line "\t" t)))
+                                      (when (>= (length parts) 2)
+                                        (string-trim (nth 1 parts))))) ; Assignee is 2nd column
+                                  issue-lines)))
+         (recent-reporters (delete-dups
+                           (mapcar (lambda (line)
+                                    (let ((parts (split-string line "\t" t)))
+                                      (when (>= (length parts) 3)
+                                        (string-trim (nth 2 parts))))) ; Reporter is 3rd column
+                                  issue-lines)))
+         
+         ;; Use actual Bitwarden Jira statuses and priorities
+         (status-options '("" "Abandoned" "Blocked" "Code Review" "Done" "In Analysis" 
+                          "In Progress" "Needs Triage" "Product Review" "Ready for QA" 
+                          "Reproduced" "To Do" "Triaged"))
+         (priority-options '("" "Blocker" "High" "Medium" "Low"))
+         (time-options '("" "today" "week" "month" "year" "-1d" "-3d" "-7d" "-14d" "-30d"))
+         (assignee-options (delete-dups (append '("" "me" "x") 
+                                               (seq-filter (lambda (x) (and x (not (string-empty-p x)))) 
+                                                          recent-assignees))))
+         (reporter-options (delete-dups (append '("" "me") 
+                                               (seq-filter (lambda (x) (and x (not (string-empty-p x)))) 
+                                                          recent-reporters))))
+         
+         ;; Interactive selections with vertico (allowing free-form input)
+         (assignee (completing-read "Assignee (empty=all, me=self, x=unassigned, or type name): " 
+                                   assignee-options nil nil))
+         (status (completing-read "Status (empty=all, or type custom): " 
+                                 status-options nil nil))
+         (priority (completing-read "Priority (empty=all): " 
+                                   priority-options nil nil))
+         (created (completing-read "Created (empty=all): " 
+                                  time-options nil nil))
+         (labels (read-string "Labels (comma-separated, empty=all): "))
+         (reporter (completing-read "Reporter (empty=all, me=self, or type name): " 
+                                   reporter-options nil nil))
+         (args '()))
+    
+    ;; Build filter arguments
+    (when (not (string-empty-p assignee))
+      (cond
+       ((string= assignee "me") (push (format "-a%s" (jira-me)) args))
+       ((string= assignee "x") (push "-ax" args))
+       (t (push (format "-a\"%s\"" assignee) args))))
+    
+    (when (not (string-empty-p status))
+      (push (format "-s\"%s\"" status) args))
+    
+    (when (not (string-empty-p priority))
+      (push (format "-y%s" priority) args))
+    
+    (when (not (string-empty-p created))
+      (cond
+       ((member created '("today" "week" "month" "year"))
+        (push (format "--created %s" created) args))
+       ((string-match "^-[0-9]+[dwmy]$" created)
+        (push (format "--created %s" created) args))
+       (t (push (format "--created \"%s\"" created) args))))
+    
+    (when (not (string-empty-p labels))
+      (dolist (label (split-string labels "," t))
+        (push (format "-l%s" (string-trim label)) args)))
+    
+    (when (not (string-empty-p reporter))
+      (if (string= reporter "me")
+          (push (format "-r%s" (jira-me)) args)
+        (push (format "-r\"%s\"" reporter) args)))
+    
+    ;; Execute search
+    (let ((query (string-join (reverse args) " ")))
+      (if args
+          (jira-browse-issues query)
+        (jira-browse-issues)))))
 #+end_src
 
-** The "Execute" Menu
+** Quick Search Helpers
+
+Convenient shortcuts for common search patterns with enhanced display.
 
 #+begin_src emacs-lisp
-  (transient-define-prefix my/execute-menu ()
-			   "Transient menu for executing actions in projects, files, buffers, etc."
-			   ["Execute"
-			    ("x" "Project Command" my/executer-picker)])
-#+end_src
+(defun jira-search-my-issues ()
+  "Browse and view issues assigned to me with enhanced display."
+  (interactive)
+  (jira-browse-issues (format "-a%s" (jira-me))))
 
-* Custom Keymaps
-** General
+(defun jira-search-recent-issues ()
+  "Browse and view issues created this week with enhanced display."
+  (interactive)
+  (jira-browse-issues "--created week"))
 
-#+begin_src emacs-lisp
-  (define-prefix-command 'my-custom-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
-  (which-key-add-key-based-replacements "C-a" "my commands")
+(defun jira-search-high-priority ()
+  "Browse and view high priority issues with enhanced display."
+  (interactive)
+  (jira-browse-issues "-yHigh"))
 
-  ;; create "go" prefix map
-  (define-prefix-command 'my-go-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
-  (which-key-add-key-based-replacements "C-a g" "go")
-
-  (defun my/open-compilation-file-in-other-window ()
-    "open the current compilation match in another window.
-    creates a new window if needed or reuses an existing one."
-    (interactive)
-    (let ((window-count (length (window-list))))
-      (condition-case err
-	  (if (= window-count 1)
-	      ;; only one window, use built-in function that creates a new window
-	      (compilation-display-error)
-	    ;; multiple windows exist, use the next window
-	    (let ((this-window (selected-window)))
-	      (other-window 1)
-	      (let ((target-window (selected-window)))
-		(select-window this-window)
-		;; use next-error-no-select to get location without changing windows
-		(let ((location (next-error-no-select)))
-		  (select-window target-window)
-		  (switch-to-buffer (marker-buffer (car location)))
-		  (goto-char (marker-position (car location)))))))
-	;; catch any errors silently
-	(error (message "no valid location found at point")))))
-
-  (evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
-  (which-key-add-key-based-replacements "C-a g f" "go to file")
-
-  (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
-  (which-key-add-key-based-replacements "C-a g d" "go to definition")
-  (which-key-add-key-based-replacements "C-a g e" "emacs config")
-
-  (define-prefix-command 'my-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c" "compile")
-
-  (define-prefix-command 'my-nix-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c n" "nix")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
-  (which-key-add-key-based-replacements "C-a c n r" "rebuild")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
-  (which-key-add-key-based-replacements "C-a c n f" "format")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
-  (which-key-add-key-based-replacements "C-a c n c" "commit")
-
-  ;; create "find" prefix map
-  (define-prefix-command 'my-find-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
-  (which-key-add-key-based-replacements "C-a f" "find")
-
-  (evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
-  (which-key-add-key-based-replacements "C-a f g" "ripgrep")
-
-  (evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
-  (which-key-add-key-based-replacements "C-a f p" "project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
-  (which-key-add-key-based-replacements "C-a f f" "file in directory")
-
-  (evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
-  (which-key-add-key-based-replacements "C-a f F" "file in project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
-  (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
-  (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
-
-  (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
-  (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
-
-  (evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
-  (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
-
-  (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
-  (with-eval-after-load 'org-agenda
-    (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
-
-  (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
-
-  (with-eval-after-load 'elfeed-show
-    (require 'hnreader)
-    (require 'evil)
-
-    (defun my/elfeed-show-hn-comments ()
-      "Open Hacker News comments for the link at point in elfeed-show-mode."
-      (interactive)
-      (message "my/elfeed-show-hn-comments invoked.")
-      (let ((link (elfeed-get-link-at-point)))
-	(message "Link at point: %s" link)
-	;; Check if it's a valid HN item link
-	(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
-	    (progn ;; Use progn to execute multiple forms
-	      (message "Found HN link: %s. Calling hnreader-comment..." link)
-	      ;; Pass the full link URL to hnreader-comment
-	      (hnreader-comment link)
-	      (message "hnreader-comment called with URL."))
-	  (message "No Hacker News item link found at point or link doesn't match pattern."))))
-
-    (evil-define-key 'normal elfeed-show-mode-map
-		     (kbd "c") #'my/elfeed-show-hn-comments))
-
-  (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
-  (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-  (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-  (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-  (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
-  (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
-
-  (defun my/projectile-find-file-in-all-projects ()
-    "Find file across all registered Projectile projects with improved performance."
-    (interactive)
-    (let* ((projects (projectile-relevant-known-projects))
-	   (file-cache-var 'my/projectile-all-files-cache)
-	   (cache-validity-seconds 300) ;; 5 minute cache validity
-	   (current-time (current-time))
-	   (use-cache (and (boundp file-cache-var)
-			   (< (float-time (time-subtract 
-					   current-time
-					   (get file-cache-var 'timestamp)))
-			      cache-validity-seconds)))
-	   (cached-files (and use-cache (symbol-value file-cache-var))))
-
-      (if use-cache
-	  (message "Using cached file list (%d files)" (length cached-files))
-	;; Build cache using external commands for speed
-	(message "Building file list from %d projects..." (length projects))
-	(let ((all-files '())
-	      (temp-file (make-temp-file "projectile-files-")))
-	  ;; Using external find/sort is much faster than pure elisp
-	  (with-temp-file temp-file
-	    (dolist (project projects)
-	      (when (file-exists-p project)
-		(let* ((project-name (file-name-nondirectory 
-				      (directory-file-name project)))
-		       ;; Add project name prefix to each file for context
-		       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
-				    (shell-quote-argument project)
-				    project-name)))
-		  (call-process-shell-command cmd nil t)))))
-
-	  ;; Read results back and build alist of (display . filepath)
-	  (with-temp-buffer
-	    (insert-file-contents temp-file)
-	    (goto-char (point-min))
-	    (while (not (eobp))
-	      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
-		     ;; Fix: Only split on the first colon
-		     (split-pos (string-match ":" line))
-		     (project-name (when split-pos (substring line 0 split-pos)))
-		     (rel-file (when split-pos (substring line (1+ split-pos))))
-		     (full-path (when (and project-name rel-file)
-				  (expand-file-name
-				   (string-remove-prefix "./" rel-file)
-				   (car (seq-filter (lambda (p) 
-						      (string-suffix-p project-name p))
-						    projects))))))
-		(when (and project-name rel-file full-path)
-		  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
-	      (forward-line 1)))
-
-	  (delete-file temp-file)
-	  ;; Save and timestamp the cache
-	  (set file-cache-var all-files)
-	  (put file-cache-var 'timestamp current-time)
-	  (message "Found %d files across projects" (length all-files))))
-
-      ;; Use the cached or newly-built list
-      (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
-	(if file-list
-	    ;; Use completing-read for the selection interface
-	    (let* ((chosen (completing-read "Find file in projects: " 
-					    (mapcar #'car file-list) nil t))
-		   (file-path (cdr (assoc chosen file-list))))
-	      (when file-path
-		(find-file file-path)))
-	  (message "No files found across projects")))))
-
-  (defun my/open-pr-url-at-point ()
-    "Open the PR_URL property of the current org agenda item."
-    (interactive)
-    (let* ((marker (or (org-get-at-bol 'org-marker)
-		       (org-agenda-error)))
-	   (buffer (marker-buffer marker))
-	   (pos (marker-position marker))
-	   url)
-      (with-current-buffer buffer
-	(save-excursion
-	  (goto-char pos)
-	  (setq url (org-entry-get (point) "PR_URL"))))
-      (when url
-	(browse-url url))))
-#+end_src
-#+RESULTS:
-
-** Launching Transient Menus
-#+begin_src emacs-lisp
-  (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
-  (evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
-  (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
-  (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
-  (evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
-  (evil-define-key 'normal 'global (kbd "C-x") #'my/execute-menu)
-#+end_src
-** Mode Specific
-
-These are usually called from a mode init hook
-
-*** Cominit Mode Keymaps
-
-#+begin_src emacs-lisp
-  (defun my/cominit-mode-set-keybindings ()
-    (interactive)
-    "Sets all my cominit mode specific keybindings"
-    (local-set-key (kbd "C-b") #'my/create-menu)
-    (local-set-key (kbd "C-g") #'my/go-menu)
-    (local-set-key (kbd "C-<return>") #'my/insert-menu)
-    (local-set-key (kbd "C-s") #'my/search-menu)
-    (local-set-key (kbd "C-x") #'my/execute-menu)
-
-    (evil-define-key '(normal visual motion) magit-status-mode-map
-		     (kbd "C-g") #'my/go-menu
-		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-s") #'my/search-menu
-		     (kbd "C-x") #'my/execute-menu
-		     (kbd "C-b") #'my/create-menu)
-    )
-#+end_src
-
-*** Magit Status Keymaps
-
-Using evil-mode based mappings don't work on the agenda, for same reason
-
-#+begin_src emacs-lisp
-  (defun my/magit-status-mode-set-keybindings ()
-    (interactive)
-    "Sets all my magit-status mode specific keybindings"
-    ;; Using local-set-key ensures the binding takes precedence in the current buffer
-    (local-set-key (kbd "C-b") #'my/create-menu)
-    (local-set-key (kbd "C-g") #'my/go-menu)
-    (local-set-key (kbd "C-<return>") #'my/insert-menu)
-    (local-set-key (kbd "C-s") #'my/search-menu)
-    (local-set-key (kbd "C-x") #'my/execute-menu)
-
-    ;; Also set the evil motion state map as a backup approach
-    (evil-define-key '(normal visual motion) magit-status-mode-map
-		     (kbd "C-g") #'my/go-menu
-		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-s") #'my/search-menu
-		     (kbd "C-x") #'my/execute-menu
-		     (kbd "C-b") #'my/create-menu)
-    )
-#+end_src
-
-*** Gptel Mode Keymaps
-#+begin_src emacs-lisp :tangle no
-  (defun my/gptel-mode-set-keybindings ()
-    (interactive)
-    "Sets all my gptel mode specific keybindings"
-    )
-#+end_src
-
-* Mode Init Hooks
-** Cominit Init Hook
-
-#+begin_src emacs-lisp :tangle no
-  (defun cominit-mode-init ()
-    "Function to run on cominit mode init"
-    (my/cominit-mode-set-keybindings))
-  (add-hook cominit-mode-hook #'cominit-mode-init)
-#+end_src
-
-** Olivetti Mode Init Hook
-
-#+begin_src emacs-lisp :tangle no
-  (defun my/olivetti-mode-init ()
-    (my/update-olivetti-fringe-face))
-  (add-hook 'olivetti-mode-hook 'my/olivetti-mode-init)
-#+end_src
-
-** Gptel Mode
-
-#+begin_src emacs-lisp :tangle no
-  (defun gptel-mode-init ()
-    "Function to run on gptel mode init"
-    (my/gptel-mode-set-keybindings))
-  (add-hook 'gptel-mode-hook #'gptel-mode-init)
-#+end_src
-
-** Magit Status Mode
-
-#+begin_src emacs-lisp
-  (defun magit-status-mode-init ()
-    "Function to run on magit status mode init"
-    (my/magit-status-mode-set-keybindings)
-    (my/toggle-olivetti))
-  (add-hook 'magit-status-mode-hook #'magit-status-mode-init)
-#+end_src
-
-* Final Function Advice
-** Update Olivetti Fringes on Theme Toggle
-#+begin_src emacs-lisp
-  (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
-#+end_src
-* Provide Init
-
-#+begin_src emacs-lisp
-  (provide 'init)
-
-  ;; Local Variables:
-  ;; byte-compile-warnings: (not free-vars)
-  ;; End:
-		      ;;; init.el ends here
+(defun jira-search-unassigned ()
+  "Browse and view unassigned issues with enhanced display."
+  (interactive)
+  (jira-browse-issues "-ax"))
 #+end_src

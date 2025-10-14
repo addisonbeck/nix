@@ -30,6 +30,7 @@
                   "olivetti.org"
                   "autosave.org"
                   "spellcheck.org"
+                  "jira.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)
