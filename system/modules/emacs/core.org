@@ -139,53 +139,57 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 * Evil Mode Configuration
 #+begin_src emacs-lisp
-  ;; Test
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-want-C-u-scroll t)
+;; Test
+(setq evil-want-integration t)
+(setq evil-want-keybinding nil)
+(setq evil-want-C-u-scroll t)
 
-  (use-package evil
-    :ensure t
-    :config
-    (evil-mode 1)
+(use-package evil
+  :ensure t
+  :config
+  (evil-mode 1)
 
-    ;; Custom movement functions
-    (defun evil-move-half-page-down ()
-      "Move cursor half page down"
-      (interactive)
-      (evil-next-line (/ (window-height) 4))
-      (evil-scroll-line-to-center nil))
+  ;; Custom movement functions
+  (defun evil-move-half-page-down ()
+    "Move cursor half page down"
+    (interactive)
+    (evil-next-line (/ (window-height) 4))
+    (evil-scroll-line-to-center nil))
 
-    (defun evil-move-half-page-up ()
-      "Move cursor half page up"
-      (interactive)
-      (evil-previous-line (/ (window-height) 4))
-      (evil-scroll-line-to-center nil))
+  (defun evil-move-half-page-up ()
+    "Move cursor half page up"
+    (interactive)
+    (evil-previous-line (/ (window-height) 4))
+    (evil-scroll-line-to-center nil))
 
-    ;; Bind J and K to half-page movement
-    (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
-    (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
+  ;; Bind J and K to half-page movement
+  (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
+  (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
 
-  (use-package evil-collection
-    :ensure t
-    :after evil
-    :config
-    (evil-collection-init))
+(define-key evil-normal-state-map (kbd "z t") 'evil-scroll-line-to-top)
+(define-key evil-normal-state-map (kbd "z z") 'evil-scroll-line-to-center)
+(define-key evil-normal-state-map (kbd "z b") 'evil-scroll-line-to-bottom)
 
-  ;; Configure evil-collection for magit
-  (with-eval-after-load 'evil-collection-magit
-    (evil-collection-define-key 'normal 'magit-status-mode-map
-				"V" #'magit-start-region-select))
-  (require 'evil-org-agenda)
-  (evil-org-agenda-set-keys)
-  (evil-define-key 'motion org-agenda-mode-map
-		   (kbd "C-p") 'projectile-switch-project
-		   (kbd "C-f") 'projectile-find-file
-		   (kbd "<left>") 'org-agenda-earlier
-		   (kbd "<right>") 'org-agenda-later
-		   (kbd "gx")  'org-agenda-open-link
-		   (kbd "t") 'org-agenda-todo
-		   (kbd "T") 'org-agenda-todo-yesterday)
+(use-package evil-collection
+  :ensure t
+  :after evil
+  :config
+  (evil-collection-init))
+
+;; Configure evil-collection for magit
+(with-eval-after-load 'evil-collection-magit
+  (evil-collection-define-key 'normal 'magit-status-mode-map
+			"V" #'magit-start-region-select))
+(require 'evil-org-agenda)
+(evil-org-agenda-set-keys)
+(evil-define-key 'motion org-agenda-mode-map
+	   (kbd "C-p") 'projectile-switch-project
+	   (kbd "C-f") 'projectile-find-file
+	   (kbd "<left>") 'org-agenda-earlier
+	   (kbd "<right>") 'org-agenda-later
+	   (kbd "gx")  'org-agenda-open-link
+	   (kbd "t") 'org-agenda-todo
+	   (kbd "T") 'org-agenda-todo-yesterday)
 #+end_src
 
 * Cycle Line Number Function
