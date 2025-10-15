@@ -1550,6 +1550,53 @@ This cool and lame at the same time
 
 ** The "Insert" Menu
 #+begin_src emacs-lisp
+(defun my/insert-org-heading-with-timestamp (level text)
+  "Insert an org heading with specified text at the specified level.
+Level should be 1-6, defaults to 1. Text defaults to current timestamp."
+  (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
+                 (list (read-number "Heading level (1-6): " 1)
+                       (completing-read "Heading text: " 
+                                       nil nil nil nil nil timestamp))))
+  (let* ((level (max 1 (min 6 level))) ; Clamp to 1-6 range
+         (stars (make-string level ?*))
+         (heading (concat stars " " text)))
+    (end-of-line)
+    (newline)
+    (insert heading)))
+
+(defun insert-org-block (block-type &optional language)
+  "Insert an org block of specified type and position cursor inside.
+For src blocks, optionally prompts for language."
+  (interactive 
+   (let* ((block-type (completing-read "Block type: " 
+                                      '("src" "quote" "example" "verse" "center" 
+                                        "comment" "export" "note" "warning" "tip" 
+                                        "important" "error" "details" "summary")
+                                      nil nil nil nil "src"))
+          (language (when (string= block-type "src")
+                      (completing-read "Language (optional): " 
+                                      '("emacs-lisp" "python" "bash" "shell" "javascript" "typescript"
+                                        "java" "c" "cpp" "go" "rust" "ruby" "perl" "php" "sql"
+                                        "html" "css" "json" "yaml" "xml" "markdown" "r" "matlab"
+                                        "octave" "scheme" "clojure" "haskell" "swift" "kotlin" 
+                                        "scala" "lua" "dart" "elixir" "erlang" "nim" "zig"
+                                        "dockerfile" "makefile" "org" "text" "conf" "csharp"
+                                        "markdown")
+                                      nil nil nil nil ""))))
+     (list block-type language)))
+  (end-of-line)
+  (newline)
+  (let ((begin-line (if (and language (not (string-empty-p language)))
+                        (format "#+begin_%s %s" block-type language)
+                      (format "#+begin_%s" block-type)))
+        (end-line (format "#+end_%s" block-type)))
+    (insert begin-line)
+    (newline)
+    (let ((content-pos (point)))
+      (newline)
+      (insert end-line)
+      (goto-char content-pos))))
+
 (defun my/projectile-insert-org-link-to-file ()
   "Pick a project, then a file, and insert an Org link at point in the original buffer."
   (interactive)
@@ -1580,6 +1627,7 @@ This cool and lame at the same time
 		   "Transient menu for inserting stuff places (usually under the cursor)."
 		   ["Insert"
 		    ("l" "LLM Prompt" my/search-llm-prompts)
+		    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
         ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
