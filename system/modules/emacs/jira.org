@@ -98,7 +98,14 @@ Optional COMMENTS specifies number of recent comments to show."
     
     ;; Header with key info and URL
     (insert (format "🎫 %s: %s\n" issue-key summary))
-    (insert (format "🔗 %s\n" (alist-get 'self json-data)))
+    (let* ((self-url (alist-get 'self json-data))
+       (base-url (when self-url
+                   (if (string-match "^\\(https://[^/]+\\)" self-url)
+                       (match-string 1 self-url)
+                     nil)))
+       (browse-url (when base-url
+                     (format "%s/browse/%s" base-url issue-key))))
+    (insert (format "🔗 %s\n" (or browse-url "URL not available"))))
     (insert (make-string (+ 4 (length issue-key) (length summary)) ?=) "\n\n")
     
     ;; Status and metadata section
