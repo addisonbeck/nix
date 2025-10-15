@@ -27,6 +27,10 @@ The core functionality for working with Jira issues - listing, viewing, creating
 Basic function to list issues with optional filtering parameters. Returns the raw output from jira cli.
 
 #+begin_src emacs-lisp
+;; Required libraries for enhanced functionality
+(require 'json)
+(require 'seq)
+
 (defun jira-issue-list (&optional args)
   "List Jira issues with optional ARGS for filtering.
 ARGS can be a string of jira cli flags like '--created week -a$(jira me)'."
@@ -39,29 +43,149 @@ ARGS can be a string of jira cli flags like '--created week -a$(jira me)'."
 
 ** View Issue Details
 
-Display detailed information about a specific issue in a dedicated buffer with preserved formatting.
+Enhanced issue viewer that combines human-readable formatting with comprehensive information from the raw API.
 
 #+begin_src emacs-lisp
 (defun jira-issue-view (issue-key &optional comments)
-  "View details for ISSUE-KEY in a dedicated buffer with preserved formatting.
+  "View details for ISSUE-KEY in a dedicated buffer with enhanced formatting.
+Combines raw JSON data with human-readable presentation.
 Optional COMMENTS specifies number of recent comments to show."
   (interactive "sIssue key: ")
-  (let* ((cmd (if comments
-                  (format "jira issue view %s --comments %s" issue-key comments)
-                (format "jira issue view %s" issue-key)))
-         (buffer-name (format "*Jira: %s*" issue-key)))
-    ;; Use shell-command with output buffer to preserve formatting
+  (let ((buffer-name (format "*Jira: %s*" issue-key)))
     (with-current-buffer (get-buffer-create buffer-name)
       (when (bound-and-true-p view-mode)
-        (view-mode -1))  ; Disable view-mode so we can edit the buffer
+        (view-mode -1))
       (erase-buffer)
-      (let ((default-directory default-directory))
-        (shell-command cmd (current-buffer)))
-      ;; Apply ANSI color formatting
-      (ansi-color-apply-on-region (point-min) (point-max))
+      
+      ;; Get both plain view for description and raw JSON for metadata
+      (let* ((raw-json (shell-command-to-string (format "jira issue view %s --raw" issue-key)))
+             (plain-view (shell-command-to-string 
+                         (if comments
+                             (format "jira issue view %s --plain --comments %s" issue-key comments)
+                           (format "jira issue view %s --plain" issue-key))))
+             (json-data (ignore-errors (json-parse-string raw-json :object-type 'alist :array-type 'list))))
+        
+        (if json-data
+            (jira--format-enhanced-issue json-data plain-view)
+          ;; Fallback to plain view if JSON parsing fails
+          (insert plain-view)
+          (ansi-color-apply-on-region (point-min) (point-max))))
+      
       (goto-char (point-min))
-      (view-mode 1))  ; Enable view-mode for easy navigation
+      (view-mode 1))
     (switch-to-buffer buffer-name)))
+
+(defun jira--format-enhanced-issue (json-data plain-view)
+  "Format issue data with enhanced human-readable information."
+  (let* ((fields (alist-get 'fields json-data))
+         (issue-key (alist-get 'key json-data))
+         (summary (alist-get 'summary fields))
+         (status (alist-get 'name (alist-get 'status fields)))
+         (priority (alist-get 'name (alist-get 'priority fields)))
+         (issue-type (alist-get 'name (alist-get 'issuetype fields)))
+         (assignee (alist-get 'displayName (alist-get 'assignee fields)))
+         (reporter (alist-get 'displayName (alist-get 'reporter fields)))
+         (created (alist-get 'created fields))
+         (updated (alist-get 'updated fields))
+         (labels (alist-get 'labels fields))
+         (comments (alist-get 'comments (alist-get 'comment fields)))
+         (comment-total (alist-get 'total (alist-get 'comment fields)))
+         (attachments (alist-get 'attachment fields))
+         (issue-links (alist-get 'issuelinks fields))
+         (parent (alist-get 'parent fields))
+         (sprint-data (alist-get 'customfield_10020 fields))
+         (watchers (alist-get 'watchCount (alist-get 'watches fields))))
+    
+    ;; Header with key info and URL
+    (insert (format "🎫 %s: %s\n" issue-key summary))
+    (insert (format "🔗 %s\n" (alist-get 'self json-data)))
+    (insert (make-string (+ 4 (length issue-key) (length summary)) ?=) "\n\n")
+    
+    ;; Status and metadata section
+    (insert "📊 STATUS & METADATA\n")
+    (insert (make-string 20 ?-) "\n")
+    (insert (format "   Status: %s\n" (or status "Unknown")))
+    (insert (format "   Type: %s\n" (or issue-type "Unknown")))
+    (insert (format "   Priority: %s\n" (or priority "None")))
+    (insert (format "   Assignee: %s\n" (or assignee "Unassigned")))
+    (insert (format "   Reporter: %s\n" (or reporter "Unknown")))
+    (when watchers
+      (insert (format "   Watchers: %s\n" watchers)))
+    
+    ;; Sprint information
+    (when (and sprint-data (listp sprint-data))
+      (insert "\n🏃 SPRINT INFORMATION\n")
+      (insert (make-string 20 ?-) "\n")
+      (let ((active-sprint (seq-find (lambda (s) (string= (alist-get 'state s) "active")) sprint-data)))
+        (if active-sprint
+            (insert (format "   Current: %s (Active)\n" (alist-get 'name active-sprint)))
+          (let ((recent-sprint (car sprint-data)))
+            (when recent-sprint
+              (insert (format "   Recent: %s (%s)\n" 
+                            (alist-get 'name recent-sprint)
+                            (capitalize (alist-get 'state recent-sprint)))))))))
+    
+    ;; Labels and links
+    (when (or labels parent issue-links)
+      (insert "\n🏷️  RELATIONSHIPS\n")
+      (insert (make-string 20 ?-) "\n")
+      (when labels
+        (insert (format "   Labels: %s\n" (string-join (mapcar (lambda (l) (format "#%s" l)) labels) " "))))
+      (when parent
+        (insert (format "   Parent: %s - %s\n" 
+                       (alist-get 'key parent)
+                       (alist-get 'summary (alist-get 'fields parent)))))
+      (when issue-links
+        (dolist (link issue-links)
+          (let* ((type (alist-get 'type link))
+                 (type-name (alist-get 'name type))
+                 (outward (alist-get 'outwardIssue link))
+                 (inward (alist-get 'inwardIssue link)))
+            (cond
+             (outward 
+              (insert (format "   %s: %s - %s\n" 
+                            type-name
+                            (alist-get 'key outward)
+                            (alist-get 'summary (alist-get 'fields outward)))))
+             (inward
+              (insert (format "   %s: %s - %s\n"
+                            (alist-get 'inward type)
+                            (alist-get 'key inward)
+                            (alist-get 'summary (alist-get 'fields inward))))))))))
+    
+    ;; Comments and attachments
+    (when (or (and comment-total (> comment-total 0)) attachments)
+      (insert "\n💬 ACTIVITY\n")
+      (insert (make-string 20 ?-) "\n")
+      (when comment-total
+        (insert (format "   Comments: %s total\n" comment-total)))
+      (when attachments
+        (insert (format "   Attachments: %s files\n" (length attachments)))
+        (dolist (att attachments)
+          (let* ((filename (alist-get 'filename att))
+                 (size (alist-get 'size att))
+                 (size-mb (if size (format "%.1fMB" (/ size 1048576.0)) "unknown size")))
+            (insert (format "     📎 %s (%s)\n" filename size-mb))))))
+    
+    ;; Description section
+    (insert "\n📝 DESCRIPTION\n")
+    (insert (make-string 20 ?-) "\n")
+    (let ((description (alist-get 'description fields)))
+      (if (and description (alist-get 'content description))
+          ;; Parse Atlassian document format
+          (jira--format-comment-content (alist-get 'content description))
+        ;; Fallback to plain view description extraction
+        (let ((desc-start (string-match "-+[ ]*Description[ ]*-+" plain-view)))
+          (if desc-start
+              (let* ((desc-content (substring plain-view desc-start))
+                     (next-section (string-match "-+[ ]*[A-Za-z ]*[ ]*-+" desc-content 1)))
+                (insert (if next-section 
+                           (substring desc-content 0 next-section)
+                         desc-content)))
+            (insert "No description available.\n")))))
+    
+    ;; Apply ANSI coloring to the whole buffer
+    (ansi-color-apply-on-region (point-min) (point-max))))
 #+end_src
 
 ** Create Issue
@@ -255,6 +379,158 @@ NO-INPUT: if t, skip interactive prompts"
     (shell-command cmd)))
 #+end_src
 
+** View Comments
+
+Enhanced comment viewing with structured display.
+
+#+begin_src emacs-lisp
+(defun jira-issue-comments (issue-key &optional count)
+  "View comments for ISSUE-KEY in a dedicated buffer with enhanced formatting.
+COUNT specifies number of recent comments to show (default 10)."
+  (interactive "sIssue key: ")
+  (let* ((comment-count (or count 10))
+         (buffer-name (format "*Jira Comments: %s*" issue-key))
+         (raw-json (shell-command-to-string (format "jira issue view %s --raw" issue-key)))
+         (json-data (ignore-errors (json-parse-string raw-json :object-type 'alist :array-type 'list))))
+    
+    (with-current-buffer (get-buffer-create buffer-name)
+      (when (bound-and-true-p view-mode)
+        (view-mode -1))
+      (erase-buffer)
+      
+      (if json-data
+          (let* ((fields (alist-get 'fields json-data))
+                 (comment-data (alist-get 'comment fields))
+                 (comments (alist-get 'comments comment-data))
+                 (total (alist-get 'total comment-data))
+                 (summary (alist-get 'summary fields)))
+            
+            ;; Header
+            (insert (format "💬 Comments for %s: %s\n" issue-key summary))
+            (insert (make-string (+ 15 (length issue-key) (length summary)) ?=) "\n\n")
+            (insert (format "Total comments: %d\n" (or total 0)))
+            (when (> (or total 0) 0)
+              (insert (format "Showing: %d most recent\n" (min comment-count (or total 0)))))
+            (insert "\n" (make-string 50 ?-) "\n\n")
+            
+            (if (and comments (> (length comments) 0))
+                (let ((recent-comments (seq-take (reverse comments) comment-count)))
+                  (dolist (comment recent-comments)
+                    (let* ((author (alist-get 'displayName (alist-get 'author comment)))
+                           (created (alist-get 'created comment))
+                           (body (alist-get 'body comment))
+                           (created-date (when created
+                                          (format-time-string "%Y-%m-%d %H:%M" 
+                                                            (date-to-time created)))))
+                      (insert (format "👤 %s" (or author "Unknown Author")))
+                      (when created-date
+                        (insert (format " • %s" created-date)))
+                      (insert "\n" (make-string 40 ?-) "\n")
+                      
+                      ;; Format comment body (convert Atlassian document format to readable text)
+                      (if (and body (alist-get 'content body))
+                          (jira--format-comment-content (alist-get 'content body))
+                        (insert "No content\n"))
+                      (insert "\n\n"))))
+              (insert "No comments found.\n")))
+        
+        ;; Fallback if JSON parsing fails
+        (insert "Unable to parse comment data.\n"))
+      
+      (goto-char (point-min))
+      (view-mode 1))
+    (switch-to-buffer buffer-name)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-text-with-marks (text marks)
+  "Apply formatting marks to text."
+  (when text
+    (if (seq-some (lambda (mark) (string= (alist-get 'type mark) "strong")) marks)
+        (insert (format "**%s**" text))
+      (if (seq-some (lambda (mark) (string= (alist-get 'type mark) "em")) marks)
+          (insert (format "*%s*" text))
+        (insert text)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-inline-content (inline)
+  "Format a single inline content element."
+  (let ((inline-type (alist-get 'type inline)))
+    (cond
+     ((string= inline-type "text")
+      (let ((text (alist-get 'text inline))
+            (marks (alist-get 'marks inline)))
+        (jira--format-text-with-marks text marks)))
+     
+     ((string= inline-type "inlineCard")
+      (let ((url (alist-get 'url (alist-get 'attrs inline))))
+        (when url
+          (insert (format "🔗 %s" url)))))
+     
+     ((string= inline-type "mention")
+      (let* ((attrs (alist-get 'attrs inline))
+             (display-name (alist-get 'text attrs))
+             (user-id (alist-get 'id attrs)))
+        (insert (format "@%s" (or display-name user-id "unknown")))))
+     
+     (t
+      (let ((text (alist-get 'text inline)))
+        (when text
+          (insert text)))))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-paragraph (block)
+  "Format a paragraph block."
+  (let ((block-content (alist-get 'content block)))
+    (when block-content
+      (dolist (inline block-content)
+        (jira--format-inline-content inline))
+      (insert "\n"))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-code-block (block)
+  "Format a code block."
+  (let* ((block-content (alist-get 'content block))
+         (code-text (when block-content
+                     (alist-get 'text (car block-content)))))
+    (when code-text
+      (insert "=\n" code-text "\n=\n"))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-bullet-list (block)
+  "Format a bullet list."
+  (let ((items (alist-get 'content block)))
+    (dolist (item items)
+      (insert "• ")
+      (jira--format-comment-content (alist-get 'content item))
+      (insert "\n"))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun jira--format-comment-content (content)
+  "Format Atlassian document content for readable display."
+  (dolist (block content)
+    (let ((type (alist-get 'type block)))
+      (cond
+       ((string= type "paragraph")
+        (jira--format-paragraph block))
+       
+       ((string= type "codeBlock")
+        (jira--format-code-block block))
+       
+       ((string= type "bulletList")
+        (jira--format-bullet-list block))
+       
+       (t
+        (let ((text (alist-get 'text block)))
+          (when text
+            (insert text "\n"))))))))
+#+end_src
+
 * Epic Operations
 
 Functions for working with Jira epics - larger work containers that group related issues.
@@ -446,15 +722,23 @@ Enhanced search functions that provide interactive interfaces for finding and se
 
 ** Browse and View Issues
 
-Main function for searching issues with vertico and automatically viewing the selection.
+Enhanced function for searching issues with vertico, showing more context in the selection list.
 
 #+begin_src emacs-lisp
-(defun jira-browse-issues (&optional query)
+(defun jira-browse-issues (&optional query detailed)
   "Browse and view Jira issues with vertico completion.
 Searches issues, presents them in vertico for selection, then automatically views the chosen issue.
 QUERY can pre-filter the results with jira cli arguments.
-Display format: [TYPE] [ID] [STATUS] [ASSIGNED TO] | [TITLE]"
+DETAILED if t, shows enhanced information including sprint and comment data.
+Display format: [TYPE] [ID] [STATUS] [ASSIGNEE] | [TITLE]
+Enhanced format: [TYPE] [ID] [STATUS] [SPRINT] [ASSIGNEE] 💬N | [TITLE]"
   (interactive)
+  (if detailed
+      (jira-browse-issues-detailed query)
+    (jira-browse-issues-simple query)))
+
+(defun jira-browse-issues-simple (query)
+  "Simple browse with basic column information."
   (let* ((columns "--plain --columns type,key,status,assignee,summary --no-headers")
          (raw-output (jira-issue-list (if query 
                                           (format "%s %s" query columns)
@@ -476,6 +760,67 @@ Display format: [TYPE] [ID] [STATUS] [ASSIGNED TO] | [TITLE]"
     (if filtered-issues
         (let* ((selection (completing-read "Browse issue: " filtered-issues nil t))
                (issue-key (cdr (assoc selection filtered-issues))))
+          (when issue-key
+            (jira-issue-view issue-key)))
+      (message "No issues found"))))
+
+(defun jira-browse-issues-detailed (query)
+  "Enhanced browse with sprint information and comment counts."
+  (let* ((columns "--plain --columns key --no-headers")
+         (raw-output (jira-issue-list (if query 
+                                          (format "%s %s" query columns)
+                                        columns)))
+         (keys (split-string raw-output "\n" t))
+         (issues '())
+         (total-keys (length keys))
+         (processed 0))
+    
+    ;; Process each issue key to get detailed information
+    (message "Loading detailed information for %d issues..." total-keys)
+    (dolist (key keys)
+      (when (not (string-empty-p (string-trim key)))
+        (setq processed (1+ processed))
+        (when (= (mod processed 5) 0)  ; Progress indicator every 5 issues
+          (message "Loading detailed information... %d/%d" processed total-keys))
+        
+        (let* ((raw-json (shell-command-to-string (format "jira issue view %s --raw" key)))
+               (json-data (ignore-errors (json-parse-string raw-json :object-type 'alist :array-type 'list))))
+          (when json-data
+            (let* ((fields (alist-get 'fields json-data))
+                   (issue-key (alist-get 'key json-data))
+                   (summary (alist-get 'summary fields))
+                   (status (alist-get 'name (alist-get 'status fields)))
+                   (issue-type (alist-get 'name (alist-get 'issuetype fields)))
+                   (assignee (alist-get 'displayName (alist-get 'assignee fields)))
+                   (comment-total (alist-get 'total (alist-get 'comment fields)))
+                   (sprint-data (alist-get 'customfield_10020 fields))
+                   (active-sprint (when (and sprint-data (listp sprint-data))
+                                   (seq-find (lambda (s) (string= (alist-get 'state s) "active")) sprint-data)))
+                   (sprint-name (if active-sprint 
+                                   (alist-get 'name active-sprint)
+                                 (when (and sprint-data (listp sprint-data)) 
+                                   (format "%s(%s)" 
+                                          (alist-get 'name (car sprint-data))
+                                          (substring (alist-get 'state (car sprint-data)) 0 1)))))
+                   (comment-indicator (if (and comment-total (> comment-total 0))
+                                         (format " 💬%d" comment-total)
+                                       ""))
+                   (display (format "[%s] [%s] [%s] [%s] [%s]%s | %s" 
+                                  (or issue-type "Unknown")
+                                  issue-key
+                                  (or status "No Status")  
+                                  (or sprint-name "No Sprint")
+                                  (or assignee "Unassigned")
+                                  comment-indicator
+                                  (or summary "No Summary"))))
+              (push (cons display issue-key) issues))))))
+    
+    (setq issues (reverse issues))
+    (message "Loaded %d issues" (length issues))
+    
+    (if issues
+        (let* ((selection (completing-read "Browse issue (detailed): " issues nil t))
+               (issue-key (cdr (assoc selection issues))))
           (when issue-key
             (jira-issue-view issue-key)))
       (message "No issues found"))))
@@ -597,28 +942,106 @@ Comprehensive search function with vertico completion for common options.
         (jira-browse-issues)))))
 #+end_src
 
-** Quick Search Helpers
+** Enhanced Browse Toggle
 
-Convenient shortcuts for common search patterns with enhanced display.
+Toggle between simple and detailed browse modes.
 
 #+begin_src emacs-lisp
-(defun jira-search-my-issues ()
-  "Browse and view issues assigned to me with enhanced display."
+(defun jira-browse-issues-enhanced (&optional query)
+  "Browse and view Jira issues with detailed information (sprint, comments).
+This version shows more context but takes longer to load."
   (interactive)
-  (jira-browse-issues (format "-a%s" (jira-me))))
+  (jira-browse-issues query t))
+#+end_src
 
-(defun jira-search-recent-issues ()
-  "Browse and view issues created this week with enhanced display."
-  (interactive)
-  (jira-browse-issues "--created week"))
+** Quick Search Helpers
 
-(defun jira-search-high-priority ()
-  "Browse and view high priority issues with enhanced display."
-  (interactive)
-  (jira-browse-issues "-yHigh"))
+Convenient shortcuts for common search patterns with enhanced display options.
 
-(defun jira-search-unassigned ()
-  "Browse and view unassigned issues with enhanced display."
-  (interactive)
-  (jira-browse-issues "-ax"))
+#+begin_src emacs-lisp
+(defun jira-search-my-issues (&optional detailed)
+  "Browse and view issues assigned to me.
+With prefix argument, show detailed information including sprint and comments."
+  (interactive "P")
+  (jira-browse-issues (format "-a%s" (jira-me)) detailed))
+
+(defun jira-search-recent-issues (&optional detailed)
+  "Browse and view issues created this week.
+With prefix argument, show detailed information including sprint and comments."
+  (interactive "P")
+  (jira-browse-issues "--created week" detailed))
+
+(defun jira-search-high-priority (&optional detailed)
+  "Browse and view high priority issues.
+With prefix argument, show detailed information including sprint and comments."
+  (interactive "P")
+  (jira-browse-issues "-yHigh" detailed))
+
+(defun jira-search-unassigned (&optional detailed)
+  "Browse and view unassigned issues.
+With prefix argument, show detailed information including sprint and comments."
+  (interactive "P")
+  (jira-browse-issues "-ax" detailed))
+#+end_src
+
+** Custom Field Utilities
+
+Helper functions for working with project-specific custom fields.
+
+#+begin_src emacs-lisp
+(defun jira-show-custom-fields (issue-key)
+  "Show all custom fields for ISSUE-KEY in a dedicated buffer."
+  (interactive "sIssue key: ")
+  (let* ((buffer-name (format "*Jira Custom Fields: %s*" issue-key))
+         (raw-json (shell-command-to-string (format "jira issue view %s --raw" issue-key)))
+         (json-data (ignore-errors (json-parse-string raw-json :object-type 'alist :array-type 'list))))
+    
+    (with-current-buffer (get-buffer-create buffer-name)
+      (when (bound-and-true-p view-mode)
+        (view-mode -1))
+      (erase-buffer)
+      
+      (if json-data
+          (let* ((fields (alist-get 'fields json-data))
+                 (summary (alist-get 'summary fields)))
+            
+            ;; Header
+            (insert (format "🔧 Custom Fields for %s: %s\n" issue-key summary))
+            (insert (make-string (+ 20 (length issue-key) (length summary)) ?=) "\n\n")
+            
+            ;; Filter and display custom fields
+            (dolist (field fields)
+              (let ((field-name (car field))
+                    (field-value (cdr field)))
+                (when (and (string-prefix-p "customfield_" (symbol-name field-name))
+                          field-value
+                          (not (equal field-value 'null)))
+                  (insert (format "%s: " (symbol-name field-name)))
+                  
+                  ;; Format different types of field values
+                  (cond
+                   ;; Sprint data (customfield_10020)
+                   ((and (eq field-name 'customfield_10020) (listp field-value))
+                    (insert "\n")
+                    (dolist (sprint field-value)
+                      (insert (format "  • %s (%s)\n"
+                                    (alist-get 'name sprint)
+                                    (alist-get 'state sprint)))))
+                   
+                   ;; JSON objects
+                   ((and (listp field-value) (not (stringp field-value)))
+                    (insert (format "%s\n" (json-serialize field-value))))
+                   
+                   ;; Simple values  
+                   (t
+                    (insert (format "%s\n" field-value))))
+                  
+                  (insert "\n")))))
+        
+        ;; Fallback if JSON parsing fails
+        (insert "Unable to parse custom field data.\n"))
+      
+      (goto-char (point-min))
+      (view-mode 1))
+    (switch-to-buffer buffer-name)))
 #+end_src
