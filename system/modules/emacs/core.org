@@ -1560,9 +1560,9 @@ Level should be 1-6, defaults to 1. Text defaults to current timestamp."
   (let* ((level (max 1 (min 6 level))) ; Clamp to 1-6 range
          (stars (make-string level ?*))
          (heading (concat stars " " text)))
-    (end-of-line)
-    (newline)
-    (insert heading)))
+    (beginning-of-line)
+    (insert heading)
+    (newline)))
 
 (defun insert-org-block (block-type &optional language)
   "Insert an org block of specified type and position cursor inside.
