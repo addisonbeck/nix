@@ -8,7 +8,13 @@
     defaultUser = "me";
     passwordFile = config.sops.secrets.freshrss.path;
     baseUrl = "https://homelab/rss/";
-    virtualHost = "homelab";
+    # I've intentially set this to something unused
+    # The freshrss nixos module creates a bunch of nginx
+    # rules that assume freshrss is served from root host
+    # I serve from a subdomain and this breaks a bunch of stuff
+    # I should upstream something about this but haven't 
+    virtualHost = "freshrss";  
+    webserver = "nginx";  
     extensions = [pkgs.freshrss-extensions.youtube];
   };
   services.nginx.virtualHosts = {
