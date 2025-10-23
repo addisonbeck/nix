@@ -1622,6 +1622,7 @@ For src blocks, optionally prompts for language."
           (projectile-switch-project))
       (set-marker origin-pos nil))))
 #+end_src
+
 #+begin_src emacs-lisp
 (transient-define-prefix my/insert-menu ()
 		   "Transient menu for inserting stuff places (usually under the cursor)."
@@ -1631,6 +1632,7 @@ For src blocks, optionally prompts for language."
         ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
+
 #+begin_src emacs-lisp :tangle no
 (defun my/org-send-current-buffer-to-kindle (&optional title)
   "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
