@@ -306,10 +306,13 @@ This way is old, I'm testing out the new version below.
             (save-excursion
               (goto-char (org-roam-node-point node))
               (let ((case-fold-search t))  ; be lenient about heading case
-                (when (re-search-forward "^\\*+ Required Reading\\s-*$" nil t)
-                  (let ((start (point))
-                        (end (or (save-excursion (re-search-forward "^\\*+ " nil t))
-                                 (point-max))))
+                (when (re-search-forward "^\\(\\*+\\) Required Reading\\s-*$" nil t)
+                  (let* ((level (length (match-string 1)))        ; Count the stars  
+                         (start (point))
+                         (end-pattern (format "^\\*\\{1,%d\\} " level))  ; Same level or higher
+                         (end (or (save-excursion 
+                                    (re-search-forward end-pattern nil t))
+                                  (point-max))))
                     (let ((section (buffer-substring-no-properties start end)))
                       (with-temp-buffer
                         (insert section)
