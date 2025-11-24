@@ -37,6 +37,8 @@
       cp ${./autosave.org} autosave.org
       cp ${./spellcheck.org} spellcheck.org
       cp ${./jira.org} jira.org
+      cp ${./lsp.org} lsp.org
+      cp ${./addisonbeck-com.org} addisonbeck-com.org
 
       echo "Copying tangle script..."
       cp ${./tangle-script.el} tangle.el
@@ -142,6 +144,7 @@ in {
           dashboard
           nerd-icons
           treesit-grammars.with-all-grammars
+          yaml-mode
           nix-mode
           gptel
           markdown-mode
@@ -156,6 +159,7 @@ in {
           markdown-mode
           lsp-mode
           lsp-ui
+          consult-lsp
           company
           flycheck
           forge
@@ -216,6 +220,7 @@ in {
     nodePackages.vscode-langservers-extracted
     nodePackages.eslint
     sqls
+    yaml-language-server
     lua-language-server
     iosevka
     iosevka-bin

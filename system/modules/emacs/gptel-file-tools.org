@@ -890,7 +890,7 @@ Returns JSON with file content and metadata."
 (gptel-make-tool
  :name "buffer_read_file"
  :function #'gptel-buffer-read-file
- :description "Read entire file content and return in response. Prompts for confirmation before reading file contents."
+ :description "Read entire file content and return in response. Prompts for confirmation before reading file contents. IMPORTANT: do not read files that you already have from Required Reading in memory!"
  :args '((:name "file_path" 
           :type string
           :description "Path to the file to read")
@@ -899,6 +899,9 @@ Returns JSON with file content and metadata."
           :description "Required explanation of why this file read is being performed"))
  :category "file-reading")
 #+end_src
+
+#+RESULTS:
+: #s(gptel-tool gptel-buffer-read-file "buffer_read_file" "Read entire file content and return in response. Prompts for confirmation before reading file contents. IMPORTANT: do not read files that you already have from Required Reading in memory!" ((:name "file_path" :type "string" :description "Path to the file to read") (:name "purpose" :type "string" :description "Required explanation of why this file read is being performed")) nil "file-reading" nil nil)
 
 #+begin_src emacs-lisp
 ;; Add to the gptel-tools list  

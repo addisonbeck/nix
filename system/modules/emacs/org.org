@@ -310,7 +310,10 @@ Don't show DONE items in the agenda
 *** Targets
 
 #+begin_src emacs-lisp
-  (setq org-refile-targets '((org-agenda-files :maxlevel . 2)))
+(setq my-refile-files 
+      (append org-agenda-files 
+              (list (expand-file-name "archive.org" my-notes-directory))))
+(setq org-refile-targets '((my-refile-files :maxlevel . 2)))
 #+end_src
 
 ** Org To Jira
@@ -673,15 +676,18 @@ Don't show DONE items in the agenda
 		(:name "Due Today"
         :and (:deadline today :tag "cleaning")
         :and (:deadline past :tag "cleaning"))
-		(:name "Code Review Inbox"
-        :and (:deadline today :category "code review")
-        :and (:deadline past :category "code review"))
+		(:name "Ready To Merge Code Reviews"
+        :and (:deadline today :category "ready-to-merge")
+        :and (:deadline past :category "ready-to-merge"))
 		(:name "Code Review Bunker"
         :and (:deadline today :category "code review bunker")
         :and (:deadline past :category "code review bunker"))
 		(:name "Code Reviews To Mostly Ignore"
         :and (:deadline today :category "code review ignore")
         :and (:deadline past :category "code review ignore"))
+		(:name "Code Review Inbox"
+        :and (:deadline today :category "code review")
+        :and (:deadline past :category "code review"))
 		(:name "Overdue" :deadline past)
 		(:name "Due Today" :deadline today)
 		(:name "High Priority (soon)" :and (:priority "A" :deadline future))
@@ -981,6 +987,22 @@ Don't show DONE items in the agenda
                        (lambda (_) "*pandoc-epub*"))))
 #+end_src
 
+* Org Clock
+#+begin_src emacs-lisp
+;; Don't persist clocks from conversation files
+(defun my/org-clock-should-persist-p ()
+  "Return nil if current buffer is a conversation file."
+  (not (string-match-p "\\.conversation-" (or (buffer-file-name) ""))))
+
+;; Override org-clock persistence for conversation files
+(advice-add 'org-clock-save :before-while #'my/org-clock-should-persist-p)
+
+;; Don't try to resolve clocks in conversation files  
+(setq org-clock-resolve-expert t)
+
+;; More restrictive about what constitutes valid clock data
+(setq org-clock-persist 'history) ;; Only persist history, not active clocks
+#+end_src
 * Org Roam Configuration
 #+begin_src emacs-lisp
   (use-package org-roam
@@ -1113,6 +1135,39 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (my/org-agenda-mode-set-keybindings)
     (my/toggle-olivetti))
   (add-hook 'org-agenda-mode-hook #'org-agenda-mode-init)
+#+end_src
+
+* Fancy Org Functions
+
+#+begin_src emacs-lisp
+(defun my/org-copy-heading-path ()
+  "Search through all org headings and copy the selected heading's full path.
+The path includes all parent headings from the selected heading outward,
+separated by ' > '."
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an org-mode buffer"))
+  
+  (let ((headings '()))
+    ;; Collect all headings with their paths
+    (org-map-entries
+     (lambda ()
+       (let* ((heading (org-get-heading t t t t)) ; Clean heading without TODO, tags, etc.
+              (path (org-get-outline-path))        ; Get parent path
+              (full-path (append path (list heading))) ; Combine parents + current heading
+              (formatted-path (mapconcat 'identity (reverse full-path) " > ")) ; Reverse for ascending order
+              (pos (point)))
+         (push (cons formatted-path pos) headings))))
+    
+    ;; Let user select a heading
+    (if headings
+        (let* ((choice (completing-read "Select heading: " 
+                                       (mapcar #'car (nreverse headings)) 
+                                       nil t))
+               (selected-path choice))
+          (kill-new selected-path)
+          (message "Copied: %s" selected-path))
+      (message "No headings found in buffer"))))
 #+end_src
 
 * Transient Menu Hooks

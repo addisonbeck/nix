@@ -31,6 +31,8 @@
                   "autosave.org"
                   "spellcheck.org"
                   "jira.org"
+                  "lsp.org"
+                  "addisonbeck-com.org"
                   ))
 
 ;; Function to safely trim strings (fallback if string-trim not available)

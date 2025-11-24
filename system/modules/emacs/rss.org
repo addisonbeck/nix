@@ -1,0 +1,300 @@
+#+TITLE: RSS Feed Management
+#+PROPERTY: header-args:emacs-lisp :tangle rss.el :results none
+
+This file contains utilities for converting org-mode RSS feed structures to OPML format for FreshRSS.
+
+* Usage
+
+1. Create an org file with your RSS feeds using this structure:
+   #+begin_example
+   * Category Name
+   ** Feed Title
+   :PROPERTIES:
+   :RSS_URL: https://example.com/feed.xml
+   :HTML_URL: https://example.com/
+   :DESCRIPTION: Optional description
+   :END:
+   #+end_example
+
+2. Open your feeds org file and run:
+   - =M-x org-feeds-to-opml= (prompts for output file)
+   - =M-x org-quick-export-opml= (uses default path)
+   - =M-x org-validate-rss-feeds= (check for missing properties)
+
+3. The generated OPML will be written to the configured output location.
+
+** Configuration Options
+
+To change the default output location, customize the variable:
+#+begin_src emacs-lisp :tangle no
+(setq rss-opml-output-file "/Users/me/nix/system/homelab/modules/rssfeeds.opml")
+#+end_src
+
+#+RESULTS:
+: /Users/me/nix/system/homelab/modules/rssfeeds.opml
+
+
+* Main Conversion Function
+
+#+begin_src emacs-lisp
+(defun org-feeds-to-opml (&optional output-file)
+  "Convert org RSS feed structure to OPML format.
+Uses RSS-OPML-OUTPUT-FILE as default if OUTPUT-FILE not provided.
+When called interactively, prompts for output file with default."
+  (interactive (list (read-file-name "Output OPML file: " 
+                                     (file-name-directory rss-opml-output-file)
+                                     rss-opml-output-file)))
+  
+  (let ((feeds '())
+        (current-category nil)
+        (output-path (or output-file rss-opml-output-file)))
+    
+    ;; Parse current org buffer for feed entries
+    (save-excursion
+      (goto-char (point-min))
+      (while (outline-next-heading)
+        (let* ((level (org-outline-level))
+               (heading (org-get-heading t t t t))
+               (props (org-entry-properties)))
+          
+          (cond
+           ;; Level 1: Category
+           ((= level 1)
+            (setq current-category heading))
+           
+           ;; Level 2: Feed entry
+           ((= level 2)
+            (let ((rss-url (cdr (assoc "RSS_URL" props)))
+                  (html-url (cdr (assoc "HTML_URL" props)))
+                  (description (cdr (assoc "DESCRIPTION" props))))
+              
+              (when (and rss-url html-url)
+                (push (list :category (or current-category "Uncategorized")
+                           :title heading
+                           :rss-url rss-url
+                           :html-url html-url
+                           :description description)
+                      feeds))))))))
+    
+    ;; Generate OPML content
+    (let* ((timestamp (format-time-string "%a, %d %b %Y %H:%M:%S +0000" nil t))
+           (xml-header "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+           (opml-open (concat "<opml xmlns:frss=\"https://freshrss.org/opml\" version=\"2.0\">"
+                             "\n  <head>"
+                             "\n    <title>FreshRSS</title>"
+                             "\n    <dateCreated>" timestamp "</dateCreated>"
+                             "\n  </head>"
+                             "\n  <body>"))
+           (opml-close "\n  </body>\n</opml>")
+           (opml-body
+            ;; Group feeds by category and generate XML
+            (let ((categories (seq-group-by (lambda (feed) (plist-get feed :category)) 
+                                           (nreverse feeds)))
+                  (result ""))
+              
+              (dolist (category-group categories)
+                (let ((category-name (car category-group))
+                      (category-feeds (cdr category-group)))
+                  
+                  (setq result (concat result 
+                                     (format "\n    <outline text=\"%s\">" category-name)))
+                  
+                  (dolist (feed category-feeds)
+                    (let ((title (plist-get feed :title))
+                          (rss-url (plist-get feed :rss-url))
+                          (html-url (plist-get feed :html-url))
+                          (description (plist-get feed :description)))
+                      
+                      ;; Escape XML characters in strings
+                      (setq title (replace-regexp-in-string "&" "&amp;" title))
+                      (setq title (replace-regexp-in-string "<" "&lt;" title))
+                      (setq title (replace-regexp-in-string ">" "&gt;" title))
+                      (setq title (replace-regexp-in-string "\"" "&quot;" title))
+                      
+                      (when description
+                        (setq description (replace-regexp-in-string "&" "&amp;" description))
+                        (setq description (replace-regexp-in-string "<" "&lt;" description))
+                        (setq description (replace-regexp-in-string ">" "&gt;" description))
+                        (setq description (replace-regexp-in-string "\"" "&quot;" description)))
+                      
+                      (setq result 
+                            (concat result
+                                  (format "\n      <outline text=\"%s\" type=\"rss\" xmlUrl=\"%s\" htmlUrl=\"%s\"%s/>"
+                                          title rss-url html-url
+                                          (if description 
+                                              (format " description=\"%s\"" description)
+                                            ""))))))
+                  
+                  (setq result (concat result "\n    </outline>"))))
+              result))
+           (opml-content (concat xml-header "\n" opml-open opml-body opml-close)))
+      
+      ;; Write to file
+      (with-temp-file output-path
+        (insert opml-content))
+      
+      (message "OPML written to %s (%d feeds)" output-path (length feeds))
+      output-path)))
+#+end_src
+
+#+RESULTS:
+: org-feeds-to-opml
+
+#+begin_src emacs-lisp
+(defun org-feeds-to-opml (&optional output-file)
+  "Convert org RSS feed structure to OPML format.
+Uses RSS-OPML-OUTPUT-FILE as default if OUTPUT-FILE not provided.
+When called interactively, prompts for output file with default."
+  (interactive (list (read-file-name "Output OPML file: " 
+                                     (file-name-directory rss-opml-output-file)
+                                     rss-opml-output-file)))
+  
+  (let ((feeds '())
+        (current-category nil)
+        (output-path (or output-file rss-opml-output-file)))
+    
+    ;; Parse current org buffer for feed entries
+    (save-excursion
+      (goto-char (point-min))
+      (while (outline-next-heading)
+        (let* ((level (org-outline-level))
+               (heading (org-get-heading t t t t))
+               (props (org-entry-properties)))
+          
+          (cond
+           ;; Level 1: Category
+           ((= level 1)
+            (setq current-category heading))
+           
+           ;; Level 2: Feed entry
+           ((= level 2)
+            (let ((rss-url (cdr (assoc "RSS_URL" props)))
+                  (html-url (cdr (assoc "HTML_URL" props)))
+                  (description (cdr (assoc "DESCRIPTION" props))))
+              
+              (when (and rss-url html-url)
+                (push (list :category (or current-category "Uncategorized")
+                           :title heading
+                           :rss-url rss-url
+                           :html-url html-url
+                           :description description)
+                      feeds))))))))
+    
+    ;; Generate OPML content
+    (let* ((timestamp (format-time-string "%a, %d %b %Y %H:%M:%S +0000" nil t))
+           (xml-header "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+           (opml-open (concat "<opml xmlns:frss=\"https://freshrss.org/opml\" version=\"2.0\">"
+                             "\n  <head>"
+                             "\n    <title>FreshRSS</title>"
+                             "\n    <dateCreated>" timestamp "</dateCreated>"
+                             "\n  </head>"
+                             "\n  <body>"))
+           (opml-close "\n  </body>\n</opml>")
+           (opml-body
+            ;; Group feeds by category and generate XML
+            (let ((categories (seq-group-by (lambda (feed) (plist-get feed :category)) 
+                                           (nreverse feeds)))
+                  (result ""))
+              
+              (dolist (category-group categories)
+                (let ((category-name (car category-group))
+                      (category-feeds (cdr category-group)))
+                  
+                  (setq result (concat result 
+                                     (format "\n    <outline text=\"%s\">" category-name)))
+                  
+                  (dolist (feed category-feeds)
+                    (let ((title (plist-get feed :title))
+                          (rss-url (plist-get feed :rss-url))
+                          (html-url (plist-get feed :html-url))
+                          (description (plist-get feed :description)))
+                      
+                      ;; Escape XML characters in strings
+                      (setq title (replace-regexp-in-string "&" "&amp;" title))
+                      (setq title (replace-regexp-in-string "<" "&lt;" title))
+                      (setq title (replace-regexp-in-string ">" "&gt;" title))
+                      (setq title (replace-regexp-in-string "\"" "&quot;" title))
+                      
+                      (when description
+                        (setq description (replace-regexp-in-string "&" "&amp;" description))
+                        (setq description (replace-regexp-in-string "<" "&lt;" description))
+                        (setq description (replace-regexp-in-string ">" "&gt;" description))
+                        (setq description (replace-regexp-in-string "\"" "&quot;" description)))
+                      
+                      (setq result 
+                            (concat result
+                                  (format "\n      <outline text=\"%s\" type=\"rss\" xmlUrl=\"%s\" htmlUrl=\"%s\"%s/>"
+                                          title rss-url html-url
+                                          (if description 
+                                              (format " description=\"%s\"" description)
+                                            ""))))))
+                  
+                  (setq result (concat result "\n    </outline>"))))
+              result))
+           (opml-content (concat xml-header "\n" opml-open opml-body opml-close)))
+      
+      ;; Write to file
+      (with-temp-file output-path
+        (insert opml-content))
+      
+      (message "OPML written to %s (%d feeds)" output-path (length feeds))
+      output-path)))
+#+end_src
+
+#+RESULTS:
+: org-feeds-to-opml
+
+* Quick Export Function
+
+#+begin_src emacs-lisp
+(defun org-quick-export-opml ()
+  "Quickly export current org buffer to default OPML location."
+  (interactive)
+  (org-feeds-to-opml rss-opml-output-file))
+#+end_src
+
+#+RESULTS:
+: org-quick-export-opml
+
+* Validation Function
+
+#+begin_src emacs-lisp
+(defun org-validate-rss-feeds ()
+  "Validate that all RSS feeds in current buffer have required properties."
+  (interactive)
+  (let ((invalid-feeds '())
+        (valid-count 0))
+    
+    (save-excursion
+      (goto-char (point-min))
+      (while (outline-next-heading)
+        (when (= (org-outline-level) 2)
+          (let* ((heading (org-get-heading t t t t))
+                 (props (org-entry-properties))
+                 (rss-url (cdr (assoc "RSS_URL" props)))
+                 (html-url (cdr (assoc "HTML_URL" props))))
+            
+            (if (and rss-url html-url)
+                (setq valid-count (1+ valid-count))
+              (push (format "- %s (missing: %s)" 
+                          heading
+                          (cond 
+                           ((and (not rss-url) (not html-url)) "RSS_URL, HTML_URL")
+                           ((not rss-url) "RSS_URL")
+                           ((not html-url) "HTML_URL")))
+                    invalid-feeds))))))
+    
+    (if invalid-feeds
+        (message "Found %d valid feeds, %d invalid:\n%s" 
+                valid-count 
+                (length invalid-feeds)
+                (string-join (nreverse invalid-feeds) "\n"))
+      (message "All %d feeds are valid!" valid-count))))
+#+end_src
+
+#+RESULTS:
+: org-validate-rss-feeds
+
+The key fix was breaking up the long multiline format string into separate concatenated parts to avoid the parsing issue. Each function is now in its own source block for easier evaluation.
+
+＠Addison

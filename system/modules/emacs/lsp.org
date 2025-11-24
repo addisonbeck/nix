@@ -1,0 +1,107 @@
+#+TITLE: LSP Config
+#+PROPERTY: header-args:emacs-lisp :tangle lsp.el :results none
+
+* LSP Configuration
+
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :ensure t
+  :hook ((typescript-ts-mode . lsp)
+   (tsx-ts-mode . lsp)
+   (typescript-mode . lsp)
+   (csharp-mode . lsp)
+   (rust-mode . lsp)
+   (nix-mode . lsp)
+   (json-mode . lsp)
+   (yaml-mode . lsp)
+   (sql-mode . lsp)
+   (lua-mode . lsp))
+  :commands lsp
+  :config
+  ;;(setq lsp-nix-nixd-server-path "nixd")
+  ;; Performance optimizations
+  (setq read-process-output-max (* 1024 1024)) ; 1MB chunks
+  (setq gc-cons-threshold 100000000)           ; 100MB before GC
+  (setq lsp-idle-delay 0.500)                  ; Delay before sending changes
+  (setq lsp-log-io nil)                        ; Disable I/O logging for speed
+  ;;(setq lsp-enabled-clients '(nixd-lsp))
+  (setq lsp-auto-guess-root t)
+  (setq lsp-enable-symbol-highlighting t)
+  (setq lsp-enable-on-type-formatting t)
+  (setq lsp-modeline-code-actions-enable t)
+  (setq lsp-modeline-diagnostics-enable t)
+  ;; Enhanced diagnostics for AI-generated code
+    (setq lsp-eldoc-enable-hover nil)               ; Disable eldoc hover (use lsp-ui-doc instead)
+  (setq lsp-signature-auto-activate t)             ; Help catch parameter errors
+  (setq lsp-signature-render-documentation t)      ; Show full signatures
+  ;; Easy per-project LSP customization
+  (setq lsp-auto-guess-root t)                     ; Already set
+  (setq lsp-enable-file-watchers t)                ; Watch for project changes
+  (setq lsp-file-watch-threshold 2000)             ; Handle large projects
+  (setq lsp-diagnostics-provider :flycheck)
+  (setq lsp-ui-doc-enable t)
+  (setq lsp-ui-doc-show-with-cursor t)
+  (add-to-list 'lsp-disabled-clients 'copilot-ls)
+  (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\chats\\'")
+  (setq lsp-headerline-breadcrumb-enable nil)
+;; Configure lsp-ui-doc position and behavior
+(use-package lsp-ui
+  :after lsp-mode
+  :config
+  (setq lsp-ui-doc-position 'bottom)
+  (setq lsp-ui-doc-alignment 'frame)
+  (setq lsp-ui-doc-max-height 15)
+  (setq lsp-ui-doc-max-width 80))
+    ;; Disable sideline diagnostics (keep flycheck clean)
+    (setq lsp-ui-sideline-enable nil)
+(setq lsp-headerline-breadcrumb-mode nil)
+  (lsp-enable-which-key-integration t))
+
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode)
+;; Better LSP integration with consult/vertico
+(use-package consult-lsp
+  :after (consult lsp-mode))
+
+;; Company mode for completions
+(use-package company
+  :ensure t
+  :config
+  (setq company-minimum-prefix-length 1
+  company-idle-delay 0.0))
+
+;; Add flycheck configuration
+(use-package flycheck
+  :ensure t
+  :init
+  (global-flycheck-mode))
+;; Custom functions for extracting LSP data for AI/LLM consumption
+(defun lsp-get-buffer-diagnostics-for-ai ()
+  "Extract all diagnostics from current buffer in structured format for LLM."
+  (interactive)
+  (let ((diagnostics (lsp--get-buffer-diagnostics)))
+    (mapcar (lambda (diag)
+              (let-alist diag
+                `((message . ,.message)
+                  (severity . ,(pcase .severity
+                                (1 "error")
+                                (2 "warning") 
+                                (3 "info")
+                                (4 "hint")))
+                  (line . ,(1+ (lsp-translate-line .range.start.line)))
+                  (character . ,.range.start.character)
+                  (source . ,.source))))
+            diagnostics)))
+(defun lsp-diagnostics-to-json ()
+  "Get current buffer diagnostics as JSON string for LLM consumption."
+  (interactive)
+  (let ((diagnostics (lsp-get-buffer-diagnostics-for-ai)))
+    (json-encode diagnostics)))
+(defun lsp-copy-diagnostics-for-ai ()
+  "Copy diagnostics to clipboard in LLM-friendly format."
+  (interactive)
+  (let ((diagnostics (lsp-get-buffer-diagnostics-for-ai)))
+    (kill-new (json-encode diagnostics))
+    (message "Diagnostics copied to clipboard as JSON")))
+#+end_src

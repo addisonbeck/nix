@@ -49,7 +49,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
   :group 'org)
 #+end_src
 
-
 * Kill Other Buffers
 #+begin_src emacs-lisp
   (defun kill-other-buffers ()
@@ -165,10 +164,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
   ;; Bind J and K to half-page movement
   (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
   (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
-
-(define-key evil-normal-state-map (kbd "z t") 'evil-scroll-line-to-top)
-(define-key evil-normal-state-map (kbd "z z") 'evil-scroll-line-to-center)
-(define-key evil-normal-state-map (kbd "z b") 'evil-scroll-line-to-bottom)
 
 (use-package evil-collection
   :ensure t
@@ -289,55 +284,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
     (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
 
   ;; Note: Tree-sitter grammars are provided by Nix configuration
-#+end_src
-
-* LSP Configuration
-#+begin_src emacs-lisp
-  (use-package lsp-mode
-    :ensure t
-    :hook ((typescript-ts-mode . lsp)
-	   (tsx-ts-mode . lsp)
-	   (typescript-mode . lsp)
-	   (csharp-mode . lsp)
-	   (rust-mode . lsp)
-	   (nix-mode . lsp)
-	   (json-mode . lsp)
-	   (sql-mode . lsp)
-	   (lua-mode . lsp))
-    :commands lsp
-    :config
-    ;;(setq lsp-nix-nixd-server-path "nixd")
-    ;;(setq lsp-enabled-clients '(nixd-lsp))
-    (setq lsp-auto-guess-root t)
-    (setq lsp-enable-symbol-highlighting t)
-    (setq lsp-enable-on-type-formatting t)
-    (setq lsp-modeline-code-actions-enable t)
-    (setq lsp-modeline-diagnostics-enable t)
-    (setq lsp-diagnostics-provider :flycheck)
-    (setq lsp-ui-doc-enable t)
-    (setq lsp-ui-doc-show-with-cursor t)
-    (add-to-list 'lsp-disabled-clients 'copilot-ls)
-    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\chats\\'")
-    (setq lsp-headerline-breadcrumb-enable nil)
-    (setq lsp-headerline-breadcrumb-mode nil)
-    (lsp-enable-which-key-integration t))
-
-  (use-package lsp-ui
-    :ensure t
-    :commands lsp-ui-mode)
-
-  ;; Company mode for completions
-  (use-package company
-    :ensure t
-    :config
-    (setq company-minimum-prefix-length 1
-	  company-idle-delay 0.0))
-
-  ;; Add flycheck configuration
-  (use-package flycheck
-    :ensure t
-    :init
-    (global-flycheck-mode))
 #+end_src
 
 * Magit and Forge Configuration
@@ -1564,7 +1510,7 @@ Level should be 1-6, defaults to 1. Text defaults to current timestamp."
     (insert heading)
     (newline)))
 
-(defun insert-org-block (block-type &optional language)
+(defun my/insert-org-block (block-type &optional language)
   "Insert an org block of specified type and position cursor inside.
 For src blocks, optionally prompts for language."
   (interactive 
@@ -1629,6 +1575,7 @@ For src blocks, optionally prompts for language."
 		   ["Insert"
 		    ("l" "LLM Prompt" my/search-llm-prompts)
 		    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
+		    ("b" "Org Block" my/insert-org-block)
         ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 		    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
@@ -1692,7 +1639,7 @@ It would be cool if this also had some kind of interactive starting directory / 
 			   "Create menu"
 			   [["Create"
 			     ("t" "terminal buffer" my/create-named-vterm)
-			     ("g" "gptel buffer" my/create-named-gptel)
+			     ("g" "gptel buffer" my/create-conversation-from-heading)
 			     ("m" "memory" my/create-memory-interactive)
 			     ("c" "Capture" org-capture)]])
 #+end_src
@@ -1706,211 +1653,238 @@ It would be cool if this also had some kind of interactive starting directory / 
 			    ("x" "Project Command" my/executer-picker)])
 #+end_src
 
+* Kill Thing Running On Port
+
+#+begin_src emacs-lisp
+(defun kill-process-on-port (port)
+  "Kill the process running on the specified PORT."
+  (interactive "sPort number: ")
+  (let ((pid-output (shell-command-to-string (format "lsof -ti:%s" port))))
+    (if (string-empty-p (string-trim pid-output))
+        (message "No process found running on port %s" port)
+      (let ((pid (string-trim pid-output)))
+        (shell-command (format "kill %s" pid))
+        (message "Killed process %s running on port %s" pid port)))))
+#+end_src
+
+
 * Custom Keymaps
 ** General
 
 #+begin_src emacs-lisp
-  (define-prefix-command 'my-custom-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
-  (which-key-add-key-based-replacements "C-a" "my commands")
+(define-prefix-command 'my-custom-prefix)
+(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
+(which-key-add-key-based-replacements "C-a" "my commands")
 
-  ;; create "go" prefix map
-  (define-prefix-command 'my-go-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
-  (which-key-add-key-based-replacements "C-a g" "go")
+;; create "go" prefix map
+(define-prefix-command 'my-go-prefix)
+(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
+(which-key-add-key-based-replacements "C-a g" "go")
 
-  (defun my/open-compilation-file-in-other-window ()
-    "open the current compilation match in another window.
-    creates a new window if needed or reuses an existing one."
+(defun my/open-compilation-file-in-other-window ()
+  "open the current compilation match in another window.
+  creates a new window if needed or reuses an existing one."
+  (interactive)
+  (let ((window-count (length (window-list))))
+    (condition-case err
+  (if (= window-count 1)
+      ;; only one window, use built-in function that creates a new window
+      (compilation-display-error)
+    ;; multiple windows exist, use the next window
+    (let ((this-window (selected-window)))
+      (other-window 1)
+      (let ((target-window (selected-window)))
+	(select-window this-window)
+	;; use next-error-no-select to get location without changing windows
+	(let ((location (next-error-no-select)))
+	  (select-window target-window)
+	  (switch-to-buffer (marker-buffer (car location)))
+	  (goto-char (marker-position (car location)))))))
+;; catch any errors silently
+(error (message "no valid location found at point")))))
+
+(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
+(which-key-add-key-based-replacements "C-a g f" "go to file")
+
+(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
+(which-key-add-key-based-replacements "C-a g d" "go to definition")
+(which-key-add-key-based-replacements "C-a g e" "emacs config")
+
+(define-prefix-command 'my-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
+(which-key-add-key-based-replacements "C-a c" "compile")
+
+(define-prefix-command 'my-nix-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
+(which-key-add-key-based-replacements "C-a c n" "nix")
+
+(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
+(which-key-add-key-based-replacements "C-a c n r" "rebuild")
+
+(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
+(which-key-add-key-based-replacements "C-a c n f" "format")
+
+(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
+(which-key-add-key-based-replacements "C-a c n c" "commit")
+
+;; create "find" prefix map
+(define-prefix-command 'my-find-prefix)
+(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+(which-key-add-key-based-replacements "C-a f" "find")
+
+(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+(which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+(which-key-add-key-based-replacements "C-a f p" "project")
+
+(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+(which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+(which-key-add-key-based-replacements "C-a f F" "file in project")
+
+(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
+
+(evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+(with-eval-after-load 'org-agenda
+  (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
+
+(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+(evil-define-key 'normal 'global (kbd "z z") (lambda () (interactive) (recenter)))
+(evil-define-key 'normal 'global (kbd "z t") (lambda () (interactive) (recenter 0)))
+(defun line-to-bottom-of-window ()
+  "Shift current line to the bottom of the window - i.e. zb in Vim"
+  (interactive)
+  (set-window-start (selected-window) (point))
+  (scroll-down (- (window-height) 3)))
+(evil-define-key 'normal 'global (kbd "z b") 'line-to-bottom-of-window)
+
+(evil-define-key 'normal 'global (kbd "<left>") 'scroll-down-command)
+(evil-define-key 'normal 'global (kbd "<right>") 'scroll-up-command)
+
+(with-eval-after-load 'elfeed-show
+  (require 'hnreader)
+  (require 'evil)
+
+  (defun my/elfeed-show-hn-comments ()
+    "Open Hacker News comments for the link at point in elfeed-show-mode."
     (interactive)
-    (let ((window-count (length (window-list))))
-      (condition-case err
-	  (if (= window-count 1)
-	      ;; only one window, use built-in function that creates a new window
-	      (compilation-display-error)
-	    ;; multiple windows exist, use the next window
-	    (let ((this-window (selected-window)))
-	      (other-window 1)
-	      (let ((target-window (selected-window)))
-		(select-window this-window)
-		;; use next-error-no-select to get location without changing windows
-		(let ((location (next-error-no-select)))
-		  (select-window target-window)
-		  (switch-to-buffer (marker-buffer (car location)))
-		  (goto-char (marker-position (car location)))))))
-	;; catch any errors silently
-	(error (message "no valid location found at point")))))
+    (message "my/elfeed-show-hn-comments invoked.")
+    (let ((link (elfeed-get-link-at-point)))
+(message "Link at point: %s" link)
+;; Check if it's a valid HN item link
+(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+    (progn ;; Use progn to execute multiple forms
+      (message "Found HN link: %s. Calling hnreader-comment..." link)
+      ;; Pass the full link URL to hnreader-comment
+      (hnreader-comment link)
+      (message "hnreader-comment called with URL."))
+  (message "No Hacker News item link found at point or link doesn't match pattern."))))
 
-  (evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
-  (which-key-add-key-based-replacements "C-a g f" "go to file")
+  (evil-define-key 'normal elfeed-show-mode-map
+	     (kbd "c") #'my/elfeed-show-hn-comments))
 
-  (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
-  (which-key-add-key-based-replacements "C-a g d" "go to definition")
-  (which-key-add-key-based-replacements "C-a g e" "emacs config")
+(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
 
-  (define-prefix-command 'my-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c" "compile")
+(defun my/projectile-find-file-in-all-projects ()
+  "Find file across all registered Projectile projects with improved performance."
+  (interactive)
+  (let* ((projects (projectile-relevant-known-projects))
+   (file-cache-var 'my/projectile-all-files-cache)
+   (cache-validity-seconds 300) ;; 5 minute cache validity
+   (current-time (current-time))
+   (use-cache (and (boundp file-cache-var)
+		   (< (float-time (time-subtract 
+				   current-time
+				   (get file-cache-var 'timestamp)))
+		      cache-validity-seconds)))
+   (cached-files (and use-cache (symbol-value file-cache-var))))
 
-  (define-prefix-command 'my-nix-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c n" "nix")
+    (if use-cache
+  (message "Using cached file list (%d files)" (length cached-files))
+;; Build cache using external commands for speed
+(message "Building file list from %d projects..." (length projects))
+(let ((all-files '())
+      (temp-file (make-temp-file "projectile-files-")))
+  ;; Using external find/sort is much faster than pure elisp
+  (with-temp-file temp-file
+    (dolist (project projects)
+      (when (file-exists-p project)
+	(let* ((project-name (file-name-nondirectory 
+			      (directory-file-name project)))
+	       ;; Add project name prefix to each file for context
+	       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+			    (shell-quote-argument project)
+			    project-name)))
+	  (call-process-shell-command cmd nil t)))))
 
-  (evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
-  (which-key-add-key-based-replacements "C-a c n r" "rebuild")
+  ;; Read results back and build alist of (display . filepath)
+  (with-temp-buffer
+    (insert-file-contents temp-file)
+    (goto-char (point-min))
+    (while (not (eobp))
+      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+	     ;; Fix: Only split on the first colon
+	     (split-pos (string-match ":" line))
+	     (project-name (when split-pos (substring line 0 split-pos)))
+	     (rel-file (when split-pos (substring line (1+ split-pos))))
+	     (full-path (when (and project-name rel-file)
+			  (expand-file-name
+			   (string-remove-prefix "./" rel-file)
+			   (car (seq-filter (lambda (p) 
+					      (string-suffix-p project-name p))
+					    projects))))))
+	(when (and project-name rel-file full-path)
+	  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+      (forward-line 1)))
 
-  (evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
-  (which-key-add-key-based-replacements "C-a c n f" "format")
+  (delete-file temp-file)
+  ;; Save and timestamp the cache
+  (set file-cache-var all-files)
+  (put file-cache-var 'timestamp current-time)
+  (message "Found %d files across projects" (length all-files))))
 
-  (evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
-  (which-key-add-key-based-replacements "C-a c n c" "commit")
+    ;; Use the cached or newly-built list
+    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+(if file-list
+    ;; Use completing-read for the selection interface
+    (let* ((chosen (completing-read "Find file in projects: " 
+				    (mapcar #'car file-list) nil t))
+	   (file-path (cdr (assoc chosen file-list))))
+      (when file-path
+	(find-file file-path)))
+  (message "No files found across projects")))))
 
-  ;; create "find" prefix map
-  (define-prefix-command 'my-find-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
-  (which-key-add-key-based-replacements "C-a f" "find")
-
-  (evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
-  (which-key-add-key-based-replacements "C-a f g" "ripgrep")
-
-  (evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
-  (which-key-add-key-based-replacements "C-a f p" "project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
-  (which-key-add-key-based-replacements "C-a f f" "file in directory")
-
-  (evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
-  (which-key-add-key-based-replacements "C-a f F" "file in project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
-  (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
-  (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
-
-  (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
-  (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
-
-  (evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
-  (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
-
-  (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
-  (with-eval-after-load 'org-agenda
-    (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
-
-  (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
-
-  (with-eval-after-load 'elfeed-show
-    (require 'hnreader)
-    (require 'evil)
-
-    (defun my/elfeed-show-hn-comments ()
-      "Open Hacker News comments for the link at point in elfeed-show-mode."
-      (interactive)
-      (message "my/elfeed-show-hn-comments invoked.")
-      (let ((link (elfeed-get-link-at-point)))
-	(message "Link at point: %s" link)
-	;; Check if it's a valid HN item link
-	(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
-	    (progn ;; Use progn to execute multiple forms
-	      (message "Found HN link: %s. Calling hnreader-comment..." link)
-	      ;; Pass the full link URL to hnreader-comment
-	      (hnreader-comment link)
-	      (message "hnreader-comment called with URL."))
-	  (message "No Hacker News item link found at point or link doesn't match pattern."))))
-
-    (evil-define-key 'normal elfeed-show-mode-map
-		     (kbd "c") #'my/elfeed-show-hn-comments))
-
-  (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
-  (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-  (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-  (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
-  (evil-define-key 'normal vterm-mode-map (kbd "C-p") 'projectile-switch-project)
-  (evil-define-key 'normal vterm-mode-map (kbd "C-f") 'projectile-find-file)
-
-  (defun my/projectile-find-file-in-all-projects ()
-    "Find file across all registered Projectile projects with improved performance."
-    (interactive)
-    (let* ((projects (projectile-relevant-known-projects))
-	   (file-cache-var 'my/projectile-all-files-cache)
-	   (cache-validity-seconds 300) ;; 5 minute cache validity
-	   (current-time (current-time))
-	   (use-cache (and (boundp file-cache-var)
-			   (< (float-time (time-subtract 
-					   current-time
-					   (get file-cache-var 'timestamp)))
-			      cache-validity-seconds)))
-	   (cached-files (and use-cache (symbol-value file-cache-var))))
-
-      (if use-cache
-	  (message "Using cached file list (%d files)" (length cached-files))
-	;; Build cache using external commands for speed
-	(message "Building file list from %d projects..." (length projects))
-	(let ((all-files '())
-	      (temp-file (make-temp-file "projectile-files-")))
-	  ;; Using external find/sort is much faster than pure elisp
-	  (with-temp-file temp-file
-	    (dolist (project projects)
-	      (when (file-exists-p project)
-		(let* ((project-name (file-name-nondirectory 
-				      (directory-file-name project)))
-		       ;; Add project name prefix to each file for context
-		       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
-				    (shell-quote-argument project)
-				    project-name)))
-		  (call-process-shell-command cmd nil t)))))
-
-	  ;; Read results back and build alist of (display . filepath)
-	  (with-temp-buffer
-	    (insert-file-contents temp-file)
-	    (goto-char (point-min))
-	    (while (not (eobp))
-	      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
-		     ;; Fix: Only split on the first colon
-		     (split-pos (string-match ":" line))
-		     (project-name (when split-pos (substring line 0 split-pos)))
-		     (rel-file (when split-pos (substring line (1+ split-pos))))
-		     (full-path (when (and project-name rel-file)
-				  (expand-file-name
-				   (string-remove-prefix "./" rel-file)
-				   (car (seq-filter (lambda (p) 
-						      (string-suffix-p project-name p))
-						    projects))))))
-		(when (and project-name rel-file full-path)
-		  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
-	      (forward-line 1)))
-
-	  (delete-file temp-file)
-	  ;; Save and timestamp the cache
-	  (set file-cache-var all-files)
-	  (put file-cache-var 'timestamp current-time)
-	  (message "Found %d files across projects" (length all-files))))
-
-      ;; Use the cached or newly-built list
-      (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
-	(if file-list
-	    ;; Use completing-read for the selection interface
-	    (let* ((chosen (completing-read "Find file in projects: " 
-					    (mapcar #'car file-list) nil t))
-		   (file-path (cdr (assoc chosen file-list))))
-	      (when file-path
-		(find-file file-path)))
-	  (message "No files found across projects")))))
-
-  (defun my/open-pr-url-at-point ()
-    "Open the PR_URL property of the current org agenda item."
-    (interactive)
-    (let* ((marker (or (org-get-at-bol 'org-marker)
-		       (org-agenda-error)))
-	   (buffer (marker-buffer marker))
-	   (pos (marker-position marker))
-	   url)
-      (with-current-buffer buffer
-	(save-excursion
-	  (goto-char pos)
-	  (setq url (org-entry-get (point) "PR_URL"))))
-      (when url
-	(browse-url url))))
+(defun my/open-pr-url-at-point ()
+  "Open the PR_URL property of the current org agenda item."
+  (interactive)
+  (let* ((marker (or (org-get-at-bol 'org-marker)
+	       (org-agenda-error)))
+   (buffer (marker-buffer marker))
+   (pos (marker-position marker))
+   url)
+    (with-current-buffer buffer
+(save-excursion
+  (goto-char pos)
+  (setq url (org-entry-get (point) "PR_URL"))))
+    (when url
+(browse-url url))))
 #+end_src
 #+RESULTS:
 

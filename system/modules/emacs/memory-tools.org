@@ -282,20 +282,85 @@ This way is old, I'm testing out the new version below.
                (plist-get memory-result :id))))
 #+end_src
 
-* Read A Memory By ID
+#+begin_src emacs-lisp
+(defun my/create-conversation-from-heading ()
+  "Create a new conversation from a selected heading and link it in Conversation History.
+This function automates the workflow of:
+1. Selecting a heading path (like org-copy-heading-path)
+2. Creating a conversation memory with that heading
+3. Adding a link to the conversation in the current buffer's 'Conversation History' section
 
-#+begin_src emacs-lisp 
-(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
-  "Returns the full text content of a given memory, as well as any memories or files in that memory's 'Required Reading' section. Required Reading is included so Bobert does not go out and read those files manually."
+Requires a 'Conversation History' section in the current buffer, otherwise errors."
   (interactive)
-  (let* ((seen (or seen (list (concat "id:" id))))  ; track 'id:'-prefixed for cycle checks
-         (file-seen (or file-seen '()))
-         (node (org-roam-node-from-id id)))
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in an org-mode buffer"))
+  
+  (let ((original-buffer (current-buffer))
+        headings)
+    
+    ;; Collect all headings with their full paths (reusing org-copy-heading-path logic)
+    (org-map-entries
+     (lambda ()
+       (let* ((heading (org-get-heading t t t t)) ; Clean heading without TODO, tags, etc.
+              (path (org-get-outline-path))        ; Get parent path
+              (full-path (append path (list heading))) ; Combine parents + current heading
+              (formatted-path (mapconcat 'identity (reverse full-path) " > ")) ; Reverse for ascending order
+              (pos (point)))
+         (push (cons formatted-path pos) headings))))
+    
+    (if (not headings)
+        (message "No headings found in buffer")
+      
+      ;; Let user select a heading  
+      (let* ((choice (completing-read "Select heading for conversation: " 
+                                     (mapcar #'car (nreverse headings)) 
+                                     nil t))
+             (selected-path choice)
+             (title (concat "Conversation: " selected-path)))
+        
+        ;; Create the memory node (replicating my/create-named-gptel logic)
+        (let ((memory-result 
+               (my/create-memory
+                :title title
+                :memory-type 'episodic
+                :tags '("conversation")
+                :aliases '()
+                :content "")))
+          
+          ;; Open the memory file and enable gptel-mode
+          (find-file (plist-get memory-result :file))
+          (gptel-mode 1)
+          (goto-char (point-max))
+          
+          ;; Add link to original buffer's Conversation History section
+          (with-current-buffer original-buffer
+            (save-excursion
+              (goto-char (point-min))
+              (unless (re-search-forward "^\\*+ Conversation History$" nil t)
+                (user-error "No 'Conversation History' section found in current buffer"))
+              
+              ;; Use org-end-of-subtree to find the end of this section
+              (let ((subtree-end (save-excursion (org-end-of-subtree t nil))))
+                (goto-char subtree-end)
+                ;; Skip backwards over any trailing whitespace
+                (skip-chars-backward " \t\n\r")
+                (end-of-line)
+                ;; Insert our new list item
+                (insert (format "\n- [[id:%s][%s]]" 
+                              (plist-get memory-result :id)
+                              selected-path)))))
+          
+          (message "Created conversation and added to Conversation History: %s" title))))))
+#+end_src
+
+* Read A Memory By ID
+#+begin_src emacs-lisp 
+(defun my/gptel-get-single-memory-content (id)
+  "Get just the content of a single memory without processing required reading."
+  (let ((node (org-roam-node-from-id id)))
     (when node
       (let* ((file (org-roam-node-file node))
-             (title (org-roam-node-title node))
-             result
-             required-reading)
+             (title (org-roam-node-title node)))
         (with-temp-buffer
           (insert-file-contents file)
           (org-mode)
@@ -303,83 +368,121 @@ This way is old, I'm testing out the new version below.
           (let ((content (buffer-substring-no-properties
                           (point)
                           (progn (org-end-of-subtree t) (point)))))
-            (save-excursion
-              (goto-char (org-roam-node-point node))
-              (let ((case-fold-search t))  ; be lenient about heading case
-                (when (re-search-forward "^\\(\\*+\\) Required Reading\\s-*$" nil t)
-                  (let* ((level (length (match-string 1)))        ; Count the stars  
-                         (start (point))
-                         (end-pattern (format "^\\*\\{1,%d\\} " level))  ; Same level or higher
-                         (end (or (save-excursion 
-                                    (re-search-forward end-pattern nil t))
-                                  (point-max))))
-                    (let ((section (buffer-substring-no-properties start end)))
-                      (with-temp-buffer
-                        (insert section)
-                        (goto-char (point-min))
-                        (while (re-search-forward
-                                "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\|jira:[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
-                                nil t)
-                          (let ((link (match-string 1))
-                                (desc (or (match-string 2) "(No description)")))
-                            (push (cons link desc) required-reading)))))))))
-            (setq required-reading (reverse required-reading))
-            (push (list :id id :title title :content content :file file) result)
-            ;; Recursively add each required reading in order
-            (dolist (link-pair required-reading)
-              (let* ((raw (car link-pair))
-                     (desc (cdr link-pair)))
-                (cond
-                 ;; Org-roam node: follow id:
-                 ((and (string-prefix-p "id:" raw)
-                       (not (member raw seen)))
-                  (let* ((real-id (substring raw 3))
-                         (child-results (my/gptel-org-roam-node-content-by-id
-                                         real-id (cons raw seen) file-seen)))
-                    (setq result (append result child-results))))
-                 ;; Jira ticket pattern: jira:PM-N format
-                 ((string-prefix-p "jira:" raw)
-                  (let* ((ticket-key (substring raw 5)))
-                    (condition-case err
-                        (let ((jira-content (shell-command-to-string
-                                           (format "jira issue view %s --raw" ticket-key))))
-                          (when (and jira-content (> (length jira-content) 0))
-                            (push (list :id ticket-key
-                                        :title (format "Jira Ticket: %s (Raw JSON)" ticket-key) 
-                                        :content jira-content
-                                        :file (format "jira://%s" ticket-key))
-                                  result)))
-                      (error
-                       (message "Failed to fetch Jira ticket %s: %s" ticket-key (error-message-string err))))))
-                 ;; File links: support file:, file+*, and raw absolute paths
-                 (t
-                  (let* ((abs
-                          (cond
-                           ((string-match "^file\\(?:\\+[^:]+\\)?:\\(.+\\)$" raw)
-                            (match-string 1 raw))
-                           ((string-prefix-p "/" raw) raw)
-                           (t nil))))
-                    (when abs
-                      ;; Strip ::search, unescape, expand, absolutize
-                      (setq abs (car (split-string abs "::")))
-                      (when (fboundp 'org-link-unescape)
-                        (setq abs (org-link-unescape abs)))
-                      (setq abs (expand-file-name abs (file-name-directory file)))
-                      (let ((canon (ignore-errors (file-truename abs))))
-                        (when (and canon (file-readable-p canon)
-                                   (not (member canon file-seen)))
-                          (condition-case nil
-                              (let ((f-content (with-temp-buffer
-                                                 (insert-file-contents canon)
-                                                 (buffer-string))))
-                                (push (list :id canon
-                                            :title desc
-                                            :content f-content
-                                            :file canon)
-                                      result)
-                                (push canon file-seen))
-                            (error nil))))))))))
-            (nreverse result)))))))
+            ;; Post-process to escape CLOCK lines to prevent org-clock confusion
+            (setq content (replace-regexp-in-string "^\\(CLOCK:\\)" ",\\1" content))
+            (list :id id :title title :content content :file file)))))))
+
+(defun my/gptel-extract-required-reading-links (content file)
+  "Extract required reading links from memory content."
+  (let (required-reading)
+    (with-temp-buffer
+      (insert content)
+      (org-mode)
+      (goto-char (point-min))
+      (let ((case-fold-search t))
+        (when (re-search-forward "^\\(\\*+\\) Required Reading\\s-*$" nil t)
+          (let* ((level (length (match-string 1)))
+                 (start (point))
+                 (end-pattern (format "^\\*\\{1,%d\\} " level))
+                 (end (or (save-excursion 
+                            (re-search-forward end-pattern nil t))
+                          (point-max))))
+            (let ((section (buffer-substring-no-properties start end)))
+              (with-temp-buffer
+                (insert section)
+                (goto-char (point-min))
+                (while (re-search-forward
+                        "- +\\[\\[\\(id:[^]]+\\|file\\(?:\\+[^:]+\\)?:[^]]+\\|/[^]]+\\|jira:[^]]+\\)\\]\\(?:\\[\\([^]]*\\)\\]\\)?\\]"
+                        nil t)
+                  (let ((link (match-string 1))
+                        (desc (or (match-string 2) "(No description)")))
+                    (push (cons link desc) required-reading)))))))))
+    (reverse required-reading)))
+
+(defun my/gptel-process-required-reading-links (links seen file-seen base-file)
+  "Process required reading links and return a list of title-keyed memory data."
+  (let (results)
+    (dolist (link-pair links)
+      (let* ((raw (car link-pair))
+             (desc (cdr link-pair)))
+        (cond
+         ;; Org-roam node: follow id:
+         ((and (string-prefix-p "id:" raw)
+               (not (member raw seen)))
+          (let* ((real-id (substring raw 3))
+                 (child-result (my/gptel-get-single-memory-content real-id)))
+            (when child-result
+              (let* ((child-title (plist-get child-result :title))
+                     (child-links (my/gptel-extract-required-reading-links 
+                                   (plist-get child-result :content)
+                                   (plist-get child-result :file)))
+                     (nested-results (my/gptel-process-required-reading-links 
+                                      child-links (cons raw seen) file-seen base-file)))
+                ;; Add the child memory with title as key
+                (push (list (intern child-title) child-result) results)
+                ;; Add any nested required reading
+                (setq results (append results nested-results))))))
+         ;; Jira ticket pattern: jira:PM-N format
+         ((string-prefix-p "jira:" raw)
+          (let* ((ticket-key (substring raw 5)))
+            (condition-case err
+                (let ((jira-content (shell-command-to-string
+                                   (format "jira issue view %s --raw" ticket-key))))
+                  (when (and jira-content (> (length jira-content) 0))
+                    (let ((jira-data (list :id ticket-key
+                                          :title (format "Jira Ticket: %s (Raw JSON)" ticket-key) 
+                                          :content jira-content
+                                          :file (format "jira://%s" ticket-key))))
+                      (push (list (intern (format "Jira-%s" ticket-key)) jira-data) results))))
+              (error
+               (message "Failed to fetch Jira ticket %s: %s" ticket-key (error-message-string err))))))
+         ;; File links: support file:, file+*, and raw absolute paths
+         (t
+          (let* ((abs
+                  (cond
+                   ((string-match "^file\\(?:\\+[^:]+\\)?:\\(.+\\)$" raw)
+                    (match-string 1 raw))
+                   ((string-prefix-p "/" raw) raw)
+                   (t nil))))
+            (when abs
+              ;; Strip ::search, unescape, expand, absolutize
+              (setq abs (car (split-string abs "::")))
+              (when (fboundp 'org-link-unescape)
+                (setq abs (org-link-unescape abs)))
+              (setq abs (expand-file-name abs (file-name-directory base-file)))
+              (let ((canon (ignore-errors (file-truename abs))))
+                (when (and canon (file-readable-p canon)
+                           (not (member canon file-seen)))
+                  (condition-case nil
+                      (let ((f-content (with-temp-buffer
+                                         (insert-file-contents canon)
+                                         (buffer-string))))
+                        (let ((file-data (list :id canon
+                                              :title desc
+                                              :content f-content
+                                              :file canon)))
+                          (push (list (intern desc) file-data) results))
+                        (push canon file-seen))
+                    (error nil))))))))))
+    (nreverse results)))
+
+(defun my/gptel-org-roam-node-content-by-id (id &optional seen file-seen)
+  "Returns memory content with title-keyed structure separating original from required reading."
+  (interactive)
+  (let* ((seen (or seen (list (concat "id:" id))))
+         (file-seen (or file-seen '()))
+         (original-memory (my/gptel-get-single-memory-content id)))
+    (when original-memory
+      (let* ((original-title (plist-get original-memory :title))
+             (original-content (plist-get original-memory :content))
+             (original-file (plist-get original-memory :file))
+             (required-reading-links (my/gptel-extract-required-reading-links 
+                                      original-content original-file))
+             (required-reading-context (my/gptel-process-required-reading-links 
+                                        required-reading-links seen file-seen original-file)))
+        ;; Return structure with original memory title as key
+        (list (intern original-title) original-memory
+              :required-reading-context required-reading-context)))))
 #+end_src
 
 #+begin_src emacs-lisp

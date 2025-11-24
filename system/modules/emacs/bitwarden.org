@@ -319,3 +319,22 @@
 (add-to-list 'my/executer-picker-candidates
              '("bitwarden/clients: nx build desktop:preload" . bitwarden/build-desktop-preload))
 #+end_src
+
+** Serving Desktop
+
+#+begin_src emacs-lisp
+(defcustom bitwarden-clients-serve-desktop "npx nx serve desktop"
+  "Command to build the Bitwarden DESKTOP renderer process with Nx"
+  :type 'string
+  :group 'tools)
+
+(defun bitwarden/serve-desktop ()
+  "Serve desktop processes with Nx."
+  (interactive)
+  (my/projectile-run-command-in-selected-project bitwarden-clients-serve-desktop))
+
+;; Add to executer picker candidates
+(add-to-list 'my/executer-picker-candidates
+             '("bitwarden/clients: nx serve desktop" . bitwarden/serve-desktop))
+#+end_src
+

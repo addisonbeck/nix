@@ -2,8 +2,228 @@
 #+PROPERTY: header-args:emacs-lisp :tangle gptel-shell-command-tools.el 
 
 #+begin_src emacs-lisp
-  (require 'json)
+(require 'json)
 
+;; Configuration for async shell commands
+(defcustom gptel-shell-command-timeout 300
+  "Maximum execution time for shell commands in seconds."
+  :type 'integer
+  :group 'gptel)
+#+end_src
+
+#+RESULTS:
+: gptel-shell-command-timeout
+
+#+begin_src emacs-lisp
+;; Manual cancellation command
+(defun gptel-cancel-running-command ()
+  "Cancel currently running shell command."
+  (interactive)
+  (let ((cancelled-any nil))
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (and (boundp 'gptel-running-process)
+                   gptel-running-process
+                   (process-live-p gptel-running-process))
+          (kill-process gptel-running-process)
+          (setq cancelled-any t)
+          (message "Cancelled shell command: %s" 
+                   (or (and (boundp 'gptel-command) gptel-command) "unknown")))))
+    (unless cancelled-any
+      (message "No running shell commands found"))))
+#+end_src
+
+#+RESULTS:
+: gptel-cancel-running-command
+
+#+begin_src emacs-lisp
+(defun gptel-shell--handle-rejection (callback command user-feedback)
+  "Handle user rejection of shell command execution."
+  (let ((rejection-details `(("rejection_reason" . "user_declined")
+                           ("command_preview" . ,command))))
+    ;; Add user feedback if provided
+    (when user-feedback
+      (push `("user_feedback" . ,user-feedback) rejection-details))
+    (funcall callback
+      (json-encode 
+`(("success" . nil)
+                    ("exit_code" . -1)
+                    ("output" . "")
+                    ("message" . ,(if user-feedback
+                                      (format "Command execution declined by user: %s" user-feedback)
+                                    "Command execution declined by user"))
+                    ("rejection_info" . ,rejection-details))))))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--handle-rejection
+
+#+begin_src emacs-lisp
+(defun gptel-shell--create-output-buffer (command)
+  "Create and setup output buffer for shell command execution."
+  (let* ((buffer-name (format "*GPTel Shell Command: %s*" 
+                             (format-time-string "%H:%M:%S")))
+         (output-buffer (generate-new-buffer buffer-name)))
+    ;; Display output buffer immediately for visibility
+    (display-buffer output-buffer)
+    output-buffer))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--create-output-buffer
+
+#+begin_src emacs-lisp
+(defun gptel-shell--setup-process-metadata (output-buffer process command callback)
+  "Store process metadata and callback in output buffer for tracking."
+  (with-current-buffer output-buffer
+    (setq-local gptel-running-process process)
+    (setq-local gptel-command command)
+    (setq-local gptel-start-time (current-time))
+    (setq-local gptel-callback callback)))  ; Store callback in buffer
+#+end_src
+
+#+RESULTS:
+: gptel-shell--setup-process-metadata
+
+#+begin_src emacs-lisp
+(defun gptel-shell--cleanup-buffer (output-buffer delay)
+  "Clean up output buffer after specified delay in seconds."
+  (run-with-timer delay nil 
+    (lambda () 
+      (when (buffer-live-p output-buffer)
+        (kill-buffer output-buffer)))))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--cleanup-buffer
+
+#+begin_src emacs-lisp
+(defun gptel-shell--process-sentinel (callback)
+  "Create process sentinel function for handling command completion."
+  (lambda (proc event)
+    (let ((output-buf (process-buffer proc)))
+      (cond
+       ((string-match "finished" event)
+        ;; Successful completion
+        (let ((exit-code (process-exit-status proc))
+              (output (with-current-buffer output-buf
+                       (buffer-string))))
+          (funcall callback
+            (json-encode `(("exit_code" . ,exit-code)
+                          ("output" . ,output))))
+          (gptel-shell--cleanup-buffer output-buf 5)))
+       
+       ((string-match "exited abnormally\\|killed\\|terminated" event)
+        ;; Process failure or cancellation
+        (let ((exit-code (process-exit-status proc))
+              (output (with-current-buffer output-buf
+                       (buffer-string))))
+          (funcall callback
+            (json-encode `(("exit_code" . ,exit-code)
+                          ("output" . ,output)
+                          ("error" . ,(format "Process %s" (string-trim event))))))
+          (gptel-shell--cleanup-buffer output-buf 5)))
+       
+       (t
+        ;; Unexpected termination
+        (funcall callback
+          (json-encode `(("exit_code" . -1
+)
+                        ("output" . "")
+                        ("error" . ,(format "Unexpected process event: %s" event)))))
+        (gptel-shell--cleanup-buffer output-buf 5))))))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--process-sentinel
+
+#+begin_src emacs-lisp
+(defun gptel-shell--setup-timeout (process output-buffer)
+  "Setup timeout mechanism for shell command process."
+  (run-with-timer gptel-shell-command-timeout nil
+    (lambda () 
+      (when (and (process-live-p process)
+                 (buffer-live-p output-buffer))
+        (kill-process process)
+        (with-current-buffer output-buffer
+          (when (boundp 'gptel-callback)
+            (funcall gptel-callback 
+              (json-encode `(("exit_code" . -1)
+                            ("output" . "Command timed out")
+                            ("error" . "timeout"))))))))))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--setup-timeout
+
+#+begin_src emacs-lisp
+(defun gptel-shell--get-tail-output (buffer max-lines)
+  "Get the last MAX-LINES from BUFFER, with truncation notice if needed."
+  (with-current-buffer buffer
+    (let* ((full-output (buffer-string))
+           (lines (split-string full-output "\n" t))  ; t to omit empty lines
+           (line-count (length lines)))
+      (if (<= line-count max-lines)
+          full-output
+        (let ((tail-lines (nthcdr (- line-count max-lines) lines)))
+          (concat (format "... [output truncated, showing last %d lines] ...\n" max-lines)
+                  (string-join tail-lines "\n")))))))
+#+end_src
+
+#+RESULTS:
+: gptel-shell--get-tail-output
+
+#+begin_src emacs-lisp
+(defun my/gptel-run-shell-command-async (callback command purpose)
+  "Async version: CALLBACK receives JSON result when command completes."
+  (let* ((preview-result (gptel-shell-command--preview-and-confirm command purpose))
+         (confirmed (car preview-result))
+         (user-feedback (cdr preview-result)))
+    (if (not confirmed)
+        (gptel-shell--handle-rejection callback command user-feedback)
+      (let* ((output-buffer (gptel-shell--create-output-buffer command))
+             (process (start-process-shell-command 
+                      "gptel-shell" output-buffer command)))
+        (gptel-shell--setup-process-metadata output-buffer process command callback)
+        (gptel-shell--setup-timeout process output-buffer)
+        (set-process-sentinel process
+          (lambda (proc event)
+            (let ((output-buf (process-buffer proc)))
+              (when (buffer-live-p output-buf)
+                (with-current-buffer output-buf
+                  (when (boundp 'gptel-callback)
+                    (let ((cb gptel-callback))
+                      (cond
+                       ((string-match "finished" event)
+                        (let ((exit-code (process-exit-status proc))
+                              (output (gptel-shell--get-tail-output output-buf 50)))
+                          (funcall cb
+                            (json-encode `(("exit_code" . ,exit-code)
+                                          ("output" . ,output))))
+                          (gptel-shell--cleanup-buffer output-buf 5)))
+                       ((string-match "exited abnormally\\|killed\\|terminated" event)
+                        (let ((exit-code (process-exit-status proc))
+                              (output (gptel-shell--get-tail-output output-buf 50)))
+                          (funcall cb
+                            (json-encode `(("exit_code" . ,exit-code)
+                                          ("output" . ,output)
+                                          ("error" . ,(format "Process %s" (string-trim event))))))
+                          (gptel-shell--cleanup-buffer output-buf 5)))
+                       (t
+                        (let ((output (gptel-shell--get-tail-output output-buf 50)))
+                          (funcall cb
+                            (json-encode `(("exit_code" . -1)
+                                          ("output" . ,output)
+                                          ("error" . ,(format "Unexpected process event: %s" event)))))
+                          (gptel-shell--cleanup-buffer output-buf 5)))))))))))))))
+#+end_src
+
+
+#+RESULTS:
+: my/gptel-run-shell-command-async
+
+#+begin_src emacs-lisp
+  ;; Keep original synchronous function as backup
   (defun my/gptel-run-shell-command (command purpose)
     "Run COMMAND in the shell with PURPOSE explanation and return a JSON string with `exit_code` and `output`."
     ;; Step 1: Preview command and get user confirmation
@@ -34,7 +254,12 @@
                     (kill-buffer)))))
           (json-encode `(("exit_code" . ,exit-code)
                         ("output"    . ,output)))))))
+#+end_src
 
+#+RESULTS:
+: my/gptel-run-shell-command
+
+#+begin_src emacs-lisp
 (defun gptel-shell-command--preview-and-confirm (command purpose)
   "Show shell command preview and get user confirmation.
 Returns cons cell (CONFIRMED . FEEDBACK) where:
@@ -84,9 +309,10 @@ Returns feedback string or nil if user skips feedback."
 #+begin_src emacs-lisp
 (gptel-make-tool
  :name        "shell_command"
- :function    #'my/gptel-run-shell-command
+ :function    #'my/gptel-run-shell-command-async
  :description "Run an arbitrary shell COMMAND and return JSON with exit_code and output."
- :include t
+ :async       t                         ; CRITICAL: Enable async mode
+ :include     t
  :args        '((:name "command"
 		 :type string
 		 :description "The shell command to execute (as you would type it in a terminal)")
@@ -96,7 +322,14 @@ Returns feedback string or nil if user skips feedback."
  :category    "system")
 #+end_src
 
+#+RESULTS:
+: #s(gptel-tool my/gptel-run-shell-command-async "shell_command" "Run an arbitrary shell COMMAND and return JSON with exit_code and output." ((:name "command" :type "string" :description "The shell command to execute (as you would type it in a terminal)") (:name "purpose" :type "string" :description "Required explanation of why this shell command execution is being performed")) t "system" nil t)
+
 #+begin_src emacs-lisp
 (register-gptel-tool "shell_command")
 #+end_src
+
+#+RESULTS:
+| #s(gptel-tool my/gptel-run-shell-command-async shell_command Run an arbitrary shell COMMAND and return JSON with exit_code and output. ((:name command :type string :description The shell command to execute (as you would type it in a terminal)) (:name purpose :type string :description Required explanation of why this shell command execution is being performed)) t system nil t) | #s(gptel-tool #[385 \211G\300GW\203 \305\306\300#\210\307\303"\211\203* \310\302\311\301"\312\313"\312\314	\302#%\207\305\315\303"\207 [[url] (:url (:description URL to fetch :format uri :minLength 1 :title Url :type string) :max_length (:default 5000 :description Maximum number of characters to return. :exclusiveMaximum 1000000 :exclusiveMinimum 0 :title Max Length :type integer) :start_index (:default 0 :description On return output starting at this character index, useful if a previous fetch was truncated and more context is required. :minimum 0 :title Start Index :type integer) :raw (:default :json-false :description Get the actual HTML content of the requested page, without simplification. :title Raw :type boolean)) fetch fetch mcp-server-connections error Error: args not match: %s -> %s gethash mcp-async-call-tool mcp--generate-tool-call-args make-closure #[257 \300\301!!\207 [V0 mcp--parse-tool-call-result] 4 |
+
 
