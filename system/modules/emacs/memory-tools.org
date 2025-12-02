@@ -123,11 +123,12 @@ The tools defined here are used by [[https://github.com/karthink/gptel][gptel]] 
            (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
            (filepath (expand-file-name filename org-roam-directory))
            (lowercased-tags (mapcar #'downcase tags))
+           (filetags (mapconcat
+                       #'identity
+                       (cons (symbol-name memory-type) lowercased-tags)
+                       " "))
            (props    `(("ID"            . ,id)
-                       ("ROAM_TAGS"     . ,(mapconcat
-                                             #'identity
-                                             (cons (symbol-name memory-type) lowercased-tags)
-                                             " "))
+
                        ("ROAM_ALIASES"  . ,(when aliases
                                              (concat "\""
                                                      (mapconcat #'identity aliases "\" \"")
@@ -147,7 +148,8 @@ The tools defined here are used by [[https://github.com/karthink/gptel][gptel]] 
         (dolist (prop props)
           (insert (format ":%s: %s\n" (car prop) (cdr prop))))
         (insert ":END:\n")
-        (insert (format "#+TITLE: %s" title))
+        (insert (format "#+TITLE: %s\n" title))
+        (insert (format "#+FILETAGS: %s\n" filetags))
         (insert "\n" content "\n"))
       ;; 3) Sync to the database
       (org-roam-db-sync)

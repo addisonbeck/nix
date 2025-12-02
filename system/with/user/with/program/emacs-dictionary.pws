@@ -1,4 +1,4 @@
-personal_ws-1.1 en 54 
+personal_ws-1.1 en 56 
 Bitwarden
 Bitwarden's
 Bobert
@@ -32,6 +32,7 @@ bitwarden
 chipotle
 codebase
 config
+cremini
 dsafs
 emacs
 eslint
@@ -46,6 +47,7 @@ monorepo
 monorepository
 namedInputs
 nx
+porcini
 prefered
 rebase
 targetDefaults

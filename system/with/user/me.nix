@@ -118,6 +118,7 @@
       pkgs.ssh-to-age
       pkgs.rustup
       pkgs.zstd
+      pkgs.utm
     ];
 
     home.sessionPath = [];

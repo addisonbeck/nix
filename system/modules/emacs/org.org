@@ -676,18 +676,24 @@ Don't show DONE items in the agenda
 		(:name "Due Today"
         :and (:deadline today :tag "cleaning")
         :and (:deadline past :tag "cleaning"))
+		(:name "Code Review Inbox"
+        :and (:deadline today :category "code review")
+        :and (:deadline past :category "code review"))
 		(:name "Ready To Merge Code Reviews"
         :and (:deadline today :category "ready-to-merge")
         :and (:deadline past :category "ready-to-merge"))
 		(:name "Code Review Bunker"
         :and (:deadline today :category "code review bunker")
         :and (:deadline past :category "code review bunker"))
+		(:name "Community PRs"
+        :and (:deadline today :category "community-prs")
+        :and (:deadline past :category "community-prs"))
+		(:name "Renovate PRs"
+        :and (:deadline today :category "renovate-prs")
+        :and (:deadline past :category "renovate-prs"))
 		(:name "Code Reviews To Mostly Ignore"
         :and (:deadline today :category "code review ignore")
         :and (:deadline past :category "code review ignore"))
-		(:name "Code Review Inbox"
-        :and (:deadline today :category "code review")
-        :and (:deadline past :category "code review"))
 		(:name "Overdue" :deadline past)
 		(:name "Due Today" :deadline today)
 		(:name "High Priority (soon)" :and (:priority "A" :deadline future))

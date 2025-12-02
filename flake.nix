@@ -102,6 +102,13 @@
         };
         modules = [./system/vm.nix];
       };
+      linux-testing-vm = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        specialArgs = {
+          inherit inputs outputs nixpkgs rootPath conf;
+        };
+        modules = [./system/linux-testing-vm.nix];
+      };
     };
     darwinConfigurations = {
       bw = nix-darwin.lib.darwinSystem {
@@ -178,6 +185,21 @@
             '')
             (pkgs.writeScriptBin "decompress-pi-image" ''
               zstd -d result/sd-image/*.img.zst -o result/sd-image/nixos-raspi.img
+            '')
+            (pkgs.writeScriptBin "build-linux-testing-vm" ''
+              nix build .#nixosConfigurations.linux-testing-vm.config.system.build.vm
+            '')
+            (pkgs.writeScriptBin "run-linux-testing-vm" ''
+              # Build the VM if not already built
+              if [ ! -L "./result" ] || [ ! -d "./result" ]; then
+                echo "Building Linux testing VM..."
+                build-linux-testing-vm
+              fi
+              
+              echo "Starting Linux testing VM..."
+              echo "Default login: testing / testing123"
+              echo "VM has KDE desktop with development tools pre-installed"
+              ./result/bin/run-nixos-vm
             '')
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
