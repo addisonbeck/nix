@@ -291,8 +291,8 @@ Don't show DONE items in the agenda
         (expand-file-name "budget.org" my-notes-directory)
         (expand-file-name "inbox.org" my-notes-directory)
         (expand-file-name "inbox-mobile.org" my-notes-directory)
-        (expand-file-name "reminders.org" my-agenda-directory)
-        (expand-file-name "meal-plan.org" my-agenda-directory)
+        (expand-file-name "reminders.org" my-notes-directory)
+        (expand-file-name "meal-plan.org" my-notes-directory)
         (expand-file-name "contacts.org" my-notes-directory)
         (expand-file-name "code-reviews.org" my-notes-directory)))
 
@@ -655,6 +655,19 @@ Don't show DONE items in the agenda
 		(:name "My Pull Requests"
         :and (:deadline today :category "code review" :property ("AUTHOR" "addisonbeck"))
         :and (:deadline past :category "code review" :property ("AUTHOR" "addisonbeck")))
+		(:name "Platform PRs"
+        :and (:deadline today :category "code review" 
+              :or (:property ("AUTHOR" "coroiu"))
+                  (:property ("AUTHOR" "djsmith85"))
+                  (:property ("AUTHOR" "dereknance"))
+                  (:property ("AUTHOR" "trmartin4"))
+                  (:property ("AUTHOR" "dani-garcia")))
+        :and (:deadline past :category "code review"
+              :or (:property ("AUTHOR" "coroiu"))
+                  (:property ("AUTHOR" "djsmith85"))
+                  (:property ("AUTHOR" "dereknance"))
+                  (:property ("AUTHOR" "trmartin4"))
+                  (:property ("AUTHOR" "dani-garcia"))))
 		(:name "Work"
         :and (:deadline today :tag "work")
         :and (:deadline past :tag "work"))
