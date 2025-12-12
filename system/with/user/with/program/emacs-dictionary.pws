@@ -1,4 +1,5 @@
-personal_ws-1.1 en 56 
+personal_ws-1.1 en 59 
+BEEEP
 Bitwarden
 Bitwarden's
 Bobert
@@ -12,6 +13,7 @@ LLM
 LotR
 Nx
 OPML
+PSVR
 PoC
 PostCSS
 README
@@ -28,6 +30,7 @@ Webpack
 airpod
 automations
 autophage
+balancer
 bitwarden
 chipotle
 codebase

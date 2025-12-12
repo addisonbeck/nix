@@ -1598,6 +1598,7 @@ For src blocks, optionally prompts for language."
     (let ((ret (call-process-shell-command cmd)))
       (if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
 #+end_src
+
 ** The "Search" Menu
 
 #+begin_src emacs-lisp
@@ -1652,6 +1653,17 @@ It would be cool if this also had some kind of interactive starting directory / 
 			   ["Execute"
 			    ("x" "Project Command" my/executer-picker)])
 #+end_src
+
+** The "Refile" Menu
+
+#+begin_src emacs-lisp
+(transient-define-prefix my/refile-menu ()
+		   "Transient menu for working with files."
+		   ["Execute"
+		    ("r" "org refile" org-refile)
+        ("R" "org refile" org-roam-refile)])
+#+end_src
+
 
 * Kill Thing Running On Port
 
@@ -1896,6 +1908,7 @@ It would be cool if this also had some kind of interactive starting directory / 
   (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
   (evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
   (evil-define-key 'normal 'global (kbd "C-x") #'my/execute-menu)
+  (evil-define-key 'normal 'global (kbd "C-r") #'my/refile-menu)
 #+end_src
 ** Mode Specific
 

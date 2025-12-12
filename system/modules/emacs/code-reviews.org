@@ -23,9 +23,9 @@
   (defcustom my/github-pr-queries
     '(("Involved PRs" . "is:open is:pr involves:addisonbeck")
       ("Coroiu's PRs" . "is:open is:pr author:coroiu")
-      ("DJ's PRs" . "is:open is:pr author:djsmith85")
+      ("Daniel's PRs" . "is:open is:pr author:djsmith85")
       ("Derek's PRs" . "is:open is:pr author:dereknance")
-      ("Thomas's PRs" . "is:open is:pr author:trmartin4")
+      ("Todd's PRs" . "is:open is:pr author:trmartin4")
       ("Dani's PRs" . "is:open is:pr author:dani-garcia")
       ("My Drafts" . "is:pr is:draft is:open author:addisonbeck"))
     "List of GitHub search queries for PRs.

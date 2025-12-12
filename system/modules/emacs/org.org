@@ -22,30 +22,6 @@ Disables line truncation for better readability of long lines in org files.
 
 *** Task Logging
 
-#+begin_src help
-org-log-done is a variable defined in ‘org.el’.
-
-Its value is ‘time’
-Original value was nil
-
-Information to record when a task moves to the DONE state.
-
-Possible values are:
-
-nil     Don’t add anything, just change the keyword
-time    Add a time stamp to the task
-note    Prompt for a note and add it with template ‘org-log-note-headings’
-
-This option can also be set with on a per-file-basis with
-
-   #+STARTUP: nologdone
-   #+STARTUP: logdone
-   #+STARTUP: lognotedone
-
-You can have local logging settings for a subtree by setting the LOGGING
-property to one or more of these keywords.
-#+end_src
-
 #+begin_src emacs-lisp
   (setq org-log-done 'time)
 #+end_src
@@ -60,51 +36,6 @@ Places logged state changes and notes into a properties drawer to keep entries c
 
 *** Default Folding
 Sets the initial visibility state to overview when opening org files.
-
-#+begin_src help
-org-startup-folded is a variable defined in ‘org.el’.
-
-Its value is ‘overview’
-Original value was ‘showeverything’
-
-Initial folding state of headings when entering Org mode.
-
-Allowed values are:
-
-symbol ‘nofold’
-  Do not fold headings.
-
-symbol ‘fold’
-  Fold everything, leaving only top-level headings visible.
-
-symbol ‘content’
-  Leave all the headings and sub-headings visible, but hide their
-  text.  This is an equivalent of table of contents.
-
-symbol ‘show2levels’, ‘show3levels’, ‘show4levels’, ‘show5levels’
-  Show headings up to Nth level.
-
-symbol ‘showeverything’ (default)
-  Start Org mode in fully unfolded state.  Unlike all other allowed
-  values, this value prevents drawers, blocks, and archived subtrees
-  from being folded even when ‘org-cycle-hide-block-startup’,
-  ‘org-cycle-open-archived-trees’, or ‘org-cycle-hide-drawer-startup’
-  are non-nil.  Per-subtree visibility settings (see manual node
-  ‘(org)Initial visibility)’) are also ignored.
-
-This can also be configured on a per-file basis by adding one of
-the following lines anywhere in the buffer:
-
-   #+STARTUP: fold              (or ‘overview’, this is equivalent)
-   #+STARTUP: nofold            (or ‘showall’, this is equivalent)
-   #+STARTUP: content
-   #+STARTUP: show<n>levels (<n> = 2..5)
-   #+STARTUP: showeverything
-
-Set ‘org-agenda-inhibit-startup’ to a non-nil value if you want
-to ignore this option when Org opens agenda files for the first
-time.
-#+end_src
 
 #+begin_src emacs-lisp
   (setq org-startup-folded 'fold)
@@ -125,28 +56,6 @@ Specifies which export backends are loaded by default.
 #+end_src
 
 *** Image Display Size
-
-#+begin_src help
-org-image-max-width is a variable defined in ‘org.el’.
-
-Its value is ‘window’
-Original value was ‘fill-column’
-
-When non-nil, limit the displayed image width.
-This setting only takes effect when ‘org-image-actual-width’ is set to
-t or when #+ATTR* is set to t.
-
-Possible values:
-- ‘fill-column’ :: limit width to ‘fill-column’
-- ‘window’      :: limit width to window width
-- integer       :: limit width to number in pixels
-- float         :: limit width to that fraction of window width
-- nil             :: do not limit image width
-
-  This variable was introduced, or its default value was changed, in
-  version 9.7 of the Org package that is part of Emacs 30.1.
-  You can customize this variable.
-#+end_src
 
 #+begin_src emacs-lisp
 (setq org-image-max-width 120)
@@ -656,18 +565,16 @@ Don't show DONE items in the agenda
         :and (:deadline today :category "code review" :property ("AUTHOR" "addisonbeck"))
         :and (:deadline past :category "code review" :property ("AUTHOR" "addisonbeck")))
 		(:name "Platform PRs"
-        :and (:deadline today :category "code review" 
-              :or (:property ("AUTHOR" "coroiu"))
-                  (:property ("AUTHOR" "djsmith85"))
-                  (:property ("AUTHOR" "dereknance"))
-                  (:property ("AUTHOR" "trmartin4"))
-                  (:property ("AUTHOR" "dani-garcia")))
-        :and (:deadline past :category "code review"
-              :or (:property ("AUTHOR" "coroiu"))
-                  (:property ("AUTHOR" "djsmith85"))
-                  (:property ("AUTHOR" "dereknance"))
-                  (:property ("AUTHOR" "trmartin4"))
-                  (:property ("AUTHOR" "dani-garcia"))))
+         :and (:deadline today :category "code review" :property ("AUTHOR" "coroiu"))
+         :and (:deadline today :category "code review" :property ("AUTHOR" "djsmith85"))
+         :and (:deadline today :category "code review" :property ("AUTHOR" "dereknance"))
+         :and (:deadline today :category "code review" :property ("AUTHOR" "trmartin4"))
+         :and (:deadline today :category "code review" :property ("AUTHOR" "dani-garcia"))
+         :and (:deadline past :category "code review" :property ("AUTHOR" "coroiu"))
+         :and (:deadline past :category "code review" :property ("AUTHOR" "djsmith85"))
+         :and (:deadline past :category "code review" :property ("AUTHOR" "dereknance"))
+         :and (:deadline past :category "code review" :property ("AUTHOR" "trmartin4"))
+         :and (:deadline past :category "code review" :property ("AUTHOR" "dani-garcia")))
 		(:name "Work"
         :and (:deadline today :tag "work")
         :and (:deadline past :tag "work"))
@@ -1269,3 +1176,85 @@ separated by ' > '."
         (message "ERROR: Unknown issue - date-str=%s, filename=%s" date-str filename))))))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/refile-log-to-date-node ()
+  "Refile current heading to corresponding 'Log Date' org-roam node.
+Extracts date from heading format [YYYY-MM-DD ...] and refiles to node
+titled 'Log Date YYYY-MM-DD'. Creates the node if it doesn't exist.
+Refiled entries become top-level headings in the target file."
+  (interactive)
+  (unless (org-at-heading-p)
+    (org-back-to-heading t))
+  
+  (let* ((heading (org-get-heading t t t t))
+         ;; Extract date from heading [YYYY-MM-DD ...] (allows day of week and time)
+         (date-match (string-match "\\[\\([0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)[^]]*\\]" heading))
+         (date-str (when date-match (match-string 1 heading))))
+    
+    (unless date-str
+      (user-error "No date found in heading. Expected format: [YYYY-MM-DD ...]"))
+    
+    (let* ((target-title (concat "Log Date " date-str))
+           ;; Find the node with matching title
+           (node (seq-find
+                  (lambda (n) (string= (org-roam-node-title n) target-title))
+                  (org-roam-node-list))))
+      
+      ;; Create node if it doesn't exist
+      (unless node
+        (let* ((id (org-id-new))
+               (filename (concat date-str ".log.org"))
+               (filepath (expand-file-name filename org-roam-directory))
+               (timestamp (format-time-string "<%Y-%m-%d %H:%M>")))
+          
+          (with-temp-file filepath
+            (insert ":PROPERTIES:\n")
+            (insert (format ":ID: %s\n" id))
+            (insert ":ROAM_TAGS: episodic daily log\n")
+            (insert (format ":CREATED: %s\n" timestamp))
+            (insert (format ":LAST_MODIFIED: %s\n" timestamp))
+            (insert ":END:\n")
+            (insert (format "#+TITLE: %s\n\n" target-title)))
+          
+          ;; Update org-roam database
+          (org-roam-db-update-file filepath)
+          
+          ;; Reload the node list and find our new node
+          (setq node (seq-find
+                      (lambda (n) (string= (org-roam-node-title n) target-title))
+                      (org-roam-node-list)))
+          
+          (message "Created new node: %s" target-title)))
+      
+      (let* ((target-file (org-roam-node-file node))
+             (node-level (org-roam-node-level node))
+             ;; Construct refile target - use nil position for file-level nodes
+             (refile-target 
+              (if (= node-level 0)
+                  ;; For file-level nodes, use nil position to refile to file level
+                  (list target-title target-file nil nil)
+                ;; For heading-level nodes, find the heading by ID
+                (let ((target-marker 
+                       (with-current-buffer (find-file-noselect target-file)
+                         (org-with-wide-buffer
+                          (goto-char (point-min))
+                          (when (re-search-forward 
+                                 (format "^[ \t]*:ID:[ \t]+%s" 
+                                         (regexp-quote (org-roam-node-id node))) 
+                                 nil t)
+                            (org-back-to-heading t)
+                            (point-marker))))))
+                  (unless target-marker
+                    (user-error "Could not find node location in file"))
+                  (list target-title target-file nil target-marker)))))
+        
+        ;; Perform the refile
+        (org-refile nil nil refile-target)
+        (message "Refiled to: %s" target-title)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'transient
+  (transient-append-suffix 'my/refile-menu "r"
+    '("l" "Today's Log" my/refile-log-to-date-node)))
+#+end_src
