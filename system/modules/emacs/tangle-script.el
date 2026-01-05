@@ -24,6 +24,7 @@
                   "binwarden.org"
                   "gptel-file-tools.org"
                   "gptel-execute-elisp-tools.org"
+                  ;;"gptel-approval-queue-tools.org"
                   "gptel-shell-command-tools.org"
                   "sending-stuff-to-my-kindle.org"
                   "org-present.org"

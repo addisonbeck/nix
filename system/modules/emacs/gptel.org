@@ -8,7 +8,8 @@
   (setq gptel-log-level 'debug
   gptel-default-mode 'org-mode
   gptel-include-tool-results t
-  gptel-cache t)
+  gptel-cache t
+  gptel-track-media t)
 
   (setf (alist-get 'org-mode gptel-prompt-prefix-alist) "＠Addison\n"
   (alist-get 'org-mode gptel-response-prefix-alist) "＠Bobert\n")
@@ -389,6 +390,7 @@ This works but I'm using the fetch mcp server
         ("mcp-server-text-editor" . (:command "npx"
                                             :args ("-y" "mcp-server-text-editor")))
         ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
+        ("atlassian" . (:command "npx" :args ("-y" "mcp-remote" "https://mcp.atlassian.com/v1/sse" "--resource" "https://bitwarden.atlassian.net/")))
         ("github-mcp" . (:command "docker"
                         :args ("run" "-i" "--rm"
                               "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"

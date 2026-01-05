@@ -1,0 +1,116 @@
+#+TITLE: Gptel Approval Queue System
+#+PROPERTY: header-args:emacs-lisp :tangle gptel-approval-queue-tools.el
+
+This file implements a non-intrusive tool approval system for gptel tools. Instead of blocking on approval requests, tools queue their requests and users review them at their convenience via a dedicated buffer interface.
+
+* Introduction
+
+The approval queue system transforms the current modal approval flow into an asynchronous, queue-based workflow. When gptel tools require approval (shell commands or elisp execution), requests are added to a queue and users are notified via mode line indicator and messages. Users review pending approvals when convenient using a dedicated buffer interface (=C-c C-a=).
+
+** Key Features
+
+- *Non-Blocking*: Tool invocations return immediately, queueing approvals for later review
+- *User-Controlled Timing*: Review approvals when convenient, not when requested
+- *Security Preserved*: All preview, confirmation, and feedback mechanisms maintained
+- *Emacs-Native*: Built entirely on Emacs core functionality, no external dependencies
+- *Visible Execution*: Shell command output displayed in real-time
+
+** Architecture Overview
+
+The system consists of:
+1. *Data Structures*: Approval request structs and queue state
+2. *Queue Management*: Functions for adding, retrieving, and maintaining requests
+3. *Notification System*: Mode line indicator and message dispatcher
+4. *Buffer Interface*: Dedicated buffer for reviewing and acting on requests (Phase 2)
+5. *Execution Layer*: Async executors for shell and elisp (Phase 3)
+6. *V2 Tool Definitions*: Queue-integrated versions of existing tools (Phase 4)
+
+* Dependencies
+
+#+begin_src emacs-lisp
+(require 'json)
+(require 'cl-lib)
+(require 'seq)
+(require 'subr-x)
+#+end_src
+
+#+RESULTS:
+: subr-x
+
+* Data Structures
+
+Approval request structure and global queue state variables.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 1.2: Data Structures
+;; Will implement gptel-approval-request struct and state variables
+
+;; Initialize module
+(message "GPTel Approval Queue System loaded")
+#+end_src
+
+#+RESULTS:
+: GPTel Approval Queue System loaded
+
+* Queue Management
+
+Core functions for queue lifecycle: adding, retrieving, filtering, and maintaining requests.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 1.3: Queue Management
+;; Will implement queue add, find, filter, count, and prune functions
+#+end_src
+
+#+RESULTS:
+
+* Notification System
+
+Mode line integration and notification dispatcher for user awareness.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 1.4: Notification System
+;; Will implement mode line indicator and notification dispatcher
+#+end_src
+
+#+RESULTS:
+
+* Buffer Interface
+
+Dedicated buffer for displaying and interacting with pending approvals.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 2: Buffer Interface
+;; Will implement approval queue buffer major mode, rendering, and keybindings
+#+end_src
+
+#+RESULTS:
+
+* Execution Layer
+
+Async executors for shell commands and elisp code after user approval.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 3: Execution Layer
+;; Will implement shell and elisp executors with callback invocation
+#+end_src
+
+#+RESULTS:
+
+* V2 Tool Definitions
+
+Queue-integrated versions of shell_command and execute_elisp tools.
+
+#+begin_src emacs-lisp
+;; Placeholder for Phase 4: V2 Tool Definitions
+;; Will implement shell_command_v2 and execute_elisp_v2 tools
+#+end_src
+
+#+RESULTS:
+
+* Testing Documentation
+
+Manual test scenarios and validation procedures for each phase.
+
+** Phase 1 Testing
+
+Placeholder for Phase 1.5: Manual test suite for infrastructure components.

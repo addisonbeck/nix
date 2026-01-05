@@ -42,10 +42,12 @@
       IgnoreUnknown UseKeychain
       UseKeychain yes
     '';
-    userKnownHostsFile = config.sops.secrets."known_hosts".path;
 
     # Don't forget to run ssh-add -K on new client machines
     matchBlocks = {
+      "*" = {
+        userKnownHostsFile = config.sops.secrets."known_hosts".path;
+      };
       "github.com" = {
         hostname = "github.com";
         identityFile = config.sops.secrets."primary-ssh-key".path;

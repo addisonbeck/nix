@@ -119,6 +119,7 @@
       pkgs.rustup
       pkgs.zstd
       pkgs.utm
+      pkgs.spotify
     ];
 
     home.sessionPath = [];

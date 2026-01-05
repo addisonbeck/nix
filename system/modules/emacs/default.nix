@@ -30,6 +30,7 @@
       cp ${./files.org} files.org
       cp ${./gptel-file-tools.org} gptel-file-tools.org
       cp ${./gptel-execute-elisp-tools.org} gptel-execute-elisp-tools.org
+      #cp ./gptel-approval-queue-tools.org gptel-approval-queue-tools.org
       cp ${./gptel-shell-command-tools.org} gptel-shell-command-tools.org
       cp ${./sending-stuff-to-my-kindle.org} sending-stuff-to-my-kindle.org
       cp ${./org-present.org} org-present.org

@@ -198,8 +198,9 @@ Don't show DONE items in the agenda
   "Return a minimal, fixed set of agenda files for performance."
   (list (expand-file-name "logs.org" my-notes-directory)
         (expand-file-name "budget.org" my-notes-directory)
-        (expand-file-name "inbox.org" my-notes-directory)
-        (expand-file-name "inbox-mobile.org" my-notes-directory)
+        (expand-file-name "roam/inbox.org" my-notes-directory)
+        (expand-file-name "roam/mobile-inbox.org" my-notes-directory)
+        (expand-file-name "roam/handwritten-inbox.org" my-notes-directory)
         (expand-file-name "reminders.org" my-notes-directory)
         (expand-file-name "meal-plan.org" my-notes-directory)
         (expand-file-name "contacts.org" my-notes-directory)
@@ -234,7 +235,7 @@ Don't show DONE items in the agenda
 ** Org Capture Templates
 #+begin_src emacs-lisp 
   (setq org-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/")
-  (setq org-default-notes-file (expand-file-name "inbox.org" my-notes-directory))
+  (setq org-default-notes-file (expand-file-name "roam/inbox.org" my-notes-directory))
   (setq org-capture-templates
 	'(
 	  ("l" "Log" entry

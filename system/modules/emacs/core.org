@@ -1417,12 +1417,17 @@ This cool and lame at the same time
     (interactive)
     "Opens the inbox.org file in the notes directory."
     (interactive)
-    (find-file (expand-file-name "inbox.org" my-notes-directory)))
-  (defun my/open-inbox-mobile ()
+    (find-file (expand-file-name "roam/inbox.org" my-notes-directory)))
+  (defun my/open-mobile-inbox ()
     (interactive)
     "Opens the inbox-mobile.org file in the notes directory."
     (interactive)
-    (find-file (expand-file-name "inbox-mobile.org" my-notes-directory)))
+    (find-file (expand-file-name "roam/mobile-inbox.org" my-notes-directory)))
+  (defun my/open-handwritten-inbox ()
+    (interactive)
+    "Opens the handwritten-inbox.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "roam/handwritten-inbox.org" my-notes-directory)))
   (defun my/open-emacs-config ()
     (interactive)
     "Opens the emacs.org file in the nix directory."
@@ -1472,7 +1477,8 @@ This cool and lame at the same time
   "Transient menu for getting to my inboxes"
   ["Submenu Actions"
    ("i" "Inbox" my/open-inbox)
-   ("m" "Mobile Inbox" my/open-inbox-mobile)])
+   ("m" "Mobile Inbox" my/open-mobile-inbox)
+   ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
 
 ;; Define a submenu for "Go To Link"
 (transient-define-prefix my/go-to-link-menu ()
