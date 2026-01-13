@@ -7,4 +7,4 @@
 *.rej
 repomix-output.txt
 .aider*
-/.agent-shell/transcripts/2026-01-08-17-31-33.md
+.agent-shell/*
