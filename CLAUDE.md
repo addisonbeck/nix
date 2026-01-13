@@ -6,20 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Nix-based systems configuration repository managing both NixOS and macOS (nix-darwin) systems. The configuration is highly modular and uses a compositional architecture with a distinctive `/with/` directory pattern for organizing system components.
 
-## Building and Development
+**Managed systems:**
+- `air`, `bw` (macOS via nix-darwin)
+- `homelab`, `vm`, `linux-testing-vm` (NixOS)
 
-### Common Commands
-
+**Key commands:**
 ```bash
-# Rebuild the current system (requires hostname)
+# Rebuild system
 nix develop .#building --command rebuild <hostname>
-
-# Available hostnames:
-# - air (macOS)
-# - bw (macOS)
-# - homelab (NixOS)
-# - vm (NixOS)
-# - linux-testing-vm (NixOS)
 
 # Update flakes
 nix develop .#building --command update
@@ -27,110 +21,67 @@ nix develop .#building --command update
 # Format code
 nix develop .#formatting --command apply formatting
 
-# Check formatting (runs in CI)
-nix develop .#formatting --command check formatting
-
-# Manage secrets
-nix develop .#managing-secrets
-
-# Build Raspberry Pi image
-nix develop .#building --command build-pi-image
-nix develop .#building --command decompress-pi-image
-```
-
-Or using just:
-```bash
+# Using just
 just rebuild-pre  # Update nix-secrets and stage changes
 just update       # Update all flakes
 just check        # Run flake check
 ```
 
-### Development Shells
-
-The flake defines multiple development shells for different tasks:
-- `default` - Includes all other shells
+**Development shells:**
 - `building` - System build and rebuild tools
 - `formatting` - Code formatting with treefmt
 - `managing-secrets` - SOPS and git-crypt tooling
 - `editing` - nixd language server
 
-## Architecture
+## Architecture & Patterns
 
-### Directory Structure Philosophy
+### Directory Structure
 
 The repository uses a `/with/` pattern to compose system configurations:
 
 ```
 system/
-├── <hostname>.nix           # Top-level system definitions (air.nix, bw.nix, homelab/, etc.)
+├── <hostname>.nix           # Top-level system definitions
 ├── with/
 │   ├── nix.nix              # Nix configuration
 │   ├── home-manager.nix     # Home Manager setup
 │   ├── desktop-environment/ # Desktop environments (darwin, gnome, hyprland, sway)
-│   ├── hardware/            # Hardware-specific configs (vm.nix)
+│   ├── hardware/            # Hardware-specific configs
 │   ├── trait/               # System traits (allow-unfree, ssh-enabled, has-swapfile)
 │   └── user/
 │       ├── me.nix           # Main user configuration
 │       └── with/
 │           ├── program/     # Individual program configurations
 │           ├── service/     # Services (autoclone)
-│           └── development-environment/ # Dev setups (dotfiles, nix, notes, bitwarden)
+│           └── development-environment/ # Dev setups
 └── modules/
     ├── emacs/               # Literate Emacs configuration in org-mode
     ├── secrets/             # SOPS secret definitions
     └── automated-emailing/  # Custom modules
 ```
 
-### Key Architectural Patterns
+### Core Patterns
 
-1. **Compositional Modules**: System configurations are built by importing modules from `with/` directories
-2. **Literate Configuration**: Emacs configuration is written in org-mode files and tangled to elisp
-3. **Per-User Programs**: Each program (fish, git, emacs, etc.) has its own module in `system/with/user/with/program/`
-4. **Secrets Management**: Uses SOPS-nix with age keys for secret management
+1. **Compositional Modules**: System configurations built by importing modules from `with/` directories
+2. **Literate Configuration**: Emacs config written in org-mode files, tangled to elisp during build using `tangle-script.el`
+3. **Per-User Programs**: Each program has its own module in `system/with/user/with/program/`
+4. **Special Args**: Flake passes `inputs`, `outputs`, `nixpkgs`, `rootPath`, `conf`, and `hostname` through module system
 5. **Theme System**: Centralized theming in `config/` directory with active theme selection
 
 ### Emacs Configuration
 
-The Emacs setup (`system/modules/emacs/`) is unique:
+Located in `system/modules/emacs/`:
 - Written as literate org-mode files (core.org, gptel.org, projects.org, etc.)
-- Tangled during build using `tangle-script.el`
-- The `default.nix` runs Emacs in batch mode to tangle all org files into `init.el`
-- Packages are managed via `emacsWithPackagesFromUsePackage`
+- `default.nix` runs Emacs in batch mode to tangle all org files into `init.el`
+- Packages managed via `emacsWithPackagesFromUsePackage`
 - Custom `ec` wrapper script manages daemon and frame reuse
+- Check `~/.emacs.d/generated-init.el` to debug tangled output
 
-### Special Args System
-
-The flake passes special arguments through the module system:
-- `inputs` - Flake inputs
-- `outputs` - Flake outputs
-- `nixpkgs` - The nixpkgs input
-- `rootPath` - Repository root path
-- `conf` - Imported config from `./config/`
-- `hostname` - Current system hostname
-
-## Formatting
-
-This repository uses treefmt for code formatting:
-- **Nix**: alejandra
-- **Org files**: Custom Emacs-based formatter (`format-org.el`)
-- **Lua**: stylua
-- **Shell**: shellcheck
-
-CI runs formatting checks on pushes and PRs.
-
-## Secrets
-
-Secrets are managed using:
-- **SOPS** with age encryption
-- **git-crypt** for additional encrypted files
-- Secrets stored in separate `nix-secrets` flake (private repository)
-- Age keys generated from SSH keys: `ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt`
-
-## Working with This Repository
+## Stack Best Practices
 
 ### Adding a New Program
 
-1. Create a module in `system/with/user/with/program/<program-name>.nix`
+1. Create module in `system/with/user/with/program/<program-name>.nix`
 2. Import it in `system/with/user/me.nix`
 3. Use home-manager options to configure the program
 
@@ -138,19 +89,84 @@ Secrets are managed using:
 
 1. Edit the relevant org file in `system/modules/emacs/`
 2. Ensure code blocks have `:tangle <filename>.el` header args
-3. Rebuild - the tangling happens automatically during build
-4. Check `~/.emacs.d/generated-init.el` to debug tangled output
+3. Rebuild - tangling happens automatically during build
 
-### Cross-Platform Considerations
+### Cross-Platform Development
 
 - Use `lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin` for macOS-specific config
 - Use `lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux` for Linux-specific config
-- System definitions use either nix-darwin (`darwinConfigurations`) or NixOS (`nixosConfigurations`)
+- System definitions use either `darwinConfigurations` or `nixosConfigurations`
 
 ### Testing Changes
 
-For system-wide changes, test on the VM first:
+Test system-wide changes on the VM first:
 ```bash
 nix build .#nixosConfigurations.linux-testing-vm.config.system.build.vm
 ./result/bin/run-nixos-vm
 ```
+
+### Formatting
+
+Uses treefmt for code formatting:
+- **Nix**: alejandra
+- **Org files**: Custom Emacs-based formatter (`format-org.el`)
+- **Lua**: stylua
+- **Shell**: shellcheck
+
+Check formatting before committing:
+```bash
+nix develop .#formatting --command check formatting
+```
+
+## Anti-Patterns
+
+- **Don't** bypass the `/with/` compositional pattern - always compose configurations through module imports
+- **Don't** manage Emacs packages outside of `emacsWithPackagesFromUsePackage` - keep all package definitions in org files
+- **Don't** hardcode platform-specific code without guards - always use `lib.optionalAttrs` with platform checks
+- **Don't** commit unformatted code - CI runs formatting checks and will reject improperly formatted code
+- **Don't** skip VM testing for system-wide changes - use `linux-testing-vm` to validate changes before deploying
+
+## Data Models
+
+### Flake Special Arguments
+
+The flake passes these arguments through the module system:
+- `inputs` - Flake inputs for accessing external dependencies
+- `outputs` - Flake outputs for self-referencing
+- `nixpkgs` - The nixpkgs input
+- `rootPath` - Repository root path for relative imports
+- `conf` - Imported config from `./config/` (theme system, etc.)
+- `hostname` - Current system hostname
+
+### System Configuration Structure
+
+Each system configuration composes:
+- Base Nix configuration (`with/nix.nix`)
+- Home Manager setup (`with/home-manager.nix`)
+- Desktop environment (optional, from `with/desktop-environment/`)
+- Hardware configuration (from `with/hardware/`)
+- System traits (from `with/trait/`)
+- User configuration (`with/user/me.nix`)
+
+## Configuration, Security, and Authentication
+
+### Secrets Management
+
+Uses dual-layer secret management:
+- **SOPS** with age encryption for declarative secrets
+- **git-crypt** for additional encrypted files
+- Secrets stored in separate `nix-secrets` flake (private repository)
+
+Generate age keys from SSH keys:
+```bash
+ssh-to-age -private-key -i ~/.ssh/id_ed25519 > ~/.config/sops/age/keys.txt
+```
+
+Access secrets shell:
+```bash
+nix develop .#managing-secrets
+```
+
+### Secret Definitions
+
+Secrets defined in `system/modules/secrets/` and consumed via SOPS-nix module options throughout system configurations.
