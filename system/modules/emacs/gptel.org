@@ -387,8 +387,6 @@ This works but I'm using the fetch mcp server
         ("brave-search" . (:command "npx"
                                          :args ("-y" "@modelcontextprotocol/server-brave-search")
                                          :env (:BRAVE_API_KEY ,(my/get-brave-token))))
-        ("mcp-server-text-editor" . (:command "npx"
-                                            :args ("-y" "mcp-server-text-editor")))
         ("fetch" . (:command "uvx" :args ("mcp-server-fetch")))
         ("atlassian" . (:command "npx" :args ("-y" "mcp-remote" "https://mcp.atlassian.com/v1/sse" "--resource" "https://bitwarden.atlassian.net/")))
         ("github-mcp" . (:command "docker"
@@ -396,6 +394,11 @@ This works but I'm using the fetch mcp server
                               "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
                               "ghcr.io/github/github-mcp-server")
                        :env (:GITHUB_PERSONAL_ACCESS_TOKEN ,(my/get-github-mcp-token))))
+        ("org-roam" . (:command "/Users/me/binwarden/addisonbeck-org-roam-mcp/main/result/bin/org-roam-mcp"
+                                :args ()
+                                :env (:ORG_ROAM_DIR "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam")))
+
+
         ))
 
 ;; Start MCP servers after Emacs initializes

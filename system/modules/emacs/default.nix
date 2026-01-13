@@ -87,20 +87,20 @@
     chromium = pkgs.google-chrome;
     };
 
-  mcp-el-src = pkgs.fetchFromGitHub {
-    owner = "lizqwerscott";
-    repo = "mcp.el";
-    rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
-    hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
-  };
+  #mcp-el-src = pkgs.fetchFromGitHub {
+    #owner = "lizqwerscott";
+    #repo = "mcp.el";
+    #rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
+    #hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
+  #};
 
-  emacsPackagesOverlay = self: super: {
-    mcp-el = super.trivialBuild {
-      pname = "mcp-el";
-      version = "git-${mcp-el-src.rev}";
-      src = mcp-el-src;
-    };
-  };
+  #emacsPackagesOverlay = self: super: {
+    #mcp-el = super.trivialBuild {
+      #pname = "mcp-el";
+      #version = "git-${mcp-el-src.rev}";
+      #src = mcp-el-src;
+    #};
+  #};
 
 in {
   programs.emacs = {
@@ -110,7 +110,7 @@ in {
         withTreeSitter = true;
         withImageMagick = true;
       };
-      override = emacsPackagesOverlay;
+      #override = emacsPackagesOverlay;
       config = tangledInit;
       defaultInitFile = true;
       alwaysEnsure = true;
@@ -139,8 +139,6 @@ in {
           which-key
           consult
           gruvbox-theme
-          solarized-theme
-          poet-theme
           with-editor
           dashboard
           nerd-icons
@@ -180,13 +178,12 @@ in {
           org-make-toc
           avy
           rg
-          mcp-el
+          mcp
           flyspell-correct
           hnreader
           rg
           mpv
           direnv
-          aidermacs
           olivetti
           org-modern
           breadcrumb
@@ -205,6 +202,7 @@ in {
           #pr-review
           org-present
           org-inline-anim
+          agent-shell
         ];
     };
   };

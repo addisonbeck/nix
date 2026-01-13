@@ -1351,6 +1351,34 @@ runs 'nix-collect-garbage' and then the rebuild."
   (setq magit-git-executable "/Users/me/.nix-profile/bin/git")
 #+end_src
 
+* Agent Shell
+#+begin_src emacs-lisp
+(require 'agent-shell)
+(setq agent-shell-anthropic-authentication
+      (agent-shell-anthropic-make-authentication :login t))
+(setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
+
+(setq agent-shell-mcp-servers
+      '(((name . "org-roam")
+         (command . "/Users/me/binwarden/addisonbeck-org-roam-mcp/main/result/bin/org-roam-mcp")
+         (args . [])
+         (env . [((name . "ORG_ROAM_DIR")
+                  (value . "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam"))]))
+        ((name . "filesystem")
+         (command . "npx")
+         (args . ["-y" "@modelcontextprotocol/server-filesystem"
+                  "/tmp" "/Users/me/binwarden" "/Users/me/notes"])
+         (env . []))
+        ((name . "atlassian")
+         (type . "sse")
+         (url . "https://mcp.atlassian.com/v1/sse")
+         (headers . []))
+        ((name . "github")
+         (command . "docker")
+         (args . ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+                  "ghcr.io/github/github-mcp-server"))
+         (env . []))))
+#+end_src
 * Minibuffer Enhancement
 
 This cool and lame at the same time
@@ -2011,6 +2039,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (add-hook 'magit-status-mode-hook #'magit-status-mode-init)
 #+end_src
 
+
 * Final Function Advice
 ** Update Olivetti Fringes on Theme Toggle
 #+begin_src emacs-lisp
@@ -2026,3 +2055,4 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; End:
 		      ;;; init.el ends here
 #+end_src
+

@@ -68,10 +68,14 @@
   };
 
   programs.git = {
-    userName = "addisonbeck";
-    userEmail = "github@addisonbeck.com";
+    settings = {
+      user = {
+        name = "addisonbeck";
+        email = "github@addisonbeck.com";
+      };
+      gpg.format = "ssh";
+    };
     signing.key = config.sops.secrets."primary-ssh-key.pub".path;
-    extraConfig.gpg.format = "ssh";
     signing.signByDefault = true;
   };
 }
