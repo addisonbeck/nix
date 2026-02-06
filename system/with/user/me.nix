@@ -27,6 +27,16 @@
     };
 
   home-manager.users.me = {
+    # Workaround for https://github.com/Mic92/sops-nix/issues/890
+    launchd.agents.sops-nix = lib.mkIf pkgs.stdenv.isDarwin {
+      enable = true;
+      config = {
+        EnvironmentVariables = {
+          PATH = lib.mkForce "/usr/bin:/bin:/usr/sbin:/sbin";
+        };
+      };
+    };
+
     imports = [
       inputs.sops-nix.homeManagerModules.sops
       ./with/program/bash.nix
@@ -120,6 +130,7 @@
       pkgs.zstd
       pkgs.utm
       pkgs.spotify
+      pkgs.binaryen
     ];
 
     home.sessionPath = [];

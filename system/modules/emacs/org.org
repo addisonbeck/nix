@@ -559,9 +559,9 @@ Don't show DONE items in the agenda
 		(:name "High Priority"
         :and (:deadline today :priority "A")
         :and (:deadline past :priority "A"))
-		(:name "Cooking"
-        :and (:deadline today :tag "cooking")
-        :and (:deadline past :tag "cooking"))
+		;;(:name "Cooking"
+        ;;:and (:deadline today :tag "cooking")
+        ;;:and (:deadline past :tag "cooking"))
 		(:name "My Pull Requests"
         :and (:deadline today :category "code review" :property ("AUTHOR" "addisonbeck"))
         :and (:deadline past :category "code review" :property ("AUTHOR" "addisonbeck")))

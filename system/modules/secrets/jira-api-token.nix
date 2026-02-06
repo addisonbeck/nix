@@ -12,4 +12,10 @@
       export JIRA_API_TOKEN="$(cat ${config.sops.secrets."JIRA_API_TOKEN".path})"
     '';
   };
+
+  programs.bash = lib.mkIf config.programs.bash.enable {
+    initExtra = ''
+      export JIRA_API_TOKEN="$(cat ${config.sops.secrets."JIRA_API_TOKEN".path})"
+    '';
+  };
 }

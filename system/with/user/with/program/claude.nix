@@ -27,6 +27,9 @@ in {
           "/tmp"
           "/Users/me/binwarden"
           "/Users/me/notes"
+          "/Users/me/notes/roam"
+          "/Users/me/.claude"
+          "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
         ];
       };
       atlassian = {

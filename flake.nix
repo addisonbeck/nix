@@ -12,10 +12,10 @@
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
-    nix-secrets = {
-      url = "git+ssh://git@github.com/addisonbeck/nix-secrets.git?ref=main&shallow=1";
-      inputs = { };
-    };
+    #nix-secrets = {
+      #url = "git+ssh://git@github.com/addisonbeck/nix-secrets.git?ref=main&shallow=1";
+      #inputs = { };
+    #};
 
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
@@ -55,6 +55,7 @@
     overlays = [
       #(import rust-overlay)
       emacs-overlay.overlay
+      (import ./overlays/claude-code-acp.nix)
     ];
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;

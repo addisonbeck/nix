@@ -1,4 +1,4 @@
-{...}: {
+{pkgs, ...}: {
   home.file.".config/leaderkey/config.json".text = ''
     {
       "actions" : [
@@ -18,7 +18,7 @@
           "key" : "s",
           "label" : "",
           "type" : "application",
-          "value" : "/System/Volumes/Preboot/Cryptexes/App/System/Applications/Safari.app"
+          "value" : "${pkgs.spotify}/Applications/Spotify.app"
         },
         {
           "key" : "k",
@@ -55,6 +55,18 @@
           "label" : "",
           "type" : "application",
           "value" : "/System/Applications/Calendar.app"
+        },
+        {
+          "key" : "r",
+          "label" : "roblox",
+          "type" : "application",
+          "value" : "/Applications/Roblox.app"
+        },
+        {
+          "key" : "i",
+          "label" : "kindle",
+          "type" : "application",
+          "value" : "/Applications/Amazon Kindle.app"
         }
       ],
       "type" : "group"
