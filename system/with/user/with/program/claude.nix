@@ -18,20 +18,20 @@ in {
           ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
         };
       };
-      filesystem = {
-        command = "npx";
-        type = "stdio";
-        args = [
-          "-y"
-          "@modelcontextprotocol/server-filesystem"
-          "/tmp"
-          "/Users/me/binwarden"
-          "/Users/me/notes"
-          "/Users/me/notes/roam"
-          "/Users/me/.claude"
-          "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
-        ];
-      };
+      #filesystem = {
+      #  command = "npx";
+      #  type = "stdio";
+      #  args = [
+      #    "-y"
+      #    "@modelcontextprotocol/server-filesystem"
+      #    "/tmp"
+      #    "/Users/me/binwarden"
+      #    "/Users/me/notes"
+      #    "/Users/me/notes/roam"
+      #    "/Users/me/.claude"
+      #    "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
+      #  ];
+      #};
       atlassian = {
         type = "sse";
         url = "https://mcp.atlassian.com/v1/sse";
