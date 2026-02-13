@@ -39,10 +39,6 @@ message+="- This reminder is automatic and can be safely ignored when appropriat
 message+="\n"
 message+="===========================================\n"
 
-# Output JSON format required by Claude Code UserPromptSubmit hooks
-jq -n \
-  --arg msg "$(echo -e "$message")" \
-  '{
-    decision: "block",
-    reason: $msg
-  }'
+# Output the message directly to stdout (no JSON needed)
+# UserPromptSubmit hooks add stdout content to Claude's context
+echo -e "$message"
