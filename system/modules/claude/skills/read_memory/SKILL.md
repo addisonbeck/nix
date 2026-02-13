@@ -2,29 +2,28 @@
 name: read_memory
 description: |
   Fetches an org-roam memory node by its UUID. Returns the node's title,
-  content, and file path. This skill returns ONLY the requested node - it 
-  does NOT automatically traverse Required Reading links. The PostToolUse hook
-  provides context about linked resources, and Claude decides which tools to use.
+  content, and file path. Use when the user asks you to read a memory node
+  or when you need to access specific org-roam knowledge by ID.
+allowed-tools: Bash(~/.claude/skills/read_memory/*)
 ---
 
 # read_memory Skill
 
-## Purpose
-Provides direct access to org-roam memory nodes stored in Addison's
-knowledge base.
+When invoked, execute the bundled read_memory.sh script with the UUID argument:
 
-## Arguments
-- **id** (required): The org-roam node UUID in uppercase format
-  (e.g., "FF665E5D-6093-4830-ADB7-48CAE2FA65D0")
+```bash
+~/.claude/skills/read_memory/read_memory.sh $ARGUMENTS
+```
 
-## Returns
-JSON object containing:
+This script searches the org-roam directory for a node with the given UUID and returns JSON containing:
 - **id**: Node UUID
-- **title**: Node title from #+TITLE directive
+- **title**: Node title from #+TITLE directive  
 - **content**: Full node content in org-mode format
 - **file**: Absolute path to the .org file
 
-## Example
+The script handles errors gracefully - if the node isn't found, it returns an error message.
+
+## Example usage
 ```
 /read_memory FF665E5D-6093-4830-ADB7-48CAE2FA65D0
 ```
