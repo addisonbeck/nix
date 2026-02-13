@@ -23,6 +23,18 @@ in {
 
       # Hooks configuration
       hooks = {
+        UserPromptSubmit = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/skills/agent_reminder/agent_reminder_hook.sh";
+                statusMessage = "Checking agent workflow...";
+              }
+            ];
+          }
+        ];
+        
         PostToolUse = [
           {
             matcher = "Bash";
