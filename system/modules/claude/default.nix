@@ -42,6 +42,10 @@ in {
     # Copies skills/ contents to ~/.claude/skills/ at activation
     skillsDir = ./skills;
 
+    # Install agents from local directory
+    # Copies agents/ contents to ~/.claude/agents/ at activation
+    agentsDir = ./agents;
+
     # MCP Servers configuration
     mcpServers = {
       #org-roam = {
