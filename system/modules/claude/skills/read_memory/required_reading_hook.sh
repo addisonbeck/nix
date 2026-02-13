@@ -121,71 +121,77 @@ categorize_links() {
 # Build forceful instruction text for Claude
 build_instruction() {
   local categorized_json="$1"
-  
+
   # Extract arrays from JSON
   readarray -t org_roam_ids < <(echo "$categorized_json" | jq -r '.org_roam_ids[]')
   readarray -t file_paths < <(echo "$categorized_json" | jq -r '.file_paths[]')
   readarray -t jira_tickets < <(echo "$categorized_json" | jq -r '.jira_tickets[]')
-  
+
   # Count total items
   total_items=$((${#org_roam_ids[@]} + ${#file_paths[@]} + ${#jira_tickets[@]}))
-  
+
   # If no Required Reading items found, exit silently
   if [ "$total_items" -eq 0 ]; then
     exit 0
   fi
-  
-  # Output forceful instruction header
-  cat <<'EOF'
-===========================================
-⚠️  CRITICAL: REQUIRED READING DETECTED ⚠️
-===========================================
 
-The memory node you just read contains REQUIRED READING that MUST be loaded
-before proceeding with any task or response.
+  # Build the message as a string variable
+  message=""
+  message+="===========================================\n"
+  message+="⚠️  CRITICAL: REQUIRED READING DETECTED ⚠️\n"
+  message+="===========================================\n"
+  message+="\n"
+  message+="The memory node you just read contains REQUIRED READING that MUST be loaded\n"
+  message+="before proceeding with any task or response.\n"
+  message+="\n"
+  message+="MANDATORY NEXT STEPS (complete IN ORDER before responding):\n"
+  message+="\n"
 
-MANDATORY NEXT STEPS (complete IN ORDER before responding):
-
-EOF
-  
   # Step 1: org-roam memory nodes
   if [ ${#org_roam_ids[@]} -gt 0 ]; then
-    echo "STEP 1 - Load org-roam memory nodes (REQUIRED, NOT OPTIONAL):"
+    message+="STEP 1 - Load org-roam memory nodes (REQUIRED, NOT OPTIONAL):\n"
     for uuid in "${org_roam_ids[@]}"; do
-      echo "  → /read_memory $uuid"
+      message+="  → /read_memory $uuid\n"
     done
-    echo ""
+    message+="\n"
   fi
-  
+
   # Step 2: file links
   if [ ${#file_paths[@]} -gt 0 ]; then
-    echo "STEP 2 - Read referenced files (REQUIRED, NOT OPTIONAL):"
+    message+="STEP 2 - Read referenced files (REQUIRED, NOT OPTIONAL):\n"
     for path in "${file_paths[@]}"; do
-      echo "  → Read file $path"
+      message+="  → Read file $path\n"
     done
-    echo ""
+    message+="\n"
   fi
-  
+
   # Step 3: Jira tickets via MCP
   if [ ${#jira_tickets[@]} -gt 0 ]; then
-    echo "STEP 3 - Load Jira tickets via MCP (REQUIRED, NOT OPTIONAL):"
+    message+="STEP 3 - Load Jira tickets via MCP (REQUIRED, NOT OPTIONAL):\n"
     for ticket in "${jira_tickets[@]}"; do
-      echo "  → Call getJiraIssue MCP tool with cloudId='bitwarden.atlassian.net' and issueIdOrKey='$ticket'"
+      message+="  → Call getJiraIssue MCP tool with cloudId='bitwarden.atlassian.net' and issueIdOrKey='$ticket'\n"
     done
-    echo ""
+    message+="\n"
   fi
-  
-  # Output forceful footer with commitment mechanism
-  cat <<'EOF'
-⚠️  DO NOT proceed with the task until ALL Required Reading is loaded.
-⚠️  Each /read_memory invocation is MANDATORY.
-⚠️  Before invoking /read_memory, check if this UUID was already loaded in this session.
-⚠️  If a UUID appears in earlier context, skip it to prevent cycles.
-⚠️  Skipping Required Reading will result in incomplete context and task failure.
 
-AFTER loading all Required Reading, you may proceed with the task.
-===========================================
-EOF
+  # Add footer
+  message+="⚠️  DO NOT proceed with the task until ALL Required Reading is loaded.\n"
+  message+="⚠️  Each /read_memory invocation is MANDATORY.\n"
+  message+="⚠️  Before invoking /read_memory, check if this UUID was already loaded in this session.\n"
+  message+="⚠️  If a UUID appears in earlier context, skip it to prevent cycles.\n"
+  message+="⚠️  Skipping Required Reading will result in incomplete context and task failure.\n"
+  message+="\n"
+  message+="AFTER loading all Required Reading, you may proceed with the task.\n"
+  message+="===========================================\n"
+
+  # Output JSON format required by Claude Code PostToolUse hooks
+  # Use jq to properly escape the message and create valid JSON
+  jq -n \
+    --arg msg "$(echo -e "$message")" \
+    '{
+      decision: "block",
+      reason: $msg
+    }'
 }
 
 # Main processing pipeline
