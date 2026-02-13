@@ -39,19 +39,6 @@ in {
             ];
           }
         ];
-        
-        PostToolUse = [
-          {
-            matcher = "Bash";
-            hooks = [
-              {
-                type = "command";
-                command = "~/.claude/skills/read_memory/required_reading_hook.sh";
-                statusMessage = "Processing Required Reading...";
-              }
-            ];
-          }
-        ];
       };
     };
 
