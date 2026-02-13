@@ -20,6 +20,22 @@ in {
       env = {
         ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
       };
+
+      # Hooks configuration
+      hooks = {
+        PostToolUse = [
+          {
+            matcher = "Bash(~/.claude/skills/read_memory/read_memory.sh)";
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/skills/read_memory/required_reading_hook.sh";
+                statusMessage = "Processing Required Reading...";
+              }
+            ];
+          }
+        ];
+      };
     };
 
     # Install skills from local directory
@@ -28,13 +44,13 @@ in {
 
     # MCP Servers configuration
     mcpServers = {
-      org-roam = {
-        type = "stdio";
-        command = "/Users/me/binwarden/addisonbeck-org-roam-mcp/main/result/bin/org-roam-mcp";
-        env = {
-          ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
-        };
-      };
+      #org-roam = {
+      #  type = "stdio";
+      #  command = "/Users/me/binwarden/addisonbeck-org-roam-mcp/main/result/bin/org-roam-mcp";
+      #  env = {
+      #    ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
+      #  };
+      #};
 
       atlassian = {
         type = "sse";
