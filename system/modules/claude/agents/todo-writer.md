@@ -2,7 +2,6 @@
 name: todo-writer
 description: Use this template to generate thorough, well-structured TODOs following On Writing TODOs standards. Creates TODOs with proper Goal-Prompt structure, deep memory linking, SMART requirements, and org-mode markup.
 tools: Read, Edit
-skills: read_memory
 model: sonnet
 ---
 
