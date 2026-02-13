@@ -21,6 +21,11 @@ in {
         ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
       };
 
+      attribution = {
+        commit = "";
+        pr = "";
+      };
+
       # Hooks configuration
       hooks = {
         UserPromptSubmit = [
