@@ -359,7 +359,7 @@ This works but I'm using the fetch mcp server
 #+end_src
 
 * MCP Configuration
-#+begin_src emacs-lisp 
+#+begin_src emacs-lisp  :tangle no
 ;https://github.com/lizqwerscott/mcp.el
 ;https://github.com/karthink/gptel
 ;https://github.com/github/github-mcp-server
