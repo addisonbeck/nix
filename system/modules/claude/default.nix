@@ -15,7 +15,16 @@ in {
 
     settings = {
       outputStyle = "Bobert";
+      
+      # Environment variables accessible to skills/hooks
+      env = {
+        ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
+      };
     };
+
+    # Install skills from local directory
+    # Copies skills/ contents to ~/.claude/skills/ at activation
+    skillsDir = ./skills;
 
     # MCP Servers configuration
     mcpServers = {
