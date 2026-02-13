@@ -8,11 +8,22 @@ set -euo pipefail
 ORG_ROAM_DIR="${ORG_ROAM_DIR:-$HOME/Library/Mobile Documents/com~apple~CloudDocs/notes/roam}"
 
 # Parse hook input JSON from stdin
-# Expected format: {"tool_name": "read_memory", "tool_input": {...}, "tool_output": {...}}
+# Expected format: {"tool_name": "Bash", "tool_input": {...}, "tool_response": {...}}
 hook_input=$(cat)
 
-# Extract tool_output.content from JSON
-content=$(echo "$hook_input" | jq -r '.tool_output.content // empty')
+# Check if this is a read_memory.sh invocation
+command=$(echo "$hook_input" | jq -r '.tool_input.command // empty')
+if [[ ! "$command" =~ read_memory\.sh ]]; then
+  # Not a read_memory invocation, exit silently
+  exit 0
+fi
+
+# Extract the JSON output from the Bash tool response
+# The Bash tool returns stdout as a string, which contains our JSON
+bash_output=$(echo "$hook_input" | jq -r '.tool_response.stdout // empty')
+
+# Parse the JSON from bash output to get the actual content
+content=$(echo "$bash_output" | jq -r '.content // empty')
 
 # If no content or content is empty, pass through silently
 if [ -z "$content" ]; then

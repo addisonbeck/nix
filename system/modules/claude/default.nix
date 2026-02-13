@@ -25,7 +25,7 @@ in {
       hooks = {
         PostToolUse = [
           {
-            matcher = "Bash(~/.claude/skills/read_memory/read_memory.sh)";
+            matcher = "Bash";
             hooks = [
               {
                 type = "command";
