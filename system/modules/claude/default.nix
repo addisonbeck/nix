@@ -26,6 +26,10 @@ in {
     # Copies skills/ contents to ~/.claude/skills/ at activation
     skillsDir = ./skills;
 
+    # Install hooks from local directory
+    # Copies hooks/ contents to ~/.claude/hooks/ at activation
+    hooksDir = ./hooks;
+
     # MCP Servers configuration
     mcpServers = {
       org-roam = {
