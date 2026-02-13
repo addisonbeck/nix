@@ -17,10 +17,12 @@ echo '$ARGUMENTS' | ~/.claude/skills/create_memory/create_memory.sh
 
 The JSON input must contain:
 - **title** (string): Node title (1-200 characters)
-- **memory_type** (string): One of: episodic, semantic, procedural, associative, working, reflective, reference
+- **memory_type** (string): One of: episodic, semantic, procedural, associative, working, reflective, reference (validated)
 - **tags** (array): At least one tag string
 - **aliases** (array): At least one alias string
 - **content** (string): Node content in org-mode markup
+
+The script validates that memory_type is one of the allowed values and returns an error if invalid.
 
 The script generates a complete org-roam node with:
 - Auto-generated UUID

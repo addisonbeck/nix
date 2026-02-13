@@ -13,6 +13,15 @@ content=$(echo "$input" | jq -r '.content')
 
 ORG_ROAM_DIR="${ORG_ROAM_DIR:-$HOME/Library/Mobile Documents/com~apple~CloudDocs/notes/roam}"
 
+# Validate memory_type against allowed values
+valid_types=("episodic" "semantic" "procedural" "associative" "working" "reflective" "reference")
+if [[ ! " ${valid_types[@]} " =~ " ${memory_type} " ]]; then
+  jq -n \
+    --arg error "Invalid memory_type: '$memory_type'. Must be one of: episodic, semantic, procedural, associative, working, reflective, reference" \
+    '{error: $error}' >&2
+  exit 1
+fi
+
 # Generate UUID and timestamp
 id=$(uuidgen)
 timestamp=$(date "+%Y-%m-%d %H:%M")
