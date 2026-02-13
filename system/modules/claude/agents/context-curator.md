@@ -4,13 +4,6 @@ description: Curates task-relevant context from memory nodes and their Required 
 tools: Read, Bash
 skills: read_memory
 model: sonnet
-hooks:
-  PostToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: ~/.claude/skills/read_memory/required_reading_hook.sh
-          statusMessage: Processing Required Reading...
 ---
 
 # Context Curator
