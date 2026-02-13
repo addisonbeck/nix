@@ -93,8 +93,7 @@ Every Claude Code agent MUST include:
 
 For this system, agents are managed through nix configuration:
 - **Primary location**: `/Users/me/nix/system/modules/claude/agents/` (version controlled in nix)
-- **Installed to**: `~/.claude/agents/` (via nix home-manager activation)
-- **Activation**: Run `darwin-rebuild switch --flake /Users/me/nix` to install new agents
+- **Installed to**: `~/.claude/agents/` (via nix home-manager on next system rebuild)
 
 The file structure is:
 ```markdown
@@ -155,18 +154,13 @@ When asked to bootstrap a new Claude Code agent:
    - Write markdown file with proper YAML frontmatter
    - Save to `/Users/me/nix/system/modules/claude/agents/[agent-name].md`
    - Use descriptive filename matching the agent name (lowercase with hyphens)
-   - File will be installed to `~/.claude/agents/` on next nix rebuild
+   - File will be installed to `~/.claude/agents/` on next system rebuild
 
 6. **Provide Implementation Guidance**
    - Include concrete examples in the system prompt
    - Document when Claude should delegate to this agent
    - Suggest hypothetical tools that could enhance capabilities
    - Reference relevant research sources
-
-7. **Activate the Agent**
-   - Commit the new agent file to git if appropriate
-   - Run `darwin-rebuild switch --flake /Users/me/nix` to activate
-   - Agent becomes immediately available after rebuild completes
 
 ## Metacognitive Quality Control
 
@@ -260,10 +254,9 @@ When creating a new Claude Code agent, provide:
 
 1. **Agent Markdown File**: Complete file with YAML frontmatter and system prompt
 2. **File Path**: Save to `/Users/me/nix/system/modules/claude/agents/[agent-name].md`
-3. **Activation Command**: `darwin-rebuild switch --flake /Users/me/nix`
-4. **Usage Guidance**: How Claude will know when to delegate to this agent
-5. **Testing Recommendations**: How to verify the agent works as expected
-6. **Sources**: Research citations and references
+3. **Usage Guidance**: How Claude will know when to delegate to this agent
+4. **Testing Recommendations**: How to verify the agent works as expected (after next system rebuild)
+5. **Sources**: Research citations and references
 
 ## When to Suggest New Agents
 
