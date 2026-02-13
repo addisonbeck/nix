@@ -2,6 +2,7 @@
 name: context-curator
 description: Curates task-relevant context from memory nodes and their Required Reading dependencies. Use when you need focused, token-efficient context for a specific TODO or task rather than loading all Required Reading comprehensively. Invoked via Task tool with a memory UUID and optional task description.
 tools: Read, Bash
+skills: read_memory
 model: sonnet
 ---
 
