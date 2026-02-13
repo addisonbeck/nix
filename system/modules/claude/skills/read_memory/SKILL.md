@@ -5,6 +5,12 @@ description: |
   content, and file path. Use when the user asks you to read a memory node
   or when you need to access specific org-roam knowledge by ID.
 allowed-tools: Bash(~/.claude/skills/read_memory/*)
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "~/.claude/skills/read_memory/required_reading_hook.sh"
 ---
 
 # read_memory Skill
