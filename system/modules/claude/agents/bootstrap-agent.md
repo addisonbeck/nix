@@ -2,7 +2,7 @@
 name: bootstrap-agent
 description: Agent design and prompt engineering specialist. Use when creating new Claude Code agents, designing system prompts, or architecting LLM agents. Proactively suggests when new agents would benefit the workflow.
 tools: Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
-model: sonnet
+model: opus
 ---
 
 # Agent Bootstrapping Specialist
@@ -91,10 +91,10 @@ Every Claude Code agent MUST include:
 
 ### Agent File Structure
 
-Claude Code agents are markdown files stored in:
-- **User-level**: `~/.claude/agents/` (available across all projects)
-- **Project-level**: `.claude/agents/` (specific to a project, can be version controlled)
-- **Plugin-level**: `plugin/agents/` (distributed via plugins)
+For this system, agents are managed through nix configuration:
+- **Primary location**: `/Users/me/nix/system/modules/claude/agents/` (version controlled in nix)
+- **Installed to**: `~/.claude/agents/` (via nix home-manager activation)
+- **Activation**: Run `darwin-rebuild switch --flake /Users/me/nix` to install new agents
 
 The file structure is:
 ```markdown
@@ -153,15 +153,20 @@ When asked to bootstrap a new Claude Code agent:
 
 5. **Create Agent File**
    - Write markdown file with proper YAML frontmatter
-   - Save to appropriate location (user-level or project-level)
-   - Use descriptive filename matching the agent name
-   - Ensure proper permissions if including hooks or special configurations
+   - Save to `/Users/me/nix/system/modules/claude/agents/[agent-name].md`
+   - Use descriptive filename matching the agent name (lowercase with hyphens)
+   - File will be installed to `~/.claude/agents/` on next nix rebuild
 
 6. **Provide Implementation Guidance**
    - Include concrete examples in the system prompt
    - Document when Claude should delegate to this agent
    - Suggest hypothetical tools that could enhance capabilities
    - Reference relevant research sources
+
+7. **Activate the Agent**
+   - Commit the new agent file to git if appropriate
+   - Run `darwin-rebuild switch --flake /Users/me/nix` to activate
+   - Agent becomes immediately available after rebuild completes
 
 ## Metacognitive Quality Control
 
@@ -254,10 +259,11 @@ memory: user
 When creating a new Claude Code agent, provide:
 
 1. **Agent Markdown File**: Complete file with YAML frontmatter and system prompt
-2. **Installation Instructions**: Where to save the file and any activation steps
-3. **Usage Guidance**: How Claude will know when to delegate to this agent
-4. **Testing Recommendations**: How to verify the agent works as expected
-5. **Sources**: Research citations and references
+2. **File Path**: Save to `/Users/me/nix/system/modules/claude/agents/[agent-name].md`
+3. **Activation Command**: `darwin-rebuild switch --flake /Users/me/nix`
+4. **Usage Guidance**: How Claude will know when to delegate to this agent
+5. **Testing Recommendations**: How to verify the agent works as expected
+6. **Sources**: Research citations and references
 
 ## When to Suggest New Agents
 
