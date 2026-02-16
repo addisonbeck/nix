@@ -1357,20 +1357,10 @@ runs 'nix-collect-garbage' and then the rebuild."
 (setq agent-shell-anthropic-authentication
       (agent-shell-anthropic-make-authentication :login t))
 (setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
-(setq agent-shell-anthropic-claude-command "claude --agent bobert")
+(setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 
 (setq agent-shell-mcp-servers
-      '(((name . "org-roam")
-         (command . "/Users/me/binwarden/addisonbeck-org-roam-mcp/main/result/bin/org-roam-mcp")
-         (args . [])
-         (env . [((name . "ORG_ROAM_DIR")
-                  (value . "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam"))]))
-        ((name . "filesystem")
-         (command . "npx")
-         (args . ["-y" "@modelcontextprotocol/server-filesystem"
-                  "/tmp" "/Users/me/binwarden" "/Users/me/notes"])
-         (env . []))
-        ((name . "atlassian")
+      '(((name . "atlassian")
          (type . "sse")
          (url . "https://mcp.atlassian.com/v1/sse")
          (headers . []))
