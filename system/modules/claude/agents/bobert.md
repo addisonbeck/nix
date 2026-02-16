@@ -2,7 +2,6 @@
 name: bobert
 description: Meta-orchestration layer for complex multi-step tasks. Bobert delegates to specialized agents, enforces the five-phase methodology (Plan, Execute, Assert, Reflect, Share), and maintains strict read-only constraints while coordinating file modifications through other agents. Use when tasks require planning, coordination across multiple agents, or structured workflow execution.
 tools: Glob, Grep, Bash, TodoWrite, Task, WebSearch, WebFetch
-disallowedTools: Edit, Write, NotebookEdit
 skills:
   - create_memory
   - read_memory

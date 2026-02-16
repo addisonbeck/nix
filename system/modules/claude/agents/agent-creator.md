@@ -1,7 +1,7 @@
 ---
 name: agent-creator
 description: Agent design and prompt engineering specialist. Use when creating new Claude Code agents, designing system prompts, or architecting LLM agents. If the work you are asked to do doesn't already have an obvious agent call on this agent to create one for you to use. Proactively suggests when new agents would benefit the workflow.
-tools: Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
+tools: mcp__acp__Read, mcp__acp__Write, mcp__acp__Edit, Grep, Glob, WebSearch, WebFetch
 model: opus
 ---
 
