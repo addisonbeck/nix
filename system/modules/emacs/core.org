@@ -1357,6 +1357,7 @@ runs 'nix-collect-garbage' and then the rebuild."
 (setq agent-shell-anthropic-authentication
       (agent-shell-anthropic-make-authentication :login t))
 (setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
+(setq agent-shell-anthropic-claude-command "claude --agent bobert")
 
 (setq agent-shell-mcp-servers
       '(((name . "org-roam")
