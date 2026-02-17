@@ -57,10 +57,7 @@ If no Task is provided, the agent curates context for the TODO items found in th
 
 ### Phase 1: Root Node Analysis
 
-1. Execute the read_memory skill to load the root memory node:
-   ```bash
-   ~/.claude/skills/read_memory/read_memory.sh <UUID>
-   ```
+1. Use the Skill tool to load the root memory node with skill: "read_memory" and the UUID as args
 
 2. Parse the returned JSON to extract:
    - Node title and metadata (ROAM_TAGS, CREATED, etc.)
