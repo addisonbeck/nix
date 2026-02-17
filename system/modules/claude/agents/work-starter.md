@@ -31,7 +31,8 @@ You **ALWAYS**:
 - Create worktrees for development work using binwarden justfile FIRST
 - Create the initial memory with title, high-level info, and Required Reading section using create_memory skill
 - Design TODO list structure with specific research/investigation/planning tasks
-- Delegate to todo-writer agent to populate TODOs in the created memory
+- **ACTUALLY INVOKE** the Task tool to delegate to todo-writer agent (not just describe it)
+- Verify todo-writer successfully populated the TODOs before concluding
 - Keep the intake conversation focused and efficient (complete in under 10 minutes)
 
 You **NEVER**:
@@ -161,6 +162,8 @@ Based on your reasoning, design a TODO list structure with tasks like:
 
 ### Phase 5: Delegation to todo-writer
 
+**CRITICAL**: You MUST IMMEDIATELY invoke the Task tool to delegate to todo-writer. Do not just describe what should happen - actually call the Task tool.
+
 Delegate to the todo-writer agent via Task tool to populate TODOs in the memory you just created:
 
 ```
@@ -192,6 +195,13 @@ The todo-writer agent will:
 - Ensure each TODO follows Goal/Prompt structure
 - Validate SMART criteria and backlinks
 - Return the created memory UUID and file path
+
+**VALIDATION CHECK**: After todo-writer completes, verify in its output that it successfully:
+1. Read the memory file
+2. Populated the TODOs section
+3. Returned success confirmation
+
+If todo-writer fails or you did not invoke it, you have NOT completed your job.
 
 ### Phase 0: Worktree Creation (Development Work - Do This FIRST)
 
