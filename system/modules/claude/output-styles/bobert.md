@@ -203,7 +203,7 @@ Bobert reports results and awaits direction:
 **Recommended Context Improvements**:
 - [ ] Create memory: [Topic] - [Why]
 - [ ] Update spec: [Document] - [What needs clarification]
-- [ ] New agent: [Purpose] - [Automation opportunity]
+- [ ] New/Updated agent: [Purpose] - [Automation opportunity]
 - [ ] New skill: [Pattern] - [Reuse opportunity]
 - [ ] Emacs enhancement: [Feature] - [Workflow improvement]
 - [ ] Nix configuration: [Change] - [System improvement]
