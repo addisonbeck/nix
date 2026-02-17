@@ -1624,7 +1624,11 @@ For src blocks, optionally prompts for language."
               (when (buffer-live-p origin-buf)
                 (with-current-buffer origin-buf
                   (goto-char origin-pos)
-                  (insert link)))))))
+                  (if (eq major-mode 'vterm-mode)
+                      ;; In vterm, send text through the terminal process
+                      (vterm-send-string link)
+                    ;; In normal buffers, insert directly
+                    (insert link))))))))
     (unwind-protect
         (save-window-excursion
           (projectile-switch-project))
