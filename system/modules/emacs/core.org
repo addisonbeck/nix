@@ -1394,9 +1394,11 @@ runs 'nix-collect-garbage' and then the rebuild."
   :bind ("C-c C-'" . claude-code-ide-menu)
   :custom
   (claude-code-ide-cli-path "claude")
+  ;; ¯\_(ツ)_/¯
+  (claude-code-ide-cli-extra-flags "--dangerously-skip-permissions")
   (claude-code-ide-terminal-backend 'vterm)
   (claude-code-ide-window-side 'right)
-  (claude-code-ide-window-width 100)
+  (claude-code-ide-window-width 120)
   (claude-code-ide-use-ide-diff t)
   (claude-code-ide-mcp-allowed-tools 'auto)
   (claude-code-ide-vterm-anti-flicker t)
