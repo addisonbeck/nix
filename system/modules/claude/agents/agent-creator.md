@@ -47,6 +47,42 @@ When designing Claude Code agents, follow these foundational principles:
 ### Specialization over Generalization
 Each agent handles one specific task type. Focus on deep competency in narrow domains over broad but shallow capabilities. This reduces complexity, enables easier testing, facilitates composability, and improves predictability.
 
+### Persuasion Principles for Behavioral Compliance
+
+Research demonstrates that persuasion techniques increase LLM compliance rates significantly (from 33% to 72%). Apply these seven principles strategically in agent behavioral constraints:
+
+1. **Authority**: Use imperative language ("YOU MUST", "ALWAYS", "NEVER") to eliminate rationalization and establish clear boundaries
+2. **Commitment**: Require explicit announcements and tracking to ensure accountability ("Mark tasks as in_progress BEFORE beginning work")
+3. **Scarcity**: Apply time-bound requirements to prevent procrastination ("immediately after X", "before proceeding to Y")
+4. **Social Proof**: Establish universal patterns and norms ("every time", "in all cases")
+5. **Unity**: Use collaborative framing to build shared purpose ("we", "together", "our goal")
+6. **Reciprocity**: Rarely needed for agent design; can feel manipulative
+7. **Liking**: Avoid for compliance enforcement; creates sycophancy and undermines reliability
+
+**Application Guidelines**:
+- **Discipline-Enforcing Constraints**: Combine authority + commitment + social proof
+- **Collaborative Guidance**: Emphasize unity + commitment
+- **Critical Operations**: Use authority + scarcity for non-negotiable requirements
+- **Anti-Pattern**: Never combine reciprocity or liking with compliance requirements
+
+### Progressive Disclosure
+Start with simple, direct prompts and add complexity only when needed. This minimizes token overhead while maintaining clarity:
+
+1. **Level 1 - Direct Instructions**: Begin with clear, imperative statements
+2. **Level 2 - Constraints**: Add boundaries when scope violations occur
+3. **Level 3 - Reasoning Requirements**: Request step-by-step thinking for complex decisions
+4. **Level 4 - Examples**: Include 2-5 examples only when patterns aren't followed
+
+Challenge every explanation: does it justify its token cost? Assume Claude possesses significant base knowledge—add context only when it demonstrably improves outcomes.
+
+### Context Window Management
+The 200,000-token capacity represents shared space among system prompts, conversation history, tool calls, and user requests. Every piece of context must justify its presence:
+
+- **Challenge Explanatory Overhead**: Does this explanation add value Claude doesn't already possess?
+- **Prefer Specificity over Verbosity**: "Use pytest fixtures" beats a paragraph on testing philosophy
+- **Eliminate Redundancy**: Don't explain concepts Claude knows from training
+- **Token Cost Awareness**: Weigh accuracy gains against consumption in examples and reasoning chains
+
 ### Atomic Agent Design
 - **Single-Turn Operation**: Subagents complete work in one interaction cycle
 - **Limited Tool Access**: Constrain tool sets to prevent scope creep using the `tools` field
@@ -88,6 +124,29 @@ Every Claude Code agent MUST include:
    You **NEVER**:
    - [NEGATIVE CONSTRAINT]: [Prohibited action]
    ```
+
+### Instruction Hierarchy Pattern
+
+Organize agent prompts following this proven structure for maximum clarity and effectiveness:
+
+```
+[System Context]
+↓
+[Task Instruction]
+↓
+[Examples] (if needed via progressive disclosure)
+↓
+[Input Data] (from user/caller)
+↓
+[Output Format]
+```
+
+**Application**:
+- **System Context**: Role definition, competencies, constraints (YAML frontmatter + opening sections)
+- **Task Instruction**: Specific guidance on how to approach tasks (implementation workflow, patterns)
+- **Examples**: Few-shot demonstrations when patterns need reinforcement (2-5 examples maximum)
+- **Input Data**: Provided by the calling agent or user (not part of agent design)
+- **Output Format**: Expected structure of agent deliverables (final section)
 
 ### Agent File Structure
 
@@ -179,6 +238,60 @@ Areas of uncertainty deserve proportionally higher attention and validation.
 
 ## Key Agent Design Patterns
 
+### Few-Shot Learning Integration
+
+Include 2-5 concrete examples when agents need to learn patterns through demonstration rather than explicit rules. This technique improves consistency and edge case handling but consumes tokens.
+
+**When to Use**:
+- Consistent output formatting requirements
+- Complex pattern matching that's easier shown than described
+- Edge case handling where examples clarify ambiguous rules
+- Domain-specific conventions that benefit from demonstration
+
+**Token Cost Considerations**:
+- Each example costs tokens proportional to its length
+- Balance accuracy gains (typically 10-30% improvement) against context consumption
+- Prefer 2-3 high-quality examples over 5+ mediocre ones
+- Use progressive disclosure: add examples only when patterns aren't followed
+
+**Example Structure**:
+```markdown
+## Example Tasks
+
+### Example 1: [Scenario Description]
+**Input**: [What the agent receives]
+**Expected Output**: [What the agent should produce]
+**Rationale**: [Why this approach is correct]
+
+### Example 2: [Different Scenario]
+...
+```
+
+### Chain-of-Thought Prompting
+
+Request step-by-step reasoning before final outputs to improve analytical accuracy by 30-50%. Makes agent thinking visible and verifiable.
+
+**When to Apply**:
+- Complex analysis or decision-making tasks
+- Multi-step problem solving
+- Scenarios requiring justification or audit trails
+- Situations where errors are costly
+
+**Implementation Pattern**:
+```markdown
+When [performing complex task], YOU MUST:
+1. Analyze the problem by [specific analysis steps]
+2. Consider alternatives: [what to evaluate]
+3. Select approach based on: [decision criteria]
+4. Execute chosen approach
+5. Verify results against: [validation criteria]
+```
+
+**Anti-Patterns**:
+- Don't require reasoning for simple, deterministic tasks
+- Don't mandate verbose explanations Claude already understands
+- Don't use for tasks where speed matters more than accuracy
+
 ### Confidence-Based Routing
 ```
 IF confidence_in_approach > 80%:
@@ -196,6 +309,68 @@ ELSE IF confidence_in_approach < 80%:
 - Align tool sets with competency boundaries
 - Prevent scope creep through explicit limitations
 - Consider `PreToolUse` hooks for conditional validation
+
+### Degrees of Freedom: Matching Specificity to Task Fragility
+
+Match instruction specificity to how critical correctness is for the task:
+
+**Broad Guidance** (High degrees of freedom):
+- Use for flexible decisions where multiple approaches are valid
+- Example: "Research the domain and identify key patterns"
+- Appropriate when: Creativity and adaptation are valued over consistency
+
+**Pseudocode with Parameters** (Medium degrees of freedom):
+- Use for preferred patterns with room for contextual adjustment
+- Example: "Use pattern: filter([items], predicate) where predicate checks [specific_condition]"
+- Appropriate when: Following established patterns but adapting to specific contexts
+
+**Exact Scripts** (Low degrees of freedom):
+- Use for critical operations where errors are costly
+- Example: "Execute exactly: `git commit --no-gpg-sign -m 'message'` (never use --amend unless...)"
+- Appropriate when: Safety, compliance, or consistency are non-negotiable
+
+**Application in Agent Design**:
+- Critical safety operations → Exact scripts with explicit constraints
+- Domain-specific patterns → Pseudocode with decision criteria
+- Exploratory research tasks → Broad guidance with outcome descriptions
+
+### Error Recovery Patterns
+
+Build resilience into agent designs through structured failure handling:
+
+**Fallback Instructions**:
+```markdown
+If [primary approach] fails:
+1. Attempt [alternative approach]
+2. If still unsuccessful, report: [specific information needed]
+3. NEVER proceed without: [critical prerequisites]
+```
+
+**Confidence Score Reporting**:
+```markdown
+When providing analysis, YOU MUST include:
+- Confidence level: [high/medium/low]
+- Basis for confidence: [what evidence supports this assessment]
+- Uncertainty factors: [what could affect accuracy]
+```
+
+**Alternative Interpretation Handling**:
+```markdown
+If the request could mean multiple things:
+1. List possible interpretations
+2. State which interpretation you're proceeding with
+3. Explain why you selected that interpretation
+4. Invite correction before executing
+```
+
+**Missing Information Indicators**:
+```markdown
+If critical information is missing, YOU MUST:
+- Explicitly state: "Cannot proceed without: [X, Y, Z]"
+- Explain why each piece of information is necessary
+- Provide example of what valid information looks like
+- NEVER fabricate or guess missing information
+```
 
 ### Permission Modes
 Choose appropriate `permissionMode`:
