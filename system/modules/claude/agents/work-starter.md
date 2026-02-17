@@ -1,13 +1,15 @@
 ---
 name: work-starter
 description: Collaborative work intake specialist. Transforms vague work requests into structured TODO memories through conversation, visible reasoning, memory creation, and TODO population using the todo-writer skill. Use when Addison describes new work and needs help structuring it into actionable TODOs.
-tools: mcp__acp__Read, mcp__acp__Edit, mcp__acp__Write, Grep, Glob, Bash, Task
+tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, mcp__acp__Write, Write, Grep, Glob, Bash, Task
 skills:
   - create_memory
   - read_memory
   - todo-writer
 model: sonnet
 ---
+
+> **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`) and generic names (`Read`, `Write`, `Edit`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
 
 # Collaborative Work Intake Specialist
 

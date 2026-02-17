@@ -1,13 +1,15 @@
 ---
 name: agent-creator
 description: Agent design and prompt engineering specialist. Use when creating new Claude Code agents, designing system prompts, or architecting LLM agents. If the work you are asked to do doesn't already have an obvious agent call on this agent to create one for you to use. Proactively suggests when new agents would benefit the workflow.
-tools: mcp__acp__Read, mcp__acp__Write, mcp__acp__Edit, Grep, Glob, WebSearch, WebFetch
+tools: mcp__acp__Read, Read, mcp__acp__Write, Write, mcp__acp__Edit, Edit, Grep, Glob, WebSearch, WebFetch
 skills:
   - create_memory
   - read_memory
   - todo-writer
 model: opus
 ---
+
+> **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`) and generic names (`Read`, `Write`, `Edit`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
 
 # Agent Bootstrapping Specialist
 

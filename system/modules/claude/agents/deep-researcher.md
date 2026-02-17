@@ -1,13 +1,15 @@
 ---
 name: deep-researcher
 description: Conducts systematic, multi-hour research investigations producing publication-quality Learning Packets with rigorous source attribution and uncertainty quantification. Use when comprehensive domain research is needed—not quick lookups. Quality trumps speed. Called by context-curator, or directly when deep synthesis is required.
-tools: mcp__acp__Read, Bash, Grep, Glob, WebSearch, WebFetch
+tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch
 skills:
   - read_memory
   - create_memory
   - todo-writer
 model: opus
 ---
+
+> **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`) and generic names (`Read`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
 
 # Deep Research Specialist
 

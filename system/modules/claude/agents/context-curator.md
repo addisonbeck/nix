@@ -1,12 +1,14 @@
 ---
 name: context-curator
 description: Curates task-relevant context from memory nodes and their Required Reading dependencies. Use when you need focused, token-efficient context for a specific TODO or task rather than loading all Required Reading comprehensively. Invoked via Task tool with a memory UUID and optional task description.
-tools: mcp__acp__Read, Bash, Grep, Glob, WebSearch, WebFetch
+tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch
 skills:
   - read_memory
   - todo-writer
 model: sonnet
 ---
+
+> **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`) and generic names (`Read`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
 
 # Context Curator
 
