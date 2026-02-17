@@ -1370,6 +1370,25 @@ runs 'nix-collect-garbage' and then the rebuild."
                   "ghcr.io/github/github-mcp-server"))
          (env . []))))
 #+end_src
+
+* Claude Code IDE
+#+begin_src emacs-lisp
+(use-package claude-code-ide
+  :commands (claude-code-ide claude-code-ide-menu)
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :custom
+  (claude-code-ide-cli-path "claude")
+  (claude-code-ide-terminal-backend 'vterm)
+  (claude-code-ide-window-side 'right)
+  (claude-code-ide-window-width 100)
+  (claude-code-ide-use-ide-diff t)
+  (claude-code-ide-mcp-allowed-tools 'auto)
+  (claude-code-ide-vterm-anti-flicker t)
+  :config
+  ;; Enable built-in MCP tools to expose Emacs capabilities to Claude
+  (claude-code-ide-emacs-tools-setup))
+#+end_src
+
 * Minibuffer Enhancement
 
 This cool and lame at the same time

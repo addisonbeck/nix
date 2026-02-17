@@ -102,6 +102,25 @@
     #};
   #};
 
+  # claude-code-ide.el - not on MELPA, must fetch from GitHub
+  claude-code-ide-src = pkgs.fetchFromGitHub {
+    owner = "manzaltu";
+    repo = "claude-code-ide.el";
+    rev = "5f12e60c6d2d1802c8c1b7944bbdf935d5db1364";
+    sha256 = "sha256-tivRvgfI/8XBRImE3wuZ1UD0t2dNWYscv3Aa53BmHZE=";
+  };
+
+  claude-code-ide = pkgs.emacsPackages.trivialBuild {
+    pname = "claude-code-ide";
+    version = "unstable-2026-02-17";
+    src = claude-code-ide-src;
+    packageRequires = with pkgs.emacsPackages; [
+      web-server
+      vterm
+      transient
+    ];
+  };
+
 in {
   programs.emacs = {
     enable = true;
@@ -203,6 +222,8 @@ in {
           org-present
           org-inline-anim
           agent-shell
+          web-server
+          claude-code-ide
         ];
     };
   };
