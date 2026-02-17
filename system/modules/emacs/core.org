@@ -200,15 +200,7 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
   ;; Restore custom projectile keybindings (not provided by evil-collection-vterm)
   (evil-define-key 'normal vterm-mode-map
     (kbd "C-p") 'projectile-switch-project
-    (kbd "C-f") 'projectile-find-file)
-  
-  ;; Optional: Automatically enter insert state when opening vterm buffers
-  ;; This provides natural terminal interaction where typing works immediately
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (evil-insert-state)
-              ;; Use a box cursor in insert state for vterm to distinguish from normal buffers
-              (setq-local evil-insert-state-cursor 'box))))
+    (kbd "C-f") 'projectile-find-file))
 #+end_src
 
 * Cycle Line Number Function
