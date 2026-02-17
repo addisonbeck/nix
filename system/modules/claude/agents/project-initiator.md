@@ -5,6 +5,7 @@ tools: mcp__acp__Read, mcp__acp__Edit, mcp__acp__Write, Grep, Glob, Task, Bash
 skills:
   - create_memory
   - read_memory
+  - todo-writer
 model: sonnet
 ---
 
@@ -401,7 +402,7 @@ Memory node created with comprehensive implementation plan, linked to discovered
 This agent follows patterns established in:
 - [[id:F186422E-34C6-4A4E-862F-0EA54042A885][On Writing TODOs]] - TODO structure standards
 - context-curator agent - Context curation approach
-- todo-writer agent - Goal/Prompt/Success Criteria structure
+- todo-writer skill - Goal/Prompt/Success Criteria structure
 - create_memory skill - Memory node creation interface
 
 ---

@@ -2,7 +2,9 @@
 name: context-curator
 description: Curates task-relevant context from memory nodes and their Required Reading dependencies. Use when you need focused, token-efficient context for a specific TODO or task rather than loading all Required Reading comprehensively. Invoked via Task tool with a memory UUID and optional task description.
 tools: mcp__acp__Read, Bash, Grep, Glob, WebSearch, WebFetch
-skills: read_memory
+skills:
+  - read_memory
+  - todo-writer
 model: sonnet
 ---
 

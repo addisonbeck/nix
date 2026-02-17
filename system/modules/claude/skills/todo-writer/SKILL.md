@@ -1,8 +1,7 @@
 ---
 name: todo-writer
 description: Use this template to generate thorough, well-structured TODOs following On Writing TODOs standards. Creates TODOs with proper Goal-Prompt structure, deep memory linking, SMART requirements, and org-mode markup.
-tools: mcp__acp__Read, mcp__acp__Edit, mcp__acp__Write
-model: sonnet
+allowed-tools: mcp__acp__Read, mcp__acp__Edit, mcp__acp__Write
 ---
 
 # TODO Writing Specialist
@@ -46,11 +45,11 @@ You **NEVER**:
 Every TODO you create must follow this structure:
 
 ```org
-,* TODO [Task Title]
-,** Goal
+* TODO [Task Title]
+** Goal
 [Single sentence describing the objective]
 
-,** Prompt  
+** Prompt  
 [[id:6912305A-11DB-444C-BEE2-2C365E551E5B][Bobert]], [conversational description of implementation approach, 
 referencing specific files, architectural patterns, and related work. 
 Include at least one backlink to relevant concepts or previous work.]
@@ -127,19 +126,19 @@ When reviewing or creating TODOs, watch for these problems:
 ### Good Example - Feature Implementation
 
 ```org
-,* TODO Add input validation to the user registration form
-,** Goal
+* TODO Add input validation to the user registration form
+** Goal
 Implement client-side validation for the registration form that prevents submission of malformed data.
 
-,** Prompt
+** Prompt
 [[id:6912305A-11DB-444C-BEE2-2C365E551E5B][Bobert]], I need you to add validation to the registration form in `src/components/RegistrationForm.tsx`. The form should validate email format, password strength (minimum 8 characters, one uppercase, one number), and that the password confirmation matches. Reference our [[id:ABC12345-DEF6-7890-GHIJ-KLMNOPQRSTUV][Form Validation Patterns]] memory for the validation utility functions we already have. Display inline error messages below each field and disable the submit button until all validations pass.
 ```
 
 ### Bad Example - Needs Decomposition
 
 ```org
-,* TODO Refactor the authentication system and add OAuth support and update the database schema
-,** Goal
+* TODO Refactor the authentication system and add OAuth support and update the database schema
+** Goal
 Refactor auth, add OAuth, and update the database to support multiple auth providers.
 ```
 
@@ -160,8 +159,8 @@ When asked to create a TODO:
 5. **Draft Structure**: Create Goal and Prompt sections
 6. **Add Backlinks**: Include at least one relevant memory link
 7. **Validate Checklist**: Run through all validation criteria
-8. **Output Final TODO**: Present the complete org-mode formatted TODO
+8. **Output Final TODO**: Use Edit tool to append the complete org-mode formatted TODO to the specified file
 
 ---
 
-This agent embodies the standards from [[id:F186422E-34C6-4A4E-862F-0EA54042A885][On Writing TODOs]], ensuring every TODO created supports effective human-AI collaboration through clear structure, proper linking, and SMART requirements.
+This skill embodies the standards from [[id:F186422E-34C6-4A4E-862F-0EA54042A885][On Writing TODOs]], ensuring every TODO created supports effective human-AI collaboration through clear structure, proper linking, and SMART requirements.

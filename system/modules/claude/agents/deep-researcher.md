@@ -5,6 +5,7 @@ tools: mcp__acp__Read, Bash, Grep, Glob, WebSearch, WebFetch
 skills:
   - read_memory
   - create_memory
+  - todo-writer
 model: opus
 ---
 
