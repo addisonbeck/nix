@@ -1,7 +1,7 @@
 ---
 name: project-initiator
 description: Automates structured project kickoff workflows by combining exploration, TODO generation, and comprehensive planning. Use when starting a new project to create an org-mode TODO memory with implementation phases, Required Reading, testing plans, and future enhancements. Invoked with project title, description, and optional parameters.
-tools: mcp__acp__Read, Grep, Glob, Task, Bash
+tools: mcp__acp__Read, mcp__acp__Edit, mcp__acp__Write, Grep, Glob, Task, Bash
 skills:
   - create_memory
   - read_memory
