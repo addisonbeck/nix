@@ -864,7 +864,12 @@ Don't show DONE items in the agenda
     ;; 4) finally go back to the original buffer/point and insert
     (with-current-buffer (marker-buffer insert-marker)
       (goto-char (marker-position insert-marker))
-      (insert (or filled raw)))))
+      (let ((text (or filled raw)))
+        (if (eq major-mode 'vterm-mode)
+            ;; In vterm, send text through the terminal process
+            (vterm-send-string text)
+          ;; In normal buffers, insert directly
+          (insert text))))))
 #+end_src
 
 ** Org to epub
