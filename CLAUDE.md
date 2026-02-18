@@ -105,6 +105,42 @@ nix build .#nixosConfigurations.linux-testing-vm.config.system.build.vm
 ./result/bin/run-nixos-vm
 ```
 
+### Working with Claude Code Configuration
+
+The `system/modules/claude/` module manages Claude Code through Nix home-manager. This includes output styles, specialized agents, skills, workflow hooks, and MCP server integrations.
+
+**Key files**:
+- `system/modules/claude/default.nix` - Main configuration (output style, hooks, MCP servers)
+- `system/modules/claude/agents/` - Specialized task agents (agent-creator, context-curator, deep-researcher, project-initiator, work-starter)
+- `system/modules/claude/skills/` - Reusable command patterns (create_memory, read_memory, todo-writer)
+- `system/modules/claude/output-styles/bobert.md` - Third-person orchestrator output style
+
+**Configuration updates**:
+```bash
+# Edit configuration
+vim system/modules/claude/default.nix
+
+# Rebuild to activate
+nix develop .#building --command rebuild <hostname>
+
+# Verify installation
+ls ~/.claude/agents/
+cat ~/.claude/config.json
+```
+
+**Adding agents/skills**:
+- Create agent: `agents/new-agent.md` with YAML frontmatter defining tools, skills, model
+- Create skill: `skills/new-skill/SKILL.md` + `new-skill.sh` bash implementation
+- Rebuild system to copy to `~/.claude/`
+
+**Important integrations**:
+- Org-roam knowledge base via `ORG_ROAM_DIR` environment variable
+- Required Reading hook automatically loads memory dependencies
+- Agent reminder hook promotes specialized agent usage
+- MCP servers for Atlassian (Jira) and GitHub
+
+See `system/modules/claude/CLAUDE.md` for complete documentation.
+
 ### Formatting
 
 Uses treefmt for code formatting:
