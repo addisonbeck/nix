@@ -104,8 +104,9 @@ Bobert begins by establishing a clear foundation:
    - Use `read_memory` skill to access org-roam knowledge
    - Delegate to context-curator for complex dependency graphs
    - Search codebase with Grep/Glob for relevant patterns
-3. **Analyze Team Composition Opportunities**: Evaluate work for independent parallel dimensions (default path)
+3. **Analyze Team Composition Opportunities**: Evaluate work for independent parallel dimensions (default path). Consult Team Composition Recipe Index below for proven patterns and mandatory teammate requirements.
    - Identify potential parallel work streams (research, implementation, documentation, testing, etc.)
+   - Check mandatory teammate patterns: TODO memory work requires todo-spec-memory-maintainer; code work requires code-monkey + git-historian + adr-maintainer + technical-breakdown-maintainer
    - Assess scope boundaries: Can work be divided into 2+ agents with clear, non-overlapping responsibilities?
    - Evaluate parallelization value: Would concurrent execution provide significant time savings (> 30% reduction)?
    - Consider integration complexity: Can outputs be combined without excessive coordination overhead?
@@ -480,6 +481,78 @@ Use this framework in Plan phase to decide. **Default assumption: Use teams unle
 - If using individual delegation, document why teams aren't appropriate
 - Justify parallelization value when proposing teams (for transparency)
 - Proceed with team creation unless clear justification for individual delegation exists
+
+## Team Composition Recipe Index
+
+Bobert consults this index during Plan phase team composition analysis to select proven patterns and ensure mandatory teammates are included.
+
+### Mandatory Teammate Patterns
+
+**CRITICAL - Always Include**:
+- **Working from TODO memory?** → MUST include **todo-spec-memory-maintainer** (maintains living TODO state, marks completed work, updates Required Reading)
+- **Writing code?** → MUST include **code-monkey** (implementation), **git-historian** (commits), **adr-maintainer** (design decisions), **technical-breakdown-maintainer** (documentation synthesis)
+
+### High-Value Team Recipes
+
+**Research + Implementation + Documentation** (3 agents):
+- **deep-researcher** (domain knowledge), implementation agent (build solution), documentation specialist (user guides)
+- Use when: New feature requiring domain research, implementation, and docs
+- Parallelization: ~55-65% time savings
+
+**Feature Development** (3-4 agents):
+- Backend agent, frontend agent, test agent, optional: documentation specialist
+- Use when: Multi-component features with clear separation (API + UI + tests)
+- Parallelization: ~60% time savings
+
+**Exploration + Planning + Execution** (3 agents):
+- Explore agent (codebase analysis), Plan agent (implementation design), **work-starter** (TODO structuring)
+- Use when: Vague requirements need exploration before structured work
+- Parallelization: Sequential with clear handoffs
+
+**Implementation + Commit** (2 agents, sequential handoff):
+- **code-monkey** (implementation), **git-historian** (commit creation)
+- Use when: Clear spec exists, need implementation + quality commit message
+- Parallelization: Sequential handoff pattern
+
+**ADR Documentation Team** (2-3 agents, dogfooding):
+- **adr-maintainer** (decision recording), **technical-breakdown-maintainer** (synthesis), optional: documentation specialist
+- Use when: Design decisions need recording + breakdown updates
+- Parallelization: Sequential with bidirectional consultation
+
+**Agent Ecosystem Refactoring** (3-4 agents):
+- Pattern designer (template creation), 1-2 implementation agents (refactoring), documentation specialist (docs)
+- Use when: Multiple agents need consistent updates
+- Parallelization: ~60% time savings
+
+**Content Creation** (2-3 agents):
+- **deep-researcher** (research), writer agent (content creation), optional: review agent (quality check)
+- Use when: Producing researched content (guides, Learning Packets, reports)
+- Parallelization: ~50% time savings
+
+### Specialist Addition Patterns
+
+**When to add specific specialists**:
+- **context-curator**: Complex memory dependency graphs need resolution
+- **project-initiator**: Comprehensive project kickoff with exploration + TODO + planning
+- **work-starter**: Vague work descriptions need structured intake conversations
+- **deep-researcher**: Domain research requiring Learning Packets (> 10 sources, high rigor)
+- **skill-creator**: Pattern deserves automation as reusable skill
+- **agent-maintainer**: Agent creation, modification, or lifecycle management needed
+- **adr-maintainer**: Architecture decisions need immutable recording
+- **technical-breakdown-maintainer**: Existing ADRs need synthesis into present-tense documentation
+
+### Recipe Selection Guidance
+
+**Questions to ask during team composition analysis**:
+1. Are we working from a TODO memory? → Include **todo-spec-memory-maintainer**
+2. Will we write code? → Include **code-monkey** + **git-historian** + **adr-maintainer** + **technical-breakdown-maintainer**
+3. Do we need domain research? → Include **deep-researcher**
+4. Do we need documentation? → Include documentation specialist or **technical-breakdown-maintainer**
+5. Is work multi-dimensional with 2+ parallel streams? → Form team
+6. Are there clear scope boundaries between agents? → Form team
+7. Would parallelization save > 30% time? → Form team
+
+**Full Recipe Library**: For detailed compositions, token costs, and integration patterns, see Team Composition Recipes Library (memory UUID: DD79BFF9-51CC-42F1-8BEE-26E71C23A0D8)
 
 ## Memory Integration
 
