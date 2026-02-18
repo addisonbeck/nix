@@ -571,18 +571,20 @@ Bobert consults this index during Plan phase team composition analysis to select
 
 **Task Group A** is the canonical team composition for taking work from input through to completion. This is Addison's most common workflow pattern.
 
-**Invocation**: "Get Task Group A on this" → Bobert spawns 8-agent team with full workflow coordination
+**Invocation**: "Get Task Group A on this" → Bobert spawns 10-agent team with full workflow coordination
 
-### Team Composition (8 agents)
+### Team Composition (10 agents)
 
 1. **work-starter** (intake specialist)
-2. **todo-spec-memory-maintainer** (continuous source of truth)
-3. **deep-researcher** (domain research)
-4. **Explore agent** (codebase investigation)
-5. **adr-maintainer** (design decisions)
-6. **technical-breakdown-maintainer** (context synthesis)
-7. **code-monkey** (implementation)
-8. **git-historian** (commit creation)
+2. **worktree-manager** (worktree lifecycle)
+3. **todo-spec-memory-maintainer** (continuous source of truth)
+4. **deep-researcher** (domain research)
+5. **Explore agent** (codebase investigation)
+6. **adr-maintainer** (design decisions)
+7. **technical-breakdown-maintainer** (context synthesis)
+8. **code-monkey** (implementation)
+9. **git-historian** (commit creation)
+10. **pr-maintainer** (draft PR creation)
 
 ### Workflow Pattern
 
@@ -595,6 +597,7 @@ Input Source (Jira, memory stub, or prompt)
 ┌─────────────────────────────────────────────────────────┐
 │ PHASE 0: INTAKE (once)                                  │
 │  • work-starter: Identify gaps, clarify, structure      │
+│  • worktree-manager: Create/prepare worktree (mini-loop)│
 │  • todo-spec-memory-maintainer: ACTIVATES, stays active │
 └────────────┬────────────────────────────────────────────┘
              │
@@ -642,10 +645,11 @@ Input Source (Jira, memory stub, or prompt)
 │ PHASE 3: FINALIZATION                                   │
 │  • technical-breakdown-maintainer: Final doc updates    │
 │  • todo-spec-memory-maintainer: Mark TODOs complete     │
+│  • pr-maintainer: Create draft PR (synthesizes context) │
 └─────────────────────────────────────────────────────────┘
              │
              ▼
-        DRAFT PR READY
+        DRAFT PR CREATED
 ```
 
 ### Key Characteristics
@@ -674,26 +678,27 @@ work-starter adapts intake conversation to input type, always identifying gaps a
 
 When Addison says **"Get Task Group A on this"**, Bobert:
 
-1. **Forms team** with 8 agents via TeamCreate
+1. **Forms team** with 10 agents via TeamCreate
 2. **Spawns work-starter** with input (ticket/memory/prompt) and instruction: "Identify gaps, clarify requirements, structure work into TODO memory"
-3. **Spawns todo-spec-memory-maintainer** with instruction: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
-4. **Spawns remaining 6 agents** with their phase-specific roles and coordination instructions
-5. **Monitors via TaskList** and responds to mailbox coordination needs
-6. **Waits for workflow completion** through all phases
+3. **Spawns worktree-manager** with instruction: "Create worktree for project, coordinate with work-starter via mini-loop"
+4. **Spawns todo-spec-memory-maintainer** with instruction: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
+5. **Spawns remaining 7 agents** with their phase-specific roles and coordination instructions
+6. **Monitors via TaskList** and responds to mailbox coordination needs
+7. **Waits for workflow completion** through all phases
 
 ### Variations
 
 **Task Group A-Lite** (without research):
 - Skip deep-researcher if domain knowledge sufficient
-- 7 agents: work-starter, todo-maintainer, Explore, adr-maintainer, technical-breakdown-maintainer, code-monkey, git-historian
+- 9 agents: work-starter, worktree-manager, todo-maintainer, Explore, adr-maintainer, technical-breakdown-maintainer, code-monkey, git-historian, pr-maintainer
 
 **Task Group A-Research** (research-heavy):
 - Add second deep-researcher for parallel research streams
-- 9 agents total
+- 11 agents total
 
 **Task Group A-Docs** (documentation-heavy):
 - Add dedicated documentation-specialist alongside technical-breakdown-maintainer
-- 9 agents total
+- 11 agents total
 
 ## Memory Integration
 
