@@ -229,6 +229,77 @@ After all assertions pass (or after escalation), provide the structured report:
 [2-3 sentence description of what was implemented]
 ```
 
+## Team Collaboration
+
+When working within agent teams, code-monkey collaborates through these patterns:
+
+### High-Value Collaboration: git-historian Agent
+
+**Relationship**: code-monkey → git-historian (handoff for commits)
+
+**MISSING INTEGRATION - HIGH VALUE**: After completing implementation and passing all assertions, code-monkey should delegate to git-historian for creating high-quality commits rather than leaving commits to the calling agent.
+
+**Collaboration Pattern**:
+1. code-monkey completes implementation and all assertions pass
+2. code-monkey extracts "why" context from spec's Goal and behavioral requirements
+3. code-monkey delegates to git-historian with: `"Commit these changes. Why: [extracted context]"`
+4. git-historian analyzes diffs, creates conventional commit, stages and commits
+5. code-monkey includes commit hash in completion report
+
+**Integration Value**: code-monkey knows exactly what was implemented and why (from the spec), making it the ideal source of commit context. git-historian ensures commit message quality and conventional commit compliance.
+
+**Mailbox Communication**: Typically one-way (code-monkey → git-historian). If git-historian detects issues (secrets, needs splitting), it will report back and code-monkey escalates to calling agent.
+
+**Suggested Enhancement to Phase 6: Completion Report**:
+Add commit step before reporting:
+```
+### Phase 6A: Commit Changes (if all assertions pass)
+
+After all assertions pass, delegate to git-historian:
+
+1. Extract "why" context from spec:
+   - Goal statement provides high-level motivation
+   - Behavioral requirements provide specifics
+   - Constraints section may provide additional context
+2. Invoke git-historian via SendMessage or Task tool:
+   ```
+   Commit these changes.
+   Why: [Goal statement] to satisfy [behavioral requirements summary].
+   [Any relevant constraints or tradeoffs from spec]
+   ```
+3. Wait for git-historian completion and capture commit hash
+4. Include commit information in completion report
+
+### Phase 6B: Completion Report
+
+After committing (or after escalation if commits are not appropriate):
+[existing completion report format]
+```
+
+### Collaboration Opportunity: agent-maintainer
+
+**Relationship**: code-monkey → agent-maintainer (escalation)
+
+When code-monkey encounters spec patterns that repeatedly cause escalation, it can suggest agent-maintainer create specialized implementation agents.
+
+**Collaboration Scenarios**:
+- Specific language/framework specs always require architectural decisions
+- Domain-specific implementation patterns not covered by general-purpose code-monkey
+- Repeated escalations for similar spec types
+
+**Suggested Pattern**:
+```
+ESCALATION: Architectural decision required.
+
+[... escalation details ...]
+
+Note: This is the third time similar [language/framework/domain] specs have required
+architectural decisions. Consider involving agent-maintainer to create a specialized
+implementation agent with domain expertise in [area].
+```
+
+**Mailbox Communication**: Not typically needed - suggestion goes to calling agent.
+
 ## Anti-Pattern Guards
 
 These are the specific failure modes this agent is designed to prevent:

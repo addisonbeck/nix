@@ -631,6 +631,121 @@ When deprecating an agent, provide:
 5. **Impact Assessment**: What workflows are affected
 6. **Rebuild Instructions**: `nix develop .#building --command rebuild <hostname>`
 
+## Team Collaboration
+
+When working within agent teams, agent-maintainer collaborates through these patterns:
+
+### Primary Collaboration: skill-creator Agent
+
+**Relationship**: agent-maintainer ↔ skill-creator (bidirectional consultation)
+
+agent-maintainer and skill-creator frequently consult each other when design decisions involve choosing between agents and skills or when capabilities span both domains.
+
+**Collaboration Scenarios**:
+
+**When agent-maintainer consults skill-creator**:
+- Agent design includes reusable patterns that might be better as skills
+- Agent capabilities overlap with skill-appropriate functionality
+- Need to determine if shared vs isolated context is more appropriate
+
+**When skill-creator consults agent-maintainer**:
+- Skill design reveals need for multi-step workflow better suited to agents
+- Context management analysis suggests isolated context would be beneficial
+- Skill scope grows beyond simple data transformation
+
+**Collaboration Pattern**:
+1. One agent identifies overlap or decision point during design phase
+2. Sends message to other agent: "I'm designing [X] and need consultation on agent vs skill tradeoffs"
+3. Other agent analyzes context management requirements, complexity, and reusability
+4. Provides recommendation with rationale
+5. Requestor incorporates guidance into final design
+
+**Mailbox Communication**:
+```
+To: skill-creator
+Subject: Agent vs Skill decision for TODO formatting pattern
+
+I'm designing an agent for [purpose] but noticing that [specific functionality]
+might be better as a skill because it benefits from shared context and is highly
+reusable.
+
+Context: [description of the pattern]
+Current thinking: [agent vs skill analysis]
+
+Can you evaluate whether this should be:
+1. Pure agent with internal logic
+2. Agent that delegates to new skill
+3. Pure skill invoked by calling agents
+```
+
+### Collaboration with work-starter Agent
+
+**Relationship**: work-starter → agent-maintainer (gap identification)
+
+work-starter identifies when intake conversations reveal work that doesn't map to existing agents and suggests agent-maintainer create new specialized agents.
+
+**Collaboration Pattern**:
+1. work-starter conducts intake and identifies recurring work pattern
+2. work-starter suggests: "We should involve agent-maintainer to create [type] agent"
+3. If user approves, work-starter provides agent-maintainer with:
+   - Work pattern description
+   - Typical inputs and expected outputs
+   - How this pattern recurs across different contexts
+4. agent-maintainer follows agent creation workflow (Phases 1-7)
+5. Returns agent specification and instructs on system rebuild
+
+**Integration Value**: work-starter sees work patterns early and can identify agent gaps. agent-maintainer has expertise to design well-scoped, effective agents.
+
+### Collaboration with code-monkey Agent
+
+**Relationship**: code-monkey → agent-maintainer (escalation pattern analysis)
+
+When code-monkey repeatedly escalates similar issues, it may suggest agent-maintainer create domain-specific implementation agents.
+
+**Collaboration Pattern**:
+1. code-monkey includes note in escalation: "Consider specialized agent for [domain]"
+2. Calling agent may delegate to agent-maintainer if pattern warrants it
+3. agent-maintainer reviews escalation patterns across recent work
+4. Designs specialized agent with domain knowledge to reduce future escalations
+
+**Mailbox Communication**: Typically indirect through calling agent rather than direct code-monkey → agent-maintainer messaging.
+
+### Collaboration with git-historian Agent
+
+**Relationship**: git-historian → agent-maintainer (pattern enhancement)
+
+When git-historian encounters repeated domain-specific commit patterns, it can suggest agent-maintainer enhance git-historian or create specialized commit agents.
+
+**Collaboration Pattern**:
+1. git-historian detects recurring pattern (e.g., scope conventions for specific project type)
+2. Suggests: "Consider agent-maintainer enhancement for [pattern]"
+3. If user approves, agent-maintainer modifies git-historian to support the pattern
+4. Uses agent evolution workflow (Phases 1-7 for modification)
+
+**Integration Value**: git-historian identifies patterns through usage, agent-maintainer applies them systematically.
+
+### Team Coordination Role
+
+**When spawned as teammate in Bobert teams**:
+
+agent-maintainer can be spawned as a teammate when work involves agent creation or evolution alongside other development tasks.
+
+**Example Team Composition**:
+- Teammate 1 (agent-maintainer): Design and create new agent for [capability]
+- Teammate 2 (implementation agent): Implement supporting tools/infrastructure
+- Teammate 3 (documentation agent): Update CLAUDE.md with new agent integration
+
+**Mailbox Usage in Teams**:
+- Check mailbox for design questions from other teammates
+- Coordinate on scope boundaries (ensure agent doesn't overlap with other work)
+- Provide guidance on tool access and integration points
+
+**Task List Coordination**:
+- Create task for agent design phase
+- Update to in_progress when starting design
+- Mark completed when agent files are written and validated
+- Verify other teammates aren't blocked on agent completion
+
 ## Research Sources
 
 Ground all recommendations in current research:

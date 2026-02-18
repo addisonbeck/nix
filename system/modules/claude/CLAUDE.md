@@ -69,11 +69,17 @@ Activated via `settings.outputStyle = "Bobert"` in default.nix.
 
 Agents are specialized, atomic task handlers invoked via `/agent-name` or Task tool:
 
-- **agent-creator** (opus): Designs new agents using prompt engineering best practices
+- **agent-maintainer** (opus): Agent design, creation, modification, and lifecycle management
 - **context-curator**: Curates task-relevant context from org-roam memory dependencies
 - **deep-researcher**: Conducts systematic research producing Learning Packets
 - **project-initiator**: Automates project kickoff with exploration, TODOs, planning
 - **work-starter** (sonnet): Transforms vague requests into structured TODO memories
+- **code-monkey**: Fast code modifications and implementation work
+- **git-historian**: Git repository analysis and archeology
+- **skill-creator**: Designs and implements new Claude Code skills
+- **adr-maintainer**: Architecture Decision Record creation and maintenance
+- **technical-breakdown-maintainer**: Dynamic technical documentation management
+- **todo-spec-memory-maintainer**: TODO list, specification, and memory maintenance
 
 **Agent File Format**:
 ```yaml
@@ -137,6 +143,68 @@ Configured in `settings.mcpServers`:
 - **org-roam**: (Commented out) Custom MCP for org-roam knowledge base access
 
 Each server provides tools accessible via `mcp__<server>__<tool-name>` pattern.
+
+### Team-Aware Agent Architecture
+
+The agent ecosystem supports multi-agent collaboration through team workflows coordinated by Bobert (the orchestrator output style). This architecture enables parallel execution of independent work streams while maintaining coordination and integration quality.
+
+**Team Collaboration Fundamentals**:
+
+Agents operate in two modes:
+1. **Individual Delegation**: Single agent handles complete task (default for single-dimensional work)
+2. **Team Coordination**: Multiple agents work in parallel on independent dimensions (default for multi-dimensional work)
+
+**Team Workflow Pattern**:
+1. Bobert analyzes work for parallelization opportunities (team composition analysis)
+2. Creates team via TeamCreate with descriptive name
+3. Spawns teammates via TeamSpawn with context-rich prompts
+4. Monitors progress via shared TaskList (TaskCreate, TaskUpdate)
+5. Coordinates via Mailbox messaging (SendMessage tool)
+6. Waits for ALL teammates to complete before proceeding
+7. Integrates outputs and verifies coherence
+
+**Agent Design for Team Collaboration**:
+
+Agents designed for team workflows include:
+- **SendMessage tool access**: Enables inter-agent coordination
+- **Team Collaboration Awareness**: Understanding of mailbox communication patterns
+- **Clear Scope Boundaries**: Well-defined responsibilities to minimize coordination overhead
+- **Independent Operation**: Ability to work in parallel without blocking other teammates
+- **Team Composition Recipes**: Documented collaboration patterns for common multi-agent scenarios
+
+**Mailbox Communication**:
+
+Agents use SendMessage tool for coordination:
+- `type: "message"` - Direct message to specific teammate
+- `type: "broadcast"` - Message to all teammates (use sparingly)
+- Check mailbox periodically during work
+- Respond to questions requiring guidance or scope clarification
+
+**Task List Coordination**:
+
+Shared task lists enable team progress tracking:
+- TaskCreate: Create granular tasks for independent work units
+- TaskUpdate: Update status (pending → in_progress → completed)
+- TaskList: Monitor overall team progress
+- Teams proceed to integration only when all tasks show status: completed
+
+**Team Composition Decision Framework**:
+
+Default presumption: Use agent teams unless individual delegation is clearly more appropriate.
+
+Use teams when:
+- Work decomposes into 2+ independent dimensions (research + implementation + documentation)
+- Parallelization provides significant time savings (> 30% reduction vs sequential)
+- Scope boundaries can be clearly drawn between agent responsibilities
+- Integration complexity is manageable
+
+Use individual delegation when:
+- Single-dimensional work with no natural parallel decomposition
+- Sequential dependencies prevent parallel execution
+- Rapid turnaround (< 30 minutes) where team overhead exceeds value
+- Integration complexity exceeds parallelization value
+
+See `output-styles/bobert.md` for complete team coordination patterns and example workflows.
 
 ## Development Workflows
 
