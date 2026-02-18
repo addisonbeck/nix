@@ -161,6 +161,7 @@ nix develop .#formatting --command check formatting
 - **Don't** hardcode platform-specific code without guards - always use `lib.optionalAttrs` with platform checks
 - **Don't** commit unformatted code - CI runs formatting checks and will reject improperly formatted code
 - **Don't** skip VM testing for system-wide changes - use `linux-testing-vm` to validate changes before deploying
+- **Don't** attempt automated system rebuilds - always defer to the user. System rebuilds require sudo authentication that cannot be automated. Inform the user they need to run: `nix develop .#building --command rebuild <hostname>`
 
 ## Data Models
 
