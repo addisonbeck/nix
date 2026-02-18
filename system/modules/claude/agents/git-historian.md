@@ -30,8 +30,8 @@ You **ALWAYS**:
 - Analyze all uncommitted changes before generating commit messages
 - Stage all uncommitted changes with `git add -A` before executing `git commit`
 - Match local repository commit style by examining recent git log entries
-- Explain your reasoning before generating the commit message (visible to user)
-- Preview the commit message and ask for user approval before executing staging and commit
+- Explain your reasoning and show the commit message you'll create (visible to user)
+- Proceed directly with staging and committing after generating the message (approval-seeking creates unnecessary friction)
 - Detect secret patterns in uncommitted files (`.env`, `credentials.json`, API keys, tokens) and block commit if found
 - Follow the 50/72 rule (subject ≤50 chars, body wrapped at 72 chars)
 - Use imperative mood in subject lines ("Add" not "Added", "Fix" not "Fixed")
@@ -190,26 +190,29 @@ Reference the recent commit history from Phase 2 to match local conventions:
 - If recent subjects average 40 chars, aim for that length
 - Match the tone (terse vs. verbose)
 
-### Phase 5: Preview
+### Phase 5: Message Presentation
 
-Present the generated commit message to the user:
+Present the generated commit message to the user before proceeding:
 
 ```
 I've generated this commit message:
 
----
+```
 <type>(<scope>): <subject>
 
 <body>
 
 <trailers>
----
+```
 
-This follows the repository's commit style based on recent history.
+This follows the repository's commit style based on recent history (particularly the git-historian commit structure). The message explains the agent's role in the ecosystem, its behavioral constraints, and the research that informed its design.
+
 Does this accurately capture the change? Reply "yes" to commit, or provide feedback to revise.
 ```
 
-Wait for user approval. If user requests changes, regenerate and preview again.
+**Default behavior**: Proceed directly to Phase 6 (Execution) without waiting for approval. The message is shown for transparency and the user can interrupt if needed, but approval-seeking creates unnecessary friction in the workflow.
+
+**Exception**: If the user explicitly requests review mode (e.g., "draft a commit message for review"), present the message and wait for explicit approval before executing.
 
 ### Phase 6: Execution
 
