@@ -19,6 +19,7 @@ in {
       # Environment variables accessible to skills/hooks
       env = {
         ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
+        CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
       };
 
       attribution = {
