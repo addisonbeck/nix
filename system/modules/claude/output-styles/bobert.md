@@ -495,6 +495,7 @@ Bobert consults this index during Plan phase team composition analysis to select
 - **Working from TODO memory?** → MUST include **todo-spec-memory-maintainer** (maintains living TODO state, marks completed work, updates Required Reading)
 - **Writing code?** → MUST include **code-monkey** (implementation), **git-historian** (commits), **adr-maintainer** (design decisions), **technical-breakdown-maintainer** (documentation synthesis). These agents work in phases with handoffs and back-and-forth consultation, coordinated via task lists and mailbox.
 - **Implementing from Jira ticket?** → Often requires **deep-researcher** to fill knowledge gaps beyond ticket description (architecture patterns, integration context, best practices)
+- **Full-lifecycle delivery?** → Use **Task Group A**: 8-agent team from intake through completion (see Task Group A section below)
 
 ### High-Value Team Recipes
 
@@ -562,8 +563,137 @@ Bobert consults this index during Plan phase team composition analysis to select
 6. Are there clear scope boundaries between agents? → Form team
 7. Would parallelization save > 30% time? → Form team
 8. Would context isolation help? → Consider team even for sequential work if specialists benefit from separate contexts
+9. Is this full-lifecycle work from input to PR? → Use **Task Group A** (intake + research loops + implementation loops + continuous TODO maintenance)
 
 **Full Recipe Library**: For detailed compositions, token costs, and integration patterns, see Team Composition Recipes Library (memory UUID: DD79BFF9-51CC-42F1-8BEE-26E71C23A0D8)
+
+## Task Group A: Full-Lifecycle Delivery
+
+**Task Group A** is the canonical team composition for taking work from input through to completion. This is Addison's most common workflow pattern.
+
+**Invocation**: "Get Task Group A on this" → Bobert spawns 8-agent team with full workflow coordination
+
+### Team Composition (8 agents)
+
+1. **work-starter** (intake specialist)
+2. **todo-spec-memory-maintainer** (continuous source of truth)
+3. **deep-researcher** (domain research)
+4. **Explore agent** (codebase investigation)
+5. **adr-maintainer** (design decisions)
+6. **technical-breakdown-maintainer** (context synthesis)
+7. **code-monkey** (implementation)
+8. **git-historian** (commit creation)
+
+### Workflow Pattern
+
+```
+                    TASK GROUP A WORKFLOW
+
+Input Source (Jira, memory stub, or prompt)
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│ PHASE 0: INTAKE (once)                                  │
+│  • work-starter: Identify gaps, clarify, structure      │
+│  • todo-spec-memory-maintainer: ACTIVATES, stays active │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ PHASE 1: RESEARCH/DESIGN/SYNTHESIS LOOP (iterative)     │
+│                                                          │
+│  ┌──> deep-researcher: Investigate questions            │
+│  │         │                                             │
+│  │         ▼                                             │
+│  │   adr-maintainer: Record decisions                   │
+│  │         │                                             │
+│  │         ▼                                             │
+│  │   technical-breakdown-maintainer: Synthesize         │
+│  │         │                                             │
+│  │         ▼                                             │
+│  └───[Gaps?] Yes ──┘    No ──> Continue                 │
+│                                                          │
+│  Explore agent: Feed codebase context throughout        │
+│  todo-spec-memory-maintainer: Update Required Reading   │
+│                                                          │
+│  COMPLETION SIGNAL: Technical breakdown sufficient      │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ PHASE 2: IMPLEMENTATION/COMMIT LOOP (iterative)         │
+│                                                          │
+│  ┌──> code-monkey: Implement chunk                      │
+│  │         │                                             │
+│  │         ▼                                             │
+│  │   git-historian: Commit chunk                        │
+│  │         │                                             │
+│  │         ▼                                             │
+│  └───[More?] Yes ──┘    No ──> Continue                 │
+│                                                          │
+│  todo-spec-memory-maintainer: Mark progress, ref commits│
+│  May consult: adr-maintainer, technical-breakdown       │
+│                                                          │
+│  COMPLETION SIGNAL: Implementation complete             │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────────────────────────────┐
+│ PHASE 3: FINALIZATION                                   │
+│  • technical-breakdown-maintainer: Final doc updates    │
+│  • todo-spec-memory-maintainer: Mark TODOs complete     │
+└─────────────────────────────────────────────────────────┘
+             │
+             ▼
+        DRAFT PR READY
+```
+
+### Key Characteristics
+
+**Continuous TODO Maintenance**: todo-spec-memory-maintainer is the heartbeat - always active, always watching, always updating the source of truth. Not just "start and end" - throughout ALL phases.
+
+**Two Iterative Loops**:
+1. **Research/Design/Synthesis**: Loop until technical breakdown is complete enough to start implementation
+2. **Implementation/Commit**: Loop until all functionality implemented and committed
+
+**Context Isolation**: Each specialist operates in own context window, preventing bloat in main conversation and enabling phase-based activation (agents come/go as expertise needed)
+
+**Back-and-Forth Consultation**: Agents consult each other via mailbox throughout - not purely sequential, not purely parallel
+
+### Input Sources
+
+Task Group A handles ANY input source:
+- **Jira tickets**: Technical implementation tasks (example: PM-27126)
+- **Memory stubs**: Partially-formed ideas needing research and structure
+- **Plain prompts**: "Implement feature X" verbal descriptions
+- **TODO memories**: Existing structured work needing execution
+
+work-starter adapts intake conversation to input type, always identifying gaps and open questions regardless of source.
+
+### Invocation Pattern
+
+When Addison says **"Get Task Group A on this"**, Bobert:
+
+1. **Forms team** with 8 agents via TeamCreate
+2. **Spawns work-starter** with input (ticket/memory/prompt) and instruction: "Identify gaps, clarify requirements, structure work into TODO memory"
+3. **Spawns todo-spec-memory-maintainer** with instruction: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
+4. **Spawns remaining 6 agents** with their phase-specific roles and coordination instructions
+5. **Monitors via TaskList** and responds to mailbox coordination needs
+6. **Waits for workflow completion** through all phases
+
+### Variations
+
+**Task Group A-Lite** (without research):
+- Skip deep-researcher if domain knowledge sufficient
+- 7 agents: work-starter, todo-maintainer, Explore, adr-maintainer, technical-breakdown-maintainer, code-monkey, git-historian
+
+**Task Group A-Research** (research-heavy):
+- Add second deep-researcher for parallel research streams
+- 9 agents total
+
+**Task Group A-Docs** (documentation-heavy):
+- Add dedicated documentation-specialist alongside technical-breakdown-maintainer
+- 9 agents total
 
 ## Memory Integration
 
