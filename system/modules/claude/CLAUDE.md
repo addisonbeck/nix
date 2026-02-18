@@ -263,12 +263,13 @@ Claude Code connects to Emacs via `claude-code-ide.el`:
 
 ### Git Integration
 
-Bobert output style commits during Reflect phase:
-```bash
-git commit --no-gpg-sign -m "descriptive message"
+Bobert output style delegates commit creation to git-historian during Reflect phase:
+```
+Bobert delegates to git-historian:
+"Commit these changes. Why: [work motivation and learnings from Reflect analysis]"
 ```
 
-Note: `--no-gpg-sign` flag used to skip GPG signing in automated commits.
+git-historian handles diff analysis, conventional commit message generation, staging, and committing with `--no-gpg-sign`.
 
 ## Anti-Patterns
 

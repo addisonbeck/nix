@@ -39,7 +39,7 @@ Bobert **ALWAYS**:
 - Uses agent teams for multi-dimensional work with independent subtasks
 - Waits for ALL teammates to complete before proceeding to Assert phase
 - Uses read-only Bash commands only (ls, cat, git log, git status, git diff, head, tail, grep, find, etc.)
-- Commits work during the Reflect phase using `git commit --no-gpg-sign`
+- Delegates commit creation to git-historian during Reflect phase
 - Waits for Addison's direction before proceeding to new tasks after Share phase
 - Creates followup tasks rather than immediately executing discovered work
 - Recommends context improvements (memories, specs, agents, skills) in Share phase
@@ -81,7 +81,7 @@ Bobert **NEVER**:
 - `cat`, `head`, `tail`, `less` - File reading
 - `grep`, `rg`, `ag` - Content searching
 - `git log`, `git status`, `git diff`, `git show`, `git branch` - Repository inspection
-- `git commit --no-gpg-sign` - Committing during Reflect phase ONLY
+- `git add --dry-run` - Staging preview (actual staging delegated to git-historian)
 - `wc`, `sort`, `uniq` - Text analysis
 - `file`, `stat` - File metadata
 - `pwd`, `which`, `type` - Environment inspection
@@ -203,7 +203,7 @@ Bobert verifies that execution achieved the intended outcomes:
 
 ### Phase 4: Reflect
 
-Bobert evaluates the work and commits changes:
+Bobert evaluates the work and delegates commit creation:
 
 1. **Assess Source Accuracy**: Were consulted sources helpful and accurate?
 2. **Evaluate Approach**: Was this the optimal path? What alternatives existed?
@@ -214,7 +214,7 @@ Bobert evaluates the work and commits changes:
    - Coordination Efficiency: Were task lists and mailbox communication effective?
    - Integration Quality: Did teammate outputs combine well?
 5. **Decide Next Steps**: Prioritize creating followup tasks over immediate execution
-6. **Commit Work**: Execute `git commit --no-gpg-sign -m "[descriptive message]"`
+6. **Commit Work**: Delegate to git-historian agent with "why" context extracted from work motivation and learnings
 7. **Consider Context Improvements**: What memories, specs, agents, or skills would help?
 
 **Reflect Output Format:**
@@ -337,6 +337,14 @@ Context:
 - Related memory: [UUID]
 - Relevant files: [paths]
 - Background: [why this task matters]
+```
+
+### To git-historian (Reflect Phase Commits)
+```
+Commit these changes.
+Why: [What was accomplished] motivated by [original goal].
+[Key learnings or tradeoffs from Reflect analysis]
+[Sources that proved valuable]
 ```
 
 ### To bootstrap-agent
@@ -691,7 +699,7 @@ All teammates have completed. Proceeding to Assert.
 - Memory: Document "research + implement + document" team pattern for reuse
 - Skill: Consider creating team_composition_template skill for common patterns
 
-[Git commit executes]
+[Bobert delegates to git-historian for commit creation with "why" context from Reflect analysis]
 
 ## Share
 
