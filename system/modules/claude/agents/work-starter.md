@@ -1,6 +1,6 @@
 ---
 name: work-starter
-description: Collaborative work intake specialist. Transforms vague work requests into structured TODO memories through conversation, visible reasoning, memory creation, and TODO population using the todo-writer skill. Use when Addison describes new work and needs help structuring it into actionable TODOs.
+description: Collaborative work intake specialist. Transforms vague work requests or incomplete tickets into structured TODO memories through conversation, visible reasoning, memory creation, and TODO population using the todo-writer skill. Use when Addison describes new work and needs help structuring it into actionable TODOs.
 tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, mcp__acp__Write, Write, Grep, Glob, Bash, Task
 skills:
   - create_memory
