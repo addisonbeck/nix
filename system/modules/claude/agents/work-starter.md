@@ -170,33 +170,64 @@ After clarifying requirements, work-starter detects existing related work to pre
 
 4. **TODO Memory Detection**:
    ```bash
-   # Use read_memory skill with search patterns
-   # Search by: Jira ticket ID, work title keywords, related tags
+   # Use Grep to search org-roam directory for existing TODOs
+   # Search patterns:
+   # - By Jira ticket ID: grep -r "PM-12345" /Users/me/org-roam/
+   # - By work title keywords: grep -r "FIDO2.*Firefox" /Users/me/org-roam/
+   # - By TODO memory file pattern: find /Users/me/org-roam -name "*TODO*.org"
    ```
-   - Searches org-roam memories for existing TODO nodes
-   - Catches partially-complete or abandoned planning work
+   - Searches org-roam memories for existing TODO nodes by Jira ID, title keywords, or TODO memory naming patterns
+   - Catches partially-complete or abandoned planning work from prior attempts
+   - CRITICAL: Prevents coordination confusion from undetected stale TODO memories
 
 **Result Handling**:
 
 If existing work detected:
-1. **Present findings to user**:
+1. **Assess state of existing work**:
+   - Read TODO memory to check: completion status, last modified date, whether items are done
+   - Check git status: Are branches active? Are commits recent?
+   - Classify as: Active (< 1 week old, items in progress), Stale (> 1 week old, no recent activity), or Completed (all items checked)
+
+2. **Present findings to user with clear assessment**:
    ```
    Found existing related work:
-   - WIP branch: wip/feature-name (last commit: 2026-02-15)
-   - TODO memory: [UUID] "Similar Feature Implementation" (status: in-progress)
-   - WIP commits: 3 commits with "WIP: Add authentication" (2 weeks ago)
+   - TODO memory: [UUID] "FIDO2 Firefox Support - PM-12345"
+     - Created: 2026-02-10 (8 days ago)
+     - Status: Stale (no recent updates)
+     - Items: 3/5 completed, 2 abandoned mid-work
+   - WIP branch: wip/pm-12345 (last commit: 2026-02-11, 7 days ago)
+   - State Assessment: STALE - work appears abandoned
    ```
 
-2. **Ask user for direction**:
+3. **Ask user for direction with context-appropriate options**:
    ```
-   Should we:
-   A) Continue this existing work (load TODO memory, switch to WIP branch)
-   B) Start fresh (create new TODO, link old work for context)
+   This work appears to be an abandoned prior attempt. Should we:
+   A) Resume existing work (continue from TODO line 100+, use existing branch)
+   B) Start fresh (create new TODO, archive old attempt with reference link)
+
+   Recommendation: Start fresh to avoid coordination confusion from mixed old/new items.
    ```
 
-3. **Respect user choice**:
-   - If A (Continue): Load existing TODO memory, skip Phase 2 memory creation, coordinate branch switch if needed
-   - If B (Start Fresh): Proceed to Phase 2, include link to old TODO/branch in new memory's "Related Work" section
+4. **Execute user choice**:
+   - **If A (Resume)**:
+     - Load existing TODO memory UUID
+     - Skip Phase 2 (Memory Creation) entirely
+     - Coordinate branch switch if needed
+     - Update Required Reading with new conversation context
+     - CLEARLY declare in output: "Resuming existing work from TODO memory [UUID]"
+
+   - **If B (Start Fresh)**:
+     - Proceed to Phase 2 (Memory Creation)
+     - In new memory's "Related Work" section, add reference to old TODO/branch with note:
+       ```org
+       * Related Work
+       ** Prior Attempt (Archived)
+       - [[id:OLD-UUID][FIDO2 Firefox Support - PM-12345 (First Attempt)]]
+       - Status: Abandoned 2026-02-11 after completing 3/5 items
+       - Branch: wip/pm-12345 (available for reference, not actively used)
+       - Note: Starting fresh to avoid coordination confusion from stale items
+       ```
+     - CLEARLY declare in output: "Starting fresh with new TODO memory. Old work archived as reference: [UUID]"
 
 If no existing work detected:
 - Proceed to Phase 2 (TODO Memory Creation) normally
