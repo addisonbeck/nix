@@ -130,13 +130,15 @@ When confidence is below 70% or information is missing:
 1. **Read all relevant ADRs**: Load ADRs via read_memory or file system access
 2. **Extract decision content**: Pull decisions, rationale, alternatives, consequences from ADRs
 3. **Explore codebase**: Use Grep/Glob/Bash to verify implementation state, find components, discover tests
-4. **Generate breakdown template**: Create full 14-section structure
-5. **Populate from ADRs**: Fill Architecture Overview, Design Overview, Decision Log, Considered Alternatives from ADR content
-6. **Populate from codebase**: Fill Component Documentation, Testing Documentation from code exploration
-7. **Cross-reference**: Link every decision back to source ADR with org-roam links
-8. **Identify gaps**: Flag where ADRs are missing, where codebase doesn't match ADRs, where info is incomplete
-9. **Synthesize diagrams**: Create Mermaid diagrams from ADR architecture + codebase component verification
-10. **Persist**: Save as org-roam memory node via create_memory skill
+4. **Analyze project conventions**: Identify verification commands from project files (Cargo.toml → cargo fmt/clippy/test; package.json → npm run lint/test; etc.)
+5. **Generate breakdown template**: Create full 15-section structure (including Behavioral Specification)
+6. **Populate from ADRs**: Fill Architecture Overview, Design Overview, Decision Log, Considered Alternatives from ADR content
+7. **Populate from codebase**: Fill Component Documentation, Testing Documentation from code exploration
+8. **Synthesize Behavioral Specification**: Extract Given/When/Then format from present-tense documentation + ADRs + codebase exploration for code-monkey consumption
+9. **Cross-reference**: Link every decision back to source ADR with org-roam links
+10. **Identify gaps**: Flag where ADRs are missing, where codebase doesn't match ADRs, where info is incomplete
+11. **Synthesize diagrams**: Create Mermaid diagrams from ADR architecture + codebase component verification
+12. **Persist**: Save as org-roam memory node via create_memory skill
 
 **Output**:
 - Synthesized technical breakdown org-roam node with UUID
@@ -158,6 +160,8 @@ Technical breakdown synthesized for [Feature Name].
 - Component: Auth Service (found at src/auth/service.ts)
 - Tests: 42 unit tests, 8 integration tests (found in tests/)
 - Mermaid architecture diagram (verified all components exist)
+- Behavioral Specification section with Given/When/Then format for code-monkey
+- Verification commands: npm run lint, npm test (synthesized from package.json)
 
 ⚠️ GAPS IDENTIFIED - ADRs NEEDED:
 - Session management strategy not decided (no ADR found)
@@ -407,6 +411,53 @@ Technical, business, or timeline constraints affecting the design.
 *Load Tests*:
 - Verify system performance under expected usage
 - Establish baseline metrics
+
+** Behavioral Specification
+
+This section provides implementation-ready specifications for code-monkey agent consumption. Extracted from the present-tense documentation above (Design Overview, Component Documentation, Testing Documentation) combined with ADR decisions and codebase exploration findings.
+
+*** Given (Preconditions)
+
+*Codebase state*:
+- [Absolute file paths with current implementation state from Component Documentation]
+- [Existing patterns discovered via Grep/Glob exploration]
+
+*Environment*:
+- [Runtime requirements: language version, dependencies, tooling from project analysis]
+- [Build system: cargo, npm, gradle, etc. - verified from project root]
+
+*Assumptions*:
+- [Extracted from Assumptions and Constraints section above]
+- [ADR decisions that inform preconditions]
+
+*** When (Actions)
+
+*Implementation tasks*:
+- [Specific changes with absolute file paths from Design Overview]
+- [Modifications required to satisfy architecture decisions from ADRs]
+
+*Files to modify*:
+- [Exhaustive list of absolute paths identified during codebase exploration]
+
+*Files to create*:
+- [Absolute paths with content requirements from Component Documentation]
+
+*** Then (Verification)
+
+*Assertion commands*:
+- [Project-specific verification commands discovered via project file analysis]
+- [cargo fmt, cargo clippy, cargo test for Rust projects]
+- [npm run lint, npm test for JavaScript/TypeScript projects]
+- [gradle check for Gradle projects]
+- [Verification commands synthesized from Cargo.toml, package.json, build.gradle presence]
+
+*Expected outcomes*:
+- [What should be true after implementation from Goals section]
+- [Acceptance criteria from Testing Documentation]
+
+*Integration verification*:
+- [How changes integrate with existing code from Integration Points section]
+- [Component interaction validation from Design Overview]
 
 ** Open Questions
 - [ ] How does the caching layer handle cache invalidation across distributed nodes? (Confidence: 55%) - Requires prototyping Redis pub/sub pattern

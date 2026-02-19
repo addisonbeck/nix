@@ -72,7 +72,33 @@ You **NEVER**:
 
 Collect information from multiple authoritative sources:
 
-#### A. Git Commit History
+#### A. Template Detection
+
+Check standard GitHub template paths in priority order:
+
+```bash
+# Priority 1: Standard GitHub location
+test -f .github/PULL_REQUEST_TEMPLATE.md && echo "FOUND: .github/PULL_REQUEST_TEMPLATE.md"
+
+# Priority 2: Lowercase variant
+test -f .github/pull_request_template.md && echo "FOUND: .github/pull_request_template.md"
+
+# Priority 3: Docs directory
+test -f docs/PULL_REQUEST_TEMPLATE.md && echo "FOUND: docs/PULL_REQUEST_TEMPLATE.md"
+
+# Priority 4: Root directory
+test -f PULL_REQUEST_TEMPLATE.md && echo "FOUND: PULL_REQUEST_TEMPLATE.md"
+```
+
+**If template found**:
+- Read template file
+- Extract section structure: parse lines starting with `##` as section headers
+- Map template sections to synthesized content (e.g., "Description" → Summary, "Testing" → Testing, "Related Issues" → Jira links)
+
+**If no template found**:
+- Use default structure (proceed to Phase 1B normally)
+
+#### B. Git Commit History
 ```bash
 # Get commit history for current branch since divergence from main
 git log --format=fuller origin/main..HEAD
@@ -102,7 +128,7 @@ git branch --show-current
 - Acceptance criteria (from Goals section)
 - Related memories (from Required Reading)
 
-#### C. Architecture Decision Records (If Applicable)
+#### D. Architecture Decision Records (If Applicable)
 ```bash
 # Search for ADRs related to this work
 grep -r "pattern-or-feature-name" ~/notes/roam/adr/ --include="*.org"
@@ -115,7 +141,7 @@ grep -r "pattern-or-feature-name" ~/notes/roam/adr/ --include="*.org"
 - Alternatives that were considered
 - Rationale for chosen approach
 
-#### D. Technical Breakdowns (If Applicable)
+#### E. Technical Breakdowns (If Applicable)
 ```bash
 # Search for technical breakdowns related to this work
 grep -r "feature-or-system-name" ~/notes/roam/ --include="*.org" | grep "technical-breakdown"
@@ -128,7 +154,7 @@ grep -r "feature-or-system-name" ~/notes/roam/ --include="*.org" | grep "technic
 - Component descriptions
 - Integration points
 
-#### E. Recent PR Patterns (Repository Conventions)
+#### F. Recent PR Patterns (Repository Conventions)
 ```bash
 # List recent merged PRs to understand title conventions
 gh pr list --state merged --limit 10
@@ -161,7 +187,16 @@ Follow repository conventions (analyzed from recent PRs):
 
 #### B. PR Body Structure
 
-Organize information into clear sections:
+**If template exists** (from Phase 1A):
+- Follow template section structure exactly
+- Map synthesized content to template sections:
+  - Template "Description" or "Summary" → synthesized summary from TODO + commits
+  - Template "Changes" or "What's Changed" → synthesized changes overview from git log
+  - Template "Testing" or "How Has This Been Tested" → synthesized testing section from commits + TODO
+  - Template "Related Issues" or "Linked Issues" → Jira ticket links + ADR references
+  - Template custom sections → map best-fit or leave placeholder if no content
+
+**If no template exists** (fallback to default structure):
 
 ```markdown
 ## Summary
@@ -268,6 +303,9 @@ Status: Draft
 Summary: Implements FIDO2 authentication for Firefox extension to support
 WebAuthn protocol. Includes hardware security key support and biometric
 authentication.
+
+Template:
+- [x] Template detected: .github/PULL_REQUEST_TEMPLATE.md (or "No template found - used default structure")
 
 Sections Included:
 - [x] Summary (from TODO context + commits)
