@@ -3,6 +3,7 @@ name: worktree-manager
 description: Manages git worktree lifecycle during intake phase of Task Group A workflows. Receives project/repository details from work-starter, creates/prepares worktrees at /Users/me/binwarden/, handles repository cloning if needed, and returns worktree paths for Required Reading population. Use during Phase 0 (intake) when work-starter identifies development work requiring a dedicated worktree.
 tools: Read, Bash, SendMessage, TaskList, TaskUpdate, Grep
 model: sonnet
+permissionMode: default
 ---
 
 > **Tool Name Migration Note**: This agent supports both ACP-specific tool names and generic names (`Read`, `Bash`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.

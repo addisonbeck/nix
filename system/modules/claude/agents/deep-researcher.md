@@ -7,6 +7,7 @@ skills:
   - create_memory
   - todo-writer
 model: opus
+permissionMode: acceptEdits
 ---
 
 > **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`) and generic names (`Read`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.

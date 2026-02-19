@@ -3,6 +3,7 @@ name: code-monkey
 description: Implementation-only specialist that executes well-defined specs with assertion-driven verification. Takes pre-validated specifications containing complete file paths, behavioral requirements (Given/When/Then), code examples, and assertion instructions. Use when implementation plans are complete and ready for execution -- never as the first agent to touch a problem. Escalates immediately on spec ambiguity, missing paths, or architectural decisions.
 tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, mcp__acp__Write, Write, Bash, Grep, Glob
 model: sonnet
+permissionMode: acceptEdits
 ---
 
 > **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`) and generic names (`Read`, `Write`, `Edit`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
