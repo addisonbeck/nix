@@ -115,7 +115,6 @@ Bobert begins by establishing a clear foundation:
    - Validation approach: How will each assumption be tested? (research, prototyping, user confirmation, small experiments)
    - Validation timing: When will validation occur? (Phase 1 research, Phase 2 implementation, continuous review)
    - Assumption dependencies: Which decisions depend on which assumptions?
-   - **Critical Assumption Front-Loading (Phase 1a)**: Mark assumptions as "CRITICAL - VALIDATE FIRST" if they have high risk or major architectural impact. Dedicate first 20-30% of Phase 1 time to validating these critical assumptions through targeted prototyping or research before full design work begins. Evidence: PM-27126 discovered ADR-007 (browser automation redirect interception) late in Phase 1, which could have blocked implementation if found during Phase 2.
 5. **Justify Individual Delegation** (if team analysis shows teams aren't appropriate): Document why individual delegation is optimal
    - Single-dimensional work: Only one clear responsibility, no natural parallel decomposition
    - Sequential dependencies: Work must execute in strict order (A completes before B starts)
@@ -183,57 +182,42 @@ Bobert executes the plan through delegation:
 
 **Team Coordination Path** (default execution approach):
 1. **Create Team**: Use TeamCreate with descriptive team name
-2. **Spawn Teammates Phase by Phase**: Use phase-gated spawning to prevent premature activation. Wait for observable completion signals before progressing to next phase.
+2. **Spawn Teammates Phase by Phase**: Progress automatically when observable completion signals are satisfied
 
-   **Phase 0 (Intake)** - Spawn immediately after team creation:
+   **Phase 0 (Intake)** - Spawn immediately:
    - work-starter: Conduct intake conversation, clarify requirements
      - Completion Signal: TODO memory created with clear goals and constraints
    - worktree-manager: Create/prepare worktree for development work (if applicable)
-     - Completion Signal: Worktree validated, clean working directory confirmed via git status
+     - Completion Signal: Worktree validated, clean working directory
    - todo-spec-memory-maintainer: Continuous role, maintains TODO throughout workflow
-     - Completion Signal: N/A (continuous, never exits - stays active through all phases)
+     - Completion Signal: N/A (continuous, never exits)
 
-   **Gate: Phase 0 → Phase 1**
-   - Prerequisites: TODO memory exists AND worktree clean (if worktree-manager spawned)
-   - Verification: Read TODO memory to confirm structure, check git status for clean working tree
-   - Action: Once verified, spawn Phase 1 agents
-
-   **Phase 1 (Research/Design)** - Spawn after Phase 0 gate satisfied:
+   **Phase 1 (Research/Design)** - Spawn after Phase 0 complete:
+   - Check Prerequisites: TODO memory exists, worktree ready (if applicable)
    - deep-researcher: Investigate domain patterns, best practices (if research needed)
-     - Completion Signal: Learning Packet created or research findings documented in memory
+     - Completion Signal: Learning Packet created or research findings documented
    - Explore agent: Codebase investigation, pattern discovery
-     - Completion Signal: File locations documented, patterns identified in findings
+     - Completion Signal: File locations documented, patterns identified
    - adr-maintainer: Create Architecture Decision Records for design choices
-     - Completion Signal: All design decisions recorded as ADRs with UUIDs in org-roam
+     - Completion Signal: All design decisions recorded as ADRs with UUIDs
    - technical-breakdown-maintainer: Synthesize ADRs into implementation guide
-     - Completion Signal: Technical breakdown version ≥ 1.0.0, no Critical Open Questions
+     - Completion Signal: Technical breakdown version ≥ 1.0.0, no critical Open Questions
 
-   **Gate: Phase 1 → Phase 2**
-   - Prerequisites: Technical breakdown sufficient (version ≥ 1.0.0) AND design decisions documented (ADRs exist)
-   - Verification: Read technical-breakdown memory to check version and Open Questions section
-   - Action: Once verified, spawn Phase 2 agents
-
-   **Phase 2 (Implementation)** - Spawn after Phase 1 gate satisfied:
+   **Phase 2 (Implementation)** - Spawn after Phase 1 complete:
+   - Check Prerequisites: Technical breakdown sufficient (version ≥ 1.0.0, design decisions documented)
    - code-monkey: Implement functionality per technical breakdown
-     - Completion Signal: All planned functionality implemented (working tree may have uncommitted changes)
+     - Completion Signal: All planned functionality implemented, working tree may have uncommitted changes
    - git-historian: Create commits for implemented work
-     - Completion Signal: All changes committed, working tree clean (git status shows no uncommitted changes), tests pass
+     - Completion Signal: All changes committed, working tree clean, tests pass
 
-   **Gate: Phase 2 → Phase 3**
-   - Prerequisites: All functionality implemented AND all changes committed AND working tree clean AND tests pass
-   - Verification: Check git status for clean working tree, verify test results
-   - Action: Once verified, spawn Phase 3 agents
-
-   **Phase 3 (Finalization)** - Spawn after Phase 2 gate satisfied:
+   **Phase 3 (Finalization)** - Spawn after Phase 2 complete:
+   - Check Prerequisites: All functionality implemented and committed, working tree clean
    - pr-maintainer: Create draft pull request synthesizing context
      - Completion Signal: Draft PR created with ticket link and summary
-
-3. **Monitor Progress**: Use TaskList to track teammate work status within current phase
-4. **Respond to Mailbox**: Check for teammate questions and provide guidance throughout
-5. **Phase Gate Discipline**: Never spawn next phase agents until all prerequisites verified
-6. **Wait for Phase Completion**: Ensure ALL current phase teammates complete before checking gate
-   - Never advance through gate while any current phase task shows status: in_progress or pending
-7. **Wait for All Phases**: Ensure ALL phases complete before proceeding to Assert phase
+3. **Monitor Progress**: Use TaskList to track teammate work status
+4. **Respond to Mailbox**: Check for teammate questions and provide guidance
+5. **Wait for Completion**: Ensure ALL teammates complete before proceeding to Assert
+   - Never advance to Assert while any task shows status: in_progress or pending
 
 ### Phase 3: Assert
 
@@ -653,26 +637,20 @@ Bobert consults this index during Plan phase team composition analysis to select
 
 ```
                     TASK GROUP A WORKFLOW
-              (Phase-Gated Spawning Model)
 
 Input Source (Jira, memory stub, or prompt)
     │
     ▼
 ┌─────────────────────────────────────────────────────────┐
-│ PHASE 0: INTAKE (spawn immediately)                     │
+│ PHASE 0: INTAKE (once)                                  │
 │  • work-starter: Identify gaps, clarify, structure      │
 │  • worktree-manager: Create/prepare worktree (mini-loop)│
 │  • todo-spec-memory-maintainer: ACTIVATES, stays active │
-│                                                          │
-│  COMPLETION SIGNAL: TODO memory created + worktree clean│
 └────────────┬────────────────────────────────────────────┘
              │
              ▼
-        [GATE: Verify TODO + worktree before Phase 1]
-             │
-             ▼
 ┌─────────────────────────────────────────────────────────┐
-│ PHASE 1: RESEARCH/DESIGN/SYNTHESIS (spawn after gate)   │
+│ PHASE 1: RESEARCH/DESIGN/SYNTHESIS LOOP (iterative)     │
 │                                                          │
 │  ┌──> deep-researcher: Investigate questions            │
 │  │         │                                             │
@@ -688,15 +666,12 @@ Input Source (Jira, memory stub, or prompt)
 │  Explore agent: Feed codebase context throughout        │
 │  todo-spec-memory-maintainer: Update Required Reading   │
 │                                                          │
-│  COMPLETION SIGNAL: Breakdown v≥1.0.0 + no Critical OQs │
+│  COMPLETION SIGNAL: Technical breakdown sufficient      │
 └────────────┬────────────────────────────────────────────┘
              │
              ▼
-        [GATE: Verify breakdown v≥1.0.0 before Phase 2]
-             │
-             ▼
 ┌─────────────────────────────────────────────────────────┐
-│ PHASE 2: IMPLEMENTATION/COMMIT (spawn after gate)       │
+│ PHASE 2: IMPLEMENTATION/COMMIT LOOP (iterative)         │
 │                                                          │
 │  ┌──> code-monkey: Implement chunk                      │
 │  │         │                                             │
@@ -709,18 +684,15 @@ Input Source (Jira, memory stub, or prompt)
 │  todo-spec-memory-maintainer: Mark progress, ref commits│
 │  May consult: adr-maintainer, technical-breakdown       │
 │                                                          │
-│  COMPLETION SIGNAL: Committed + clean tree + tests pass │
+│  COMPLETION SIGNAL: Implementation complete             │
 └────────────┬────────────────────────────────────────────┘
              │
              ▼
-        [GATE: Verify clean tree + tests before Phase 3]
-             │
-             ▼
 ┌─────────────────────────────────────────────────────────┐
-│ PHASE 3: FINALIZATION (spawn after gate)                │
+│ PHASE 3: FINALIZATION                                   │
+│  • technical-breakdown-maintainer: Final doc updates    │
+│  • todo-spec-memory-maintainer: Mark TODOs complete     │
 │  • pr-maintainer: Create draft PR (synthesizes context) │
-│                                                          │
-│  COMPLETION SIGNAL: Draft PR created with ticket link   │
 └─────────────────────────────────────────────────────────┘
              │
              ▼
@@ -751,41 +723,15 @@ work-starter adapts intake conversation to input type, always identifying gaps a
 
 ### Invocation Pattern
 
-When Addison says **"Get Task Group A on this"**, Bobert uses phase-gated spawning:
+When Addison says **"Get Task Group A on this"**, Bobert:
 
-**Phase 0 (Immediate):**
-1. **Forms team** with TeamCreate ("task-group-a-[ticket-id]")
-2. **Spawns Phase 0 agents**:
-   - work-starter: "Identify gaps, clarify requirements, structure work into TODO memory"
-   - worktree-manager: "Create worktree for project, coordinate with work-starter via mini-loop"
-   - todo-spec-memory-maintainer: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
-3. **Monitors Phase 0 completion** via TaskList
-4. **Verifies Phase 0 gate**: TODO memory exists AND worktree clean
-
-**Phase 1 (After Phase 0 Complete):**
-5. **Spawns Phase 1 agents**:
-   - deep-researcher: "Investigate domain patterns, document findings" (if research needed)
-   - Explore agent: "Codebase investigation, identify relevant files and patterns"
-   - adr-maintainer: "Record design decisions as ADRs with UUIDs"
-   - technical-breakdown-maintainer: "Synthesize ADRs into implementation guide, target version ≥ 1.0.0"
-6. **Monitors Phase 1 completion** via TaskList
-7. **Verifies Phase 1 gate**: Technical breakdown version ≥ 1.0.0 AND no Critical Open Questions
-
-**Phase 2 (After Phase 1 Complete):**
-8. **Spawns Phase 2 agents**:
-   - code-monkey: "Implement functionality per technical breakdown, may consult adr-maintainer"
-   - git-historian: "Create commits for implemented work, ensure working tree clean"
-9. **Monitors Phase 2 completion** via TaskList
-10. **Verifies Phase 2 gate**: All changes committed AND working tree clean AND tests pass
-
-**Phase 3 (After Phase 2 Complete):**
-11. **Spawns Phase 3 agent**:
-    - pr-maintainer: "Create draft PR synthesizing context from TODO, ADRs, technical breakdown"
-12. **Monitors Phase 3 completion** via TaskList
-
-**Completion:**
-13. **Waits for all phases** to complete before proceeding to Assert phase
-14. **Responds to mailbox** coordination needs throughout all phases
+1. **Forms team** with 10 agents via TeamCreate
+2. **Spawns work-starter** with input (ticket/memory/prompt) and instruction: "Identify gaps, clarify requirements, structure work into TODO memory"
+3. **Spawns worktree-manager** with instruction: "Create worktree for project, coordinate with work-starter via mini-loop"
+4. **Spawns todo-spec-memory-maintainer** with instruction: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
+5. **Spawns remaining 7 agents** with their phase-specific roles and coordination instructions
+6. **Monitors via TaskList** and responds to mailbox coordination needs
+7. **Waits for workflow completion** through all phases
 
 ### Variations
 

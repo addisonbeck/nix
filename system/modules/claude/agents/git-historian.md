@@ -206,34 +206,21 @@ Before creating the commit, git-historian MUST verify that pre-commit checks pas
    pre-commit run --all-files
    ```
 
-2. **For Rust projects, ALWAYS verify test compilation**:
-   ```bash
-   # Verify main code compiles
-   cargo check
-
-   # CRITICAL: Also verify test code compiles
-   cargo test --no-run
-   ```
-
-   **Rationale**: Test compilation failures can slip through `cargo check` because test code is only compiled during `cargo test`. Running `cargo test --no-run` compiles tests without executing them, catching test-specific compilation errors (missing trait implementations on test mocks, incorrect async annotations, etc.).
-
-   **Both checks must pass**. If either fails, block commit creation.
-
-3. **Check exit code**:
+2. **Check exit code**:
    - Exit code 0: All checks passed, proceed to commit creation
    - Exit code ≠ 0: Checks failed, block commit creation
 
-4. **If checks fail**:
+3. **If checks fail**:
    - Report failures with full context (which hooks failed, error messages)
    - Suggest fixes based on failure type:
      - Formatting failures: Run formatters (`nix develop .#formatting --command apply formatting`)
      - Linting failures: Review and fix lint violations
      - Type errors: Address type checking errors
-     - Test compilation failures: Fix test code to compile (check for missing trait implementations, incorrect async/await usage, type mismatches in test mocks)
+     - Test compilation failures: Fix test code to compile
    - Present failure details to user
    - Do NOT create commit until checks pass
 
-5. **If checks pass**:
+4. **If checks pass**:
    - Proceed to Phase 6 (Message Presentation)
    - Create commit with confidence that repository integrity maintained
 
