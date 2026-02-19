@@ -110,16 +110,21 @@ Bobert begins by establishing a clear foundation:
    - Assess scope boundaries: Can work be divided into 2+ agents with clear, non-overlapping responsibilities?
    - Evaluate parallelization value: Would concurrent execution provide significant time savings (> 30% reduction)?
    - Consider integration complexity: Can outputs be combined without excessive coordination overhead?
-4. **Justify Individual Delegation** (if team analysis shows teams aren't appropriate): Document why individual delegation is optimal
+4. **Document Assumptions and Validation Strategy**: Identify implicit assumptions and plan validation checkpoints
+   - Core assumptions: What do we assume to be true? (API behavior, user permissions, data availability, performance characteristics)
+   - Validation approach: How will each assumption be tested? (research, prototyping, user confirmation, small experiments)
+   - Validation timing: When will validation occur? (Phase 1 research, Phase 2 implementation, continuous review)
+   - Assumption dependencies: Which decisions depend on which assumptions?
+5. **Justify Individual Delegation** (if team analysis shows teams aren't appropriate): Document why individual delegation is optimal
    - Single-dimensional work: Only one clear responsibility, no natural parallel decomposition
    - Sequential dependencies: Work must execute in strict order (A completes before B starts)
    - Rapid turnaround: Task completion time < 30 minutes makes team overhead exceed value
    - Integration complexity exceeds parallelization value: Coordination cost outweighs time savings
    - Minimal scope: Task too small to benefit from decomposition
-5. **Write Delegation Strategy**: Document execution approach based on team/individual decision
+6. **Write Delegation Strategy**: Document execution approach based on team/individual decision
    - **For Team Approach** (default): List teammates, specific responsibilities, parallelization value, integration points
    - **For Individual Approach** (when justified): Specify agent, detailed prompt, expected outcome, rationale for not using team
-6. **Select Tools/Agents**: Choose appropriate delegation targets based on cited capabilities and delegation strategy
+7. **Select Tools/Agents**: Choose appropriate delegation targets based on cited capabilities and delegation strategy
 
 **Plan Output Format:**
 ```
@@ -136,6 +141,13 @@ Bobert begins by establishing a clear foundation:
 - Scope Boundaries: [How work divides cleanly between agents]
 - Parallelization Value: [Time savings estimate vs sequential approach]
 - Integration Approach: [How outputs will combine]
+
+**Assumption Validation**:
+- Assumption 1: [What we assume to be true] (Confidence: High/Medium/Low)
+  - Validation: [How to test this assumption - research, prototype, user confirmation]
+  - Timing: [When validation occurs - Phase 1 research, Phase 2 implementation]
+  - Dependencies: [What decisions depend on this assumption]
+- Assumption 2: [Another assumption]...
 
 **Delegation Strategy**:
 - **Team Approach** (default):
@@ -170,9 +182,38 @@ Bobert executes the plan through delegation:
 
 **Team Coordination Path** (default execution approach):
 1. **Create Team**: Use TeamCreate with descriptive team name
-2. **Spawn Teammates**: Use TeamSpawn for each agent with context-rich prompts
-   - Include: Goal, scope boundaries, shared task list awareness
-   - Provide: Relevant sources, file paths, memory UUIDs
+2. **Spawn Teammates Phase by Phase**: Progress automatically when observable completion signals are satisfied
+
+   **Phase 0 (Intake)** - Spawn immediately:
+   - work-starter: Conduct intake conversation, clarify requirements
+     - Completion Signal: TODO memory created with clear goals and constraints
+   - worktree-manager: Create/prepare worktree for development work (if applicable)
+     - Completion Signal: Worktree validated, clean working directory
+   - todo-spec-memory-maintainer: Continuous role, maintains TODO throughout workflow
+     - Completion Signal: N/A (continuous, never exits)
+
+   **Phase 1 (Research/Design)** - Spawn after Phase 0 complete:
+   - Check Prerequisites: TODO memory exists, worktree ready (if applicable)
+   - deep-researcher: Investigate domain patterns, best practices (if research needed)
+     - Completion Signal: Learning Packet created or research findings documented
+   - Explore agent: Codebase investigation, pattern discovery
+     - Completion Signal: File locations documented, patterns identified
+   - adr-maintainer: Create Architecture Decision Records for design choices
+     - Completion Signal: All design decisions recorded as ADRs with UUIDs
+   - technical-breakdown-maintainer: Synthesize ADRs into implementation guide
+     - Completion Signal: Technical breakdown version ≥ 1.0.0, no critical Open Questions
+
+   **Phase 2 (Implementation)** - Spawn after Phase 1 complete:
+   - Check Prerequisites: Technical breakdown sufficient (version ≥ 1.0.0, design decisions documented)
+   - code-monkey: Implement functionality per technical breakdown
+     - Completion Signal: All planned functionality implemented, working tree may have uncommitted changes
+   - git-historian: Create commits for implemented work
+     - Completion Signal: All changes committed, working tree clean, tests pass
+
+   **Phase 3 (Finalization)** - Spawn after Phase 2 complete:
+   - Check Prerequisites: All functionality implemented and committed, working tree clean
+   - pr-maintainer: Create draft pull request synthesizing context
+     - Completion Signal: Draft PR created with ticket link and summary
 3. **Monitor Progress**: Use TaskList to track teammate work status
 4. **Respond to Mailbox**: Check for teammate questions and provide guidance
 5. **Wait for Completion**: Ensure ALL teammates complete before proceeding to Assert
@@ -424,6 +465,12 @@ Shared Task List:
 - Use TaskList to track overall team progress
 - Update TaskUpdate when completing work
 - Check Mailbox for coordination messages
+
+Completion Criteria:
+- Deliverable: [Specific artifact this agent produces - file created, memory node, commit made]
+- Quality Gates: [How to verify deliverable meets requirements - tests pass, format valid, no errors]
+- Integration Points: [What other agents need from this output - ADR references, file paths, API contracts]
+- Exit Signal: [How this agent communicates completion - task status update, mailbox notification, artifact creation]
 
 Expected Outcome: [What success looks like for this agent]
 ```
