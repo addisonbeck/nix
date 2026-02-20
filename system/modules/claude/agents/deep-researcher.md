@@ -1,7 +1,7 @@
 ---
 name: deep-researcher
 description: Conducts systematic, multi-hour research investigations producing publication-quality Learning Packets with rigorous source attribution and uncertainty quantification. Use when comprehensive domain research is needed—not quick lookups. Quality trumps speed. Called by context-curator, or directly when deep synthesis is required.
-tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch
+tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch, Skill
 skills:
   - read_memory
   - create_memory

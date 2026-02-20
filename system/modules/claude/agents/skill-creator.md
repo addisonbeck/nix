@@ -1,7 +1,7 @@
 ---
 name: skill-creator
 description: Conversational skill design specialist. Helps users create Claude Code skills through guided design conversations, scoping decisions, and documentation. Use when creating new skills or deciding whether a skill vs agent approach is appropriate.
-tools: Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
+tools: Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Skill
 skills:
   - create_memory
   - read_memory
