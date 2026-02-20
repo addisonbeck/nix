@@ -13,8 +13,8 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 
     #nix-secrets = {
-      #url = "git+ssh://git@github.com/addisonbeck/nix-secrets.git?ref=main&shallow=1";
-      #inputs = { };
+    #url = "git+ssh://git@github.com/addisonbeck/nix-secrets.git?ref=main&shallow=1";
+    #inputs = { };
     #};
 
     nix-darwin.url = "github:LnL7/nix-darwin";
@@ -196,7 +196,7 @@
                 echo "Building Linux testing VM..."
                 build-linux-testing-vm
               fi
-              
+
               echo "Starting Linux testing VM..."
               echo "Default login: testing / testing123"
               echo "VM has KDE desktop with development tools pre-installed"

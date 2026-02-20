@@ -1,4 +1,8 @@
-{pkgs, config, ...}: {
+{
+  pkgs,
+  config,
+  ...
+}: {
   sops.secrets = {
     "known_hosts" = {
       format = "binary";
@@ -29,8 +33,8 @@
     # I haven't been able to get that to work. Leaving for now as a reminder to
     # my future self to try again during my next key cycle & system iteration.
     #testing = {
-      #format = "yaml";
-      #sopsFile = ../../../secrets/testing.yaml;
+    #format = "yaml";
+    #sopsFile = ../../../secrets/testing.yaml;
     #};
   };
 

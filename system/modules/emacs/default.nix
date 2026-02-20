@@ -82,24 +82,24 @@
       ${config.programs.emacs.finalPackage}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))' $@
     fi
   '';
-    puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
+  puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
     # chromium doesn't work on mac from nixpkgs
     chromium = pkgs.google-chrome;
-    };
+  };
 
   #mcp-el-src = pkgs.fetchFromGitHub {
-    #owner = "lizqwerscott";
-    #repo = "mcp.el";
-    #rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
-    #hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
+  #owner = "lizqwerscott";
+  #repo = "mcp.el";
+  #rev = "50f83fc4bac7cc01436bce5cd0f379aff435e083";
+  #hash = "sha256-yWMjIao2ohzsprBkqbbAmTeKNnbFPbebUCKNfGnkxDc=";
   #};
 
   #emacsPackagesOverlay = self: super: {
-    #mcp-el = super.trivialBuild {
-      #pname = "mcp-el";
-      #version = "git-${mcp-el-src.rev}";
-      #src = mcp-el-src;
-    #};
+  #mcp-el = super.trivialBuild {
+  #pname = "mcp-el";
+  #version = "git-${mcp-el-src.rev}";
+  #src = mcp-el-src;
+  #};
   #};
 
   # claude-code-ide.el - not on MELPA, must fetch from GitHub
@@ -120,7 +120,6 @@
       transient
     ];
   };
-
 in {
   programs.emacs = {
     enable = true;
@@ -255,11 +254,11 @@ in {
     ledger
     hledger
     jira-cli-go
-(writeShellScriptBin "emacseverywhere" ''
-set -euo pipefail
+    (writeShellScriptBin "emacseverywhere" ''
+      set -euo pipefail
 
-${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
-'')
+      ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
+    '')
   ];
 
   home.sessionVariables.ASPELL_DICT_DIR = "${pkgs.aspellDicts.en}/lib/aspell";
@@ -292,12 +291,11 @@ ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(emacs-everywhere)"
   };
 
   #services.emacs = {
-    #enable = true;
-    # maybe i just don't need to specifiy package
-    #package = config.programs.emacs.package;
-    #client.enable = true;
+  #enable = true;
+  # maybe i just don't need to specifiy package
+  #package = config.programs.emacs.package;
+  #client.enable = true;
 
-    #socketActivation.enable = true;  # More reliable daemon management
+  #socketActivation.enable = true;  # More reliable daemon management
   #};
-  
 }

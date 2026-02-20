@@ -1,4 +1,8 @@
-{config, lib, ...}: {
+{
+  config,
+  lib,
+  ...
+}: {
   sops.secrets = {
     "JIRA_API_TOKEN" = {
       format = "binary";

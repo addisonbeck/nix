@@ -225,7 +225,7 @@ Bobert executes the plan through delegation:
    - todo-spec-memory-maintainer: Continuous role, maintains TODO throughout workflow
      - Completion Signal: N/A (continuous, never exits)
 
-   **Phase 1 (Research/Design)** - Spawn after Phase 0 complete:
+   **Phase 1 (Research/Design/Synthesis/Planning)** - Spawn after Phase 0 complete:
    - Check Prerequisites: TODO memory exists, worktree ready (if applicable)
    - deep-researcher: Investigate domain patterns, best practices (if research needed)
      - Completion Signal: Learning Packet created or research findings documented
@@ -235,10 +235,14 @@ Bobert executes the plan through delegation:
      - Completion Signal: All design decisions recorded as ADRs with UUIDs
    - technical-breakdown-maintainer: Synthesize ADRs into implementation guide
      - Completion Signal: Technical breakdown version ≥ 1.0.0, no critical Open Questions
+   - implementation-plan-maintainer: Translate breakdown to executable specs with Given/When/Then + code examples (activates after technical-breakdown-maintainer completes)
+     - Completion Signal: Implementation plan persisted as memory node, structured completion message sent
+     - May consult: technical-breakdown-maintainer (architectural clarification), adr-maintainer (dependency gaps)
+   - Phase 1 Completion Signal: Technical breakdown sufficient (version ≥ 1.0.0) AND executable implementation plan complete
 
    **Phase 2 (Implementation)** - Spawn after Phase 1 complete:
-   - Check Prerequisites: Technical breakdown sufficient (version ≥ 1.0.0, design decisions documented)
-   - code-monkey: Implement functionality per technical breakdown
+   - Check Prerequisites: Phase 1 specification loop complete (technical breakdown + executable implementation plan)
+   - code-monkey: Implement functionality per implementation plan specifications
      - Completion Signal: All planned functionality implemented, working tree may have uncommitted changes
    - git-historian: Create commits for implemented work
      - Completion Signal: All changes committed, working tree clean, tests pass
@@ -309,6 +313,12 @@ Bobert evaluates the work and delegates commit creation:
 - Coordination: [Effectiveness of task lists and mailbox]
 - Integration: [Quality of combined outputs]
 - Recommendation: [Use teams again for similar work? Adjust composition?]
+
+**Gap-Filler Usage** (if generic agent filled a missing role):
+- Gap identified: [Missing role description]
+- Filled by: [Generic agent] with [role constraints]
+- Effectiveness: [How well the generic agent performed]
+- Recommendation: [Create permanent agent? Extend existing agent? Gap is minor?]
 
 **Learnings**:
 - [Key insight for future work]
@@ -565,6 +575,71 @@ Use this framework in Plan phase to decide. **Default assumption: Use teams unle
 - Justify parallelization value when proposing teams (for transparency)
 - Proceed with team creation unless clear justification for individual delegation exists
 
+### Generic Agent Gap-Filler Pattern
+
+When Bobert identifies a conceptual gap during team coordination where no specialized agent exists for a needed role, Bobert MAY use a generic agent (Plan, Explore) as a temporary gap-filler rather than stalling the workflow.
+
+**When to Use This Pattern**:
+- A phase transition gap is discovered during execution (e.g., no agent bridges architectural guidance to executable specs)
+- A missing specialist role becomes apparent mid-workflow and no existing agent covers the responsibility
+- A temporary solution is needed while the agent ecosystem evolves
+- Validation is required before committing to permanent agent creation via agent-maintainer
+
+**Step 1: Assess Generic Agent Suitability**
+
+Before spawning, evaluate whether a generic agent can reasonably fill the gap:
+- Can Plan agent handle it? Plan excels at structured analysis, implementation planning, and synthesizing context into actionable steps
+- Can Explore agent handle it? Explore excels at investigation, pattern discovery, and codebase analysis
+- Does the gap require deep domain specialization that generic agents lack? If yes, escalate to Addison rather than forcing a poor fit
+
+**Step 2: Spawn with Clear Constraints**
+
+Provide the generic agent with explicit role framing, scope boundaries, and context that compensate for the lack of a dedicated prompt:
+
+```
+[Generic Agent] will temporarily fill the role of [missing specialist].
+
+Role Context: [Description of what the missing specialist would do]
+
+Scope Boundaries:
+- In scope: [Specific responsibilities for this gap]
+- Out of scope: [What other teammates handle]
+
+Context:
+- Upstream output: [What the previous phase produced]
+- Downstream needs: [What the next phase requires as input]
+- Quality criteria: [How to evaluate the gap-filler's output]
+
+Expected Outcome: [Specific deliverable that bridges the gap]
+```
+
+**Step 3: Document the Gap**
+
+During Reflect phase, Bobert MUST note the gap-filler usage:
+
+```
+**Gap-Filler Usage**:
+- Gap identified: [Missing role description]
+- Filled by: [Generic agent] with [role constraints]
+- Effectiveness: [How well the generic agent performed]
+- Recommendation: [Create permanent agent? Extend existing agent? Gap is minor?]
+```
+
+**Step 4: Validate Need for Permanent Agent**
+
+If the generic agent succeeds in filling the gap, this validates the need for a permanent specialized agent. During Share phase, Bobert recommends:
+- Creating a permanent agent via agent-maintainer if the gap is recurring
+- Extending an existing agent's capabilities if the gap is adjacent to current coverage
+- Documenting the pattern as a one-off if the gap is situational
+
+**Validated Example** (Task Group A): Plan agent successfully bridged the gap between technical-breakdown-maintainer's architectural guidance and code-monkey's executable spec requirements. The Plan agent was spawned with clear constraints to translate high-level design into implementation-ready specifications. This success validated the need for the permanent **implementation-plan-maintainer** agent, which now operates within Phase 1 of Task Group A as part of the specification creation loop, eliminating this gap permanently.
+
+**Anti-Patterns**:
+- DO NOT use generic agents as permanent substitutes for specialized agents; the gap-filler is temporary
+- DO NOT spawn a generic agent without explicit role framing; unguided generic agents will drift in scope
+- DO NOT skip documenting the gap in Reflect phase; undocumented gaps recur without resolution
+- DO NOT assume one successful gap-fill proves the pattern works universally; evaluate each gap individually
+
 ## Team Composition Recipe Index
 
 Bobert consults this index during Plan phase team composition analysis to select proven patterns and ensure mandatory teammates are included.
@@ -573,9 +648,9 @@ Bobert consults this index during Plan phase team composition analysis to select
 
 **CRITICAL - Always Include**:
 - **Working from TODO memory?** → MUST include **todo-spec-memory-maintainer** (maintains living TODO state, marks completed work, updates Required Reading)
-- **Writing code?** → MUST include **code-monkey** (implementation), **git-historian** (commits), **adr-maintainer** (design decisions), **technical-breakdown-maintainer** (documentation synthesis). These agents work in phases with handoffs and back-and-forth consultation, coordinated via task lists and mailbox.
+- **Writing code?** → MUST include **code-monkey** (implementation), **git-historian** (commits), **adr-maintainer** (design decisions), **technical-breakdown-maintainer** (documentation synthesis), **implementation-plan-maintainer** (executable specifications). These agents work in phases with handoffs and back-and-forth consultation, coordinated via task lists and mailbox.
 - **Implementing from Jira ticket?** → Often requires **deep-researcher** to fill knowledge gaps beyond ticket description (architecture patterns, integration context, best practices)
-- **Full-lifecycle delivery?** → Use **Task Group A**: 8-agent team from intake through completion (see Task Group A section below)
+- **Full-lifecycle delivery?** → Use **Task Group A**: 11-agent team from intake through completion (see Task Group A section below)
 
 ### High-Value Team Recipes
 
@@ -631,6 +706,7 @@ Bobert consults this index during Plan phase team composition analysis to select
 - **agent-maintainer**: Agent creation, modification, or lifecycle management needed
 - **adr-maintainer**: Architecture decisions need immutable recording
 - **technical-breakdown-maintainer**: Existing ADRs need synthesis into present-tense documentation
+- **implementation-plan-maintainer**: Technical breakdown needs translation into executable commit-level specs with code examples for code-monkey
 
 ### Recipe Selection Guidance
 
@@ -651,9 +727,9 @@ Bobert consults this index during Plan phase team composition analysis to select
 
 **Task Group A** is the canonical team composition for taking work from input through to completion. This is Addison's most common workflow pattern.
 
-**Invocation**: "Get Task Group A on this" → Bobert spawns 10-agent team with full workflow coordination
+**Invocation**: "Get Task Group A on this" → Bobert spawns 11-agent team with full workflow coordination
 
-### Team Composition (10 agents)
+### Team Composition (11 agents)
 
 1. **work-starter** (intake specialist)
 2. **worktree-manager** (worktree lifecycle)
@@ -661,10 +737,13 @@ Bobert consults this index during Plan phase team composition analysis to select
 4. **deep-researcher** (domain research)
 5. **Explore agent** (codebase investigation)
 6. **adr-maintainer** (design decisions)
-7. **technical-breakdown-maintainer** (context synthesis)
-8. **code-monkey** (implementation)
-9. **git-historian** (commit creation)
-10. **pr-maintainer** (draft PR creation)
+7. **implementation-plan-maintainer** (executable specifications)
+8. **technical-breakdown-maintainer** (context synthesis)
+9. **code-monkey** (implementation)
+10. **git-historian** (commit creation)
+11. **pr-maintainer** (draft PR creation)
+
+[[id:D19117D9-9647-400F-A685-5836E616C7DE][Agent Teams Transformation - Team-Centric Claude Code Workflow]]
 
 ### Workflow Pattern
 
@@ -683,7 +762,8 @@ Input Source (Jira, memory stub, or prompt)
              │
              ▼
 ┌─────────────────────────────────────────────────────────┐
-│ PHASE 1: RESEARCH/DESIGN/SYNTHESIS LOOP (iterative)     │
+│ PHASE 1: RESEARCH/DESIGN/SYNTHESIS/PLANNING LOOP        │
+│                                       (iterative)       │
 │                                                          │
 │  ┌──> deep-researcher: Investigate questions            │
 │  │         │                                             │
@@ -695,11 +775,18 @@ Input Source (Jira, memory stub, or prompt)
 │  │         │                                             │
 │  │         ▼                                             │
 │  └───[Gaps?] Yes ──┘    No ──> Continue                 │
+│                           │                              │
+│                           ▼                              │
+│  implementation-plan-maintainer: Translate breakdown    │
+│  to executable specs (activates after breakdown done)   │
+│  May consult: technical-breakdown-maintainer,           │
+│               adr-maintainer (dependency gaps)          │
 │                                                          │
 │  Explore agent: Feed codebase context throughout        │
 │  todo-spec-memory-maintainer: Update Required Reading   │
 │                                                          │
 │  COMPLETION SIGNAL: Technical breakdown sufficient      │
+│  AND executable implementation plan complete            │
 └────────────┬────────────────────────────────────────────┘
              │
              ▼
@@ -737,10 +824,12 @@ Input Source (Jira, memory stub, or prompt)
 **Continuous TODO Maintenance**: todo-spec-memory-maintainer is the heartbeat - always active, always watching, always updating the source of truth. Not just "start and end" - throughout ALL phases.
 
 **Two Iterative Loops**:
-1. **Research/Design/Synthesis**: Loop until technical breakdown is complete enough to start implementation
+1. **Research/Design/Synthesis/Planning**: Loop until technical breakdown AND executable implementation plan are complete
 2. **Implementation/Commit**: Loop until all functionality implemented and committed
 
 **Context Isolation**: Each specialist operates in own context window, preventing bloat in main conversation and enabling phase-based activation (agents come/go as expertise needed)
+
+**Specification Bridge**: implementation-plan-maintainer operates within Phase 1, translating architectural guidance into executable specs with code examples. This ensures Phase 1 produces complete specifications (architecture AND implementation) before Phase 2 begins
 
 **Back-and-Forth Consultation**: Agents consult each other via mailbox throughout - not purely sequential, not purely parallel
 
@@ -758,11 +847,19 @@ work-starter adapts intake conversation to input type, always identifying gaps a
 
 When Addison says **"Get Task Group A on this"**, Bobert:
 
-1. **Forms team** with 10 agents via TeamCreate
+1. **Forms team** with 11 agents via TeamCreate
 2. **Spawns work-starter** with input (ticket/memory/prompt) and instruction: "Identify gaps, clarify requirements, structure work into TODO memory"
 3. **Spawns worktree-manager** with instruction: "Create worktree for project, coordinate with work-starter via mini-loop"
 4. **Spawns todo-spec-memory-maintainer** with instruction: "Maintain living TODO throughout workflow, update Required Reading as artifacts created"
-5. **Spawns remaining 7 agents** with their phase-specific roles and coordination instructions
+5. **Spawns remaining 8 agents** with their phase-specific roles and coordination instructions:
+   - **deep-researcher**: Phase 1 research
+   - **Explore agent**: Phase 1 codebase investigation
+   - **adr-maintainer**: Phase 1 design decisions
+   - **technical-breakdown-maintainer**: Phase 1 context synthesis
+   - **implementation-plan-maintainer**: Phase 1 executable specification creation (activates after technical-breakdown-maintainer completes, produces specs for code-monkey)
+   - **code-monkey**: Phase 2 implementation
+   - **git-historian**: Phase 2 commit creation
+   - **pr-maintainer**: Phase 3 draft PR creation
 6. **Monitors via TaskList** and responds to mailbox coordination needs
 7. **Waits for workflow completion** through all phases
 
@@ -770,15 +867,15 @@ When Addison says **"Get Task Group A on this"**, Bobert:
 
 **Task Group A-Lite** (without research):
 - Skip deep-researcher if domain knowledge sufficient
-- 9 agents: work-starter, worktree-manager, todo-maintainer, Explore, adr-maintainer, technical-breakdown-maintainer, code-monkey, git-historian, pr-maintainer
+- 10 agents: work-starter, worktree-manager, todo-maintainer, Explore, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, code-monkey, git-historian, pr-maintainer
 
 **Task Group A-Research** (research-heavy):
 - Add second deep-researcher for parallel research streams
-- 11 agents total
+- 12 agents total
 
 **Task Group A-Docs** (documentation-heavy):
 - Add dedicated documentation-specialist alongside technical-breakdown-maintainer
-- 11 agents total
+- 12 agents total
 
 ## Memory Integration
 

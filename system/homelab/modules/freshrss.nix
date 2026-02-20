@@ -12,9 +12,9 @@
     # The freshrss nixos module creates a bunch of nginx
     # rules that assume freshrss is served from root host
     # I serve from a subdomain and this breaks a bunch of stuff
-    # I should upstream something about this but haven't 
-    virtualHost = "freshrss";  
-    webserver = "nginx";  
+    # I should upstream something about this but haven't
+    virtualHost = "freshrss";
+    webserver = "nginx";
     extensions = [pkgs.freshrss-extensions.youtube];
   };
   services.nginx.virtualHosts = {
@@ -22,7 +22,7 @@
       "/rss/" = {
         alias = "${pkgs.freshrss}/p/";
         index = "index.php";
-        tryFiles = "$uri $uri/ /index.php$is_args$args";  # Changed this line
+        tryFiles = "$uri $uri/ /index.php$is_args$args"; # Changed this line
         extraConfig = ''
           location ~ \.php$ {
             fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
@@ -31,17 +31,17 @@
             fastcgi_param PATH_INFO $fastcgi_path_info;
           }
         '';
-    };
-    "~ ^/rss/(.+\\.php)(/.*)?$" = {
-      extraConfig = ''
-        fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
-        include ${pkgs.nginx}/conf/fastcgi_params;
-        include ${pkgs.nginx}/conf/fastcgi.conf;
-        fastcgi_param SCRIPT_FILENAME ${pkgs.freshrss}/p/$1;
-        fastcgi_split_path_info ^/rss/(.+\\.php)(/.*)?$;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-      '';
+      };
+      "~ ^/rss/(.+\\.php)(/.*)?$" = {
+        extraConfig = ''
+          fastcgi_pass unix:${config.services.phpfpm.pools."freshrss".socket};
+          include ${pkgs.nginx}/conf/fastcgi_params;
+          include ${pkgs.nginx}/conf/fastcgi.conf;
+          fastcgi_param SCRIPT_FILENAME ${pkgs.freshrss}/p/$1;
+          fastcgi_split_path_info ^/rss/(.+\\.php)(/.*)?$;
+          fastcgi_param PATH_INFO $fastcgi_path_info;
+        '';
+      };
     };
   };
-};
 }

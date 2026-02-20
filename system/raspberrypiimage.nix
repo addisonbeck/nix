@@ -44,13 +44,13 @@
   };
 
   hardware.enableRedistributableFirmware = true;
-  
+
   # Boot loader configuration and console params already provided by base SD module
   boot.initrd.availableKernelModules = lib.mkForce [
     "mmc_block"
     "sdhci"
-    "sdhci_pci" 
-    "sdhci_iproc"    # Mainline kernel uses sdhci_iproc for Pi SD
+    "sdhci_pci"
+    "sdhci_iproc" # Mainline kernel uses sdhci_iproc for Pi SD
     "bcm2835_dma"
     "i2c_bcm2835"
     "virtio_net"
@@ -61,4 +61,3 @@
     "virtio_balloon"
   ];
 }
-

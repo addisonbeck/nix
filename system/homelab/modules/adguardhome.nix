@@ -155,9 +155,9 @@ in {
           }
           {
             enabled = true;
-            url = "file://${customBlocklist}"; 
+            url = "file://${customBlocklist}";
             name = "Custom Local Blocklist";
-            id = 6; 
+            id = 6;
           }
         ];
         stats = {

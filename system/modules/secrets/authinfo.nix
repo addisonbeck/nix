@@ -1,5 +1,4 @@
-{ config, ... }:
-{
+{config, ...}: {
   sops.secrets.authinfo = {
     format = "binary";
     sopsFile = ../../../secrets/authinfo;

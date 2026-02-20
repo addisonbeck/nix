@@ -1,9 +1,11 @@
-
-{pkgs, config, lib, ...}:
-let
-  homeDirectory = "/Users/${config.users.users.me.name}";
-in
 {
+  pkgs,
+  config,
+  lib,
+  ...
+}: let
+  homeDirectory = "/Users/${config.users.users.me.name}";
+in {
   # Install YubiKey packages
   home-manager.users.me = {
     home.packages = with pkgs; [
@@ -28,7 +30,7 @@ in
         use-agent = true;
       };
       scdaemonSettings = {
-        disable-ccid = true;  # Prevent conflicts with pcscd
+        disable-ccid = true; # Prevent conflicts with pcscd
       };
     };
 

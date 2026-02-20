@@ -49,7 +49,7 @@
   # Flatpak support for Bitwarden testing
   services.flatpak.enable = true;
   xdg.portal.enable = true;
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+  xdg.portal.extraPortals = [pkgs.xdg-desktop-portal-gtk];
 
   # Development tools for building Bitwarden clients
   environment.systemPackages = with pkgs; [
@@ -93,9 +93,9 @@
 
   # QEMU VM specific configuration
   virtualisation = {
-    memorySize = 8192;  # 8GB RAM
-    cores = 4;          # 4 CPU cores
-    diskSize = 40960;   # 40GB disk
+    memorySize = 8192; # 8GB RAM
+    cores = 4; # 4 CPU cores
+    diskSize = 40960; # 40GB disk
     resolution = {
       x = 1920;
       y = 1080;
