@@ -15,7 +15,7 @@ in {
 
     settings = {
       outputStyle = "Bobert";
-      
+
       # Environment variables accessible to skills/hooks
       env = {
         ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
@@ -40,7 +40,7 @@ in {
             ];
           }
         ];
-        
+
         PostToolUse = [
           {
             matcher = "Bash";
@@ -49,6 +49,19 @@ in {
                 type = "command";
                 command = "~/.claude/skills/read_memory/required_reading_hook.sh";
                 statusMessage = "Processing Required Reading...";
+              }
+            ];
+          }
+        ];
+
+        PreToolUse = [
+          {
+            matcher = "Edit|Write";
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/org_roam_protection_hook.sh";
+                statusMessage = "Checking org-roam protection...";
               }
             ];
           }
