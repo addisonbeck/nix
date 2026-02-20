@@ -56,7 +56,7 @@ in {
 
         PreToolUse = [
           {
-            matcher = "Edit|Write";
+            matcher = "Write";
             hooks = [
               {
                 type = "command";

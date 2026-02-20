@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse hook for org-roam knowledge graph protection
-# Denies Edit/Write operations on paths containing /roam/ substring
+# Denies Write operations on paths containing /roam/ substring
 # Guides users to create_memory skill as the correct alternative
 
 set -euo pipefail
