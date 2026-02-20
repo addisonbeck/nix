@@ -27,6 +27,7 @@ in {
         pr = "";
       };
 
+      hooksDir = ./hooks;
       # Hooks configuration
       hooks = {
         UserPromptSubmit = [
@@ -34,7 +35,7 @@ in {
             hooks = [
               {
                 type = "command";
-                command = "~/.claude/skills/agent_reminder/agent_reminder_hook.sh";
+                command = "~/.claude/hooks/agent_reminder/agent_reminder_hook.sh";
                 statusMessage = "Checking agent workflow...";
               }
             ];
