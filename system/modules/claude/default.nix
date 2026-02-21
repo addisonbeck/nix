@@ -27,7 +27,6 @@ in {
         pr = "";
       };
 
-      hooksDir = ./hooks;
       # Hooks configuration
       hooks = {
         UserPromptSubmit = [
@@ -70,8 +69,12 @@ in {
       };
     };
 
-    # Install skills from local directory
-    # Copies skills/ contents to ~/.claude/skills/ at activation
+    # install hooks from local directory
+    # copies hooks/ contents to ~/.claude/hooks/ at activation
+    hooksDir = ./hooks;
+
+    # install skills from local directory
+    # copies skills/ contents to ~/.claude/skills/ at activation
     skillsDir = ./skills;
 
     # Install agents from local directory
