@@ -201,6 +201,12 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
   (evil-define-key 'normal vterm-mode-map
     (kbd "C-p") 'projectile-switch-project
     (kbd "C-f") 'projectile-find-file))
+
+;; Vterm mood hook
+(defun vterm-mode-init ()
+  "Function to run on vterm mode init"
+  (my/toggle-olivetti))
+(add-hook 'vterm-mode-hook #'vterm-mode-init)
 #+end_src
 
 * Cycle Line Number Function
