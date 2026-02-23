@@ -1708,11 +1708,26 @@ It would be cool if this also had some kind of interactive starting directory / 
 #+end_src
 
 #+begin_src emacs-lisp
+  (defun my/create-claude-code-buffer ()
+    "Create a vterm buffer in the current project and launch Claude Code with --dangerously-skip-permissions."
+    (interactive)
+    (let* ((project-root (if (projectile-project-p)
+                             (projectile-project-root)
+                           default-directory))
+           (buf-name "claude-code-vterm")
+           (default-directory project-root))
+      (vterm buf-name)
+      (switch-to-buffer buf-name)
+      (vterm-send-string "claude --dangerously-skip-permissions")
+      (vterm-send-return)))
+#+end_src
+
+#+begin_src emacs-lisp
   (transient-define-prefix my/create-menu ()
 			   "Create menu"
 			   [["Create"
 			     ("t" "terminal buffer" my/create-named-vterm)
-			     ("g" "gptel buffer" my/create-conversation-from-heading)
+			     ("g" "claude code buffer" my/create-claude-code-buffer)
 			     ("m" "memory" my/create-memory-interactive)
 			     ("c" "Capture" org-capture)]])
 #+end_src
