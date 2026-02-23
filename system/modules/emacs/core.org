@@ -1730,7 +1730,6 @@ It would be cool if this also had some kind of interactive starting directory / 
         ("R" "org refile" org-roam-refile)])
 #+end_src
 
-
 * Kill Thing Running On Port
 
 #+begin_src emacs-lisp
@@ -1744,7 +1743,6 @@ It would be cool if this also had some kind of interactive starting directory / 
         (shell-command (format "kill %s" pid))
         (message "Killed process %s running on port %s" pid port)))))
 #+end_src
-
 
 * Custom Keymaps
 ** General
@@ -2068,7 +2066,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (my/toggle-olivetti))
   (add-hook 'magit-status-mode-hook #'magit-status-mode-init)
 #+end_src
-
 
 * Final Function Advice
 ** Update Olivetti Fringes on Theme Toggle
