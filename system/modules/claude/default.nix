@@ -34,7 +34,7 @@ in {
             hooks = [
               {
                 type = "command";
-                command = "~/.claude/hooks/agent_reminder/agent_reminder_hook.sh";
+                command = "~/.claude/hooks/agent_reminder_hook.sh";
                 statusMessage = "Checking agent workflow...";
               }
             ];

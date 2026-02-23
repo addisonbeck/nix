@@ -17,7 +17,7 @@ file_path=$(echo "$hook_input" | jq -r '.tool_input.file_path // empty')
 
 # If no file_path present, allow operation (not a file operation)
 if [ -z "$file_path" ]; then
-  echo '{"permissionDecision": "allow"}'
+  echo '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}'
   exit 0
 fi
 
@@ -27,12 +27,15 @@ if [[ "$file_path" == *"/roam/"* ]]; then
   jq -n \
     --arg reason "Direct file operations on org-roam nodes bypass UUID and backlink management. Use the create_memory skill instead: Skill 'create_memory'" \
     '{
-      "permissionDecision": "deny",
-      "permissionDecisionReason": $reason
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": $reason
+      }
     }'
   exit 0
 fi
 
 # Path does not contain /roam/, allow operation
-echo '{"permissionDecision": "allow"}'
+echo '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow"}}'
 exit 0
