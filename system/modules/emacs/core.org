@@ -189,15 +189,21 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 * Vterm Configuration
 #+begin_src emacs-lisp
-;; evil-collection-vterm provides proper Evil integration for vterm
-;; This replaces manual configuration that had issues with paste, visual mode, and read-only buffers
 (with-eval-after-load 'vterm
-  ;; Ensure evil-collection-vterm is loaded
-  ;; Note: evil-collection-init already loaded this, but explicit setup ensures proper initialization
   (require 'evil-collection-vterm)
   (evil-collection-vterm-setup)
-  
-  ;; Restore custom projectile keybindings (not provided by evil-collection-vterm)
+
+  ;; Pass shift+up and shift+down directly to the terminal.
+  ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
+  ;; shift variants must be added explicitly for terminal apps that need them.
+  (evil-define-key 'insert vterm-mode-map
+    (kbd "<S-up>")   #'vterm--self-insert
+    (kbd "<S-down>") #'vterm--self-insert)
+  (evil-define-key 'normal vterm-mode-map
+    (kbd "<S-up>")   #'vterm--self-insert
+    (kbd "<S-down>") #'vterm--self-insert)
+
+  ;; Restore custom projectile keybindings
   (evil-define-key 'normal vterm-mode-map
     (kbd "C-p") 'projectile-switch-project
     (kbd "C-f") 'projectile-find-file))
