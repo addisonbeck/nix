@@ -33,11 +33,25 @@ claude/
 ├── output-styles/
 │   └── bobert.md            # Third-person orchestrator output style
 ├── agents/                  # Specialized task agents
-│   ├── agent-creator.md
+│   ├── agent-maintainer.md
 │   ├── context-curator.md
 │   ├── deep-researcher.md
 │   ├── project-initiator.md
-│   └── work-starter.md
+│   ├── work-starter.md
+│   ├── code-monkey.md
+│   ├── git-historian.md
+│   ├── skill-creator.md
+│   ├── adr-maintainer.md
+│   ├── technical-breakdown-maintainer.md
+│   ├── implementation-plan-maintainer.md
+│   ├── todo-spec-memory-maintainer.md
+│   ├── worktree-manager.md
+│   ├── pr-maintainer.md
+│   ├── emacs-config-maintainer.md
+│   ├── intake-coordinator.md           # Phase 0 coordinator
+│   ├── research-design-coordinator.md  # Phase 1 coordinator
+│   ├── implementation-coordinator.md   # Phase 2 coordinator
+│   └── finalization-coordinator.md     # Phase 3 coordinator
 └── skills/                  # Reusable command patterns
     ├── agent_reminder/      # UserPromptSubmit hook
     ├── create_memory/       # Org-roam node creation
@@ -80,6 +94,17 @@ Agents are specialized, atomic task handlers invoked via `/agent-name` or Task t
 - **adr-maintainer**: Architecture Decision Record creation and maintenance
 - **technical-breakdown-maintainer**: Dynamic technical documentation management
 - **todo-spec-memory-maintainer**: TODO list, specification, and memory maintenance
+- **worktree-manager**: Git worktree creation and management for isolated work
+- **pr-maintainer**: Pull request creation and maintenance
+- **implementation-plan-maintainer**: Implementation plan creation and iteration tracking
+- **emacs-config-maintainer**: Emacs literate configuration maintenance
+
+**Phase Coordinators** (tactical phase managers for Bobert's Task Group A workflow):
+
+- **intake-coordinator** (sonnet): Manages Phase 0 -- spawns work-starter and worktree-manager, validates intake completion
+- **research-design-coordinator** (sonnet): Manages Phase 1 -- orchestrates research/design/synthesis/planning loop until technical breakdown and implementation plan are sufficient
+- **implementation-coordinator** (sonnet): Manages Phase 2 -- orchestrates implementation/commit loop until all planned work is complete and tests pass
+- **finalization-coordinator** (sonnet): Manages Phase 3 -- coordinates final documentation, TODO completion, and draft PR creation
 
 **Agent File Format**:
 ```yaml
@@ -205,6 +230,40 @@ Use individual delegation when:
 - Integration complexity exceeds parallelization value
 
 See `output-styles/bobert.md` for complete team coordination patterns and example workflows.
+
+### Phase Coordinator Pattern
+
+Phase coordinators implement a strategic/tactical separation in Bobert's Task Group A workflow (ADR-029 through ADR-035). This architecture delegates tactical phase management to specialized coordinator agents while Bobert retains strategic orchestration.
+
+**Separation of Concerns**:
+
+- **Bobert (strategic)**: Team composition decisions, phase transition authorization, escalation handling, cross-phase state tracking, quality gates between phases
+- **Coordinators (tactical)**: Agent spawning from provided roster, task distribution via TaskList, progress monitoring, completion validation, structured PhaseResult reporting
+
+**How It Works**:
+
+1. Bobert constructs a PhaseContext (agent roster, completion criteria, prior phase outputs)
+2. Bobert delegates to the appropriate phase coordinator via Task tool
+3. Coordinator spawns agents from the roster, creates tasks, monitors progress
+4. Coordinator validates completion against explicit criteria (Observable Aggregate State pattern)
+5. Coordinator returns a structured PhaseResult with outputs and status
+6. Bobert evaluates PhaseResult and decides whether to advance, retry, or escalate
+
+**Process Manager Pattern**:
+
+Each coordinator implements the Process Manager pattern:
+- Receives roster and criteria from orchestrator (no autonomous agent selection per ADR-031)
+- Manages agent lifecycle within the phase (spawn, monitor, collect outputs)
+- Tracks aggregate state across all spawned agents via task list status
+- Returns deterministic completion signal based on explicit validation rules
+
+**Design Benefits**:
+
+- Bobert reduced from ~1127 to ~718 lines by extracting tactical coordination
+- Each coordinator is independently testable and evolvable
+- Phase-specific quality gates are enforced at the coordinator level
+- Coordinators can be swapped or upgraded without modifying Bobert's strategic logic
+- Explicit state verification prevents silent phase failures
 
 ## Development Workflows
 
