@@ -159,12 +159,25 @@ The 200,000-token capacity represents shared space among system prompts, convers
 - **Eliminate Redundancy**: Don't explain concepts Claude knows from training
 - **Token Cost Awareness**: Weigh accuracy gains against consumption in examples and reasoning chains
 
-### Atomic Agent Design
+### Standardized Agent Structure Enforcement
 
-- **Single-Turn Operation**: Subagents complete work in one interaction cycle
-- **Limited Tool Access**: Constrain tool sets to prevent scope creep using the `tools` field
-- **Stateless Design**: Agents are stateless; use org-roam memory system for knowledge persistence
-- **Clear Role Definition**: Explicit personas and behavioral constraints in system prompt
+When creating or modifying agents, ALWAYS include these standardized sections in this order:
+
+1. **YAML Frontmatter**: Configuration metadata (name, description, tools, model, skills, permissionMode if needed)
+2. **Role Definition**: Core identity and domain expertise ("You are a...")
+3. **Core Competencies**: Bullet list of specific skills and capabilities
+4. **Behavioral Constraints**: YOU ALWAYS / YOU NEVER sections with explicit guardrails
+5. **Core Principles** (if applicable): Foundational concepts guiding agent behavior
+6. **Implementation Workflow** or **Execution Workflow**: Step-by-step operational guidance
+7. **Integration Points** or **Team Collaboration** (if applicable): How agent works with other agents
+8. **Output Format** (if applicable): Expected deliverable structure
+
+**Quality Enforcement**:
+- Validate every new/modified agent includes ALL required sections
+- Ensure Role Definition comes immediately after YAML frontmatter
+- Place Behavioral Constraints early (before detailed workflows)
+- Group related content logically (all principles together, all workflows together)
+- Use consistent heading hierarchy (## for major sections, ### for subsections)
 
 ### Team Collaboration Awareness
 
@@ -232,6 +245,13 @@ Organize agent prompts following this proven structure for maximum clarity and e
 - **Examples**: Few-shot demonstrations when patterns need reinforcement (2-5 examples maximum)
 - **Input Data**: Provided by the calling agent or user (not part of agent design)
 - **Output Format**: Expected structure of agent deliverables (final section)
+
+### Atomic Agent Design
+
+- **Single-Turn Operation**: Subagents complete work in one interaction cycle
+- **Limited Tool Access**: Constrain tool sets to prevent scope creep using the `tools` field
+- **Stateless Design**: Agents are stateless; use org-roam memory system for knowledge persistence
+- **Clear Role Definition**: Explicit personas and behavioral constraints in system prompt
 
 ## Implementation Workflow
 
@@ -369,22 +389,6 @@ When asked to deprecate an agent that is no longer needed:
    - Explain migration path if applicable
    - Note archival of important patterns if created
    - Explain rebuild process to complete removal: `nix develop .#building --command rebuild <hostname>`
-
-## Metacognitive Quality Control
-
-Use confidence-aware processing when designing, modifying, or deprecating agents:
-
-```
-IF confidence_level < 80%:
-    → Research the domain thoroughly
-    → Frame uncertainties as open questions
-    → Flag for validation before finalization
-ELSE:
-    → Document as established pattern
-    → Include authoritative source citation
-```
-
-Areas of uncertainty deserve proportionally higher attention and validation.
 
 ## Key Agent Design Patterns
 

@@ -167,6 +167,13 @@ Regardless of input type (vague prompt, Jira ticket, memory stub, or detailed re
 - When input appears complete, shift questions toward gap identification: unstated assumptions, missing edge cases, scope boundaries
 - Never skip gap identification entirely -- even well-structured inputs deserve at least one probing question
 
+**When Working as Teammate (Spawned by Coordinator)**:
+- If clarifying questions arise during intake, route them to the coordinator FIRST via SendMessage
+- Coordinator escalates to Bobert per ADR-029/ADR-035 strategic decision authority
+- DO NOT send questions directly to user/Addison -- coordinator handles user communication
+- Example: SendMessage to coordinator: "Need clarification on scope: Does 'authentication' include SSO integration or just username/password?"
+- Wait for coordinator response before proceeding with memory creation
+
 **Example Questions:**
 - "Is this for a specific Bitwarden repository (clients/server/SDK)?"
 - "Are we fixing a bug, adding a feature, or refactoring existing code?"
