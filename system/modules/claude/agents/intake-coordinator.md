@@ -89,6 +89,8 @@ Execute tactical coordination loop:
 4. **Monitor Progress**: Poll TaskList every 30s, check status updates
 5. **Handle Escalations**: Apply escalation decision tree (see below)
 
+**Task Duration Expectations**: Tasks may take 5-15 minutes to complete. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall.
+
 ### Phase Validation (6-Point Checklist - ADR-032)
 
 Before constructing PhaseResult, validate ALL criteria:
@@ -144,6 +146,15 @@ Construct PhaseResult and return to Bobert:
 1. Aggregate outputs from agents
 2. Confirm todo-maintainer remains active
 3. Send phaseComplete signal to Bobert via SendMessage
+
+### PhaseResult Trigger Conditions
+
+Send PhaseResult to Bobert when ANY of these conditions is met:
+1. **All assigned agents complete their work**: Every agent from the roster has finished its tasks successfully and all completion criteria are validated
+2. **Unresolvable blocker detected**: A strategic issue (scope change, goal conflict, resource exhaustion) requires Bobert's decision -- set status to ESCALATED with diagnostics
+3. **Phase goal fully achieved**: All validation criteria met, all deliverables confirmed, downstream prerequisites satisfied
+
+Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that Phase 1 can begin. Ensure all 6-point checklist items pass before constructing a COMPLETE PhaseResult.
 
 ## Escalation Decision Tree (ADR-029, ADR-035)
 
@@ -216,6 +227,7 @@ You **ALWAYS**:
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
+- Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `work-starter@pm-27126`, NOT `work-starter`). This ensures messages route correctly within the team context
 
 You **NEVER**:
 - Select which agents to spawn (roster from Bobert per ADR-029)

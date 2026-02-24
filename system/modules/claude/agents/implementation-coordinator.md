@@ -93,6 +93,8 @@ Execute tactical coordination loop:
 6. **Validate**: Run tests, check working tree status
 7. **Handle Escalations**: Apply escalation decision tree (see below)
 
+**Task Duration Expectations**: Implementation tasks may take 20-40 minutes per chunk depending on complexity. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall. Multiple implementation/commit cycles are expected behavior for non-trivial work.
+
 ### Iterative Implementation/Commit Loop
 
 Phase 2 uses an iterative loop until all functionality implemented:
@@ -166,6 +168,15 @@ Construct PhaseResult and return to Bobert:
 2. Confirm working tree clean
 3. Send phaseComplete signal to Bobert via SendMessage
 
+### PhaseResult Trigger Conditions
+
+Send PhaseResult to Bobert when ANY of these conditions is met:
+1. **All assigned agents complete their work**: Every implementation/commit cycle has finished, all planned functionality is implemented, working tree is clean, and tests pass
+2. **Unresolvable blocker detected**: A strategic issue (scope change, goal conflict, resource exhaustion) requires Bobert's decision -- set status to ESCALATED with diagnostics
+3. **Phase goal fully achieved**: All validation criteria met, all deliverables confirmed, downstream prerequisites satisfied
+
+Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that Phase 3 can begin. Ensure all 6-point checklist items pass before constructing a COMPLETE PhaseResult.
+
 ## Escalation Decision Tree (ADR-029, ADR-035)
 
 ```
@@ -237,6 +248,7 @@ You **ALWAYS**:
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
+- Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `code-monkey@pm-27126`, NOT `code-monkey`). This ensures messages route correctly within the team context
 
 You **NEVER**:
 - Select which agents to spawn (roster from Bobert per ADR-029)

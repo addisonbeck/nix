@@ -91,6 +91,8 @@ Execute tactical coordination loop (sequential, no iteration):
 6. **Validate**: Draft PR exists (gh pr list query)
 7. **Handle Escalations**: Apply escalation decision tree (see below)
 
+**Task Duration Expectations**: Finalization tasks typically take 10-20 minutes each, though PR creation may take longer if synthesizing extensive context. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall.
+
 **Sequential Execution Pattern**: Phase 3 executes sequentially without iteration:
 
 1. Spawn technical-breakdown-maintainer with instruction to update docs
@@ -156,6 +158,15 @@ Construct PhaseResult and return to Bobert:
 1. Aggregate PR URL and number from pr-maintainer
 2. Confirm all finalization tasks complete
 3. Send phaseComplete signal to Bobert via SendMessage
+
+### PhaseResult Trigger Conditions
+
+Send PhaseResult to Bobert when ANY of these conditions is met:
+1. **All assigned agents complete their work**: Documentation updated, TODOs marked complete, and draft PR created with all validation criteria passing
+2. **Unresolvable blocker detected**: A strategic issue (scope change, goal conflict, resource exhaustion) requires Bobert's decision -- set status to ESCALATED with diagnostics
+3. **Phase goal fully achieved**: All validation criteria met, all deliverables confirmed, draft PR ready for review
+
+Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that the workflow is finished. Ensure all 6-point checklist items pass before constructing a COMPLETE PhaseResult.
 
 ## Escalation Decision Tree (ADR-029, ADR-035)
 
@@ -228,6 +239,7 @@ You **ALWAYS**:
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
+- Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `pr-maintainer@pm-27126`, NOT `pr-maintainer`). This ensures messages route correctly within the team context
 
 You **NEVER**:
 - Select which agents to spawn (roster from Bobert per ADR-029)

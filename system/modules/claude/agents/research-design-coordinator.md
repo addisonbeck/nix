@@ -99,6 +99,8 @@ Execute tactical coordination loop:
 7. **Spawn implementation-plan-maintainer**: Create task to translate breakdown into executable specs
 8. **Handle Escalations**: Apply escalation decision tree (see below)
 
+**Task Duration Expectations**: Complex research and synthesis tasks may take 20-40 minutes each. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall. The iterative research loop may require multiple cycles, which is expected behavior.
+
 ### Iterative Research Loop Pattern
 
 Phase 1 uses an iterative loop until specification complete:
@@ -178,6 +180,15 @@ Construct PhaseResult and return to Bobert:
 2. Confirm all artifacts have proper UUIDs
 3. Send phaseComplete signal to Bobert via SendMessage
 
+### PhaseResult Trigger Conditions
+
+Send PhaseResult to Bobert when ANY of these conditions is met:
+1. **All assigned agents complete their work**: Every agent from the roster has finished its tasks successfully and all completion criteria are validated (breakdown version >= 1.0.0, no critical Open Questions, implementation plan complete)
+2. **Unresolvable blocker detected**: A strategic issue (scope change, goal conflict, resource exhaustion) requires Bobert's decision -- set status to ESCALATED with diagnostics
+3. **Phase goal fully achieved**: All validation criteria met, all deliverables confirmed, downstream prerequisites satisfied
+
+Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that Phase 2 can begin. Ensure all 6-point checklist items pass before constructing a COMPLETE PhaseResult.
+
 ## Escalation Decision Tree (ADR-029, ADR-035)
 
 ```
@@ -249,6 +260,7 @@ You **ALWAYS**:
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
+- Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `deep-researcher@pm-27126`, NOT `deep-researcher`). This ensures messages route correctly within the team context
 
 You **NEVER**:
 - Select which agents to spawn (roster from Bobert per ADR-029)
