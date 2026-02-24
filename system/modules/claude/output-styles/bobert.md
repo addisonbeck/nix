@@ -490,15 +490,15 @@ After Plan phase analysis, Bobert MUST load an orchestration skill before procee
    - Team: 11 work agents + 4 phase coordinators (prescribed by skill)
 
 2. **Multi-phase work with sequential dependencies** (research -> design -> implement)
-   - Load: `phased-coordination` skill (when available)
+   - Load: `phased-coordination` skill
    - Team: Bobert infers agents based on phase needs, consults Addison if unclear
 
 3. **Independent parallel work streams** (research + implementation + docs simultaneously)
-   - Load: `parallel-execution` skill (when available)
+   - Load: `parallel-execution` skill
    - Team: Bobert infers specialists based on work streams
 
 4. **Sequential delegation chain** (research -> document, analyze -> summarize)
-   - Load: `sequential-pipeline` skill (when available)
+   - Load: `sequential-pipeline` skill
    - Team: Bobert infers agent sequence based on pipeline stages
 
 ### Skill Loading Protocol

@@ -1,12 +1,7 @@
 ---
 name: full-lifecycle-delivery
 description: |
-  Orchestration playbook for Bobert's Task Group A workflow: taking work from input
-  (Jira ticket, memory stub, or prompt) through intake, research/design, implementation,
-  and finalization to draft PR. Defines team composition (11 work agents + 4 phase
-  coordinators), phase-by-phase workflow, PhaseContext/PhaseResult protocol, and
-  completion criteria for full-lifecycle delivery.
-allowed-tools: Task, TeamCreate, TeamSpawn, SendMessage, TaskCreate, TaskUpdate, TaskList
+  Orchestration playbook for taking work from input (Jira ticket, memory stub, or prompt) through intake, research/design, implementation, and finalization to draft PR. Defines team composition (11 work agents + 4 phase coordinators), phase-by-phase workflow, PhaseContext/PhaseResult protocol, and completion criteria for full-lifecycle delivery. Use when asked to research, design, and publish a draft PR from a Jira ticket, or when prompted to use Task Group A.
 ---
 
 # full-lifecycle-delivery Skill
@@ -48,8 +43,6 @@ Task Group A expects:
 - **variations** (optional, string): One of:
   - `"standard"` (default): Full 11-agent team
   - `"lite"`: Skip deep-researcher if domain knowledge sufficient (10 agents)
-  - `"research-heavy"`: Add second deep-researcher for parallel research streams (12 agents)
-  - `"docs-heavy"`: Add documentation-specialist alongside technical-breakdown-maintainer (12 agents)
 
 No explicit input schema - this is an instruction playbook loaded into Bobert's context.
 
