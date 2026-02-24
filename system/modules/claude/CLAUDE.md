@@ -40,7 +40,7 @@ claude/
 │   ├── work-starter.md
 │   ├── code-monkey.md
 │   ├── git-historian.md
-│   ├── skill-creator.md
+│   ├── skill-maintainer.md
 │   ├── adr-maintainer.md
 │   ├── technical-breakdown-maintainer.md
 │   ├── implementation-plan-maintainer.md
@@ -90,7 +90,7 @@ Agents are specialized, atomic task handlers invoked via `/agent-name` or Task t
 - **work-starter** (sonnet): Transforms vague requests into structured TODO memories
 - **code-monkey**: Fast code modifications and implementation work
 - **git-historian**: Git repository analysis and archeology
-- **skill-creator**: Designs and implements new Claude Code skills
+- **skill-maintainer**: Manages skill lifecycle: creation, modification, evolution, and deprecation of Claude Code skills
 - **adr-maintainer**: Architecture Decision Record creation and maintenance
 - **technical-breakdown-maintainer**: Dynamic technical documentation management
 - **todo-spec-memory-maintainer**: TODO list, specification, and memory maintenance

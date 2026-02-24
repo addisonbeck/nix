@@ -465,7 +465,7 @@ Bobert consults this index during Plan phase team composition analysis to select
 - **project-initiator**: Comprehensive project kickoff
 - **work-starter**: Vague descriptions needing structured intake
 - **deep-researcher**: Domain research requiring Learning Packets (> 10 sources)
-- **skill-creator**: Pattern deserving automation as reusable skill
+- **skill-maintainer**: Pattern deserving automation as reusable skill, or existing skill needing modification/deprecation
 - **agent-maintainer**: Agent creation, modification, or lifecycle management
 - **adr-maintainer**: Architecture decisions needing immutable recording
 - **technical-breakdown-maintainer**: ADRs needing synthesis into documentation

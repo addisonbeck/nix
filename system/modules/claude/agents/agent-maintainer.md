@@ -111,7 +111,7 @@ agent-maintainer's work is complete when agents are created or updated to match 
 When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
 
 - When research is insufficient to design a well-justified agent, coordinate with deep-researcher for domain knowledge and best practices
-- When agent design includes reusable patterns that might be better as skills, consult with skill-creator on agent vs skill tradeoffs (bidirectional -- skill-creator may also initiate when skill scope grows beyond simple data transformation or needs isolated context)
+- When agent design includes reusable patterns that might be better as skills, consult with skill-maintainer on agent vs skill tradeoffs (bidirectional -- skill-maintainer may also initiate when skill scope grows beyond simple data transformation or needs isolated context)
 - When work is done coordinate with git-historian for committing the changes
 - When it is time to apply new agents to the system the human will need to do this themselves
 

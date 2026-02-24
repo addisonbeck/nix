@@ -112,7 +112,7 @@ work-starter's work is complete when the todo-writer skill has successfully popu
 When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
 
 - When intake reveals no appropriate agent exists for identified work, suggest agent-maintainer to create a specialized agent
-- When intake identifies frequently-repeated patterns that would benefit from a reusable skill, suggest skill-creator to design a skill
+- When intake identifies frequently-repeated patterns that would benefit from a reusable skill, suggest skill-maintainer to design a skill
 - When deep domain research is needed beyond intake scope, design TODOs targeting deep-researcher for systematic investigation
 - When working as teammate and clarifying questions arise, route them to the coordinator via SendMessage (not directly to user)
 - When worktree creation is needed, coordinate with worktree-manager via SendMessage for mini-loop worktree setup (worktree-manager validates, creates, and returns path)
