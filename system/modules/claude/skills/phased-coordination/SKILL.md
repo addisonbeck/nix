@@ -4,8 +4,8 @@ description: |
   Guides Bobert through coordinating multi-phase sequential work where phases must
   complete in order with clear handoffs (e.g., research → design → implement,
   analyze → plan → execute). Provides phase structure templates, agent selection
-  criteria, handoff protocols, and completion validation guidance.
-allowed-tools: []
+  criteria, handoff protocols, and completion validation guidance. Use when a more 
+  specialized team does not already exist.
 ---
 
 # phased-coordination Skill

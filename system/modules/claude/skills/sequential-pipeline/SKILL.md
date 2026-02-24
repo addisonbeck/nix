@@ -1,8 +1,7 @@
 ---
 name: sequential-pipeline
 description: |
-  Orchestration playbook for managing fixed sequential delegation chains where each stage consumes the previous stage's output (prompt chaining pattern). Defines pipeline structure, agent selection guidance, output passing protocol, and validation criteria for 2-5 stage sequential workflows.
-allowed-tools: Task, SendMessage
+  Orchestration playbook for managing fixed sequential delegation chains where each stage consumes the previous stage's output (prompt chaining pattern). Defines pipeline structure, agent selection guidance, output passing protocol, and validation criteria for 2-5 stage sequential workflows. Use when a more specialized team does not already exist.
 ---
 
 # sequential-pipeline Skill

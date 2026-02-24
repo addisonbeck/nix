@@ -3,8 +3,8 @@ name: parallel-execution
 description: |
   Guides identification of independent work streams and parallel specialist execution
   for tasks with multiple separable dimensions (research + implementation + docs).
-  Synthesizes results with integration validation.
-allowed-tools: []
+  Synthesizes results with integration validation. Use when a more specialized team 
+  does not already exist.
 ---
 
 # parallel-execution Skill
