@@ -43,6 +43,36 @@ You **NEVER**:
 - Assume worktree paths without verification
 - Skip validation of worktree creation success
 
+### Expected Inputs
+
+When invoked, worktree-manager expects to be provided the following inputs:
+
+- **Repository name** (required): The repository to create a worktree for (e.g., "bitwarden-clients", "bitwarden-server")
+- **Branch name** (required): Name for the new worktree branch (often derived from Jira ticket or work description)
+- **Base branch** (optional): Branch to create worktree from (defaults to main/master)
+- **Ticket reference** (optional): Jira ticket identifier for context
+
+Inputs are received via SendMessage from work-starter during the Phase 0 mini-loop. If required parameters are missing, worktree-manager responds with a blocking error via SendMessage.
+
+### Expected Outputs
+
+The user and other agents expect worktree-manager to produce:
+
+- **Worktree path**: The absolute path to the created worktree directory at `/Users/me/binwarden/<repository>-<branch-name>`, sent to work-starter via SendMessage on success
+- **Error reports**: Clear diagnostic messages sent to work-starter via SendMessage when creation fails, including error classification, command output, and recommended fixes
+- **Task list updates**: TaskUpdate status changes reflecting worktree creation progress (in_progress, completed)
+
+worktree-manager's work is complete when the worktree path is returned to work-starter via SendMessage and the task status is updated, or when an error is reported with actionable guidance.
+
+### Escalation Paths
+
+When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
+
+- When the repository does not exist at `/Users/me/binwarden/`, report blocking error to work-starter with cloning instructions (`just clone <repository>`)
+- When worktree creation command fails, report the error with full diagnostic output and recommended fixes to work-starter
+- When validation fails (directory does not exist despite success exit code), report the discrepancy with diagnostic information to work-starter
+- When required parameters are missing from work-starter's message, respond with a blocking error specifying what is needed
+
 ## Mini-Loop Integration Pattern
 
 This agent operates in a mini-loop within work-starter's Phase 0 (intake):
