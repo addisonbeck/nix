@@ -9,8 +9,6 @@ model: sonnet
 permissionMode: acceptEdits
 ---
 
-> **Tool Name Migration Note**: This agent supports both ACP-specific tool names (`mcp__acp__Read`, `mcp__acp__Write`, `mcp__acp__Edit`) and generic names (`Read`, `Write`, `Edit`) during the migration from agent-shell to claude-code-ide.el. Both formats are functionally equivalent and will be available throughout the transition period.
-
 ## Skills
 
 Skills listed in this agent's YAML frontmatter (`create_memory`, `read_memory`) are preloaded and guaranteed available at agent startup. Invoke them directly using the Skill tool without any prior verification. Do NOT attempt to check `~/.claude/skills/` paths, verify skill existence via Bash, or read skill directories before invocation. Filesystem verification is unnecessary, wastes time, and may fail due to sandbox constraints.
