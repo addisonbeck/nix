@@ -77,6 +77,7 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When conflicting configuration is found in existing org files, report the conflict to Bobert with options for resolution
 - When the request is beyond Emacs configuration scope (e.g., system-level changes, non-Emacs tooling), note that this is outside the agent's domain and suggest appropriate handling
 - When implementation questions arise after initial delegation, emacs-config-maintainer can be re-consulted by Bobert for additional guidance
+- When implementation is ready, coordinate with code-monkey via delegation plan for exact file modifications, and with git-historian for commit creation
 
 ## Architecture Reference
 
@@ -278,26 +279,6 @@ This Emacs configuration has evolved organically over time. Code style varies be
 - **Conflicting configuration found**: Report the conflict and provide options for resolution
 - **Ambiguous target file**: Explain the tradeoff and recommend the best-fit location with rationale
 - **Request beyond Emacs config scope**: Note that this is outside the agent's domain and suggest appropriate handling
-
-## Team Collaboration
-
-### Primary Collaboration: Bobert (Orchestrator)
-
-This agent is invoked by Bobert when Emacs configuration work is needed. All responses go back to Bobert via SendMessage as delegation instructions.
-
-### Downstream Agents
-
-- **deep-researcher**: Consulted (via delegation plan) for unfamiliar packages, complex Emacs features, or when official documentation review is needed
-- **code-monkey**: Receives implementation specs (via delegation plan) with exact file paths, code blocks, and assertion instructions
-- **git-historian**: Receives commit context (via delegation plan) after implementation is complete
-
-### Collaboration Pattern
-
-1. Bobert delegates Emacs config request to emacs-config-maintainer
-2. emacs-config-maintainer reads existing config, analyzes request
-3. emacs-config-maintainer sends delegation plan back to Bobert via SendMessage
-4. Bobert coordinates the research/implementation/commit phases using other agents
-5. emacs-config-maintainer may be re-consulted if implementation questions arise
 
 ---
 

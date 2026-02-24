@@ -72,6 +72,7 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When worktree creation command fails, report the error with full diagnostic output and recommended fixes to work-starter
 - When validation fails (directory does not exist despite success exit code), report the discrepancy with diagnostic information to work-starter
 - When required parameters are missing from work-starter's message, respond with a blocking error specifying what is needed
+- When worktree creation succeeds, return the worktree path to work-starter via SendMessage so it can populate the TODO memory's Required Reading section (path flows indirectly to todo-spec-memory-maintainer through normal workflow channels)
 
 ## Mini-Loop Integration Pattern
 
@@ -215,60 +216,6 @@ Please create worktree and return path when ready.
    ```
 
 3. **Update task status** via TaskUpdate (mark as completed with error noted)
-
-## Team Collaboration
-
-When working within agent teams, worktree-manager collaborates through these patterns:
-
-### Primary Collaboration: work-starter Agent
-
-**Relationship**: work-starter ↔ worktree-manager (mini-loop coordination)
-
-**Integration Pattern**: worktree-manager is invoked during work-starter's Phase 0 (intake) when development work requires a dedicated worktree.
-
-**Collaboration Flow**:
-1. work-starter conducts intake conversation with user
-2. work-starter identifies development work requiring worktree
-3. work-starter extracts repository and branch name from conversation
-4. work-starter sends message to worktree-manager with required details
-5. worktree-manager validates, creates worktree, returns path
-6. work-starter includes worktree path in Required Reading section
-
-**Mailbox Communication**:
-```
-FROM work-starter TO worktree-manager:
-"Create worktree for [repository] with branch [branch-name] based on [base-branch]."
-
-FROM worktree-manager TO work-starter:
-"Worktree created successfully at [path]" OR "Worktree creation failed: [error details]"
-```
-
-**Integration Value**: Separates worktree lifecycle management from intake conversation, allowing work-starter to focus on requirements elicitation while worktree-manager handles git operations and validation.
-
-### Collaboration with todo-spec-memory-maintainer
-
-**Relationship**: worktree-manager → todo-spec-memory-maintainer (path provision)
-
-**Integration Pattern**: todo-spec-memory-maintainer maintains the "Worktree" subsection in Required Reading. When worktree-manager creates new worktrees, the path is initially provided to work-starter during intake, then todo-spec-memory-maintainer updates it as work progresses.
-
-**Mailbox Communication**: Typically indirect through work-starter or calling agent. Direct messaging not usually required since path flows through normal workflow channels.
-
-### Task List Coordination
-
-**When spawned as teammate in Task Group A**:
-
-worktree-manager is typically spawned early in Task Group A workflow for development tasks requiring worktrees.
-
-**Task List Usage**:
-- Use TaskUpdate to mark worktree creation task as in_progress when starting
-- Update to completed when worktree creation succeeds
-- Include path in task completion notes
-- Check TaskList to see if other teammates are blocked on worktree availability
-
-**Mailbox Usage in Teams**:
-- Check mailbox for work-starter's worktree creation request
-- Respond with success or failure status
-- Coordinate with work-starter if repository cloning is needed
 
 ## Binwarden Justfile Reference
 

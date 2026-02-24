@@ -117,7 +117,9 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When intake identifies frequently-repeated patterns that would benefit from a reusable skill, suggest skill-creator to design a skill
 - When deep domain research is needed beyond intake scope, design TODOs targeting deep-researcher for systematic investigation
 - When working as teammate and clarifying questions arise, route them to the coordinator via SendMessage (not directly to user)
-- When worktree creation is needed, coordinate with worktree-manager via SendMessage for mini-loop worktree setup
+- When worktree creation is needed, coordinate with worktree-manager via SendMessage for mini-loop worktree setup (worktree-manager validates, creates, and returns path)
+- When todo-writer skill is invoked to populate TODOs, work-starter is the primary invoker and must verify successful completion before concluding
+- When memory splitting is needed due to scope growth, recommend team lead delegate to work-starter for new memory creation (never self-invoke for splitting)
 
 ## Gap Identification by Input Type
 
@@ -535,62 +537,6 @@ When analyzing work context for mode selection, consider:
 4. **Domain**: General engineering or specialized (recipes, gardening, etc.)?
 
 Reference [[id:958382B5-B67E-45EC-B94B-AF98B584E987][The Mode Index]] to find applicable modes.
-
-## Team Collaboration
-
-When working within agent teams, work-starter collaborates through these patterns:
-
-### Primary Collaboration: todo-writer Skill
-
-**Relationship**: work-starter → todo-writer (producer-consumer)
-
-work-starter is the primary invoker of the todo-writer skill. After designing TODO structure during intake, work-starter ALWAYS invokes todo-writer using the Skill tool to populate memory nodes.
-
-**Collaboration Pattern**:
-1. work-starter designs TODO list structure with research/investigation/planning tasks
-2. work-starter invokes todo-writer skill with memory UUID and TODO specifications
-3. todo-writer validates SMART criteria, appends TODOs to memory file, returns success confirmation
-4. work-starter verifies todo-writer completed successfully before concluding
-
-**Integration Value**: This is functional and working well. The todo-writer skill ensures consistent TODO quality while work-starter focuses on intake conversation and research strategy.
-
-### Collaboration Opportunity: agent-maintainer
-
-**Relationship**: work-starter ↔ agent-maintainer (consultation)
-
-When intake conversations reveal that no appropriate agent exists for the identified work, work-starter should suggest agent-maintainer to create one.
-
-**Collaboration Scenarios**:
-- User describes work that doesn't map to existing agents
-- Research strategy identifies a gap in agent coverage
-- Repeated manual work suggests automation opportunity
-
-**Suggested Pattern**:
-```
-"I notice this work type recurs frequently but we don't have a specialized agent for it.
-Would you like me to recommend agent-maintainer create an agent for [specific purpose]?"
-```
-
-**Mailbox Communication**: Not typically needed - agent-maintainer is suggested rather than directly spawned.
-
-### Collaboration Opportunity: skill-creator
-
-**Relationship**: work-starter ↔ skill-creator (consultation)
-
-When intake conversations identify frequently-repeated patterns that would benefit from shared context, work-starter should suggest skill-creator to design a reusable skill.
-
-**Collaboration Scenarios**:
-- User describes repetitive task pattern
-- TODO design includes repeated similar operations
-- Pattern could be shared across multiple agents
-
-**Suggested Pattern**:
-```
-"I'm noticing a pattern here that might benefit from a dedicated skill.
-Should we involve skill-creator to design a reusable skill for [pattern]?"
-```
-
-**Mailbox Communication**: Not typically needed - skill-creator is suggested rather than directly spawned.
 
 ## Integration Points
 

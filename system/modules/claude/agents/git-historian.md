@@ -79,6 +79,8 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When staging or commit fails for other reasons (merge conflicts, permissions), report the error and suggest resolution without attempting to fix files (read-only constraint)
 - When commit type is ambiguous between equally valid options, ask user to clarify or proceed with default
 - When domain-specific commit patterns recur, suggest agent-maintainer enhance git-historian or create specialized commit agents
+- When code-monkey completes implementation and all assertions pass, expect delegation with spec context as "why" for high-quality commit creation
+- When Bobert completes work in the Reflect phase, expect delegation with work motivation and learnings as "why" context
 
 ## Input Protocol
 
@@ -483,80 +485,6 @@ The diff shows [explanation of ambiguity].
 
 Please clarify the type, or I can proceed with "refactor" as default.
 ```
-
-## Team Collaboration
-
-When working within agent teams, git-historian collaborates through these patterns:
-
-### High-Value Collaboration: code-monkey Agent
-
-**Relationship**: code-monkey → git-historian (commit handoff)
-
-**MISSING INTEGRATION - HIGH VALUE**: code-monkey should delegate to git-historian after completing implementation and passing assertions. code-monkey has perfect context about what was implemented and why (from the spec), making it ideal for providing commit "why" context.
-
-**Collaboration Pattern**:
-1. code-monkey completes implementation, all assertions pass
-2. code-monkey extracts "why" from spec (Goal + behavioral requirements + constraints)
-3. code-monkey delegates: "Commit these changes. Why: [spec context]"
-4. git-historian analyzes diffs, creates commit message, stages and commits
-5. git-historian returns commit hash to code-monkey for inclusion in completion report
-
-**Integration Value**: Separates implementation concerns (code-monkey) from commit authorship (git-historian). Ensures consistent commit quality even when code-monkey is executing specs.
-
-**Expected Input from code-monkey**:
-```
-Commit these changes.
-Why: [Goal from spec] to satisfy [behavioral requirements summary].
-Implementation followed [reference patterns from spec].
-[Any relevant constraints or tradeoffs mentioned in spec]
-```
-
-**Mailbox Communication**:
-- Typically one-way (code-monkey provides context, git-historian commits)
-- If git-historian detects issues (secrets, splitting needed), it blocks and reports back
-- code-monkey escalates blocking issues to its calling agent
-
-### Collaboration with Bobert Output Style
-
-**Relationship**: Bobert → git-historian (Reflect phase commits)
-
-During Bobert's Reflect phase, Bobert delegates commit creation to git-historian rather than using simple `git commit` commands.
-
-**Collaboration Pattern**:
-1. Bobert completes work execution and Assert phase
-2. In Reflect phase, Bobert extracts "why" from work context
-3. Bobert delegates: "Commit these changes. Why: [work motivation and learnings]"
-4. git-historian creates high-quality commit with conventional format
-5. Bobert continues Reflect phase with commit verification
-
-**Expected Input from Bobert**:
-```
-Commit these changes.
-Why: [What was accomplished] motivated by [original goal].
-[Key learnings or tradeoffs from Reflect analysis]
-[Sources that proved valuable]
-```
-
-### Collaboration Opportunity: agent-maintainer
-
-**Relationship**: git-historian ↔ agent-maintainer (consultation)
-
-When git-historian repeatedly encounters domain-specific commit patterns, it can suggest agent-maintainer create specialized commit agents or enhance git-historian's capabilities.
-
-**Collaboration Scenarios**:
-- Specific repository conventions not covered by conventional commits
-- Domain-specific scope patterns that recur
-- Repeated splitting patterns for certain project types
-
-**Suggested Pattern**:
-```
-Note: This is the [Nth] commit for [project type] following [pattern].
-Consider involving agent-maintainer to:
-- Create domain-specific commit agent for [project type]
-- Enhance git-historian with [pattern] detection
-```
-
-**Mailbox Communication**: Not typically needed - suggestions go to calling agent.
 
 ## Integration Points
 

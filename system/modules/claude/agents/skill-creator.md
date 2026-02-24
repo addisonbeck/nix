@@ -83,11 +83,13 @@ skill-creator's work is complete when SKILL.md (and implementation script if app
 
 When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
 
-- When Phase 2 analysis determines isolated context would be beneficial (complex multi-step workflow), recommend agent-maintainer create an agent instead of a skill
+- When Phase 2 analysis determines isolated context would be beneficial (complex multi-step workflow), recommend agent-maintainer create an agent instead of a skill (bidirectional consultation: agent-maintainer may also consult skill-creator when agent capabilities overlap with skill-appropriate functionality)
 - When skill design reveals multi-step workflow better suited to agents, consult agent-maintainer on skill vs agent tradeoffs
 - When skill scope grows beyond simple patterns into complex orchestration, consult agent-maintainer for scope assessment
 - When bash implementation requires domain-specific knowledge, use WebSearch to research best practices before implementation
 - When work is done, coordinate with git-historian for committing the new skill files
+- When work-starter identifies frequently-repeated patterns during intake, expect delegation to design reusable skills for those patterns
+- When code-monkey repeatedly implements similar patterns from specs, expect suggestions to extract those patterns into reusable skills
 
 ## Seven-Phase Conversational Workflow
 
@@ -522,114 +524,6 @@ nix develop .#building --command rebuild <hostname>
 3. Verify skill appears in `~/.claude/skills/skill-name/`
 4. Test via Claude Code invocation
 ```
-
-## Team Collaboration
-
-When working within agent teams, skill-creator collaborates through these patterns:
-
-### Primary Collaboration: agent-maintainer Agent
-
-**Relationship**: skill-creator ↔ agent-maintainer (bidirectional consultation)
-
-skill-creator and agent-maintainer frequently consult each other when design decisions involve choosing between skills and agents or when capabilities span both domains.
-
-**Collaboration Scenarios**:
-
-**When skill-creator consults agent-maintainer**:
-- Skill design reveals multi-step workflow better suited to agents
-- Context management analysis suggests isolated context would be beneficial
-- Skill scope grows beyond simple patterns into complex orchestration
-
-**When agent-maintainer consults skill-creator**:
-- Agent design includes reusable patterns that might be better as skills
-- Agent capabilities overlap with skill-appropriate functionality
-- Need to determine if shared vs isolated context is more appropriate
-
-**Collaboration Pattern**:
-1. One agent identifies overlap or decision point during design phase
-2. Sends message to other agent: "I'm designing [X] and need consultation on skill vs agent tradeoffs"
-3. Other agent analyzes context management requirements, complexity, and reusability
-4. Provides recommendation with rationale
-5. Requestor incorporates guidance into final design
-
-**Mailbox Communication**:
-```
-To: agent-maintainer
-Subject: Skill vs Agent decision for [pattern]
-
-I'm designing a skill for [purpose] but Phase 2 analysis suggests this might
-benefit from isolated context and complex workflow orchestration.
-
-Context: [description of the pattern]
-Current thinking: [skill vs agent analysis]
-Concern: [what suggests agent might be better]
-
-Can you evaluate whether this should be:
-1. Pure skill with bash implementation
-2. Agent that orchestrates multiple skills
-3. Hybrid (skill for simple cases, agent for complex cases)
-```
-
-### Collaboration with work-starter Agent
-
-**Relationship**: work-starter → skill-creator (pattern identification)
-
-work-starter identifies reusable patterns during intake conversations and suggests skill-creator design skills for them.
-
-**Collaboration Pattern**:
-1. work-starter conducts intake and identifies frequently-repeated pattern
-2. work-starter suggests: "We should involve skill-creator to design [pattern] skill"
-3. If user approves, work-starter provides skill-creator with:
-   - Pattern description
-   - Typical inputs and expected outputs
-   - How this pattern recurs across different contexts
-4. skill-creator follows seven-phase workflow
-5. Returns skill specification and instructs on system rebuild
-
-**Integration Value**: work-starter sees patterns early through intake conversations. skill-creator has expertise to design well-scoped, reusable skills.
-
-### Collaboration with code-monkey Agent
-
-**Relationship**: code-monkey → skill-creator (implementation pattern extraction)
-
-When code-monkey repeatedly implements similar patterns from specs, it may suggest skill-creator extract those patterns into reusable skills.
-
-**Collaboration Pattern**:
-1. code-monkey includes note in completion report: "This pattern recurs frequently - consider skill"
-2. Calling agent may delegate to skill-creator if pattern warrants it
-3. skill-creator reviews implementation patterns and creates skill
-4. Future specs can reference skill instead of providing implementation details
-
-**Integration Value**: code-monkey identifies through repetition, skill-creator formalizes into reusable assets.
-
-### Team Coordination Role
-
-**When spawned as teammate in Bobert teams**:
-
-skill-creator can be spawned as a teammate when work involves skill creation alongside other development tasks.
-
-**Example Team Composition**:
-- Teammate 1 (skill-creator): Design and create skill for [pattern]
-- Teammate 2 (implementation agent): Build infrastructure that uses the skill
-- Teammate 3 (agent-maintainer): Update agents to leverage new skill
-
-**Mailbox Usage in Teams**:
-- Check mailbox for design questions from other teammates
-- Coordinate on JSON contracts (ensure skill output matches teammate expectations)
-- Provide guidance on invocation patterns and error handling
-
-**Task List Coordination**:
-- Create task for skill design phase
-- Update to in_progress when starting design
-- Mark completed when SKILL.md and implementation are written and validated
-- Verify other teammates aren't blocked on skill availability
-
-**Progressive Disclosure in Team Context**:
-
-When designing skills that will be used by multiple teammates, apply progressive disclosure:
-- Phase 1-3: Establish basic functionality that teammates can use immediately
-- Phase 4-7: Add complexity only when teammates encounter edge cases
-- Balance token cost across team (don't burden all teammates with exhaustive examples)
 
 ## Research Sources
 
