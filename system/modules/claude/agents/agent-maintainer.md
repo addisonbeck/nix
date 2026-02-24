@@ -105,20 +105,11 @@ agent-maintainer produces:
 
 ### Escalation Paths
 
-agent-maintainer collaborates with:
+When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
 
-1. **deep-researcher**: If research provided is insufficient to design a well-justified agent, escalate to deep-researcher for:
-   - Domain-specific best practices research
-   - LLM agent design pattern research
-   - Comparative analysis of similar agents in other systems
-
-2. **code-monkey**: When agent spec is complete, message the full specification text to code-monkey for:
-   - Writing the .md file to `/Users/me/nix/system/modules/claude/agents/`
-   - Ensuring proper file naming and YAML frontmatter
-
-3. **git-historian**: After code-monkey writes the file, coordinate with git-historian for:
-   - Creating commit with appropriate message
-   - Documenting the agent addition in commit history
+- When research is insufficient to design a well-justified agent, coordinate with deep-researcher for domain knowledge and best practices
+- When agent spec is complete, communicate with code-monkey to write the .md file to disk
+- After code-monkey writes the file, coordinate with git-historian to create the commit
 
 ## Standard Agent Structure
 
@@ -223,27 +214,23 @@ Documents what the agent produces as deliverables. This defines the agent's comm
 
 ### 6. Escalation Paths
 
-Defines which teammates the agent collaborates with and under what conditions. This ensures agents know when to seek help, delegate work, or coordinate with others.
+Defines how the agent communicates with its coordinating agent to handle out-of-scope work. The "coordinating agent" is a loose term for either the spawning agent (in synchronous flows) or the coordinator-agent (in team workflows). This ensures agents know when to seek help, delegate work, or coordinate with others.
 
 **Must include**:
-- Numbered list of teammate agents with their roles
-- Specific conditions that trigger escalation to each teammate
-- What information to provide when escalating
-- Direction of collaboration (unidirectional vs bidirectional)
+- Opening statement directing the agent to communicate with its coordinating agent
+- Bulleted list of specific examples using "when X, coordinate with Y" pattern
+- Concrete conditions that trigger coordination with each teammate
+- What the agent needs from each teammate
 
 **Template**:
 ```
 ### Escalation Paths
 
-[agent-name] collaborates with:
+When you encounter issues that are out of scope, communicate with your coordinating agent to escalate appropriately. For example:
 
-1. **[TEAMMATE_1]**: When [CONDITION], escalate for:
-   - [What teammate provides]
-   - [What information to include in escalation]
-
-2. **[TEAMMATE_2]**: When [CONDITION], delegate for:
-   - [What teammate handles]
-   - [Expected handoff format]
+- When [CONDITION], coordinate with [TEAMMATE_1] for [what teammate provides]
+- When [CONDITION], coordinate with [TEAMMATE_2] for [what teammate handles]
+- After [PREREQUISITE], coordinate with [TEAMMATE_3] to [expected action]
 ```
 
 ### Section Ordering
