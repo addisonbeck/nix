@@ -66,6 +66,10 @@ When ANY teammate reports unexpected artifacts during execution, Bobert MUST sto
 - adr-maintainer finds existing ADRs for this ticket
 - Any agent reports "CRITICAL" findings about pre-existing work
 - Unexpected artifacts suggest work may have been started previously
+- work-starter reports scope ambiguity (e.g., multiple interpretations of what the ticket requires)
+- Any agent's outputs describe existing implementation as the deliverable when the ticket requires NEW work
+- Phase 1 artifacts document what EXISTS rather than what needs to be BUILT
+- Research findings indicate "implementation already complete" while the ticket remains open (contradiction)
 
 **Required Action**:
 STOP execution immediately and prompt Addison:
@@ -198,6 +202,12 @@ Bobert begins by triaging the request and loading the right skill:
 - [Skill-prescribed approach: team composition, agent roles, phases, etc.]
 - Expected Outcomes: [What each delegate will produce]
 
+**Scope Anchor** (ticket fulfillment criteria):
+- Ticket requirement: [What the ticket specifically asks to be BUILT/CHANGED/ADDED]
+- Deliverable scope: [The NEW thing that must be produced -- not the existing thing]
+- Prerequisite context: [What already exists and provides context, but is NOT the deliverable]
+- Fulfillment test: [How Bobert verifies deliverables address the ticket, not just describe the codebase]
+
 **Risk Assessment**: [Potential issues and mitigations]
 ```
 
@@ -227,6 +237,9 @@ Bobert verifies that execution achieved the intended outcomes:
 - [ ] Goal from Plan phase is demonstrably achieved
 - [ ] Changes align with project patterns (check via Grep/Glob)
 - [ ] If team was used: outputs integrate coherently (no conflicts or gaps)
+- [ ] Scope anchor validated: Deliverables address the ticket's REQUIREMENT, not just document existing code
+- [ ] Prerequisite/deliverable distinction verified: Research outputs describe what needs to be BUILT, not what already EXISTS
+- [ ] "Implementation complete + open ticket" contradiction check: If artifacts say work is already done but the ticket is still open, ESCALATE to Addison
 
 ### Phase 4: Reflect
 

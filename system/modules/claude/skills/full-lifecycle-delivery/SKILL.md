@@ -59,7 +59,9 @@ All four phases complete with status: COMPLETE and required outputs present.
 
 ### Error Conditions
 - PhaseResult with status: FAILED triggers Bobert to decide: retry, adjust, or abort
-- Coordinator escalations (scope change, goal conflict) require Bobert's strategic decision
+- Coordinator escalations (scope change, scope misalignment, goal conflict) require Bobert's strategic decision
+- Scope validation failure (scopeValidation fields false) blocks phase advancement until Bobert investigates
+- "Implementation complete + open ticket" contradiction requires Addison consultation
 - Missing required outputs block phase advancement
 
 ## Implementation Architecture
@@ -168,9 +170,17 @@ Bobert constructs PhaseContext for each phase containing:
   },
   "prerequisites": {
     "input": "Data or context from prior phases or initial input"
+  },
+  "scopeAnchor": {
+    "ticketRequirement": "What the ticket specifically asks to be BUILT/CHANGED/ADDED",
+    "deliverableScope": "The NEW thing that must be produced -- not the existing thing",
+    "prerequisiteContext": "What already exists and provides context, but is NOT the deliverable",
+    "fulfillmentTest": "How we verify deliverables address the ticket, not just describe the codebase"
   }
 }
 ```
+
+**Scope Anchor**: Bobert populates `scopeAnchor` during Plan phase and carries it forward through all PhaseContexts. This ensures every coordinator can validate that their phase's deliverables address the ticket's actual requirement rather than documenting existing code. The scope anchor is derived from the ticket requirement analysis performed during Plan phase.
 
 ### PhaseResult Structure
 
@@ -186,8 +196,13 @@ Coordinators return PhaseResult containing:
     "criteriaChecked": ["criterion 1 verified", "criterion 2 verified"],
     "evidence": ["command output showing completion"]
   },
+  "scopeValidation": {
+    "deliverableAddressed": true,
+    "prerequisiteVsDeliverableClassified": true,
+    "ticketFulfillmentTestPassed": true
+  },
   "escalations": [
-    {"type": "scope_change" | "goal_conflict" | "resource_unavailable", "description": "..."}
+    {"type": "scope_change" | "scope_misalignment" | "goal_conflict" | "resource_unavailable", "description": "..."}
   ],
   "phaseMetrics": {
     "agentsSpawned": 3,
@@ -196,6 +211,8 @@ Coordinators return PhaseResult containing:
   }
 }
 ```
+
+**Scope Validation**: Coordinators include `scopeValidation` in every PhaseResult. This confirms that deliverables address the ticket's requirement (not existing code), that research findings were classified as prerequisite vs deliverable, and that the ticket fulfillment test from the scope anchor passes. If any `scopeValidation` field is `false`, Bobert MUST investigate before advancing.
 
 ### Key Characteristics
 
@@ -262,18 +279,22 @@ Coordinators return PhaseResult containing:
 
 2. **Phase 0 Execution**:
    ```
-   Construct PhaseContext for Phase 0
+   Construct PhaseContext for Phase 0 (include scopeAnchor from Plan phase)
    Delegate to intake-coordinator via Task tool
    Wait for PhaseResult
    Validate: status == COMPLETE, TODO UUID present, worktree path present
+   Scope check: TODO memory's scope aligns with ticket requirement (scopeAnchor)
    ```
 
 3. **Phase 1 Execution**:
    ```
-   Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0)
+   Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0 + scopeAnchor)
    Delegate to research-design-coordinator via Task tool
    Wait for PhaseResult
    Validate: status == COMPLETE, breakdown UUID present (v1.0.0), impl plan UUID present
+   Scope check: scopeValidation.deliverableAddressed == true
+   Scope check: Technical breakdown describes NEW work, not existing implementation
+   If scopeValidation fails: Do NOT advance to Phase 2 -- investigate scope misalignment
    ```
 
 4. **Phase 2 Execution**:
@@ -298,6 +319,9 @@ Coordinators return PhaseResult containing:
 
 Bobert should consult Addison (not proceed autonomously) when:
 - **Scope ambiguity in initial input**: Cannot determine clear work boundaries from Jira ticket or prompt
+- **Scope misalignment detected**: Coordinator reports deliverables describe existing implementation rather than new work required by ticket
+- **"Implementation complete + open ticket" contradiction**: Research indicates work is already done but ticket remains open
+- **scopeValidation failure in PhaseResult**: Any scopeValidation field is false
 - **PhaseResult status: BLOCKED**: Coordinator reports external blocker (missing access, unclear requirements)
 - **Multiple FAILED retries**: Phase fails 2+ times with different approaches
 - **Escalation requiring policy decision**: Coordinator reports scope change that affects project timeline or architecture
