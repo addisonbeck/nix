@@ -574,23 +574,23 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/projectile-run-command-in-selected-project (command)
-  "Use `projectile-switch-project` to select a project, then run COMMAND
-in that project's root using `vterm` in a project-named buffer.
-Interactively, prompt for COMMAND using `shell-command-history`."
-  (interactive (list (read-string "Command: " nil 'shell-command-history)))
-  (require 'projectile)
-  (let* ((cmd command)
-         (projectile-switch-project-action
-          (lambda ()
-            (let* ((root (projectile-project-root))
-                   (default-directory root)
-                   (proj (file-name-nondirectory (directory-file-name root)))
-                   (buffer-name (format "*async-%s-%s*" proj command)))
-              (vterm buffer-name)
-              (vterm-send-string cmd)
-              (vterm-send-return)))))
-    (projectile-switch-project)))
+  (defun my/projectile-run-command-in-selected-project (command)
+    "Use `projectile-switch-project` to select a project, then run COMMAND
+  in that project's root using `vterm` in a project-named buffer.
+  Interactively, prompt for COMMAND using `shell-command-history`."
+    (interactive (list (read-string "Command: " nil 'shell-command-history)))
+    (require 'projectile)
+    (let* ((cmd command)
+	   (projectile-switch-project-action
+	    (lambda ()
+	      (let* ((root (projectile-project-root))
+		     (default-directory root)
+		     (proj (file-name-nondirectory (directory-file-name root)))
+		     (buffer-name (format "*async-%s-%s*" proj command)))
+		(vterm buffer-name)
+		(vterm-send-string cmd)
+		(vterm-send-return)))))
+      (projectile-switch-project)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -755,8 +755,8 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 #+begin_src emacs-lisp
   (defun my/nix/rebuild (system)
     "Rebuild my nix config for the specified SYSTEM.
-  If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
-  runs 'nix-collect-garbage' and then the rebuild."
+    If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
+    runs 'nix-collect-garbage' and then the rebuild."
     (interactive
      (list (completing-read "System to rebuild: " 
 			    '("air" "bw" "homelab")
@@ -1232,7 +1232,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
   ;; Always start with 'A A' behavior (show all articles)
   (add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
 
-      ;;; Main Select Method (Primary Account)
+	;;; Main Select Method (Primary Account)
   (setq gnus-select-method
 	'(nnimap "primary-account"
 		 (nnimap-address "box.addisonbeck.com")
@@ -1289,7 +1289,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 	(when token
 	  (concat "user=" user "\001auth=Bearer " token "\001\001")))))
 
-  ;;; Secondary Accounts
+    ;;; Secondary Accounts
   (add-to-list 'gnus-secondary-select-methods
 	       '(nnimap "work-gmail"
 			(nnimap-address "imap.gmail.com")
@@ -1299,7 +1299,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 			(nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
 			(nnmail-expiry-wait immediate)))
 
-  ;;; Add more accounts as needed
+    ;;; Add more accounts as needed
   ;;(add-to-list 'gnus-secondary-select-methods
   ;;'(nnimap "personal"
   ;;(nnimap-address "imap.personal.com")
@@ -1308,7 +1308,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 #+end_src
 
 #+begin_src emacs-lisp
-  ;;; SMTP configuration with account selection
+    ;;; SMTP configuration with account selection
   (require 'smtpmail-multi)
 
   ;; Define email accounts
@@ -1335,7 +1335,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 #+end_src
 
 #+begin_src emacs-lisp 
-  ;;; Posting Styles - automatically set From, signature, etc. based on context
+    ;;; Posting Styles - automatically set From, signature, etc. based on context
   (setq gnus-posting-styles
 	'((".*" ;; Default style
 	   (name "Addison Beck")
@@ -1354,7 +1354,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 #+end_src
 
 #+begin_src emacs-lisp
-  ;;; Gmail-specific settings
+    ;;; Gmail-specific settings
   (setq gnus-parameters
 	'(("work-gmail"
 	   (display . all)
@@ -1437,22 +1437,22 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 
 * Claude Code IDE
 #+begin_src emacs-lisp
-(use-package claude-code-ide
-  :commands (claude-code-ide claude-code-ide-menu)
-  :bind ("C-c C-'" . claude-code-ide-menu)
-  :custom
-  (claude-code-ide-cli-path "claude")
-  ;; ¯\_(ツ)_/¯
-  (claude-code-ide-cli-extra-flags "--dangerously-skip-permissions")
-  (claude-code-ide-terminal-backend 'vterm)
-  (claude-code-ide-window-side 'right)
-  (claude-code-ide-window-width 120)
-  (claude-code-ide-use-ide-diff t)
-  (claude-code-ide-mcp-allowed-tools 'auto)
-  (claude-code-ide-vterm-anti-flicker t)
-  :config
-  ;; Enable built-in MCP tools to expose Emacs capabilities to Claude
-  (claude-code-ide-emacs-tools-setup))
+  (use-package claude-code-ide
+    :commands (claude-code-ide claude-code-ide-menu)
+    :bind ("C-c C-'" . claude-code-ide-menu)
+    :custom
+    (claude-code-ide-cli-path "claude")
+    ;; ¯\_(ツ)_/¯
+    (claude-code-ide-cli-extra-flags "--dangerously-skip-permissions")
+    (claude-code-ide-terminal-backend 'vterm)
+    (claude-code-ide-window-side 'right)
+    (claude-code-ide-window-width 120)
+    (claude-code-ide-use-ide-diff t)
+    (claude-code-ide-mcp-allowed-tools 'auto)
+    (claude-code-ide-vterm-anti-flicker t)
+    :config
+    ;; Enable built-in MCP tools to expose Emacs capabilities to Claude
+    (claude-code-ide-emacs-tools-setup))
 #+end_src
 
 * Minibuffer Enhancement
@@ -1608,7 +1608,7 @@ This cool and lame at the same time
 #+begin_src emacs-lisp
   (defun my/insert-org-heading-with-timestamp (level text)
     "Insert an org heading with specified text at the specified level.
-  Level should be 1-6, defaults to 1. Text defaults to current timestamp."
+    Level should be 1-6, defaults to 1. Text defaults to current timestamp."
     (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
 		   (list (read-number "Heading level (1-6): " 1)
 			 (completing-read "Heading text: " 
@@ -1622,7 +1622,7 @@ This cool and lame at the same time
 
   (defun my/insert-org-block (block-type &optional language)
     "Insert an org block of specified type and position cursor inside.
-  For src blocks, optionally prompts for language."
+    For src blocks, optionally prompts for language."
     (interactive 
      (let* ((block-type (completing-read "Block type: " 
 					 '("src" "quote" "example" "verse" "center" 
@@ -1684,33 +1684,33 @@ This cool and lame at the same time
 #+end_src
 
 #+begin_src emacs-lisp
-(transient-define-prefix my/insert-menu ()
-		   "Transient menu for inserting stuff places (usually under the cursor)."
-		   ["Insert"
-		    ("l" "LLM Prompt" my/search-llm-prompts)
-		    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
-		    ("b" "Org Block" my/insert-org-block)
-        ("p" "Projectile File" my/projectile-insert-org-link-to-file)
-		    ("m" "Memory Link" org-roam-node-insert)])
+  (transient-define-prefix my/insert-menu ()
+			   "Transient menu for inserting stuff places (usually under the cursor)."
+			   ["Insert"
+			    ("l" "LLM Prompt" my/search-llm-prompts)
+			    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
+			    ("b" "Org Block" my/insert-org-block)
+			    ("p" "Projectile File" my/projectile-insert-org-link-to-file)
+			    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
 
 #+begin_src emacs-lisp :tangle no
-(defun my/org-send-current-buffer-to-kindle (&optional title)
-  "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
-  (interactive)
-  (when (buffer-modified-p) (save-buffer))
-  (let* ((file (buffer-file-name))
-         (ttl (or title (or (save-excursion
-                              (goto-char (point-min))
-                              (when (re-search-forward "^#\\\\+TITLE: *\\\\(.*\\\\)$" nil t)
-                                (match-string 1)))
-                            (file-name-nondirectory file))))
-         (cmd (format "org-to-kindle-send --file %s --title %s"
-                      (shell-quote-argument file)
-                      (shell-quote-argument ttl))))
-    (message "Sending to Kindle: %s" ttl)
-    (let ((ret (call-process-shell-command cmd)))
-      (if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
+  (defun my/org-send-current-buffer-to-kindle (&optional title)
+    "Export current Org buffer to EPUB and email to Kindle via org-to-kindle-send."
+    (interactive)
+    (when (buffer-modified-p) (save-buffer))
+    (let* ((file (buffer-file-name))
+	   (ttl (or title (or (save-excursion
+				(goto-char (point-min))
+				(when (re-search-forward "^#\\\\+TITLE: *\\\\(.*\\\\)$" nil t)
+				  (match-string 1)))
+			      (file-name-nondirectory file))))
+	   (cmd (format "org-to-kindle-send --file %s --title %s"
+			(shell-quote-argument file)
+			(shell-quote-argument ttl))))
+      (message "Sending to Kindle: %s" ttl)
+      (let ((ret (call-process-shell-command cmd)))
+	(if (= ret 0) (message "Sent: %s" ttl) (user-error "Failed (exit=%s)" ret)))))
 #+end_src
 
 ** The "Search" Menu
@@ -1753,29 +1753,29 @@ It would be cool if this also had some kind of interactive starting directory / 
   (defun my/create-claude-code-buffer ()
     "Create a vterm buffer and launch Claude Code with user-selected project and description.
 
-Prompts for:
-1. Project directory (via projectile completion)
-2. Freeform description
+  Prompts for:
+  1. Project directory (via projectile completion)
+  2. Freeform description
 
-Buffer is named: claude-[sanitized-project]-[sanitized-description]"
+  Buffer is named: claude-[sanitized-project]-[sanitized-description]"
     (interactive)
     (require 'projectile)
     (let* ((sanitize (lambda (str)
-                       (replace-regexp-in-string
-                        "-+" "-"
-                        (replace-regexp-in-string
-                         "[^a-zA-Z0-9-]" "-"
-                         (downcase str)))))
-           (project-dir (projectile-completing-read
-                         "Select project directory: "
-                         (projectile-relevant-known-projects)))
-           (description (read-string "Enter buffer description: "))
-           (project-name (funcall sanitize
-                                  (file-name-nondirectory
-                                   (directory-file-name project-dir))))
-           (desc-sanitized (funcall sanitize description))
-           (buf-name (format "claude-%s-%s" project-name desc-sanitized))
-           (default-directory project-dir))
+		       (replace-regexp-in-string
+			"-+" "-"
+			(replace-regexp-in-string
+			 "[^a-zA-Z0-9-]" "-"
+			 (downcase str)))))
+	   (project-dir (projectile-completing-read
+			 "Select project directory: "
+			 (projectile-relevant-known-projects)))
+	   (description (read-string "Enter buffer description: "))
+	   (project-name (funcall sanitize
+				  (file-name-nondirectory
+				   (directory-file-name project-dir))))
+	   (desc-sanitized (funcall sanitize description))
+	   (buf-name (format "claude-%s-%s" project-name desc-sanitized))
+	   (default-directory project-dir))
       (vterm buf-name)
       (switch-to-buffer buf-name)
       (vterm-send-string "claude --dangerously-skip-permissions")
@@ -1821,11 +1821,11 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
     (message "Visual line mode %s" (if visual-line-mode "enabled" "disabled")))
 
   (transient-define-prefix my/emacs-state-menu ()
-    "Transient menu for managing Emacs visual state."
-    ["Emacs State"
-     ("o" "Toggle Olivetti" my/toggle-olivetti)
-     ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)
-     ("w" "Toggle Visual Line Wrap" my/toggle-visual-line-mode)])
+			   "Transient menu for managing Emacs visual state."
+			   ["Emacs State"
+			    ("o" "Toggle Olivetti" my/toggle-olivetti)
+			    ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)
+			    ("w" "Toggle Visual Line Wrap" my/toggle-visual-line-mode)])
 #+end_src
 
 * Kill Thing Running On Port
@@ -1857,7 +1857,7 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
 
   (defun my/open-compilation-file-in-other-window ()
     "open the current compilation match in another window.
-    creates a new window if needed or reuses an existing one."
+      creates a new window if needed or reuses an existing one."
     (interactive)
     (let ((window-count (length (window-list))))
       (condition-case err
@@ -1944,8 +1944,17 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
     (scroll-down (- (window-height) 3)))
   (evil-define-key 'normal 'global (kbd "z b") 'line-to-bottom-of-window)
 
+  ;; E-reader style page scrolling: 1-line overlap for reading continuity
+  (setq next-screen-context-lines 1)
+  (setq scroll-preserve-screen-position t)
+
+  ;; Arrow key page scrolling (original bindings restored)
   (evil-define-key 'normal 'global (kbd "<left>") 'scroll-down-command)
   (evil-define-key 'normal 'global (kbd "<right>") 'scroll-up-command)
+
+  ;; Page Up/Down with e-reader behavior (motion state = normal + visual + motion)
+  (evil-define-key 'motion 'global (kbd "<prior>") 'scroll-down-command)
+  (evil-define-key 'motion 'global (kbd "<next>") 'scroll-up-command)
 
   (with-eval-after-load 'elfeed-show
     (require 'hnreader)
@@ -2179,6 +2188,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-			;;; init.el ends here
+			  ;;; init.el ends here
 #+end_src
 
