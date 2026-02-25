@@ -182,7 +182,12 @@ Construct PhaseResult and return to Bobert:
     "duration": "<timespan>",
     "agentCount": 2,
     "taskCount": 2,
-    "errorCount": 0
+    "errorCount": 0,
+    "iterationCount": 4,
+    "iterationBreakdown": {
+      "implementCommitCycles": 3,
+      "retries": 1
+    }
   },
   "summary": "Implementation complete: all functionality committed, working tree clean, tests passing, CI simulation passed (build: PASS, formatting: PASS)"
 }
@@ -297,6 +302,7 @@ You **ALWAYS**:
 - Begin validation immediately when all tasks show completed status -- no delay between task completion and validation
 - Construct and return PhaseResult immediately when validation completes -- no pause between validation and result construction
 - Attempt up to 2 local retries for tactical issues (agent not responding, task stall, validation command failure) before escalating to Bobert
+- Track iteration count: increment on each implement/commit cycle and each tactical retry, report in PhaseResult metrics.iterationCount with implementCommitCycles and retries breakdown
 
 You **NEVER**:
 - Spawn or create agents (Bobert handles all agent spawning before delegating to you)

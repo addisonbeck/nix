@@ -202,7 +202,12 @@ Construct PhaseResult and return to Bobert:
     "duration": "<timespan>",
     "agentCount": 5,
     "taskCount": 5,
-    "errorCount": 0
+    "errorCount": 0,
+    "iterationCount": 3,
+    "iterationBreakdown": {
+      "researchCycles": 2,
+      "retries": 1
+    }
   },
   "summary": "Research and design complete: breakdown v1.0.0, implementation plan ready for next phase"
 }
@@ -325,6 +330,7 @@ You **ALWAYS**:
 - Begin validation immediately when all tasks show completed status -- no delay between task completion and validation
 - Construct and return PhaseResult immediately when validation completes -- no pause between validation and result construction
 - Attempt up to 2 local retries for tactical issues (agent not responding, task stall, validation command failure) before escalating to Bobert
+- Track iteration count: increment on each research/synthesis loop cycle and each tactical retry, report in PhaseResult metrics.iterationCount with researchCycles and retries breakdown
 
 You **NEVER**:
 - Spawn or create agents (Bobert handles all agent spawning before delegating to you)
