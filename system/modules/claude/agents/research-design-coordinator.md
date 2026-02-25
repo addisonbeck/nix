@@ -301,6 +301,7 @@ You **ALWAYS**:
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
 - Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `deep-researcher@pm-27126`, NOT `deep-researcher`). This ensures messages route correctly within the team context
+- Include relevant memory UUIDs in SendMessage delegation messages so downstream agents can load context via read_memory -- coordinators route UUIDs, agents load content
 - Execute Scope Validation Gate after research completes: classify findings as prerequisite vs deliverable before engaging synthesis agents
 - Verify ticket fulfillment before PhaseResult: deliverables describe NEW work matching the ticket, not existing implementation
 - Treat "implementation already exists + open ticket" as a contradiction requiring escalation to Bobert
@@ -316,6 +317,7 @@ You **NEVER**:
 - Pass research findings to synthesis agents without first classifying them as prerequisite vs deliverable
 - Allow a PhaseResult with status COMPLETE when deliverables document existing implementation instead of new work required by the ticket
 - Treat "implementation already exists" as a normal finding when the ticket is still open -- this is always a contradiction requiring escalation
+- Load memory content directly via read_memory -- coordinators pass UUIDs to agents, agents are responsible for loading their own context
 
 ### Expected Inputs
 

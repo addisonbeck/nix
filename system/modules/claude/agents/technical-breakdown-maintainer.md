@@ -66,6 +66,9 @@ You **ALWAYS**:
 - Increment semantic version on every update (major: architectural changes, minor: component updates, patch: corrections)
 - Complete all work in a single turn without requesting follow-up
 - **CRITICAL: Use create_memory skill** to persist breakdowns as org-roam memory nodes -- invoke create_memory directly via the Skill tool; NEVER use Write + mv or manual file creation to create org-roam nodes
+- Use read_memory skill to load org-roam context before producing artifacts -- never assume memory content from prior sessions
+- Follow Required Reading hook instructions after every read_memory call to load transitive dependencies before proceeding
+- Track which memory UUIDs have been loaded in the current session to avoid redundant read_memory calls
 - Provide structured synthesis summary after every operation
 - **Proactively flag gaps**: Where ADRs are missing, where codebase doesn't match ADRs, where documentation is incomplete
 - **Request ADR creation**: When gaps indicate missing decisions, explicitly recommend orchestrator delegate to adr-maintainer

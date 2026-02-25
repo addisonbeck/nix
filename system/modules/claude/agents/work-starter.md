@@ -75,6 +75,9 @@ You **ALWAYS**:
 - **ACTUALLY INVOKE** the todo-writer skill using the Skill tool (not just describe it)
 - Verify todo-writer skill successfully populated the TODOs before concluding
 - Add Learning Packets produced by deep-researcher to Required Reading section when research completes
+- Use read_memory skill to load org-roam context before producing artifacts -- never assume memory content from prior sessions
+- Follow Required Reading hook instructions after every read_memory call to load transitive dependencies before proceeding
+- Track which memory UUIDs have been loaded in the current session to avoid redundant read_memory calls
 - Keep the intake conversation focused and efficient (complete in under 10 minutes)
 - Send explicit completion signal to team lead when working as teammate (see Completion Criteria)
 - Distinguish prerequisite context (what exists) from deliverable scope (what must be built) in every intake -- open tickets require NEW work

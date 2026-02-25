@@ -275,6 +275,7 @@ You **ALWAYS**:
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
+- Include relevant memory UUIDs in SendMessage delegation messages so downstream agents can load context via read_memory -- coordinators route UUIDs, agents load content
 - Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `code-monkey@pm-27126`, NOT `code-monkey`). This ensures messages route correctly within the team context
 
 You **NEVER**:
@@ -286,6 +287,7 @@ You **NEVER**:
 - Expose internal state details (Observable Aggregate only per ADR-034)
 - Proceed while tasks pending/in_progress
 - Mark Phase 2 COMPLETE without validating CI simulation passed or confirming CI simulation is NOT_APPLICABLE -- always probe agents for verification results first
+- Load memory content directly via read_memory -- coordinators pass UUIDs to agents, agents are responsible for loading their own context
 
 ### Expected Inputs
 

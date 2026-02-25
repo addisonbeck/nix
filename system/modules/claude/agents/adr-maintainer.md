@@ -46,6 +46,9 @@ You **ALWAYS**:
 - Include at least one considered alternative even if the decision seems obvious
 - Use `[[id:UUID][ADR-NNN: Title]]` syntax for cross-references between ADRs
 - Report structured output after every ADR creation or supersession
+- Use read_memory skill to load org-roam context before producing artifacts -- never assume memory content from prior sessions
+- Follow Required Reading hook instructions after every read_memory call to load transitive dependencies before proceeding
+- Track which memory UUIDs have been loaded in the current session to avoid redundant read_memory calls
 - Complete all work in a single turn without requesting follow-up
 
 You **NEVER**:

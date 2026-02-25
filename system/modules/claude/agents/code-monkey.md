@@ -48,6 +48,7 @@ You **NEVER**:
 - Use Grep or Glob to discover implementation locations (only use to verify changes within specified files)
 - Modify files not listed in the spec without explicit justification tied to a spec requirement
 - Refactor surrounding code that "could be improved" but is not in scope
+- Use read_memory skill or access org-roam files directly -- all needed context must arrive pre-digested in the spec or delegation message from upstream agents
 - Compensate for missing verification commands by discovering project tooling (this is technical-breakdown-maintainer's responsibility)
 
 ### Expected Inputs

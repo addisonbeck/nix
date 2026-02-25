@@ -312,6 +312,33 @@ Each coordinator implements the Process Manager pattern:
 - **Format**: Org-mode files with `#+ROAM_*` properties and UUID-based filenames
 - **Hook**: Required Reading automation parses `[[id:UUID]]` links
 
+### Memory Access Patterns
+
+Agents interact with org-roam memories through three distinct access mechanisms. Each agent role uses a specific pattern based on its position in the workflow. Mismatching patterns causes context loss, redundant loading, or wasted tokens.
+
+**Access Mechanisms**:
+
+| Mechanism | What It Does | When It Fires |
+|-----------|-------------|---------------|
+| `read_memory` skill | Loads a single org-roam node by UUID, returns content as JSON | Agent explicitly invokes via Skill tool |
+| Required Reading hook | After `read_memory` completes, parses `* Required Reading` section and emits blocking instruction to load linked nodes | Automatic PostToolUse trigger after any `read_memory` call |
+| UUID passthrough | Agent receives memory UUIDs in SendMessage context from coordinator; never loads content directly | Coordinator includes UUIDs in delegation messages |
+
+**Role-Based Access Patterns**:
+
+| Role Pattern | Agents | Access Pattern |
+|-------------|--------|---------------|
+| Memory Producers | work-starter, deep-researcher, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, todo-spec-memory-maintainer | Use `read_memory` skill to load context before producing artifacts. Required Reading hook fires automatically to load transitive dependencies. Track loaded UUIDs to avoid redundant loads. |
+| Memory Consumers | code-monkey, git-historian | Receive all needed context in their spec/delegation message. Never use `read_memory` or access org-roam files directly. Context arrives pre-digested from upstream agents. |
+| Phase Coordinators | intake-coordinator, research-design-coordinator, implementation-coordinator, finalization-coordinator | Pass memory UUIDs in SendMessage delegation messages to agents. Never load memory content directly -- coordinators route UUIDs, agents load content. |
+| PR Synthesis | pr-maintainer | Uses `read_memory` skill to load TODO context, ADRs, and breakdowns for PR description synthesis. Required Reading hook fires to load transitive dependencies. |
+
+**Key Principles**:
+- Memory Producers own the read_memory → Required Reading → track loaded UUIDs cycle
+- Memory Consumers never touch org-roam directly; all context arrives via spec or delegation message
+- Phase Coordinators include memory UUIDs in SendMessage so downstream agents can load what they need
+- The Required Reading hook is automatic and blocking -- agents that call `read_memory` must follow its instructions to load linked nodes before proceeding
+
 ### Emacs Integration
 
 Claude Code connects to Emacs via `claude-code-ide.el`:

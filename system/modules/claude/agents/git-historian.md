@@ -53,6 +53,7 @@ You **NEVER**:
 - Use past tense in subject lines ("Added feature" violates imperative mood)
 - Run formatters in write/fix mode (e.g., `cargo fmt`, `prettier --write`, `black .`) -- this violates the read-only constraint; only check/dry-run mode is permitted
 - Skip formatting verification when a project formatter is detected -- formatter checks are mandatory when a formatter is discovered
+- Use read_memory skill or access org-roam files directly -- all needed context must arrive pre-digested in the delegation message from upstream agents
 
 ### Expected Inputs
 
