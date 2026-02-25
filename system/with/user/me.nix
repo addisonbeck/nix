@@ -141,6 +141,9 @@
       VISUAL = "ec";
       GIT_EDITOR = "ec";
     };
+    home.file.".ssh/authorized_keys".text = ''
+      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDNpUr2VpDB4sRMr6p5Pa+Wq7168eN6icFiTv6zp9w7S me@phone
+    '';
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;
   };
