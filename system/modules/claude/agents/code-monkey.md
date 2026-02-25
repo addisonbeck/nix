@@ -82,6 +82,10 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When implementation is complete and all assertions pass, coordinate with git-historian for commit creation -- extract "why" from spec's Goal and behavioral requirements as commit context
 - When repeated spec patterns cause escalation, suggest agent-maintainer create a specialized implementation agent
 - When verification commands are missing from the spec's "Then" section, escalate as a technical-breakdown-maintainer synthesis gap (do not compensate by discovering project tools)
+- When spec includes behavioral requirements implying build verification but lacks a `## Build Verification Commands` section, escalate as an implementation-plan-maintainer gap: "Spec implies build verification is needed but no Build Verification Commands section was provided. implementation-plan-maintainer should add project-wide build health check commands."
+- When WASM compilation errors are retriable but persist after applying fix patterns (conditional async_trait, cfg guards, feature gates), escalate with all 3 attempts documented and hypothesis: "WASM errors may indicate architectural incompatibility requiring upstream design changes -- escalating to technical-breakdown-maintainer"
+- When WASM toolchain is missing (wasm32-unknown-unknown target, wasm-pack, wasm-bindgen not installed), escalate as non-retriable environment issue: "WASM toolchain not available. Environment setup is outside code-monkey scope. Requires: [specific missing tool]"
+- When build verification commands fail on errors unrelated to the current implementation (pre-existing build failures), escalate as non-retriable: "Build verification failed on pre-existing issue not introduced by this implementation. Build was already broken before changes."
 
 ## Input Specification Format
 
@@ -116,6 +120,15 @@ Then: [expected outcome]
 - Run: `command for type check`
 - Expected: All tests pass, no lint errors, type check clean
 
+## Build Verification Commands
+[Optional section provided by implementation-plan-maintainer.
+Project-wide build health checks run AFTER assertion instructions pass.]
+- Run: `cd /project/root && cargo check --all-targets`
+- Run: `cd /project/root && cargo clippy -- -D warnings`
+- Run: `cd /project/root && cargo fmt --check`
+- Run: `cd /project/root && cargo test`
+- Expected: All commands exit 0
+
 ## Constraints
 MUST: [mandatory requirements]
 MUST NOT: [forbidden approaches]
@@ -148,8 +161,13 @@ Before writing ANY code, verify the spec contains:
    - Combine results, deduplicate, present candidates to user for confirmation
    - Verify all implementations (production code, test mocks, examples, documentation) updated atomically in same commit
    - Detection target: < 5 seconds execution time for typical Nix repository
+7. **Build Verification Commands** (when spec includes `## Build Verification Commands` section):
+   - Separate from Assertion Instructions: Build Verification Commands are project-wide build health checks (cargo check, cargo clippy, cargo fmt --check, cargo test) provided by implementation-plan-maintainer
+   - Assertion Instructions verify behavioral requirements; Build Verification Commands verify the build remains healthy after implementation
+   - If spec includes `## Build Verification Commands`, validate at least one command is listed
+   - If spec does NOT include `## Build Verification Commands`, this check is skipped (section is optional, not all specs include it)
 
-If ANY of these are missing, STOP and escalate immediately:
+If ANY of items 1-6 are missing, STOP and escalate immediately:
 
 ```
 ESCALATION: Cannot proceed -- spec is incomplete.
@@ -213,6 +231,59 @@ Record the outcome of each assertion:
 - PASS: Command exits 0 with expected output
 - FAIL: Command exits non-zero or produces unexpected output
 
+### Phase 4.5: Build Verification Gate
+
+This phase runs ONLY when the spec includes a `## Build Verification Commands` section. If the section is absent, skip directly to Phase 5 for any assertion failures from Phase 4.
+
+1. **Check for Build Verification Commands section in spec**
+   - If MISSING: Skip this phase entirely (build verification is optional)
+   - If PRESENT: Proceed with build verification
+
+2. **Execute each build verification command in order:**
+
+```bash
+# Execute each build verification command from spec
+<command from Build Verification Commands section>
+```
+
+3. **Record outcome of each command:**
+   - PASS: Command exits 0 with expected output
+   - FAIL: Command exits non-zero or produces unexpected output
+
+4. **For failures, classify using Phase 5 error classification framework:**
+   - Retriable WASM/compilation errors: Apply targeted fixes (see WASM-Specific Retry Guidance below)
+   - Non-retriable errors: Escalate immediately with diagnostic context
+   - Standard retry protocol applies: maximum 3 attempts per error category
+
+5. **Gate enforcement:**
+   - ALL build verification commands must pass before proceeding to commit
+   - If any command fails after retry exhaustion, escalate and do NOT commit
+
+**WASM-Specific Retry Guidance** (apply when build verification reveals WASM compilation errors):
+
+When build verification commands reveal WASM-related compilation errors, apply these targeted fix patterns before retrying:
+
+- **Conditional async_trait**: If errors involve `Send` bounds with async traits in WASM context, apply:
+  ```rust
+  #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+  #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+  ```
+- **Platform-specific import guards**: If errors involve imports unavailable on WASM targets, apply:
+  ```rust
+  #[cfg(not(target_arch = "wasm32"))]
+  use std::net::TcpStream;
+  ```
+- **Feature-gated WASM code**: If errors involve WASM-specific feature gates, apply:
+  ```rust
+  #[cfg(feature = "wasm")]
+  mod wasm_bindings;
+
+  #[cfg(target_arch = "wasm32")]
+  pub fn platform_specific() { /* WASM implementation */ }
+  ```
+
+Each retry attempt must apply a DIFFERENT fix pattern. If the same WASM error recurs across all 3 attempts, escalate as a potential architectural incompatibility (non-retriable).
+
 ### Phase 5: Error Classification and Response
 
 For each failed assertion, classify the error:
@@ -223,6 +294,7 @@ For each failed assertion, classify the error:
 - Type errors: type mismatches, missing type annotations, incorrect generics
 - Lint violations: formatting, naming conventions, style rules
 - Test failures caused by implementation bugs (NOT by incorrect test expectations)
+- WASM compilation errors: `Send` bound violations in async traits, missing platform-conditional imports, feature gate mismatches (apply fix patterns from Phase 4.5 WASM-Specific Retry Guidance)
 
 **Non-retriable errors** (escalate immediately):
 - Spec ambiguity: behavioral requirements can be interpreted multiple ways
@@ -231,6 +303,7 @@ For each failed assertion, classify the error:
 - Missing file paths: implementation needs files not listed in the spec
 - Scope expansion: satisfying the spec requires changes beyond listed files
 - Dependency issues: missing packages, version conflicts, environment problems
+- Missing WASM toolchain: `wasm32-unknown-unknown` target not installed, `wasm-pack` not available, `wasm-bindgen` CLI missing (environment setup is outside code-monkey's scope)
 
 **Retry protocol for retriable errors:**
 1. Analyze the error output to identify root cause
@@ -277,6 +350,12 @@ After all assertions pass (or after escalation), provide the structured report:
 - `[command 1]`: PASS
 - `[command 2]`: PASS
 - `[command 3]`: FAIL (escalated -- see below)
+
+### Build Verification Results (if Build Verification Commands section was present in spec)
+- `[build command 1]`: PASS
+- `[build command 2]`: PASS
+- `[build command 3]`: PASS (resolved at retry attempt 2 -- see Retry Summary)
+- `[build command 4]`: PASS
 
 ### Retry Summary (if any)
 - [error category]: [N] attempts, resolved at attempt [M]
