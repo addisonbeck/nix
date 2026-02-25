@@ -1,0 +1,1741 @@
+;; Disable backup files and configure indentation
+(setq make-backup-files nil)
+(setq-default indent-tabs-mode nil)
+(electric-indent-mode 1)
+(setq-default tab-width 2
+		indent-tabs-mode nil
+		tab-stop-list (number-sequence 2 120 2))
+(setq confirm-kill-emacs nil)
+(setq auto-save-default nil
+	create-lockfiles nil)
+(setq select-enable-clipboard t)
+(setq case-fold-search t)
+(xterm-mouse-mode 1)
+(setq-default fill-column 77)
+(global-hl-line-mode -1)
+(setq sentence-end-double-space nil)
+(setq ring-bell-function 'ignore)
+
+(require 'transient)
+
+(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
+  "Path to my notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
+  "Path to my agenda directory, located in the notes directory."
+  :type 'directory
+  :group 'org)
+(defcustom my-nix-systems-flake-directory "/Users/me/nix"
+  "Path to my nix directory."
+  :type 'directory
+  :group 'org)
+
+(defun kill-other-buffers ()
+  "Kill all buffers except the current one."
+  (interactive)
+  (mapc 'kill-buffer
+	  (delq (current-buffer)
+		(buffer-list))))
+
+(require 'package)
+
+;; Use Package Configuration
+(use-package nerd-icons)
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (when (memq window-system '(mac ns x))
+    (exec-path-from-shell-initialize)))
+
+(when (daemonp)
+  (exec-path-from-shell-initialize))
+
+(defun my/extract-quotes-from-org-files ()
+  "Extract headlines tagged with :quote: from org files in notes directory."
+  (let ((quotes '())
+	  (notes-dir "~/notes"))
+    (dolist (file (directory-files-recursively notes-dir "\\.org$"))
+	(with-temp-buffer
+	  (insert-file-contents file)
+	  (org-mode)
+	  (goto-char (point-min))
+	  (while (re-search-forward "^\\*+\\s-+\\(.*?\\)\\s-+:quote:" nil t)
+	    (let* ((headline (match-string-no-properties 1))
+		   (element (org-element-at-point))
+		   (content (org-element-property :contents-begin element))
+		   (end (org-element-property :contents-end element))
+		   (raw-text (when (and content end)
+			       (string-trim (buffer-substring-no-properties content end))))
+		   (quote-text
+		    (when raw-text
+		      ;; Process text to handle quote blocks
+		      (with-temp-buffer
+			(insert raw-text)
+			;; Replace #+begin_quote and #+end_quote with empty strings
+			(goto-char (point-min))
+			(while (re-search-forward "^[ \t]*#\\+begin_quote[ \t]*$" nil t)
+			  (replace-match ""))
+			(goto-char (point-min))
+			(while (re-search-forward "^[ \t]*#\\+end_quote[ \t]*$" nil t)
+			  (replace-match ""))
+			;; Return the cleaned text
+			(string-trim (buffer-string))))))
+	      (when (and headline (not (string-empty-p headline))
+			 quote-text (not (string-empty-p quote-text)))
+		(push (format "%s\n\n— %s" quote-text headline) quotes))))))
+    (or quotes
+	  ;; Fallback quotes if none found
+	  '("Quotes are broken!"))))
+
+(use-package dashboard
+  :ensure t
+  :init
+  (setq dashboard-icon-type 'nerd-icons)
+  (setq dashboard-projects-backend 'projectile)
+  :config
+  (dashboard-setup-startup-hook)
+  (setq dashboard-center-content t
+	  dashboard-items '((recents . 5)
+			    (projects . 5)
+			    (bookmarks . 5))
+	  dashboard-set-heading-icons t
+	  dashboard-set-file-icons t
+	  dashboard-show-shortcuts t
+	  dashboard-set-footer t
+	  dashboard-footer-messages (my/extract-quotes-from-org-files))
+  (setq dashboard-heading-icons '((recents   . "nf-oct-history")
+				    (bookmarks . "nf-oct-bookmark")
+				    (projects  . "nf-oct-project"))))
+
+;; Test
+(setq evil-want-integration t)
+(setq evil-want-keybinding nil)
+(setq evil-want-C-u-scroll t)
+
+(use-package evil
+  :ensure t
+  :config
+  (evil-mode 1)
+
+  ;; Custom movement functions
+  (defun evil-move-half-page-down ()
+    "Move cursor half page down"
+    (interactive)
+    (evil-next-line (/ (window-height) 4))
+    (evil-scroll-line-to-center nil))
+
+  (defun evil-move-half-page-up ()
+    "Move cursor half page up"
+    (interactive)
+    (evil-previous-line (/ (window-height) 4))
+    (evil-scroll-line-to-center nil))
+
+  ;; Bind J and K to half-page movement
+  (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
+  (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
+
+(use-package evil-collection
+  :ensure t
+  :after evil
+  :config
+  (evil-collection-init))
+
+;; Configure evil-collection for magit
+(with-eval-after-load 'evil-collection-magit
+  (evil-collection-define-key 'normal 'magit-status-mode-map
+				"V" #'magit-start-region-select))
+(require 'evil-org-agenda)
+(evil-org-agenda-set-keys)
+(evil-define-key 'motion org-agenda-mode-map
+		   (kbd "C-p") 'projectile-switch-project
+		   (kbd "C-f") 'projectile-find-file
+		   (kbd "<left>") 'org-agenda-earlier
+		   (kbd "<right>") 'org-agenda-later
+		   (kbd "gx")  'org-agenda-open-link
+		   (kbd "t") 'org-agenda-todo
+		   (kbd "T") 'org-agenda-todo-yesterday)
+
+(with-eval-after-load 'vterm
+  (require 'evil-collection-vterm)
+  (evil-collection-vterm-setup)
+	(setq vterm-min-window-width 40)
+
+  ;; Dynamic Window Width Adaptation
+  ;; Automatically resize vterm terminals based on active window dimensions.
+  ;; Supports simultaneous laptop/phone usage where the same buffer displays
+  ;; at different widths depending on which device has focus.
+
+  ;; Buffer-local state for resize tracking
+  (defvar-local my/vterm--resize-timer nil
+    "Buffer-local timer for debounced vterm resizing.")
+
+  (defvar-local my/vterm--last-width nil
+    "Last width this vterm buffer was resized to.")
+
+  ;; Custom process resize function (Prong 1)
+  (defun my/vterm--adjust-process-window-size (process windows)
+    "Resize vterm using selected window dimensions instead of smallest.
+Replaces default vterm behavior which uses the smallest window.
+PROCESS is the vterm process. WINDOWS is list of windows showing buffer."
+    (unless vterm-copy-mode
+      (let* ((selected (selected-window))
+             (target (if (memq selected windows) selected (car windows)))
+             (width (when target
+                      (max (- (window-max-chars-per-line target)
+                              (vterm--get-margin-width))
+                           vterm-min-window-width)))
+             (height (when target
+                       (with-selected-window target
+                         (floor (window-screen-lines)))))
+             (inhibit-read-only t))
+        (when (and (processp process)
+                   (process-live-p process)
+                   width height
+                   (> width 0)
+                   (> height 0))
+          (vterm--set-size vterm--term height width)
+          (setq my/vterm--last-width width)
+          (cons width height)))))
+
+  ;; Debounced resize function
+  (defun my/vterm--resize-to-window (window)
+    "Resize vterm buffer in WINDOW to match window dimensions.
+Includes 5-column threshold to prevent noise from minor adjustments."
+    (when (and (eq window (selected-window))
+               (eq major-mode 'vterm-mode))
+      (let* ((target-width (max (- (window-max-chars-per-line window)
+                                   (vterm--get-margin-width))
+                                vterm-min-window-width))
+             (width-diff (abs (- target-width (or my/vterm--last-width 0)))))
+        ;; Only resize if width differs by >= 5 columns (filters noise)
+        (when (>= width-diff 5)
+          (let ((process (get-buffer-process (current-buffer))))
+            (when (and process (process-live-p process))
+              (window--adjust-process-windows)))))))
+
+  ;; Selection change hook (Prong 2)
+  (defun my/vterm--on-window-selection-change (window)
+    "Trigger debounced resize when vterm window is selected.
+WINDOW is the window that was selected/deselected."
+    (when (eq window (selected-window))
+      (with-current-buffer (window-buffer window)
+        (when (eq major-mode 'vterm-mode)
+          ;; Cancel existing timer
+          (when (timerp my/vterm--resize-timer)
+            (cancel-timer my/vterm--resize-timer))
+          ;; Schedule new resize after 0.1s
+          (setq my/vterm--resize-timer
+                (run-with-timer 0.1 nil
+                                #'my/vterm--resize-to-window
+                                window))))))
+
+  ;; Hook registration
+  (defun my/vterm--setup-dynamic-resize ()
+    "Set up dynamic resize for current vterm buffer."
+    ;; Replace per-process adjust-window-size-function property
+    (let ((process (get-buffer-process (current-buffer))))
+      (when process
+        (process-put process 'adjust-window-size-function
+                     #'my/vterm--adjust-process-window-size)))
+    ;; Add buffer-local selection change hook
+    (add-hook 'window-selection-change-functions
+              #'my/vterm--on-window-selection-change nil t))
+
+  ;; Register setup function in vterm-mode-hook
+  (add-hook 'vterm-mode-hook #'my/vterm--setup-dynamic-resize)
+
+  ;; Pass shift+up and shift+down directly to the terminal.
+  ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
+  ;; shift variants must be added explicitly for terminal apps that need them.
+  (evil-define-key 'insert vterm-mode-map
+	     (kbd "<S-up>")   #'vterm--self-insert
+	     (kbd "<S-down>") #'vterm--self-insert)
+  (evil-define-key 'normal vterm-mode-map
+	     (kbd "<S-up>")   #'vterm--self-insert
+	     (kbd "<S-down>") #'vterm--self-insert)
+
+  ;; Restore custom projectile keybindings
+  (evil-define-key 'normal vterm-mode-map
+	     (kbd "C-p") 'projectile-switch-project
+	     (kbd "C-f") 'projectile-find-file)
+
+  ;; F1 for vterm copy mode (useful on mobile over SSH)
+  (evil-define-key 'normal vterm-mode-map
+	     (kbd "<f1>") 'vterm-copy-mode))
+
+;; Vterm mood hook
+(defun vterm-mode-init ()
+  "Function to run on vterm mode init"
+  (my/toggle-olivetti))
+(add-hook 'vterm-mode-hook #'vterm-mode-init)
+
+;; Mobile mode state tracking
+(defvar my/mobile-mode-active nil
+  "Whether mobile mode is currently active.")
+
+(defvar my/mobile-mode-original-columns nil
+  "Store the original COLUMNS value before enabling mobile mode.")
+
+(defun my/toggle-mobile-mode ()
+  "Toggle mobile mode: increase font size (frame-local) and set COLUMNS=120 for vterm."
+  (interactive)
+  (if my/mobile-mode-active
+	;; Disable mobile mode
+	(progn
+	  (text-scale-set 0)  ; Reset to default scale
+	  (setenv "COLUMNS" my/mobile-mode-original-columns)
+	  (setq my/mobile-mode-active nil)
+	  (message "Mobile mode disabled"))
+    ;; Enable mobile mode
+    (progn
+	(setq my/mobile-mode-original-columns (getenv "COLUMNS"))
+	(text-scale-set 3)  ; Increase font size significantly for mobile
+	(setenv "COLUMNS" "120")
+	(setq my/mobile-mode-active t)
+	(message "Mobile mode enabled: font increased, COLUMNS=120"))))
+
+;; F2 binding for mobile mode toggle
+(evil-define-key 'normal 'global (kbd "<f2>") 'my/toggle-mobile-mode)
+(evil-define-key 'insert 'global (kbd "<f2>") 'my/toggle-mobile-mode)
+
+(defun cycle-line-numbers ()
+  "Cycle through line number modes: off -> relative -> normal -> off."
+  (interactive)
+  (cond
+   ;; If currently off, switch to relative
+   ((not display-line-numbers)
+    (setq display-line-numbers 'relative)
+    (message "Line numbers: RELATIVE"))
+
+   ;; If currently relative, switch to normal
+   ((eq display-line-numbers 'relative)
+    (setq display-line-numbers t)
+    (message "Line numbers: NORMAL"))
+
+   ;; If currently normal, switch to off
+   (t
+    (setq display-line-numbers nil)
+    (message "Line numbers: OFF"))))
+
+;; Bind to "N" in evil normal mode
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global "N" 'cycle-line-numbers))
+
+(require 'server)
+(unless (server-running-p)
+  (server-start))
+
+(use-package projectile
+  :ensure t
+  :config
+  (projectile-mode +1)
+  (define-key projectile-command-map (kbd "d") 'projectile-find-file-in-directory)
+  (define-key projectile-command-map (kbd "P") 'my/projectile-find-file-in-all-projects)
+  (setq projectile-indexing-method 'alien)
+  (setq projectile-git-command "git ls-files -zco -X ~/.gitignore")
+  (setq projectile-known-projects
+	  (mapcar (lambda (project)
+		    (expand-file-name (my/get-project-path (car project))))
+		  my/projects))
+  (setq projectile-auto-discover nil)
+  (projectile-save-known-projects))
+
+(require 'consult)
+
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode))
+
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles . (partial-completion))))))
+
+(use-package marginalia
+  :ensure t
+  :init
+  (marginalia-mode))
+
+;; Custom find-from-here function
+(defun find-from-here ()
+  "Find files from current buffer's directory."
+  (interactive)
+  (when buffer-file-name
+    (consult-find (file-name-directory buffer-file-name))))
+
+(use-package treesit-auto
+  :config
+  (global-treesit-auto-mode)
+  (setq treesit-auto-install 'prompt)
+  (setq treesit-auto-langs '(typescript javascript tsx jsx yaml)))
+
+(use-package typescript-ts-mode
+  :ensure t
+  :mode (("\\.ts\\'" . typescript-ts-mode)
+	   ("\\.tsx\\'" . tsx-ts-mode))
+  :init
+  (add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))
+  (add-to-list 'major-mode-remap-alist '(tsx-mode . tsx-ts-mode)))
+
+;; Note: Tree-sitter grammars are provided by Nix configuration
+
+(defun magit-status-project ()
+  "Switch project and open magit."
+  (interactive)
+  (let ((projectile-switch-project-action 'magit-status))
+    (projectile-switch-project)))
+
+(use-package forge
+  :ensure t
+  :after magit
+  :config
+  ;; Configure GitHub authentication
+  (setq auth-sources '("~/.authinfo"))
+  ;; Optionally set the number of items to fetch
+  (setq forge-topic-list-limit '(60 . 0)))
+
+;; Basic settings
+(setq notes-directory "~/notes")
+(setq markdown-command "pandoc")
+
+;; Markdown configuration
+(use-package markdown-mode
+  :ensure t
+  :mode (("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode)))
+
+(defun org-region-to-markdown (start end)
+  "Convert the selected region from Org to Markdown using pandoc."
+  (interactive "r")
+  (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
+
+(use-package which-key
+  :ensure t
+  :config
+  (which-key-mode)
+  (setq which-key-idle-delay 0.3
+	  which-key-prefix-prefix "→"
+	  which-key-sort-order 'which-key-key-order-alpha
+	  which-key-side-window-location 'bottom
+	  which-key-side-window-max-height 0.25))
+
+(use-package elfeed
+  :ensure t
+  :bind
+  ("C-x w" . elfeed)
+  :config
+  (evil-define-key 'normal elfeed-search-mode-map
+		     (kbd "r") 'elfeed-search-untag-all-unread
+		     (kbd "u") 'elfeed-search-tag-all-unread
+		     (kbd "RET") 'elfeed-search-show-entry
+		     (kbd "q") 'quit-window
+		     (kbd "g") 'elfeed-update
+		     (kbd "G") 'elfeed-search-update--force)
+
+  (evil-define-key 'normal elfeed-show-mode-map
+		     (kbd "r") 'elfeed-show-untag-unread
+		     (kbd "u") 'elfeed-show-tag-unread
+		     (kbd "q") 'quit-window
+		     (kbd "n") 'elfeed-show-next
+		     (kbd "p") 'elfeed-show-prev
+		     (kbd "b") 'elfeed-show-visit)
+
+  (setq elfeed-search-filter "+unread")
+  (setq elfeed-sort-order 'descending))
+
+(use-package elfeed-protocol
+  :ensure t
+  :after elfeed
+  :custom
+  (elfeed-use-curl t)
+  (elfeed-protocol-enabled-protocols '(fever))
+  (setq elfeed-protocol-log-trace t)
+  (elfeed-protocol-fever-update-unread-only t)
+  (elfeed-protocol-fever-fetch-category-as-tag t)
+  (elfeed-protocol-feeds '(("fever+https://me@homelab.rss"
+			      :api-url "https://homelab.tail357e32.ts.net/rss/api/fever.php"
+			      :use-authinfo t)))
+  (elfeed-protocol-enabled-protocols '(fever))
+  :config
+  (elfeed-protocol-enable))
+
+(defun my/elfeed-reset ()
+  "Reset elfeed database and update."
+  (interactive)
+  (when (yes-or-no-p "Really reset elfeed database? ")
+    (let ((db (expand-file-name "~/.elfeed/index"))
+	    (data (expand-file-name "~/.elfeed/data")))
+	(message "Checking paths: index=%s data=%s" db data)
+
+	;; Try to close elfeed first
+	(elfeed-db-unload)
+	(message "Database unloaded")
+
+	;; Delete files with error checking
+	(condition-case err
+	    (progn
+	      (when (file-exists-p db)
+		(delete-file db)
+		(message "Deleted index file"))
+	      (when (file-exists-p data)
+		(delete-directory data t)
+		(message "Deleted data directory")))
+	  (error (message "Error during deletion: %s" err)))
+
+	;; Restart elfeed
+	(elfeed)
+	(elfeed-search-update--force)
+	(message "Reset complete"))))
+
+;; Set elfeed-show-entry-switch to display in a side window
+(setq elfeed-show-entry-switch #'elfeed-display-buffer-right)
+
+;; Define the display function for right split
+(defun elfeed-display-buffer-right (buf)
+  (let ((display-buffer-mark-dedicated t))
+    (display-buffer 
+     buf
+     '((display-buffer-reuse-window display-buffer-in-side-window)
+	 (side . right)
+	 (window-width . 0.5)))))
+
+;; Optional: Make elfeed respect this two-pane setup when updating
+(defadvice elfeed-search-update (after configure-windows activate)
+  (when (get-buffer "*elfeed-entry*")
+    (elfeed-display-buffer-right (get-buffer "*elfeed-entry*"))))
+
+;; Optional: Return focus to search buffer after showing entry
+(defadvice elfeed-show-entry (after switch-to-search activate)
+  (select-window (get-buffer-window "*elfeed-search*")))
+
+;;(require 'elfeed-tube)
+;;(elfeed-tube-setup)
+;;(define-key elfeed-show-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-show-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(define-key elfeed-search-mode-map (kbd "F") 'elfeed-tube-fetch)
+;;(define-key elfeed-search-mode-map [remap save-buffer] 'elfeed-tube-save)
+;;(require 'elfeed-tube-mpv)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-f") 'elfeed-tube-mpv-follow-mode)
+;;(define-key elfeed-show-mode-map (kbd "C-c C-w") 'elfeed-tube-mpv-where)
+					  ;(setq elfeed-search-title-max-width 120)
+					  ;(setq elfeed-search-title-min-width 120)
+					  ;(setq elfeed-search-date-format '("%Y/%m-%d %H:%M" :left))
+					  ;(setq elfeed-search-filter "+unread")
+
+(defun copy-file-path ()
+  "Copy the current buffer file path to the kill ring."
+  (interactive)
+  (let ((filepath (buffer-file-name)))
+    (when filepath
+	(kill-new filepath)
+	(message "Copied: %s" filepath))))
+
+(defun copy-file-name ()
+  "Copy the current buffer file name to the kill ring."
+  (interactive)
+  (let ((filename (file-name-nondirectory (buffer-file-name))))
+    (when filename
+	(kill-new filename)
+	(message "Copied: %s" filename))))
+
+(defun copy-directory-path ()
+  "Copy the current buffer directory path to the kill ring."
+  (interactive)
+  (let ((dirpath (file-name-directory (buffer-file-name))))
+    (when dirpath
+	(kill-new dirpath)
+	(message "Copied: %s" dirpath))))
+
+(require 'avy)
+(define-key evil-normal-state-map (kbd "s") 'avy-goto-char-timer)
+
+(require 'rg)
+
+;; We're going to add to this down the chain
+(defvar my/executer-picker-candidates nil
+  "Alist mapping display names to interactive functions for `my/executer-picker'.")
+
+(defun my/executer-picker ()
+  "Pick a function via Consult and run it (interactively if possible)."
+  (interactive)
+  (let* ((alist (seq-filter (lambda (p) (fboundp (cdr p)))
+			      my/executer-picker-candidates))
+	   (choice (consult--read
+		    (mapcar #'car alist)
+		    :prompt "Run function: "
+		    :require-match t
+		    :annotate (lambda (cand)
+				(let* ((sym (cdr (assoc cand alist)))
+				       (doc (and sym (documentation sym))))
+				  (when doc
+				    (concat "  " (car (split-string doc "\n")))))))))
+    (let ((sym (cdr (assoc choice alist))))
+	(unless sym (user-error "No function for choice: %s" choice))
+	(if (commandp sym) (call-interactively sym) (funcall sym)))))
+
+(defun my/projectile-run-command-in-selected-project (command)
+  "Use `projectile-switch-project` to select a project, then run COMMAND
+in that project's root using `vterm` in a project-named buffer.
+Interactively, prompt for COMMAND using `shell-command-history`."
+  (interactive (list (read-string "Command: " nil 'shell-command-history)))
+  (require 'projectile)
+  (let* ((cmd command)
+	   (projectile-switch-project-action
+	    (lambda ()
+	      (let* ((root (projectile-project-root))
+		     (default-directory root)
+		     (proj (file-name-nondirectory (directory-file-name root)))
+		     (buffer-name (format "*async-%s-%s*" proj command)))
+		(vterm buffer-name)
+		(vterm-send-string cmd)
+		(vterm-send-return)))))
+    (projectile-switch-project)))
+
+(defun scan-worktree-projects ()
+  "Scan for all worktree directories and add them to Projectile."
+  (interactive)
+  (let ((base-dir (expand-file-name "~/binwarden/")))
+    (dolist (owner-repo (directory-files base-dir t "^[^.]"))
+	(when (file-directory-p owner-repo)
+	  (dolist (branch-dir (directory-files owner-repo t "^[^.]"))
+	    (when (and (file-directory-p branch-dir)
+		       (file-exists-p (expand-file-name ".git" branch-dir)))
+	      (projectile-add-known-project branch-dir)))))))
+
+(with-eval-after-load 'projectile
+  (scan-worktree-projects))
+
+(use-package ansi-color
+  :config
+  (defun my/colorize-compilation ()
+    "Colorize from `compilation-filter-start' to `point'."
+    (let ((inhibit-read-only t))
+	(ansi-color-apply-on-region
+	 compilation-filter-start (point))))
+
+  (add-hook 'compilation-filter-hook #'my/colorize-compilation)
+
+  (setq ansi-color-for-comint-mode t)
+  (setq comint-terminfo-terminal "xterm-256color"))
+
+(defun bitwarden/nx-poc-npm-i ()
+  "Run npm ci in the nx PoC"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-functionl 
+	    (lambda (_mode) (format "*nx-poc-npm-i*"))))
+    (compile "npm i" t)))
+
+(defun bitwarden/run-nx-poc-web ()
+  "Build the web vault of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/web"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-web-build*"))))
+    (compile "npm run build:watch" t)))
+
+(defun bitwarden/run-nx-poc-browser-chrome ()
+  "Build the chrome extension of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-chrome-build*"))))
+    (compile "npm run build:watch:chrome" t)))
+
+(defun bitwarden/run-nx-poc-browser-firefox ()
+  "Build the chrome extension of the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/browser"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-firefox-build*"))))
+    (compile "npm run build:watch:firefox" t)))
+
+(defun bitwarden/run-nx-poc-desktop ()
+  "Build the desktop applicaton in the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/desktop"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-desktop-build*"))))
+    (compile "npm run build:watch" t)))
+
+(defun bitwarden/build-nx-poc-cli ()
+  "Build the cli in the nx poc project with a uniquely named buffer."
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nx-poc") "/apps/cli"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-cli-build*"))))
+    (compile "npm run build" t)))
+
+(defun bitwarden/nx-poc-nx-report ()
+  "Runs nx report in the poc project"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-nx-report*"))))
+    (compile "npx nx report" t)))
+
+(defun bitwarden/nx/build (target)
+  "Build the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+			    '("common" "angular" "web" "cli" "desktop" "browser")
+			    nil nil nil nil "common")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-build*" target))))
+    (compile (format "npx nx build %s" target) t)))
+
+(defun bitwarden/nx/serve (target)
+  "Serve the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+			    '("web" "desktop" "browser")
+			    nil nil nil nil "web")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-serve*" target))))
+    (compile (format "npx nx serve %s" target) t)))
+
+(defun bitwarden/nx/start (target)
+  "Start the NX poc using NX for TARGET"
+  (interactive
+   (list (completing-read "Target to build: " 
+			    '("cli")
+			    nil nil nil nil "cli")))
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-pox-%s-start*" target))))
+    (compile (format "npx nx start %s --verbose" target) t)))
+
+(defun bitwarden/nx/cleanup ()
+  "Clean up the nx poc project"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nx-poc"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nx-poc-cleanup*"))))
+    (compile "rm -rf node_modules ; rm -rf .nx" t)))
+
+(defun my/nix/rebuild (system)
+  "Rebuild my nix config for the specified SYSTEM.
+  If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
+  runs 'nix-collect-garbage' and then the rebuild."
+  (interactive
+   (list (completing-read "System to rebuild: " 
+			    '("air" "bw" "homelab")
+			    nil nil nil nil "air")))
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-%s-rebuild*" system)))
+	   command)
+    (if (string= system "homelab")
+	  (setq command 
+		(string-join
+		 '("ssh -o StrictHostKeyChecking=no"
+		   "-i ~/.ssh/me"
+		   "root@homelab"
+		   "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
+		 " "))
+	(setq command (format "nix develop --command sudo rebuild %s" system)))
+    (compile command t)))
+
+(defun my/nix/format ()
+  "Run the formatters in my nix systems configuration"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-format*"))))
+    (compile "nix develop --command apply formatting" t)))
+
+(defun my/nix/collect-garbage ()
+  "Run the nix garbage collector"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-flake-update*"))))
+    (compile "nix-collect-garbage -d" t)))
+
+(defun my/nix/commit (message)
+  "Commit all files in my nix config with MESSAGE"
+  (interactive
+   (list (read-string "Commit message: " nil nil nil)))
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-commit*"))))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+
+(defun my/nix/flake-update ()
+  "Update flake lock in my nix systems config"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-flake-lock-update*"))))
+    (compile "nix flake update" t)))
+
+(defun my/nix/check-status ()
+  "Check the git status of my nix systems config"
+  (interactive)
+  (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-git-status*"))))
+    (compile "git status" t)))
+
+(defun my/nix/update-minecraft-packwize ()
+  "Update the pacckages for the packwiz server for my kids"
+  (interactive)
+  (let* ((default-directory (concat (my/get-project-path "nix") "/packwiz/bonesfamily"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-systems-packwiz-packages*"))))
+    (compile "packwiz " t)))
+
+(add-to-list 'my/executer-picker-candidates
+	       '("nix: update flake" . my/nix/flake-update))
+
+(add-to-list 'my/executer-picker-candidates
+	       '("nix: format" . my/nix/format))
+
+(add-to-list 'my/executer-picker-candidates
+	       '("nix: rebuild" . my/nix/rebuild))
+
+(defun my/quick-commit (message)
+  "Commit all files in my notes with MESSAGE"
+  (interactive
+   (list (read-string "Commit message: " nil nil nil)))
+  (let* ((default-directory (my/get-project-path "notes"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*notes-commit*"))))
+    (compile (format "git add . ; git commit -m %s ; git pull ; git push" message) t)))
+
+(defun my/worktree-build ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "BUILD_CMD") "make"))))
+
+(defun my/worktree-test ()
+  (interactive)
+  (let ((default-directory (projectile-project-root)))
+    (compile (or (getenv "TEST_CMD") "make test"))))
+
+(defun reset-file-to-revision ()
+  "Reset the current buffer's file to a specified revision using Magit."
+  (interactive)
+  (require 'magit)
+  (let* ((file-path (buffer-file-name))
+	   (default-directory (magit-toplevel))
+	   (revision (magit-read-branch-or-commit "Reset file to revision")))
+    (when (and file-path revision)
+	(let ((relative-file-path (file-relative-name file-path default-directory)))
+	  (magit-run-git "checkout" revision "--" relative-file-path)
+	  (revert-buffer t t t)
+	  (message "File reset to %s" revision)))))
+
+(defun my/run-gh-pr-checks ()
+  "Run 'gh pr checks' for the current PR with better formatting."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+	     (pr-number (oref pr number))
+	     (buffer-name (format "*gh-pr-checks:#%s*" pr-number))
+	     (cmd (format "gh pr checks %s --json name,state,link" pr-number)))
+	(with-current-buffer (get-buffer-create buffer-name)
+	  (let ((inhibit-read-only t))
+	    (erase-buffer)
+	    (shell-command cmd (current-buffer))
+	    (goto-char (point-min))
+	    (let* ((json-data (json-read))
+		   (checks (append json-data nil))
+		   (passed 0)
+		   (failed 0)
+		   (pending 0)
+		   (failed-jobs '()))
+
+	      ;; Count statuses and collect failed jobs
+	      (dolist (check checks)
+		(let ((state (cdr (assoc 'state check))))
+		  (cond
+		   ((string= state "SUCCESS") (cl-incf passed))
+		   ((string= state "FAILURE") 
+		    (cl-incf failed)
+		    (push check failed-jobs))
+		   (t (cl-incf pending)))))
+
+	      ;; Clear and format buffer
+	      (erase-buffer)
+	      (insert (propertize (format "PR #%s Checks Summary\n\n" pr-number)
+				  'face '(:weight bold :height 1.2)))
+	      (insert (format "Total: %d | " (length checks)))
+	      (insert (propertize (format "Passed: %d | " passed)
+				  'face '(:foreground "green")))
+	      (insert (propertize (format "Failed: %d | " failed)
+				  'face '(:foreground "red" :weight bold)))
+	      (insert (propertize (format "Pending: %d\n\n" pending)
+				  'face '(:foreground "orange")))
+
+	      ;; Add detailed listing
+	      (insert (propertize "All Checks:\n" 'face '(:weight bold)))
+	      (dolist (check checks)
+		(let* ((name (cdr (assoc 'name check)))
+		       (state (cdr (assoc 'state check)))
+		       (link (cdr (assoc 'link check)))
+		       (state-face (cond
+				    ((string= state "SUCCESS") '(:foreground "green"))
+				    ((string= state "FAILURE") '(:foreground "red"))
+				    (t '(:foreground "orange")))))
+		  (insert "• ")
+		  (insert (propertize (format "%-50s" (truncate-string-to-width name 50))
+				      'face '(:weight bold)))
+		  (insert " - ")
+		  (insert (propertize state 'face state-face))
+		  (when link
+		    (insert " [")
+		    (insert-text-button "Link"
+					'action (lambda (_) (browse-url link))
+					'follow-link t)
+		    (insert "]"))
+		  (insert "\n")))
+
+	      ;; Add failed jobs section
+	      (when failed-jobs
+		(insert "\n")
+		(insert (propertize "Failed Jobs:\n" 
+				    'face '(:foreground "red" :weight bold)))
+		(dolist (job failed-jobs)
+		  (let ((name (cdr (assoc 'name job)))
+			(link (cdr (assoc 'link job))))
+		    (insert "• ")
+		    (insert (propertize name 'face '(:foreground "red")))
+		    (when link
+		      (insert " → ")
+		      (insert-text-button "Open in Browser"
+					  'action (lambda (_) (browse-url link))
+					  'follow-link t))
+		    (insert "\n")))))
+
+	    (special-mode)
+	    (goto-char (point-min))
+	    (display-buffer (current-buffer)))))))
+
+(defun my/rerun-failed-gh-pr-checks ()
+  "Rerun failed checks for the current PR using GitHub CLI."
+  (interactive)
+  (when (eq major-mode 'forge-pullreq-mode)
+    (let* ((pr (forge-current-topic))
+	     (pr-number (oref pr number))
+	     ;; Use the JSON format that matches what gh pr checks outputs
+	     (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
+	     failed-jobs)
+
+	;; Get failed jobs
+	(message "Fetching checks for PR #%s..." pr-number)
+	(let ((json-output (shell-command-to-string cmd)))
+	  (condition-case err
+	      (let ((json-object (json-read-from-string json-output)))
+		(setq failed-jobs
+		      (seq-filter (lambda (job)
+				    (and (alist-get 'conclusion job nil nil #'equal)
+					 (string= (alist-get 'conclusion job) "failure")))
+				  json-object)))
+	    (error
+	     (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
+	     (setq failed-jobs nil))))
+
+	(if (null failed-jobs)
+	    (message "No failed jobs to rerun!")
+	  (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
+	    (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
+		  (counter 0))
+	      (with-current-buffer rerun-buffer
+		(let ((inhibit-read-only t))
+		  (erase-buffer)
+		  (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
+
+		  (dolist (job failed-jobs)
+		    (let* ((name (alist-get 'name job))
+			   (id (alist-get 'databaseId job))
+			   (rerun-cmd (format "gh run rerun %s" id)))
+		      (insert (format "• Rerunning: %s (ID: %s)..." name id))
+		      (let ((result (shell-command-to-string rerun-cmd)))
+			(if (string-match-p "Failed\\|Error" result)
+			    (insert (propertize " Failed\n" 'face '(:foreground "red")))
+			  (progn
+			    (cl-incf counter)
+			    (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
+
+		    (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
+						counter (length failed-jobs))
+					'face '(:weight bold)))
+		    (special-mode)
+		    (goto-char (point-min))
+		    (display-buffer (current-buffer)))))))))))
+
+(require 'gnus)
+(require 'smtpmail)
+(require 'message)
+(require 'oauth2) ;; For OAuth2 support with Gmail
+
+(setq user-full-name "Addison Beck")
+(setq user-mail-address "me@addisonbeck.com")
+
+;; Show all messages in all groups
+(setq gnus-parameters
+	'((".*" (display . all))))  
+
+;; Show all groups, including empty ones
+(setq gnus-permanently-visible-groups ".*")
+
+;; This shows all kinds of neat but verbose and annoying header information
+;;(setq gnus-show-all-headers t)
+
+;; Make 'A r' (gnus-summary-refer-article) the default listing function
+(setq gnus-summary-goto-unread nil)
+
+;; Always start with 'A A' behavior (show all articles)
+(add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
+
+	;;; Main Select Method (Primary Account)
+(setq gnus-select-method
+	'(nnimap "primary-account"
+		 (nnimap-address "box.addisonbeck.com")
+		 (nnimap-server-port 993)
+		 (nnimap-stream ssl)
+		 (nnmail-expiry-wait immediate)))
+
+;;; OAuth2 setup for Gmail
+(defun get-gmail-oauth2-token ()
+  "Get OAuth2 access token for Gmail."
+  (let* ((auth-info (nth 0 (auth-source-search :host "oauth2.googleapis.com" 
+						 :user "935901585839-b1c4q3mmjb4tuutgpd3aratopq7tf85k.apps.googleusercontent.com" 
+						 :service "oauth2")))
+	   (client-id (plist-get auth-info :user))
+	   (client-secret (let ((secret (plist-get auth-info :secret)))
+			    (if (functionp secret)
+				(funcall secret)
+			      secret)))
+	   (token (oauth2-token-access-token
+		   (oauth2-refresh-access
+		    (oauth2-auth-and-store
+		     "https://accounts.google.com/o/oauth2/auth"
+		     "https://oauth2.googleapis.com/token"
+		     client-id
+		     client-secret
+		     "https://mail.google.com/" nil)))))
+    token))
+
+;; Override auth function for Gmail accounts
+(defun gmail-oauth2-auth (server)
+  "Return the OAuth2 string for SERVER."
+  (when (string-match "imap.gmail.com" server)
+    (let ((token (get-gmail-oauth2-token)))
+	(when token
+	  (concat "user=addison@bitwarden.com\001auth=Bearer " 
+		  token "\001\001")))))
+
+;; Register auth function
+;;(add-to-list 'nnimap-authenticator-alist
+;;'(gmail-oauth2 gmail-oauth2-auth))
+
+;; Use the OAuth2 authenticator with Gmail
+(setq nnimap-authinfo-file "~/.authinfo")
+					  ;(setq nnimap-authenticator 'gmail-oauth2)
+
+(defun nnimap-xoauth2-oauth2-request (user server)
+  "Return the OAuth2 string for USER on SERVER."
+  (when (string-match "imap.gmail.com" server)
+    (let ((token (get-gmail-oauth2-token)))
+	(when token
+	  (concat "user=" user "\001auth=Bearer " token "\001\001")))))
+
+  ;;; Secondary Accounts
+(add-to-list 'gnus-secondary-select-methods
+	       '(nnimap "work-gmail"
+			(nnimap-address "imap.gmail.com")
+			(nnimap-server-port 993)
+			(nnimap-authenticator xoauth2)  
+			(nnimap-stream ssl)
+			(nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
+			(nnmail-expiry-wait immediate)))
+
+  ;;; Add more accounts as needed
+;;(add-to-list 'gnus-secondary-select-methods
+;;'(nnimap "personal"
+;;(nnimap-address "imap.personal.com")
+;;(nnimap-server-port 993)
+;;(nnimap-stream ssl)))
+
+;;; SMTP configuration with account selection
+(require 'smtpmail-multi)
+
+;; Define email accounts
+(setq smtpmail-multi-accounts
+	'((personal . ("me@addisonbeck.com"
+		       "box.addisonbeck.com"
+		       465
+		       "me@addisonbeck.com"
+		       nil
+		       starttls))
+	  (work-gmail . ("addison@bitwarden.com"
+			 "smtp.gmail.com" 
+			 587
+			 "addison@bitwarden.com"
+			 nil
+			 starttls))))
+
+;; Set default account
+(setq smtpmail-multi-default-account 'personal)
+
+;; Use smtpmail-multi as the send function
+(setq send-mail-function 'smtpmail-multi-send-it
+	message-send-mail-function 'smtpmail-multi-send-it)
+
+;;; Posting Styles - automatically set From, signature, etc. based on context
+(setq gnus-posting-styles
+	'((".*" ;; Default style
+	   (name "Addison Beck")
+	   (address "me@addisonbeck.com")
+	   (signature "Thanks,\nAddison"))
+	  ("work-gmail"
+	   (name "Addison Beck") 
+	   (address "addison@bitwarden.com")
+	   (organization "Bitwarden"))
+	  ;; Match based on recipient address
+	  ((header "to" "client@example\\.com")
+	   (address "work@gmail.com")
+	   (signature "Professional signature for clients"))
+	  ;; Add more context-specific styles as needed
+	  ))
+
+;;; Gmail-specific settings
+(setq gnus-parameters
+	'(("work-gmail"
+	   (display . all)
+	   (posting-style
+	    (name "Addison Beck")
+	    (address "addison@bitwarden.com")
+	    (signature "Thanks,\nAddison")))
+	  ("nnimap\\+work-gmail:\\[Gmail\\]/Sent Mail"
+	   (gcc-self . none))
+	  ("nnimap\\+work-gmail:\\[Gmail\\]/Trash"
+	   (expiry-wait . immediate))))
+
+;; Gmail doesn't need to save sent mail (it does this automatically)
+(setq gnus-message-archive-group
+	'((if (string-match "gmail\\.com" (message-sendmail-envelope-from))
+	      nil  ;; No need to save for Gmail
+	    "sent"))) ;; Archive for other accounts
+
+(setq gnus-topic-topology 
+	'(("Gnus" visible)
+	  (("Personal" visible)
+	   (("personal" visible)))
+	  (("Work" visible)
+	   (("work-gmail" visible)))))
+
+(setq gnus-topic-alist
+	'(("personal" . ("nnimap+personal:INBOX"))
+	  ("work-gmail" . ("nnimap+work-gmail:INBOX"
+			   "nnimap+work-gmail:[Gmail]/Sent Mail"
+			   "nnimap+work-gmail:[Gmail]/All Mail"))
+	  ("Gnus" . ("nndraft:drafts"))))
+
+;; Open articles in a vertical split
+(gnus-add-configuration
+ '(article
+   (horizontal 1.0
+		 (summary 0.5 point)
+		 (article 1.0))))
+
+;; Sort by reverse number (newest first)
+(setq gnus-thread-sort-functions
+	'((not gnus-thread-sort-by-number)))
+(setq gnus-article-sort-functions
+	'((not gnus-article-sort-by-number)))
+
+(gnus-demon-add-handler 'gnus-group-get-new-news 5 t)
+(gnus-demon-init)
+
+(setq magit-git-executable "/Users/me/.nix-profile/bin/git")
+
+(require 'agent-shell)
+(setq agent-shell-anthropic-authentication
+	(agent-shell-anthropic-make-authentication :login t))
+(setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
+(setq agent-shell-anthropic-claude-command '("claude-code-acp"))
+
+(setq agent-shell-mcp-servers
+	'(((name . "atlassian")
+	   (type . "sse")
+	   (url . "https://mcp.atlassian.com/v1/sse")
+	   (headers . []))
+	  ((name . "github")
+	   (command . "docker")
+	   (args . ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+		    "ghcr.io/github/github-mcp-server"))
+	   (env . []))))
+
+(use-package claude-code-ide
+  :commands (claude-code-ide claude-code-ide-menu)
+  :bind ("C-c C-'" . claude-code-ide-menu)
+  :custom
+  (claude-code-ide-cli-path "claude")
+  ;; ¯\_(ツ)_/¯
+  (claude-code-ide-cli-extra-flags "--dangerously-skip-permissions")
+  (claude-code-ide-terminal-backend 'vterm)
+  (claude-code-ide-window-side 'right)
+  (claude-code-ide-window-width 120)
+  (claude-code-ide-use-ide-diff t)
+  (claude-code-ide-mcp-allowed-tools 'auto)
+  (claude-code-ide-vterm-anti-flicker t)
+  :config
+  ;; Enable built-in MCP tools to expose Emacs capabilities to Claude
+  (claude-code-ide-emacs-tools-setup))
+
+(defun my/open-inbox ()
+  (interactive)
+  "Opens the inbox.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "roam/inbox.org" my-notes-directory)))
+(defun my/open-mobile-inbox ()
+  (interactive)
+  "Opens the inbox-mobile.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "roam/mobile-inbox.org" my-notes-directory)))
+(defun my/open-handwritten-inbox ()
+  (interactive)
+  "Opens the handwritten-inbox.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "roam/handwritten-inbox.org" my-notes-directory)))
+(defun my/open-emacs-config ()
+  (interactive)
+  "Opens the emacs.org file in the nix directory."
+  (interactive)
+  (find-file (expand-file-name "system/modules/emacs/default.nix" my-nix-systems-flake-directory)))
+(defun my/open-log ()
+  (interactive)
+  "Opens the logs.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "logs.org" my-notes-directory)))
+(defun my/open-prompts ()
+  (interactive)
+  "Opens the logs.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "prompts.org" my-notes-directory)))
+(defun my/open-budget ()
+  (interactive)
+  "Opens the logs.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "budget.org" my-notes-directory)))
+
+(defun my/projectile-magit-status ()
+  "Select a project via Projectile, then open Magit in that project."
+  (interactive)
+  (require 'projectile)
+  (let ((projectile-switch-project-action #'magit-status))
+    (projectile-switch-project)))
+
+;; This makes org-open-at-point just reuse the current split
+;; by default it tries to intelligently create one
+;; (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+(defun org-force-open-current-window ()
+  "Opens the link at point in the current window."
+  (interactive)
+  (let ((org-link-frame-setup (quote ((file . find-file)))))
+    (org-open-at-point)))
+
+(transient-define-prefix my/inbox-menu ()
+			   "Transient menu for getting to my inboxes"
+			   ["Submenu Actions"
+			    ("i" "Inbox" my/open-inbox)
+			    ("m" "Mobile Inbox" my/open-mobile-inbox)
+			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
+
+;; Define a submenu for "Go To Link"
+(transient-define-prefix my/go-to-link-menu ()
+			   "Go to link submenu."
+			   ["Go To Link"
+			    ("g" "Follow link in same window" org-open-at-point)
+			    ("h" "Force open in current window" org-force-open-current-window)])
+
+(transient-define-prefix my/go-menu ()
+			   "Transient menu for navigating key files."
+			   ["Go To"
+			    ("i" "Inboxes" my/inbox-menu)
+			    ("e" "Emacs Config" my/open-emacs-config)
+			    ("g" "Follow link" my/go-to-link-menu)
+			    ("p" "Prompts" my/open-prompts)
+			    ("b" "Budget" my/open-budget)
+			    ("m" "Magit" my/projectile-magit-status)
+			    ("r" "Elfreed" elfeed)
+			    ("l" "Log" my/open-log)])
+
+(defun my/insert-org-heading-with-timestamp (level text)
+  "Insert an org heading with specified text at the specified level.
+  Level should be 1-6, defaults to 1. Text defaults to current timestamp."
+  (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
+		   (list (read-number "Heading level (1-6): " 1)
+			 (completing-read "Heading text: " 
+					  nil nil nil nil nil timestamp))))
+  (let* ((level (max 1 (min 6 level))) ; Clamp to 1-6 range
+	   (stars (make-string level ?*))
+	   (heading (concat stars " " text)))
+    (beginning-of-line)
+    (insert heading)
+    (newline)))
+
+(defun my/insert-org-block (block-type &optional language)
+  "Insert an org block of specified type and position cursor inside.
+  For src blocks, optionally prompts for language."
+  (interactive 
+   (let* ((block-type (completing-read "Block type: " 
+					 '("src" "quote" "example" "verse" "center" 
+					   "comment" "export" "note" "warning" "tip" 
+					   "important" "error" "details" "summary")
+					 nil nil nil nil "src"))
+	    (language (when (string= block-type "src")
+			(completing-read "Language (optional): " 
+					 '("emacs-lisp" "python" "bash" "shell" "javascript" "typescript"
+					   "java" "c" "cpp" "go" "rust" "ruby" "perl" "php" "sql"
+					   "html" "css" "json" "yaml" "xml" "markdown" "r" "matlab"
+					   "octave" "scheme" "clojure" "haskell" "swift" "kotlin" 
+					   "scala" "lua" "dart" "elixir" "erlang" "nim" "zig"
+					   "dockerfile" "makefile" "org" "text" "conf" "csharp"
+					   "markdown")
+					 nil nil nil nil ""))))
+     (list block-type language)))
+  (end-of-line)
+  (newline)
+  (let ((begin-line (if (and language (not (string-empty-p language)))
+			  (format "#+begin_%s %s" block-type language)
+			(format "#+begin_%s" block-type)))
+	  (end-line (format "#+end_%s" block-type)))
+    (insert begin-line)
+    (newline)
+    (let ((content-pos (point)))
+	(newline)
+	(insert end-line)
+	(goto-char content-pos))))
+
+(defun my/projectile-insert-org-link-to-file ()
+  "Pick a project, then a file, and insert an Org link at point in the original buffer."
+  (interactive)
+  (require 'projectile)
+  (require 'org)
+  (let* ((origin-buf (current-buffer))
+	   (origin-pos (copy-marker (point) t))
+	   (projectile-switch-project-action
+	    (lambda ()
+	      (let* ((root (projectile-project-root))
+		     (file (projectile-completing-read
+			    "File: " (projectile-project-files root)))
+		     (abs  (expand-file-name file root))
+		     (link (org-link-make-string
+			    (concat "file:" (file-truename abs))
+			    (file-name-nondirectory abs))))
+		(when (buffer-live-p origin-buf)
+		  (with-current-buffer origin-buf
+		    (goto-char origin-pos)
+		    (if (eq major-mode 'vterm-mode)
+			;; In vterm, send text through the terminal process
+			(vterm-send-string link)
+		      ;; In normal buffers, insert directly
+		      (insert link))))))))
+    (unwind-protect
+	  (save-window-excursion
+	    (projectile-switch-project))
+	(set-marker origin-pos nil))))
+
+(transient-define-prefix my/insert-menu ()
+			   "Transient menu for inserting stuff places (usually under the cursor)."
+			   ["Insert"
+			    ("l" "LLM Prompt" my/search-llm-prompts)
+			    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
+			    ("b" "Org Block" my/insert-org-block)
+			    ("p" "Projectile File" my/projectile-insert-org-link-to-file)
+			    ("m" "Memory Link" org-roam-node-insert)])
+
+(defun my/search-notes ()
+  "Run projectile ripgrep search in the notes directory."
+  (interactive)
+  (let ((default-directory (my/get-project-path "notes")))
+    (projectile-find-file)))
+
+(transient-define-prefix my/search-menu ()
+			   "Transient menu for searching around the buffer(s), project, and filesystem."
+			   ["Search"
+			    ("s" "Line" consult-line)
+			    ("b" "Buffer" consult-buffer)
+			    ("f" "Find" consult-find)
+			    ("o" "Org Heading" consult-org-heading)
+			    ("m" "Memory" org-roam-node-find)
+			    ("j" "Jira" jira-search-issues-advanced)
+			    ("r" "Ripgrep" consult-ripgrep)
+			    ("n" "Notes" my/search-notes)])
+
+(defun my/create-named-vterm ()
+  "Prompt for a name, create a new vterm buffer called NAME-vterm, and open it."
+  (interactive)
+  (let* ((name      (read-string "Enter vterm name: "))
+	   (buf-name  (concat name "-vterm")))
+    (vterm buf-name)
+    (switch-to-buffer buf-name)))
+
+(defun my/create-claude-code-buffer ()
+  "Create a vterm buffer and launch Claude Code with user-selected project and description.
+
+Prompts for:
+1. Project directory (via projectile completion)
+2. Freeform description
+
+Buffer is named: claude-[sanitized-project]-[sanitized-description]"
+  (interactive)
+  (require 'projectile)
+  (let* ((sanitize (lambda (str)
+		       (replace-regexp-in-string
+			"-+" "-"
+			(replace-regexp-in-string
+			 "[^a-zA-Z0-9-]" "-"
+			 (downcase str)))))
+	   (project-dir (projectile-completing-read
+			 "Select project directory: "
+			 (projectile-relevant-known-projects)))
+	   (description (read-string "Enter buffer description: "))
+	   (project-name (funcall sanitize
+				  (file-name-nondirectory
+				   (directory-file-name project-dir))))
+	   (desc-sanitized (funcall sanitize description))
+	   (buf-name (format "claude-%s-%s" project-name desc-sanitized))
+	   (default-directory project-dir))
+    (vterm buf-name)
+    (switch-to-buffer buf-name)
+    (vterm-send-string "claude --dangerously-skip-permissions")
+    (vterm-send-return)))
+
+(transient-define-prefix my/create-menu ()
+			   "Create menu"
+			   [["Create"
+			     ("t" "terminal buffer" my/create-named-vterm)
+			     ("g" "claude code buffer" my/create-claude-code-buffer)
+			     ("m" "memory" my/create-memory-interactive)
+			     ("c" "Capture" org-capture)]])
+
+(transient-define-prefix my/execute-menu ()
+			   "Transient menu for executing actions in projects, files, buffers, etc."
+			   ["Execute"
+			    ("x" "Project Command" my/executer-picker)])
+
+(transient-define-prefix my/refile-menu ()
+			   "Transient menu for working with files."
+			   ["Execute"
+			    ("r" "org refile" org-refile)
+			    ("R" "org refile" org-roam-refile)])
+
+(defun my/toggle-visual-line-mode ()
+  "Toggle visual-line-mode for text wrapping."
+  (interactive)
+  (visual-line-mode (if visual-line-mode -1 1))
+  (message "Visual line mode %s" (if visual-line-mode "enabled" "disabled")))
+
+(transient-define-prefix my/emacs-state-menu ()
+			   "Transient menu for managing Emacs visual state."
+			   ["Emacs State"
+			    ("o" "Toggle Olivetti" my/toggle-olivetti)
+			    ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)
+			    ("w" "Toggle Visual Line Wrap" my/toggle-visual-line-mode)])
+
+(defun kill-process-on-port (port)
+  "Kill the process running on the specified PORT."
+  (interactive "sPort number: ")
+  (let ((pid-output (shell-command-to-string (format "lsof -ti:%s" port))))
+    (if (string-empty-p (string-trim pid-output))
+	  (message "No process found running on port %s" port)
+	(let ((pid (string-trim pid-output)))
+	  (shell-command (format "kill %s" pid))
+	  (message "Killed process %s running on port %s" pid port)))))
+
+(define-prefix-command 'my-custom-prefix)
+(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
+(which-key-add-key-based-replacements "C-a" "my commands")
+
+;; create "go" prefix map
+(define-prefix-command 'my-go-prefix)
+(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
+(which-key-add-key-based-replacements "C-a g" "go")
+
+(defun my/open-compilation-file-in-other-window ()
+  "open the current compilation match in another window.
+    creates a new window if needed or reuses an existing one."
+  (interactive)
+  (let ((window-count (length (window-list))))
+    (condition-case err
+	  (if (= window-count 1)
+	      ;; only one window, use built-in function that creates a new window
+	      (compilation-display-error)
+	    ;; multiple windows exist, use the next window
+	    (let ((this-window (selected-window)))
+	      (other-window 1)
+	      (let ((target-window (selected-window)))
+		(select-window this-window)
+		;; use next-error-no-select to get location without changing windows
+		(let ((location (next-error-no-select)))
+		  (select-window target-window)
+		  (switch-to-buffer (marker-buffer (car location)))
+		  (goto-char (marker-position (car location)))))))
+	;; catch any errors silently
+	(error (message "no valid location found at point")))))
+
+(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
+(which-key-add-key-based-replacements "C-a g f" "go to file")
+
+(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
+(which-key-add-key-based-replacements "C-a g d" "go to definition")
+(which-key-add-key-based-replacements "C-a g e" "emacs config")
+
+(define-prefix-command 'my-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
+(which-key-add-key-based-replacements "C-a c" "compile")
+
+(define-prefix-command 'my-nix-compile-prefix)
+(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
+(which-key-add-key-based-replacements "C-a c n" "nix")
+
+(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
+(which-key-add-key-based-replacements "C-a c n r" "rebuild")
+
+(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
+(which-key-add-key-based-replacements "C-a c n f" "format")
+
+(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
+(which-key-add-key-based-replacements "C-a c n c" "commit")
+
+;; create "find" prefix map
+(define-prefix-command 'my-find-prefix)
+(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+(which-key-add-key-based-replacements "C-a f" "find")
+
+(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+(which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+(which-key-add-key-based-replacements "C-a f p" "project")
+
+(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+(which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+(which-key-add-key-based-replacements "C-a f F" "file in project")
+
+(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
+
+(evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
+(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+(with-eval-after-load 'org-agenda
+  (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
+
+(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+(evil-define-key 'normal 'global (kbd "z z") (lambda () (interactive) (recenter)))
+(evil-define-key 'normal 'global (kbd "z t") (lambda () (interactive) (recenter 0)))
+(defun line-to-bottom-of-window ()
+  "Shift current line to the bottom of the window - i.e. zb in Vim"
+  (interactive)
+  (set-window-start (selected-window) (point))
+  (scroll-down (- (window-height) 3)))
+(evil-define-key 'normal 'global (kbd "z b") 'line-to-bottom-of-window)
+
+;; E-reader style page scrolling: 1-line overlap for reading continuity
+(setq next-screen-context-lines 1)
+(setq scroll-preserve-screen-position t)
+
+;; Arrow key page scrolling (original bindings restored)
+(evil-define-key 'normal 'global (kbd "<left>") 'scroll-down-command)
+(evil-define-key 'normal 'global (kbd "<right>") 'scroll-up-command)
+
+;; Page Up/Down with e-reader behavior (motion state = normal + visual + motion)
+(evil-define-key 'motion 'global (kbd "<prior>") 'scroll-down-command)
+(evil-define-key 'motion 'global (kbd "<next>") 'scroll-up-command)
+
+(with-eval-after-load 'elfeed-show
+  (require 'hnreader)
+  (require 'evil)
+
+  (defun my/elfeed-show-hn-comments ()
+    "Open Hacker News comments for the link at point in elfeed-show-mode."
+    (interactive)
+    (message "my/elfeed-show-hn-comments invoked.")
+    (let ((link (elfeed-get-link-at-point)))
+	(message "Link at point: %s" link)
+	;; Check if it's a valid HN item link
+	(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+	    (progn ;; Use progn to execute multiple forms
+	      (message "Found HN link: %s. Calling hnreader-comment..." link)
+	      ;; Pass the full link URL to hnreader-comment
+	      (hnreader-comment link)
+	      (message "hnreader-comment called with URL."))
+	  (message "No Hacker News item link found at point or link doesn't match pattern."))))
+
+  (evil-define-key 'normal elfeed-show-mode-map
+		     (kbd "c") #'my/elfeed-show-hn-comments))
+
+(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+
+(defun my/projectile-find-file-in-all-projects ()
+  "Find file across all registered Projectile projects with improved performance."
+  (interactive)
+  (let* ((projects (projectile-relevant-known-projects))
+	   (file-cache-var 'my/projectile-all-files-cache)
+	   (cache-validity-seconds 300) ;; 5 minute cache validity
+	   (current-time (current-time))
+	   (use-cache (and (boundp file-cache-var)
+			   (< (float-time (time-subtract 
+					   current-time
+					   (get file-cache-var 'timestamp)))
+			      cache-validity-seconds)))
+	   (cached-files (and use-cache (symbol-value file-cache-var))))
+
+    (if use-cache
+	  (message "Using cached file list (%d files)" (length cached-files))
+	;; Build cache using external commands for speed
+	(message "Building file list from %d projects..." (length projects))
+	(let ((all-files '())
+	      (temp-file (make-temp-file "projectile-files-")))
+	  ;; Using external find/sort is much faster than pure elisp
+	  (with-temp-file temp-file
+	    (dolist (project projects)
+	      (when (file-exists-p project)
+		(let* ((project-name (file-name-nondirectory 
+				      (directory-file-name project)))
+		       ;; Add project name prefix to each file for context
+		       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+				    (shell-quote-argument project)
+				    project-name)))
+		  (call-process-shell-command cmd nil t)))))
+
+	  ;; Read results back and build alist of (display . filepath)
+	  (with-temp-buffer
+	    (insert-file-contents temp-file)
+	    (goto-char (point-min))
+	    (while (not (eobp))
+	      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+		     ;; Fix: Only split on the first colon
+		     (split-pos (string-match ":" line))
+		     (project-name (when split-pos (substring line 0 split-pos)))
+		     (rel-file (when split-pos (substring line (1+ split-pos))))
+		     (full-path (when (and project-name rel-file)
+				  (expand-file-name
+				   (string-remove-prefix "./" rel-file)
+				   (car (seq-filter (lambda (p) 
+						      (string-suffix-p project-name p))
+						    projects))))))
+		(when (and project-name rel-file full-path)
+		  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+	      (forward-line 1)))
+
+	  (delete-file temp-file)
+	  ;; Save and timestamp the cache
+	  (set file-cache-var all-files)
+	  (put file-cache-var 'timestamp current-time)
+	  (message "Found %d files across projects" (length all-files))))
+
+    ;; Use the cached or newly-built list
+    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+	(if file-list
+	    ;; Use completing-read for the selection interface
+	    (let* ((chosen (completing-read "Find file in projects: " 
+					    (mapcar #'car file-list) nil t))
+		   (file-path (cdr (assoc chosen file-list))))
+	      (when file-path
+		(find-file file-path)))
+	  (message "No files found across projects")))))
+
+(defun my/open-pr-url-at-point ()
+  "Open the PR_URL property of the current org agenda item."
+  (interactive)
+  (let* ((marker (or (org-get-at-bol 'org-marker)
+		       (org-agenda-error)))
+	   (buffer (marker-buffer marker))
+	   (pos (marker-position marker))
+	   url)
+    (with-current-buffer buffer
+	(save-excursion
+	  (goto-char pos)
+	  (setq url (org-entry-get (point) "PR_URL"))))
+    (when url
+	(browse-url url))))
+
+(evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
+(evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
+(evil-define-key '(normal insert) 'global (kbd "C-m") #'my/insert-menu)
+(evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
+(evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
+(evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
+(evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
+(evil-define-key 'normal 'global (kbd "C-x") #'my/execute-menu)
+(evil-define-key 'normal 'global (kbd "C-r") #'my/refile-menu)
+
+(defun my/cominit-mode-set-keybindings ()
+  (interactive)
+  "Sets all my cominit mode specific keybindings"
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-<return>") #'my/insert-menu)
+  (local-set-key (kbd "C-m") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  (local-set-key (kbd "C-x") #'my/execute-menu)
+
+  (evil-define-key '(normal visual motion) magit-status-mode-map
+		     (kbd "C-g") #'my/go-menu
+		     (kbd "C-<return>") #'my/insert-menu
+		     (kbd "C-m") #'my/insert-menu
+		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-x") #'my/execute-menu
+		     (kbd "C-b") #'my/create-menu)
+  )
+
+(defun my/magit-status-mode-set-keybindings ()
+  (interactive)
+  "Sets all my magit-status mode specific keybindings"
+  ;; Using local-set-key ensures the binding takes precedence in the current buffer
+  (local-set-key (kbd "C-b") #'my/create-menu)
+  (local-set-key (kbd "C-g") #'my/go-menu)
+  (local-set-key (kbd "C-<return>") #'my/insert-menu)
+  (local-set-key (kbd "C-m") #'my/insert-menu)
+  (local-set-key (kbd "C-s") #'my/search-menu)
+  (local-set-key (kbd "C-x") #'my/execute-menu)
+
+  ;; Also set the evil motion state map as a backup approach
+  (evil-define-key '(normal visual motion) magit-status-mode-map
+		     (kbd "C-g") #'my/go-menu
+		     (kbd "C-<return>") #'my/insert-menu
+		     (kbd "C-m") #'my/insert-menu
+		     (kbd "C-s") #'my/search-menu
+		     (kbd "C-x") #'my/execute-menu
+		     (kbd "C-b") #'my/create-menu)
+  )
+
+(defun magit-status-mode-init ()
+  "Function to run on magit status mode init"
+  (my/magit-status-mode-set-keybindings)
+  (my/toggle-olivetti))
+(add-hook 'magit-status-mode-hook #'magit-status-mode-init)
+
+(advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
+
+(provide 'init)
+
+;; Local Variables:
+;; byte-compile-warnings: (not free-vars)
+;; End:
+			  ;;; init.el ends here
