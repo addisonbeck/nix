@@ -18,3 +18,9 @@
 
   (advice-add #'display-startup-echo-area-message :override #'ignore)
 #+end_src
+
+#+begin_src emacs-lisp
+  ;; Disable menu bar in terminal mode
+  (unless (display-graphic-p)
+    (menu-bar-mode -1))
+#+end_src
