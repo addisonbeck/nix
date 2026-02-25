@@ -1751,13 +1751,31 @@ It would be cool if this also had some kind of interactive starting directory / 
 
 #+begin_src emacs-lisp
   (defun my/create-claude-code-buffer ()
-    "Create a vterm buffer in the current project and launch Claude Code with --dangerously-skip-permissions."
+    "Create a vterm buffer and launch Claude Code with user-selected project and description.
+
+Prompts for:
+1. Project directory (via projectile completion)
+2. Freeform description
+
+Buffer is named: claude-[sanitized-project]-[sanitized-description]"
     (interactive)
-    (let* ((project-root (if (projectile-project-p)
-			     (projectile-project-root)
-			   default-directory))
-	   (buf-name "claude-code-vterm")
-	   (default-directory project-root))
+    (require 'projectile)
+    (let* ((sanitize (lambda (str)
+                       (replace-regexp-in-string
+                        "-+" "-"
+                        (replace-regexp-in-string
+                         "[^a-zA-Z0-9-]" "-"
+                         (downcase str)))))
+           (project-dir (projectile-completing-read
+                         "Select project directory: "
+                         (projectile-relevant-known-projects)))
+           (description (read-string "Enter buffer description: "))
+           (project-name (funcall sanitize
+                                  (file-name-nondirectory
+                                   (directory-file-name project-dir))))
+           (desc-sanitized (funcall sanitize description))
+           (buf-name (format "claude-%s-%s" project-name desc-sanitized))
+           (default-directory project-dir))
       (vterm buf-name)
       (switch-to-buffer buf-name)
       (vterm-send-string "claude --dangerously-skip-permissions")
