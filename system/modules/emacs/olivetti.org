@@ -22,7 +22,7 @@
     (olivetti-mode 1)
     (olivetti-set-width 120))
 
-(global-set-key (kbd "<f1>") 'my/toggle-olivetti)
+(global-set-key (kbd "<f3>") 'my/toggle-olivetti)
 #+end_src
 
 #+RESULTS:

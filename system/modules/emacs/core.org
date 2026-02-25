@@ -1793,6 +1793,15 @@ It would be cool if this also had some kind of interactive starting directory / 
 			    ("R" "org refile" org-roam-refile)])
 #+end_src
 
+** The "Emacs State" Menu
+#+begin_src emacs-lisp :tangle core.el
+  (transient-define-prefix my/emacs-state-menu ()
+    "Transient menu for managing Emacs visual state."
+    ["Emacs State"
+     ("o" "Toggle Olivetti" my/toggle-olivetti)
+     ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)])
+#+end_src
+
 * Kill Thing Running On Port
 
 #+begin_src emacs-lisp
@@ -1891,7 +1900,7 @@ It would be cool if this also had some kind of interactive starting directory / 
   (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
   (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
 
-  (evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+  (evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
   (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
 
   (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
@@ -2030,6 +2039,7 @@ It would be cool if this also had some kind of interactive starting directory / 
   (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
   (evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
   (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
+  (evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
   (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
   (evil-define-key 'normal 'global (kbd "C-b") #'my/create-menu)
   (evil-define-key 'normal 'global (kbd "C-x") #'my/execute-menu)
