@@ -8,23 +8,23 @@
 ** TODO Set up org clock
 * Basic Settings
 #+begin_src emacs-lisp
-;; Disable backup files and configure indentation
-(setq make-backup-files nil)
-(setq-default indent-tabs-mode nil)
-(electric-indent-mode 1)
-(setq-default tab-width 2
-	indent-tabs-mode nil
-	tab-stop-list (number-sequence 2 120 2))
-(setq confirm-kill-emacs nil)
-(setq auto-save-default nil
-create-lockfiles nil)
-(setq select-enable-clipboard t)
-(setq case-fold-search t)
-(xterm-mouse-mode 1)
-(setq-default fill-column 77)
-(global-hl-line-mode -1)
-(setq sentence-end-double-space nil)
-(setq ring-bell-function 'ignore)
+  ;; Disable backup files and configure indentation
+  (setq make-backup-files nil)
+  (setq-default indent-tabs-mode nil)
+  (electric-indent-mode 1)
+  (setq-default tab-width 2
+		indent-tabs-mode nil
+		tab-stop-list (number-sequence 2 120 2))
+  (setq confirm-kill-emacs nil)
+  (setq auto-save-default nil
+	create-lockfiles nil)
+  (setq select-enable-clipboard t)
+  (setq case-fold-search t)
+  (xterm-mouse-mode 1)
+  (setq-default fill-column 77)
+  (global-hl-line-mode -1)
+  (setq sentence-end-double-space nil)
+  (setq ring-bell-function 'ignore)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -35,18 +35,18 @@ create-lockfiles nil)
 Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 #+begin_src emacs-lisp
-(defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
-  "Path to my notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
-  "Path to my agenda directory, located in the notes directory."
-  :type 'directory
-  :group 'org)
-(defcustom my-nix-systems-flake-directory "/Users/me/nix"
-  "Path to my nix directory."
-  :type 'directory
-  :group 'org)
+  (defcustom my-notes-directory "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/"
+    "Path to my notes directory."
+    :type 'directory
+    :group 'org)
+  (defcustom my-agenda-directory (expand-file-name "agenda" my-notes-directory)
+    "Path to my agenda directory, located in the notes directory."
+    :type 'directory
+    :group 'org)
+  (defcustom my-nix-systems-flake-directory "/Users/me/nix"
+    "Path to my nix directory."
+    :type 'directory
+    :group 'org)
 #+end_src
 
 * Kill Other Buffers
@@ -138,81 +138,118 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 * Evil Mode Configuration
 #+begin_src emacs-lisp
-;; Test
-(setq evil-want-integration t)
-(setq evil-want-keybinding nil)
-(setq evil-want-C-u-scroll t)
+  ;; Test
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  (setq evil-want-C-u-scroll t)
 
-(use-package evil
-  :ensure t
-  :config
-  (evil-mode 1)
+  (use-package evil
+    :ensure t
+    :config
+    (evil-mode 1)
 
-  ;; Custom movement functions
-  (defun evil-move-half-page-down ()
-    "Move cursor half page down"
-    (interactive)
-    (evil-next-line (/ (window-height) 4))
-    (evil-scroll-line-to-center nil))
+    ;; Custom movement functions
+    (defun evil-move-half-page-down ()
+      "Move cursor half page down"
+      (interactive)
+      (evil-next-line (/ (window-height) 4))
+      (evil-scroll-line-to-center nil))
 
-  (defun evil-move-half-page-up ()
-    "Move cursor half page up"
-    (interactive)
-    (evil-previous-line (/ (window-height) 4))
-    (evil-scroll-line-to-center nil))
+    (defun evil-move-half-page-up ()
+      "Move cursor half page up"
+      (interactive)
+      (evil-previous-line (/ (window-height) 4))
+      (evil-scroll-line-to-center nil))
 
-  ;; Bind J and K to half-page movement
-  (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
-  (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
+    ;; Bind J and K to half-page movement
+    (define-key evil-normal-state-map (kbd "J") 'evil-move-half-page-down)
+    (define-key evil-normal-state-map (kbd "K") 'evil-move-half-page-up))
 
-(use-package evil-collection
-  :ensure t
-  :after evil
-  :config
-  (evil-collection-init))
+  (use-package evil-collection
+    :ensure t
+    :after evil
+    :config
+    (evil-collection-init))
 
-;; Configure evil-collection for magit
-(with-eval-after-load 'evil-collection-magit
-  (evil-collection-define-key 'normal 'magit-status-mode-map
-			"V" #'magit-start-region-select))
-(require 'evil-org-agenda)
-(evil-org-agenda-set-keys)
-(evil-define-key 'motion org-agenda-mode-map
-	   (kbd "C-p") 'projectile-switch-project
-	   (kbd "C-f") 'projectile-find-file
-	   (kbd "<left>") 'org-agenda-earlier
-	   (kbd "<right>") 'org-agenda-later
-	   (kbd "gx")  'org-agenda-open-link
-	   (kbd "t") 'org-agenda-todo
-	   (kbd "T") 'org-agenda-todo-yesterday)
+  ;; Configure evil-collection for magit
+  (with-eval-after-load 'evil-collection-magit
+    (evil-collection-define-key 'normal 'magit-status-mode-map
+				"V" #'magit-start-region-select))
+  (require 'evil-org-agenda)
+  (evil-org-agenda-set-keys)
+  (evil-define-key 'motion org-agenda-mode-map
+		   (kbd "C-p") 'projectile-switch-project
+		   (kbd "C-f") 'projectile-find-file
+		   (kbd "<left>") 'org-agenda-earlier
+		   (kbd "<right>") 'org-agenda-later
+		   (kbd "gx")  'org-agenda-open-link
+		   (kbd "t") 'org-agenda-todo
+		   (kbd "T") 'org-agenda-todo-yesterday)
 #+end_src
 
 * Vterm Configuration
 #+begin_src emacs-lisp
-(with-eval-after-load 'vterm
-  (require 'evil-collection-vterm)
-  (evil-collection-vterm-setup)
+  (with-eval-after-load 'vterm
+    (require 'evil-collection-vterm)
+    (evil-collection-vterm-setup)
 
-  ;; Pass shift+up and shift+down directly to the terminal.
-  ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
-  ;; shift variants must be added explicitly for terminal apps that need them.
-  (evil-define-key 'insert vterm-mode-map
-    (kbd "<S-up>")   #'vterm--self-insert
-    (kbd "<S-down>") #'vterm--self-insert)
-  (evil-define-key 'normal vterm-mode-map
-    (kbd "<S-up>")   #'vterm--self-insert
-    (kbd "<S-down>") #'vterm--self-insert)
+    ;; Pass shift+up and shift+down directly to the terminal.
+    ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
+    ;; shift variants must be added explicitly for terminal apps that need them.
+    (evil-define-key 'insert vterm-mode-map
+		     (kbd "<S-up>")   #'vterm--self-insert
+		     (kbd "<S-down>") #'vterm--self-insert)
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "<S-up>")   #'vterm--self-insert
+		     (kbd "<S-down>") #'vterm--self-insert)
 
-  ;; Restore custom projectile keybindings
-  (evil-define-key 'normal vterm-mode-map
-    (kbd "C-p") 'projectile-switch-project
-    (kbd "C-f") 'projectile-find-file))
+    ;; Restore custom projectile keybindings
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "C-p") 'projectile-switch-project
+		     (kbd "C-f") 'projectile-find-file)
 
-;; Vterm mood hook
-(defun vterm-mode-init ()
-  "Function to run on vterm mode init"
-  (my/toggle-olivetti))
-(add-hook 'vterm-mode-hook #'vterm-mode-init)
+    ;; F1 for vterm copy mode (useful on mobile over SSH)
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "<f1>") 'vterm-copy-mode))
+
+  ;; Vterm mood hook
+  (defun vterm-mode-init ()
+    "Function to run on vterm mode init"
+    (my/toggle-olivetti))
+  (add-hook 'vterm-mode-hook #'vterm-mode-init)
+#+end_src
+
+* Mobile Mode for Phone/SSH Usage
+Mobile mode provides better ergonomics when using Emacs over SSH on mobile devices by increasing font size and setting appropriate terminal width.
+#+begin_src emacs-lisp
+  ;; Mobile mode state tracking
+  (defvar my/mobile-mode-active nil
+    "Whether mobile mode is currently active.")
+
+  (defvar my/mobile-mode-original-columns nil
+    "Store the original COLUMNS value before enabling mobile mode.")
+
+  (defun my/toggle-mobile-mode ()
+    "Toggle mobile mode: increase font size (frame-local) and set COLUMNS=120 for vterm."
+    (interactive)
+    (if my/mobile-mode-active
+	;; Disable mobile mode
+	(progn
+	  (text-scale-set 0)  ; Reset to default scale
+	  (setenv "COLUMNS" my/mobile-mode-original-columns)
+	  (setq my/mobile-mode-active nil)
+	  (message "Mobile mode disabled"))
+      ;; Enable mobile mode
+      (progn
+	(setq my/mobile-mode-original-columns (getenv "COLUMNS"))
+	(text-scale-set 3)  ; Increase font size significantly for mobile
+	(setenv "COLUMNS" "120")
+	(setq my/mobile-mode-active t)
+	(message "Mobile mode enabled: font increased, COLUMNS=120"))))
+
+  ;; F2 binding for mobile mode toggle
+  (evil-define-key 'normal 'global (kbd "<f2>") 'my/toggle-mobile-mode)
+  (evil-define-key 'insert 'global (kbd "<f2>") 'my/toggle-mobile-mode)
 #+end_src
 
 * Cycle Line Number Function
@@ -242,9 +279,9 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 #+end_src
 * Server Configuration
 #+begin_src emacs-lisp
-(require 'server)
-(unless (server-running-p)
-  (server-start))
+  (require 'server)
+  (unless (server-running-p)
+    (server-start))
 #+end_src
 
 * Project Management
@@ -334,20 +371,20 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 * Basic Settings and Markdown Configuration
 #+begin_src emacs-lisp
-;; Basic settings
-(setq notes-directory "~/notes")
-(setq markdown-command "pandoc")
+  ;; Basic settings
+  (setq notes-directory "~/notes")
+  (setq markdown-command "pandoc")
 
-;; Markdown configuration
-(use-package markdown-mode
-  :ensure t
-  :mode (("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode)))
+  ;; Markdown configuration
+  (use-package markdown-mode
+    :ensure t
+    :mode (("\\.md\\'" . markdown-mode)
+	   ("\\.markdown\\'" . markdown-mode)))
 
-(defun org-region-to-markdown (start end)
-  "Convert the selected region from Org to Markdown using pandoc."
-  (interactive "r")
-  (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
+  (defun org-region-to-markdown (start end)
+    "Convert the selected region from Org to Markdown using pandoc."
+    (interactive "r")
+    (shell-command-on-region start end "pandoc -f org -t markdown" "*Pandoc Output*" t))
 #+end_src
 
 * Which Key Configuration
@@ -513,27 +550,27 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 I use this space to write a bunch of custom commands for interacting with projects I work on frequently.
 
 #+begin_src emacs-lisp
-;; We're going to add to this down the chain
-(defvar my/executer-picker-candidates nil
-  "Alist mapping display names to interactive functions for `my/executer-picker'.")
+  ;; We're going to add to this down the chain
+  (defvar my/executer-picker-candidates nil
+    "Alist mapping display names to interactive functions for `my/executer-picker'.")
 
-(defun my/executer-picker ()
-  "Pick a function via Consult and run it (interactively if possible)."
-  (interactive)
-  (let* ((alist (seq-filter (lambda (p) (fboundp (cdr p)))
-                            my/executer-picker-candidates))
-         (choice (consult--read
-                  (mapcar #'car alist)
-                  :prompt "Run function: "
-                  :require-match t
-                  :annotate (lambda (cand)
-                              (let* ((sym (cdr (assoc cand alist)))
-                                     (doc (and sym (documentation sym))))
-                                (when doc
-                                  (concat "  " (car (split-string doc "\n")))))))))
-    (let ((sym (cdr (assoc choice alist))))
-      (unless sym (user-error "No function for choice: %s" choice))
-      (if (commandp sym) (call-interactively sym) (funcall sym)))))
+  (defun my/executer-picker ()
+    "Pick a function via Consult and run it (interactively if possible)."
+    (interactive)
+    (let* ((alist (seq-filter (lambda (p) (fboundp (cdr p)))
+			      my/executer-picker-candidates))
+	   (choice (consult--read
+		    (mapcar #'car alist)
+		    :prompt "Run function: "
+		    :require-match t
+		    :annotate (lambda (cand)
+				(let* ((sym (cdr (assoc cand alist)))
+				       (doc (and sym (documentation sym))))
+				  (when doc
+				    (concat "  " (car (split-string doc "\n")))))))))
+      (let ((sym (cdr (assoc choice alist))))
+	(unless sym (user-error "No function for choice: %s" choice))
+	(if (commandp sym) (call-interactively sym) (funcall sym)))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -716,28 +753,28 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 ** My Nix Systems Configuration
 
 #+begin_src emacs-lisp
-(defun my/nix/rebuild (system)
-  "Rebuild my nix config for the specified SYSTEM.
-If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
-runs 'nix-collect-garbage' and then the rebuild."
-  (interactive
-   (list (completing-read "System to rebuild: " 
-			  '("air" "bw" "homelab")
-			  nil nil nil nil "air")))
-  (let* ((default-directory (my/get-project-path "nix"))
-	 (compilation-buffer-name-function 
-	  (lambda (_mode) (format "*nix-%s-rebuild*" system)))
-	 command)
-    (if (string= system "homelab")
-	(setq command 
-	      (string-join
-	       '("ssh -o StrictHostKeyChecking=no"
-		 "-i ~/.ssh/me"
-		 "root@homelab"
-		 "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
-	       " "))
-      (setq command (format "nix develop --command sudo rebuild %s" system)))
-    (compile command t)))
+  (defun my/nix/rebuild (system)
+    "Rebuild my nix config for the specified SYSTEM.
+  If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
+  runs 'nix-collect-garbage' and then the rebuild."
+    (interactive
+     (list (completing-read "System to rebuild: " 
+			    '("air" "bw" "homelab")
+			    nil nil nil nil "air")))
+    (let* ((default-directory (my/get-project-path "nix"))
+	   (compilation-buffer-name-function 
+	    (lambda (_mode) (format "*nix-%s-rebuild*" system)))
+	   command)
+      (if (string= system "homelab")
+	  (setq command 
+		(string-join
+		 '("ssh -o StrictHostKeyChecking=no"
+		   "-i ~/.ssh/me"
+		   "root@homelab"
+		   "\"nix-collect-garbage && nixos-rebuild switch --flake github:addisonbeck/nix#homelab\"")
+		 " "))
+	(setq command (format "nix develop --command sudo rebuild %s" system)))
+      (compile command t)))
 #+end_src
 
 #+RESULTS:
@@ -808,15 +845,14 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp
-(add-to-list 'my/executer-picker-candidates
-             '("nix: update flake" . my/nix/flake-update))
+  (add-to-list 'my/executer-picker-candidates
+	       '("nix: update flake" . my/nix/flake-update))
 
-(add-to-list 'my/executer-picker-candidates
-             '("nix: format" . my/nix/format))
+  (add-to-list 'my/executer-picker-candidates
+	       '("nix: format" . my/nix/format))
 
-(add-to-list 'my/executer-picker-candidates
-             '("nix: rebuild" . my/nix/rebuild))
-
+  (add-to-list 'my/executer-picker-candidates
+	       '("nix: rebuild" . my/nix/rebuild))
 #+end_src
 
 ** My notes
@@ -957,58 +993,58 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/rerun-failed-gh-pr-checks ()
-  "Rerun failed checks for the current PR using GitHub CLI."
-  (interactive)
-  (when (eq major-mode 'forge-pullreq-mode)
-    (let* ((pr (forge-current-topic))
-           (pr-number (oref pr number))
-           ;; Use the JSON format that matches what gh pr checks outputs
-           (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
-           failed-jobs)
-      
-      ;; Get failed jobs
-      (message "Fetching checks for PR #%s..." pr-number)
-      (let ((json-output (shell-command-to-string cmd)))
-        (condition-case err
-            (let ((json-object (json-read-from-string json-output)))
-              (setq failed-jobs
-                    (seq-filter (lambda (job)
-                                  (and (alist-get 'conclusion job nil nil #'equal)
-                                       (string= (alist-get 'conclusion job) "failure")))
-                                json-object)))
-          (error
-           (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
-           (setq failed-jobs nil))))
-      
-      (if (null failed-jobs)
-          (message "No failed jobs to rerun!")
-        (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
-          (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
-                (counter 0))
-            (with-current-buffer rerun-buffer
-              (let ((inhibit-read-only t))
-                (erase-buffer)
-                (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
-                
-                (dolist (job failed-jobs)
-                  (let* ((name (alist-get 'name job))
-                         (id (alist-get 'databaseId job))
-                         (rerun-cmd (format "gh run rerun %s" id)))
-                    (insert (format "• Rerunning: %s (ID: %s)..." name id))
-                    (let ((result (shell-command-to-string rerun-cmd)))
-                      (if (string-match-p "Failed\\|Error" result)
-                          (insert (propertize " Failed\n" 'face '(:foreground "red")))
-                        (progn
-                          (cl-incf counter)
-                          (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
-                
-                (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
-                                           counter (length failed-jobs))
-                                   'face '(:weight bold)))
-                (special-mode)
-                (goto-char (point-min))
-                (display-buffer (current-buffer)))))))))))
+  (defun my/rerun-failed-gh-pr-checks ()
+    "Rerun failed checks for the current PR using GitHub CLI."
+    (interactive)
+    (when (eq major-mode 'forge-pullreq-mode)
+      (let* ((pr (forge-current-topic))
+	     (pr-number (oref pr number))
+	     ;; Use the JSON format that matches what gh pr checks outputs
+	     (cmd (format "gh pr checks %s --json name,databaseId,status,conclusion" pr-number))
+	     failed-jobs)
+
+	;; Get failed jobs
+	(message "Fetching checks for PR #%s..." pr-number)
+	(let ((json-output (shell-command-to-string cmd)))
+	  (condition-case err
+	      (let ((json-object (json-read-from-string json-output)))
+		(setq failed-jobs
+		      (seq-filter (lambda (job)
+				    (and (alist-get 'conclusion job nil nil #'equal)
+					 (string= (alist-get 'conclusion job) "failure")))
+				  json-object)))
+	    (error
+	     (message "Error parsing JSON: %S\nOutput was: %s" err (substring json-output 0 100))
+	     (setq failed-jobs nil))))
+
+	(if (null failed-jobs)
+	    (message "No failed jobs to rerun!")
+	  (when (yes-or-no-p (format "Rerun %d failed check(s)? " (length failed-jobs)))
+	    (let ((rerun-buffer (get-buffer-create "*gh-rerun-checks*"))
+		  (counter 0))
+	      (with-current-buffer rerun-buffer
+		(let ((inhibit-read-only t))
+		  (erase-buffer)
+		  (insert (propertize "Rerunning failed checks...\n\n" 'face '(:weight bold)))
+
+		  (dolist (job failed-jobs)
+		    (let* ((name (alist-get 'name job))
+			   (id (alist-get 'databaseId job))
+			   (rerun-cmd (format "gh run rerun %s" id)))
+		      (insert (format "• Rerunning: %s (ID: %s)..." name id))
+		      (let ((result (shell-command-to-string rerun-cmd)))
+			(if (string-match-p "Failed\\|Error" result)
+			    (insert (propertize " Failed\n" 'face '(:foreground "red")))
+			  (progn
+			    (cl-incf counter)
+			    (insert (propertize " Triggered\n" 'face '(:foreground "green")))))))
+
+		    (insert (propertize (format "\nSuccessfully triggered %d/%d job reruns." 
+						counter (length failed-jobs))
+					'face '(:weight bold)))
+		    (special-mode)
+		    (goto-char (point-min))
+		    (display-buffer (current-buffer)))))))))))
 #+end_src
 
 ** View reviews for PR
@@ -1196,7 +1232,7 @@ runs 'nix-collect-garbage' and then the rebuild."
   ;; Always start with 'A A' behavior (show all articles)
   (add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
 
-    ;;; Main Select Method (Primary Account)
+      ;;; Main Select Method (Primary Account)
   (setq gnus-select-method
 	'(nnimap "primary-account"
 		 (nnimap-address "box.addisonbeck.com")
@@ -1206,7 +1242,7 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp 
-  ;;; OAuth2 setup for Gmail
+    ;;; OAuth2 setup for Gmail
   (defun get-gmail-oauth2-token ()
     "Get OAuth2 access token for Gmail."
     (let* ((auth-info (nth 0 (auth-source-search :host "oauth2.googleapis.com" 
@@ -1246,29 +1282,29 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp 
-(defun nnimap-xoauth2-oauth2-request (user server)
-  "Return the OAuth2 string for USER on SERVER."
-  (when (string-match "imap.gmail.com" server)
-    (let ((token (get-gmail-oauth2-token)))
-      (when token
-        (concat "user=" user "\001auth=Bearer " token "\001\001")))))
+  (defun nnimap-xoauth2-oauth2-request (user server)
+    "Return the OAuth2 string for USER on SERVER."
+    (when (string-match "imap.gmail.com" server)
+      (let ((token (get-gmail-oauth2-token)))
+	(when token
+	  (concat "user=" user "\001auth=Bearer " token "\001\001")))))
 
-;;; Secondary Accounts
-(add-to-list 'gnus-secondary-select-methods
-             '(nnimap "work-gmail"
-               (nnimap-address "imap.gmail.com")
-               (nnimap-server-port 993)
-               (nnimap-authenticator xoauth2)  
-               (nnimap-stream ssl)
-               (nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
-               (nnmail-expiry-wait immediate)))
+  ;;; Secondary Accounts
+  (add-to-list 'gnus-secondary-select-methods
+	       '(nnimap "work-gmail"
+			(nnimap-address "imap.gmail.com")
+			(nnimap-server-port 993)
+			(nnimap-authenticator xoauth2)  
+			(nnimap-stream ssl)
+			(nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
+			(nnmail-expiry-wait immediate)))
 
-;;; Add more accounts as needed
-;;(add-to-list 'gnus-secondary-select-methods
-             ;;'(nnimap "personal"
-               ;;(nnimap-address "imap.personal.com")
-               ;;(nnimap-server-port 993)
-               ;;(nnimap-stream ssl)))
+  ;;; Add more accounts as needed
+  ;;(add-to-list 'gnus-secondary-select-methods
+  ;;'(nnimap "personal"
+  ;;(nnimap-address "imap.personal.com")
+  ;;(nnimap-server-port 993)
+  ;;(nnimap-stream ssl)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1299,22 +1335,22 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp 
-;;; Posting Styles - automatically set From, signature, etc. based on context
-(setq gnus-posting-styles
-      '((".*" ;; Default style
-         (name "Addison Beck")
-         (address "me@addisonbeck.com")
-         (signature "Thanks,\nAddison"))
-        ("work-gmail"
-         (name "Addison Beck") 
-         (address "addison@bitwarden.com")
-         (organization "Bitwarden"))
-        ;; Match based on recipient address
-        ((header "to" "client@example\\.com")
-         (address "work@gmail.com")
-         (signature "Professional signature for clients"))
-        ;; Add more context-specific styles as needed
-        ))
+  ;;; Posting Styles - automatically set From, signature, etc. based on context
+  (setq gnus-posting-styles
+	'((".*" ;; Default style
+	   (name "Addison Beck")
+	   (address "me@addisonbeck.com")
+	   (signature "Thanks,\nAddison"))
+	  ("work-gmail"
+	   (name "Addison Beck") 
+	   (address "addison@bitwarden.com")
+	   (organization "Bitwarden"))
+	  ;; Match based on recipient address
+	  ((header "to" "client@example\\.com")
+	   (address "work@gmail.com")
+	   (signature "Professional signature for clients"))
+	  ;; Add more context-specific styles as needed
+	  ))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1339,19 +1375,19 @@ runs 'nix-collect-garbage' and then the rebuild."
 #+end_src
 
 #+begin_src emacs-lisp 
-(setq gnus-topic-topology 
-      '(("Gnus" visible)
-        (("Personal" visible)
-         (("personal" visible)))
-        (("Work" visible)
-         (("work-gmail" visible)))))
+  (setq gnus-topic-topology 
+	'(("Gnus" visible)
+	  (("Personal" visible)
+	   (("personal" visible)))
+	  (("Work" visible)
+	   (("work-gmail" visible)))))
 
-(setq gnus-topic-alist
-      '(("personal" . ("nnimap+personal:INBOX"))
-        ("work-gmail" . ("nnimap+work-gmail:INBOX"
-                         "nnimap+work-gmail:[Gmail]/Sent Mail"
-                         "nnimap+work-gmail:[Gmail]/All Mail"))
-        ("Gnus" . ("nndraft:drafts"))))
+  (setq gnus-topic-alist
+	'(("personal" . ("nnimap+personal:INBOX"))
+	  ("work-gmail" . ("nnimap+work-gmail:INBOX"
+			   "nnimap+work-gmail:[Gmail]/Sent Mail"
+			   "nnimap+work-gmail:[Gmail]/All Mail"))
+	  ("Gnus" . ("nndraft:drafts"))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1381,22 +1417,22 @@ runs 'nix-collect-garbage' and then the rebuild."
 
 * Agent Shell
 #+begin_src emacs-lisp
-(require 'agent-shell)
-(setq agent-shell-anthropic-authentication
-      (agent-shell-anthropic-make-authentication :login t))
-(setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
-(setq agent-shell-anthropic-claude-command '("claude-code-acp"))
+  (require 'agent-shell)
+  (setq agent-shell-anthropic-authentication
+	(agent-shell-anthropic-make-authentication :login t))
+  (setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
+  (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
 
-(setq agent-shell-mcp-servers
-      '(((name . "atlassian")
-         (type . "sse")
-         (url . "https://mcp.atlassian.com/v1/sse")
-         (headers . []))
-        ((name . "github")
-         (command . "docker")
-         (args . ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
-                  "ghcr.io/github/github-mcp-server"))
-         (env . []))))
+  (setq agent-shell-mcp-servers
+	'(((name . "atlassian")
+	   (type . "sse")
+	   (url . "https://mcp.atlassian.com/v1/sse")
+	   (headers . []))
+	  ((name . "github")
+	   (command . "docker")
+	   (args . ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
+		    "ghcr.io/github/github-mcp-server"))
+	   (env . []))))
 #+end_src
 
 * Claude Code IDE
@@ -1424,56 +1460,56 @@ runs 'nix-collect-garbage' and then the rebuild."
 This cool and lame at the same time
 
 #+begin_src emacs-lisp :tangle no
-;; Make minibuffer more comfortable for text entry
-;; Allow the minibuffer to be resized automatically
-;;(setq resize-mini-windows t)
-(setq max-mini-window-height 0.5) ;; Allow up to half the frame height
+  ;; Make minibuffer more comfortable for text entry
+  ;; Allow the minibuffer to be resized automatically
+  ;;(setq resize-mini-windows t)
+  (setq max-mini-window-height 0.5) ;; Allow up to half the frame height
 
-;; Improved minibuffer appearance
-				  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
+  ;; Improved minibuffer appearance
+					  ;(set-face-attribute 'minibuffer-prompt nil :weight 'bold :foreground "#5FAFD7")
 
-;; Use miniedit for better text editing in minibuffer
-(use-package miniedit
-  :ensure t
-  :config
-  (miniedit-install)
-  ;; Add a message to show usage in minibuffer prompts
-  (add-hook 'minibuffer-setup-hook
-      (lambda ()
-	(when (> (frame-width) 80) ;; Only show if we have room
-	  (message "Use C-M-e for full buffer editing")))))
+  ;; Use miniedit for better text editing in minibuffer
+  (use-package miniedit
+    :ensure t
+    :config
+    (miniedit-install)
+    ;; Add a message to show usage in minibuffer prompts
+    (add-hook 'minibuffer-setup-hook
+	      (lambda ()
+		(when (> (frame-width) 80) ;; Only show if we have room
+		  (message "Use C-M-e for full buffer editing")))))
 
-;; Floating minibuffer with mini-frame
-(use-package mini-frame
-  ;;:if window-system  ;; Only use in GUI mode
-  :ensure t
-  :custom
-  (mini-frame-show-parameters
-   '((top . 0.35)
-     (width . 0.7)
-     (left . 0.5)))
-  :config
-  ;; Specify which commands should NOT use mini-frame
-  (setq mini-frame-ignore-commands
-  '(consult-line
-    consult-outline
-    consult-mark
-    consult-imenu
-    eval-expression
-    "^ivy-"
-    "^swiper$"))
-  (mini-frame-mode 1))
+  ;; Floating minibuffer with mini-frame
+  (use-package mini-frame
+    ;;:if window-system  ;; Only use in GUI mode
+    :ensure t
+    :custom
+    (mini-frame-show-parameters
+     '((top . 0.35)
+       (width . 0.7)
+       (left . 0.5)))
+    :config
+    ;; Specify which commands should NOT use mini-frame
+    (setq mini-frame-ignore-commands
+	  '(consult-line
+	    consult-outline
+	    consult-mark
+	    consult-imenu
+	    eval-expression
+	    "^ivy-"
+	    "^swiper$"))
+    (mini-frame-mode 1))
 
-;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
-(defun my/setup-miniedit-buffer ()
-  "Set up the miniedit buffer for comfortable editing."
-  (when (string-match "\\*MiniEdit\\*" (buffer-name))
-    (when (fboundp 'olivetti-mode)
-(olivetti-mode 1)
-(setq-local olivetti-body-width 80))
-    (visual-line-mode 1)))
+  ;; Automatically apply olivetti-mode in miniedit buffers for nicer text editing
+  (defun my/setup-miniedit-buffer ()
+    "Set up the miniedit buffer for comfortable editing."
+    (when (string-match "\\*MiniEdit\\*" (buffer-name))
+      (when (fboundp 'olivetti-mode)
+	(olivetti-mode 1)
+	(setq-local olivetti-body-width 80))
+      (visual-line-mode 1)))
 
-(add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
+  (add-hook 'text-mode-hook 'my/setup-miniedit-buffer)
 #+end_src
 
 * Transient Menus
@@ -1519,132 +1555,132 @@ This cool and lame at the same time
 #+end_src
 
 #+begin_src emacs-lisp
-(defun my/projectile-magit-status ()
-  "Select a project via Projectile, then open Magit in that project."
-  (interactive)
-  (require 'projectile)
-  (let ((projectile-switch-project-action #'magit-status))
-    (projectile-switch-project)))
+  (defun my/projectile-magit-status ()
+    "Select a project via Projectile, then open Magit in that project."
+    (interactive)
+    (require 'projectile)
+    (let ((projectile-switch-project-action #'magit-status))
+      (projectile-switch-project)))
 #+end_src
 
 *** The Org Opener Thing
 #+begin_src emacs-lisp
-;; This makes org-open-at-point just reuse the current split
-;; by default it tries to intelligently create one
-;; (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
-(defun org-force-open-current-window ()
-  "Opens the link at point in the current window."
-  (interactive)
-  (let ((org-link-frame-setup (quote ((file . find-file)))))
-    (org-open-at-point)))
+  ;; This makes org-open-at-point just reuse the current split
+  ;; by default it tries to intelligently create one
+  ;; (setf (cdr (assoc 'file org-link-frame-setup)) 'find-file)
+  (defun org-force-open-current-window ()
+    "Opens the link at point in the current window."
+    (interactive)
+    (let ((org-link-frame-setup (quote ((file . find-file)))))
+      (org-open-at-point)))
 #+end_src
 *** Go Menu Definition
 
 #+begin_src emacs-lisp
-(transient-define-prefix my/inbox-menu ()
-  "Transient menu for getting to my inboxes"
-  ["Submenu Actions"
-   ("i" "Inbox" my/open-inbox)
-   ("m" "Mobile Inbox" my/open-mobile-inbox)
-   ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
+  (transient-define-prefix my/inbox-menu ()
+			   "Transient menu for getting to my inboxes"
+			   ["Submenu Actions"
+			    ("i" "Inbox" my/open-inbox)
+			    ("m" "Mobile Inbox" my/open-mobile-inbox)
+			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
 
-;; Define a submenu for "Go To Link"
-(transient-define-prefix my/go-to-link-menu ()
-  "Go to link submenu."
-  ["Go To Link"
-   ("g" "Follow link in same window" org-open-at-point)
-   ("h" "Force open in current window" org-force-open-current-window)])
+  ;; Define a submenu for "Go To Link"
+  (transient-define-prefix my/go-to-link-menu ()
+			   "Go to link submenu."
+			   ["Go To Link"
+			    ("g" "Follow link in same window" org-open-at-point)
+			    ("h" "Force open in current window" org-force-open-current-window)])
 
-(transient-define-prefix my/go-menu ()
-  "Transient menu for navigating key files."
-  ["Go To"
-   ("i" "Inboxes" my/inbox-menu)
-   ("e" "Emacs Config" my/open-emacs-config)
-   ("g" "Follow link" my/go-to-link-menu)
-   ("p" "Prompts" my/open-prompts)
-   ("b" "Budget" my/open-budget)
-   ("m" "Magit" my/projectile-magit-status)
-   ("r" "Elfreed" elfeed)
-   ("l" "Log" my/open-log)])
+  (transient-define-prefix my/go-menu ()
+			   "Transient menu for navigating key files."
+			   ["Go To"
+			    ("i" "Inboxes" my/inbox-menu)
+			    ("e" "Emacs Config" my/open-emacs-config)
+			    ("g" "Follow link" my/go-to-link-menu)
+			    ("p" "Prompts" my/open-prompts)
+			    ("b" "Budget" my/open-budget)
+			    ("m" "Magit" my/projectile-magit-status)
+			    ("r" "Elfreed" elfeed)
+			    ("l" "Log" my/open-log)])
 #+end_src
 
 ** The "Insert" Menu
 #+begin_src emacs-lisp
-(defun my/insert-org-heading-with-timestamp (level text)
-  "Insert an org heading with specified text at the specified level.
-Level should be 1-6, defaults to 1. Text defaults to current timestamp."
-  (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
-                 (list (read-number "Heading level (1-6): " 1)
-                       (completing-read "Heading text: " 
-                                       nil nil nil nil nil timestamp))))
-  (let* ((level (max 1 (min 6 level))) ; Clamp to 1-6 range
-         (stars (make-string level ?*))
-         (heading (concat stars " " text)))
-    (beginning-of-line)
-    (insert heading)
-    (newline)))
+  (defun my/insert-org-heading-with-timestamp (level text)
+    "Insert an org heading with specified text at the specified level.
+  Level should be 1-6, defaults to 1. Text defaults to current timestamp."
+    (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
+		   (list (read-number "Heading level (1-6): " 1)
+			 (completing-read "Heading text: " 
+					  nil nil nil nil nil timestamp))))
+    (let* ((level (max 1 (min 6 level))) ; Clamp to 1-6 range
+	   (stars (make-string level ?*))
+	   (heading (concat stars " " text)))
+      (beginning-of-line)
+      (insert heading)
+      (newline)))
 
-(defun my/insert-org-block (block-type &optional language)
-  "Insert an org block of specified type and position cursor inside.
-For src blocks, optionally prompts for language."
-  (interactive 
-   (let* ((block-type (completing-read "Block type: " 
-                                      '("src" "quote" "example" "verse" "center" 
-                                        "comment" "export" "note" "warning" "tip" 
-                                        "important" "error" "details" "summary")
-                                      nil nil nil nil "src"))
-          (language (when (string= block-type "src")
-                      (completing-read "Language (optional): " 
-                                      '("emacs-lisp" "python" "bash" "shell" "javascript" "typescript"
-                                        "java" "c" "cpp" "go" "rust" "ruby" "perl" "php" "sql"
-                                        "html" "css" "json" "yaml" "xml" "markdown" "r" "matlab"
-                                        "octave" "scheme" "clojure" "haskell" "swift" "kotlin" 
-                                        "scala" "lua" "dart" "elixir" "erlang" "nim" "zig"
-                                        "dockerfile" "makefile" "org" "text" "conf" "csharp"
-                                        "markdown")
-                                      nil nil nil nil ""))))
-     (list block-type language)))
-  (end-of-line)
-  (newline)
-  (let ((begin-line (if (and language (not (string-empty-p language)))
-                        (format "#+begin_%s %s" block-type language)
-                      (format "#+begin_%s" block-type)))
-        (end-line (format "#+end_%s" block-type)))
-    (insert begin-line)
+  (defun my/insert-org-block (block-type &optional language)
+    "Insert an org block of specified type and position cursor inside.
+  For src blocks, optionally prompts for language."
+    (interactive 
+     (let* ((block-type (completing-read "Block type: " 
+					 '("src" "quote" "example" "verse" "center" 
+					   "comment" "export" "note" "warning" "tip" 
+					   "important" "error" "details" "summary")
+					 nil nil nil nil "src"))
+	    (language (when (string= block-type "src")
+			(completing-read "Language (optional): " 
+					 '("emacs-lisp" "python" "bash" "shell" "javascript" "typescript"
+					   "java" "c" "cpp" "go" "rust" "ruby" "perl" "php" "sql"
+					   "html" "css" "json" "yaml" "xml" "markdown" "r" "matlab"
+					   "octave" "scheme" "clojure" "haskell" "swift" "kotlin" 
+					   "scala" "lua" "dart" "elixir" "erlang" "nim" "zig"
+					   "dockerfile" "makefile" "org" "text" "conf" "csharp"
+					   "markdown")
+					 nil nil nil nil ""))))
+       (list block-type language)))
+    (end-of-line)
     (newline)
-    (let ((content-pos (point)))
+    (let ((begin-line (if (and language (not (string-empty-p language)))
+			  (format "#+begin_%s %s" block-type language)
+			(format "#+begin_%s" block-type)))
+	  (end-line (format "#+end_%s" block-type)))
+      (insert begin-line)
       (newline)
-      (insert end-line)
-      (goto-char content-pos))))
+      (let ((content-pos (point)))
+	(newline)
+	(insert end-line)
+	(goto-char content-pos))))
 
-(defun my/projectile-insert-org-link-to-file ()
-  "Pick a project, then a file, and insert an Org link at point in the original buffer."
-  (interactive)
-  (require 'projectile)
-  (require 'org)
-  (let* ((origin-buf (current-buffer))
-         (origin-pos (copy-marker (point) t))
-         (projectile-switch-project-action
-          (lambda ()
-            (let* ((root (projectile-project-root))
-                   (file (projectile-completing-read
-                          "File: " (projectile-project-files root)))
-                   (abs  (expand-file-name file root))
-                   (link (org-link-make-string
-                          (concat "file:" (file-truename abs))
-                          (file-name-nondirectory abs))))
-              (when (buffer-live-p origin-buf)
-                (with-current-buffer origin-buf
-                  (goto-char origin-pos)
-                  (if (eq major-mode 'vterm-mode)
-                      ;; In vterm, send text through the terminal process
-                      (vterm-send-string link)
-                    ;; In normal buffers, insert directly
-                    (insert link))))))))
-    (unwind-protect
-        (save-window-excursion
-          (projectile-switch-project))
-      (set-marker origin-pos nil))))
+  (defun my/projectile-insert-org-link-to-file ()
+    "Pick a project, then a file, and insert an Org link at point in the original buffer."
+    (interactive)
+    (require 'projectile)
+    (require 'org)
+    (let* ((origin-buf (current-buffer))
+	   (origin-pos (copy-marker (point) t))
+	   (projectile-switch-project-action
+	    (lambda ()
+	      (let* ((root (projectile-project-root))
+		     (file (projectile-completing-read
+			    "File: " (projectile-project-files root)))
+		     (abs  (expand-file-name file root))
+		     (link (org-link-make-string
+			    (concat "file:" (file-truename abs))
+			    (file-name-nondirectory abs))))
+		(when (buffer-live-p origin-buf)
+		  (with-current-buffer origin-buf
+		    (goto-char origin-pos)
+		    (if (eq major-mode 'vterm-mode)
+			;; In vterm, send text through the terminal process
+			(vterm-send-string link)
+		      ;; In normal buffers, insert directly
+		      (insert link))))))))
+      (unwind-protect
+	  (save-window-excursion
+	    (projectile-switch-project))
+	(set-marker origin-pos nil))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1718,10 +1754,10 @@ It would be cool if this also had some kind of interactive starting directory / 
     "Create a vterm buffer in the current project and launch Claude Code with --dangerously-skip-permissions."
     (interactive)
     (let* ((project-root (if (projectile-project-p)
-                             (projectile-project-root)
-                           default-directory))
-           (buf-name "claude-code-vterm")
-           (default-directory project-root))
+			     (projectile-project-root)
+			   default-directory))
+	   (buf-name "claude-code-vterm")
+	   (default-directory project-root))
       (vterm buf-name)
       (switch-to-buffer buf-name)
       (vterm-send-string "claude --dangerously-skip-permissions")
@@ -1750,242 +1786,242 @@ It would be cool if this also had some kind of interactive starting directory / 
 ** The "Refile" Menu
 
 #+begin_src emacs-lisp
-(transient-define-prefix my/refile-menu ()
-		   "Transient menu for working with files."
-		   ["Execute"
-		    ("r" "org refile" org-refile)
-        ("R" "org refile" org-roam-refile)])
+  (transient-define-prefix my/refile-menu ()
+			   "Transient menu for working with files."
+			   ["Execute"
+			    ("r" "org refile" org-refile)
+			    ("R" "org refile" org-roam-refile)])
 #+end_src
 
 * Kill Thing Running On Port
 
 #+begin_src emacs-lisp
-(defun kill-process-on-port (port)
-  "Kill the process running on the specified PORT."
-  (interactive "sPort number: ")
-  (let ((pid-output (shell-command-to-string (format "lsof -ti:%s" port))))
-    (if (string-empty-p (string-trim pid-output))
-        (message "No process found running on port %s" port)
-      (let ((pid (string-trim pid-output)))
-        (shell-command (format "kill %s" pid))
-        (message "Killed process %s running on port %s" pid port)))))
+  (defun kill-process-on-port (port)
+    "Kill the process running on the specified PORT."
+    (interactive "sPort number: ")
+    (let ((pid-output (shell-command-to-string (format "lsof -ti:%s" port))))
+      (if (string-empty-p (string-trim pid-output))
+	  (message "No process found running on port %s" port)
+	(let ((pid (string-trim pid-output)))
+	  (shell-command (format "kill %s" pid))
+	  (message "Killed process %s running on port %s" pid port)))))
 #+end_src
 
 * Custom Keymaps
 ** General
 
 #+begin_src emacs-lisp
-(define-prefix-command 'my-custom-prefix)
-(evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
-(which-key-add-key-based-replacements "C-a" "my commands")
+  (define-prefix-command 'my-custom-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
+  (which-key-add-key-based-replacements "C-a" "my commands")
 
-;; create "go" prefix map
-(define-prefix-command 'my-go-prefix)
-(evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
-(which-key-add-key-based-replacements "C-a g" "go")
+  ;; create "go" prefix map
+  (define-prefix-command 'my-go-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
+  (which-key-add-key-based-replacements "C-a g" "go")
 
-(defun my/open-compilation-file-in-other-window ()
-  "open the current compilation match in another window.
-  creates a new window if needed or reuses an existing one."
-  (interactive)
-  (let ((window-count (length (window-list))))
-    (condition-case err
-  (if (= window-count 1)
-      ;; only one window, use built-in function that creates a new window
-      (compilation-display-error)
-    ;; multiple windows exist, use the next window
-    (let ((this-window (selected-window)))
-      (other-window 1)
-      (let ((target-window (selected-window)))
-	(select-window this-window)
-	;; use next-error-no-select to get location without changing windows
-	(let ((location (next-error-no-select)))
-	  (select-window target-window)
-	  (switch-to-buffer (marker-buffer (car location)))
-	  (goto-char (marker-position (car location)))))))
-;; catch any errors silently
-(error (message "no valid location found at point")))))
-
-(evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
-(which-key-add-key-based-replacements "C-a g f" "go to file")
-
-(evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
-(which-key-add-key-based-replacements "C-a g d" "go to definition")
-(which-key-add-key-based-replacements "C-a g e" "emacs config")
-
-(define-prefix-command 'my-compile-prefix)
-(evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
-(which-key-add-key-based-replacements "C-a c" "compile")
-
-(define-prefix-command 'my-nix-compile-prefix)
-(evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
-(which-key-add-key-based-replacements "C-a c n" "nix")
-
-(evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
-(which-key-add-key-based-replacements "C-a c n r" "rebuild")
-
-(evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
-(which-key-add-key-based-replacements "C-a c n f" "format")
-
-(evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
-(which-key-add-key-based-replacements "C-a c n c" "commit")
-
-;; create "find" prefix map
-(define-prefix-command 'my-find-prefix)
-(evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
-(which-key-add-key-based-replacements "C-a f" "find")
-
-(evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
-(which-key-add-key-based-replacements "C-a f g" "ripgrep")
-
-(evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
-(which-key-add-key-based-replacements "C-a f p" "project")
-
-(evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
-(which-key-add-key-based-replacements "C-a f f" "file in directory")
-
-(evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
-(which-key-add-key-based-replacements "C-a f F" "file in project")
-
-(evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
-(which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
-(evil-define-key 'normal 'global (kbd "U") 'undo-redo)
-
-(evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
-(evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
-
-(evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
-(evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
-
-(evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
-(with-eval-after-load 'org-agenda
-  (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
-
-(evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
-
-(evil-define-key 'normal 'global (kbd "z z") (lambda () (interactive) (recenter)))
-(evil-define-key 'normal 'global (kbd "z t") (lambda () (interactive) (recenter 0)))
-(defun line-to-bottom-of-window ()
-  "Shift current line to the bottom of the window - i.e. zb in Vim"
-  (interactive)
-  (set-window-start (selected-window) (point))
-  (scroll-down (- (window-height) 3)))
-(evil-define-key 'normal 'global (kbd "z b") 'line-to-bottom-of-window)
-
-(evil-define-key 'normal 'global (kbd "<left>") 'scroll-down-command)
-(evil-define-key 'normal 'global (kbd "<right>") 'scroll-up-command)
-
-(with-eval-after-load 'elfeed-show
-  (require 'hnreader)
-  (require 'evil)
-
-  (defun my/elfeed-show-hn-comments ()
-    "Open Hacker News comments for the link at point in elfeed-show-mode."
+  (defun my/open-compilation-file-in-other-window ()
+    "open the current compilation match in another window.
+    creates a new window if needed or reuses an existing one."
     (interactive)
-    (message "my/elfeed-show-hn-comments invoked.")
-    (let ((link (elfeed-get-link-at-point)))
-(message "Link at point: %s" link)
-;; Check if it's a valid HN item link
-(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
-    (progn ;; Use progn to execute multiple forms
-      (message "Found HN link: %s. Calling hnreader-comment..." link)
-      ;; Pass the full link URL to hnreader-comment
-      (hnreader-comment link)
-      (message "hnreader-comment called with URL."))
-  (message "No Hacker News item link found at point or link doesn't match pattern."))))
+    (let ((window-count (length (window-list))))
+      (condition-case err
+	  (if (= window-count 1)
+	      ;; only one window, use built-in function that creates a new window
+	      (compilation-display-error)
+	    ;; multiple windows exist, use the next window
+	    (let ((this-window (selected-window)))
+	      (other-window 1)
+	      (let ((target-window (selected-window)))
+		(select-window this-window)
+		;; use next-error-no-select to get location without changing windows
+		(let ((location (next-error-no-select)))
+		  (select-window target-window)
+		  (switch-to-buffer (marker-buffer (car location)))
+		  (goto-char (marker-position (car location)))))))
+	;; catch any errors silently
+	(error (message "no valid location found at point")))))
 
-  (evil-define-key 'normal elfeed-show-mode-map
-	     (kbd "c") #'my/elfeed-show-hn-comments))
+  (evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
+  (which-key-add-key-based-replacements "C-a g f" "go to file")
 
-(evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
-(evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
-(evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
-(evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+  (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
+  (which-key-add-key-based-replacements "C-a g d" "go to definition")
+  (which-key-add-key-based-replacements "C-a g e" "emacs config")
 
-(defun my/projectile-find-file-in-all-projects ()
-  "Find file across all registered Projectile projects with improved performance."
-  (interactive)
-  (let* ((projects (projectile-relevant-known-projects))
-   (file-cache-var 'my/projectile-all-files-cache)
-   (cache-validity-seconds 300) ;; 5 minute cache validity
-   (current-time (current-time))
-   (use-cache (and (boundp file-cache-var)
-		   (< (float-time (time-subtract 
-				   current-time
-				   (get file-cache-var 'timestamp)))
-		      cache-validity-seconds)))
-   (cached-files (and use-cache (symbol-value file-cache-var))))
+  (define-prefix-command 'my-compile-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
+  (which-key-add-key-based-replacements "C-a c" "compile")
 
-    (if use-cache
-  (message "Using cached file list (%d files)" (length cached-files))
-;; Build cache using external commands for speed
-(message "Building file list from %d projects..." (length projects))
-(let ((all-files '())
-      (temp-file (make-temp-file "projectile-files-")))
-  ;; Using external find/sort is much faster than pure elisp
-  (with-temp-file temp-file
-    (dolist (project projects)
-      (when (file-exists-p project)
-	(let* ((project-name (file-name-nondirectory 
-			      (directory-file-name project)))
-	       ;; Add project name prefix to each file for context
-	       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
-			    (shell-quote-argument project)
-			    project-name)))
-	  (call-process-shell-command cmd nil t)))))
+  (define-prefix-command 'my-nix-compile-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
+  (which-key-add-key-based-replacements "C-a c n" "nix")
 
-  ;; Read results back and build alist of (display . filepath)
-  (with-temp-buffer
-    (insert-file-contents temp-file)
-    (goto-char (point-min))
-    (while (not (eobp))
-      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
-	     ;; Fix: Only split on the first colon
-	     (split-pos (string-match ":" line))
-	     (project-name (when split-pos (substring line 0 split-pos)))
-	     (rel-file (when split-pos (substring line (1+ split-pos))))
-	     (full-path (when (and project-name rel-file)
-			  (expand-file-name
-			   (string-remove-prefix "./" rel-file)
-			   (car (seq-filter (lambda (p) 
-					      (string-suffix-p project-name p))
-					    projects))))))
-	(when (and project-name rel-file full-path)
-	  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
-      (forward-line 1)))
+  (evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
+  (which-key-add-key-based-replacements "C-a c n r" "rebuild")
 
-  (delete-file temp-file)
-  ;; Save and timestamp the cache
-  (set file-cache-var all-files)
-  (put file-cache-var 'timestamp current-time)
-  (message "Found %d files across projects" (length all-files))))
+  (evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
+  (which-key-add-key-based-replacements "C-a c n f" "format")
 
-    ;; Use the cached or newly-built list
-    (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
-(if file-list
-    ;; Use completing-read for the selection interface
-    (let* ((chosen (completing-read "Find file in projects: " 
-				    (mapcar #'car file-list) nil t))
-	   (file-path (cdr (assoc chosen file-list))))
-      (when file-path
-	(find-file file-path)))
-  (message "No files found across projects")))))
+  (evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
+  (which-key-add-key-based-replacements "C-a c n c" "commit")
 
-(defun my/open-pr-url-at-point ()
-  "Open the PR_URL property of the current org agenda item."
-  (interactive)
-  (let* ((marker (or (org-get-at-bol 'org-marker)
-	       (org-agenda-error)))
-   (buffer (marker-buffer marker))
-   (pos (marker-position marker))
-   url)
-    (with-current-buffer buffer
-(save-excursion
-  (goto-char pos)
-  (setq url (org-entry-get (point) "PR_URL"))))
-    (when url
-(browse-url url))))
+  ;; create "find" prefix map
+  (define-prefix-command 'my-find-prefix)
+  (evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
+  (which-key-add-key-based-replacements "C-a f" "find")
+
+  (evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
+  (which-key-add-key-based-replacements "C-a f g" "ripgrep")
+
+  (evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
+  (which-key-add-key-based-replacements "C-a f p" "project")
+
+  (evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
+  (which-key-add-key-based-replacements "C-a f f" "file in directory")
+
+  (evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
+  (which-key-add-key-based-replacements "C-a f F" "file in project")
+
+  (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
+  (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
+
+  (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
+
+  (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
+  (evil-define-key 'normal magit-mode-map (kbd "C-d") 'kill-buffer)
+
+  (evil-define-key 'normal 'global (kbd "C-e") 'elfeed)
+  (evil-define-key 'normal elfeed-search-mode-map (kbd "C-r") 'elfeed-update)
+
+  (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
+  (with-eval-after-load 'org-agenda
+    (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
+
+  (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
+
+  (evil-define-key 'normal 'global (kbd "z z") (lambda () (interactive) (recenter)))
+  (evil-define-key 'normal 'global (kbd "z t") (lambda () (interactive) (recenter 0)))
+  (defun line-to-bottom-of-window ()
+    "Shift current line to the bottom of the window - i.e. zb in Vim"
+    (interactive)
+    (set-window-start (selected-window) (point))
+    (scroll-down (- (window-height) 3)))
+  (evil-define-key 'normal 'global (kbd "z b") 'line-to-bottom-of-window)
+
+  (evil-define-key 'normal 'global (kbd "<left>") 'scroll-down-command)
+  (evil-define-key 'normal 'global (kbd "<right>") 'scroll-up-command)
+
+  (with-eval-after-load 'elfeed-show
+    (require 'hnreader)
+    (require 'evil)
+
+    (defun my/elfeed-show-hn-comments ()
+      "Open Hacker News comments for the link at point in elfeed-show-mode."
+      (interactive)
+      (message "my/elfeed-show-hn-comments invoked.")
+      (let ((link (elfeed-get-link-at-point)))
+	(message "Link at point: %s" link)
+	;; Check if it's a valid HN item link
+	(if (and link (string-match "news\\.ycombinator\\.com/item\\?id=[0-9]+" link))
+	    (progn ;; Use progn to execute multiple forms
+	      (message "Found HN link: %s. Calling hnreader-comment..." link)
+	      ;; Pass the full link URL to hnreader-comment
+	      (hnreader-comment link)
+	      (message "hnreader-comment called with URL."))
+	  (message "No Hacker News item link found at point or link doesn't match pattern."))))
+
+    (evil-define-key 'normal elfeed-show-mode-map
+		     (kbd "c") #'my/elfeed-show-hn-comments))
+
+  (evil-global-set-key 'normal (kbd "C-p") 'projectile-switch-project)
+  (evil-global-set-key 'normal (kbd "C-f") 'projectile-find-file)
+  (evil-define-key 'normal magit-mode-map (kbd "C-p") 'projectile-switch-project)
+  (evil-define-key 'normal magit-mode-map (kbd "C-f") 'projectile-find-file)
+
+  (defun my/projectile-find-file-in-all-projects ()
+    "Find file across all registered Projectile projects with improved performance."
+    (interactive)
+    (let* ((projects (projectile-relevant-known-projects))
+	   (file-cache-var 'my/projectile-all-files-cache)
+	   (cache-validity-seconds 300) ;; 5 minute cache validity
+	   (current-time (current-time))
+	   (use-cache (and (boundp file-cache-var)
+			   (< (float-time (time-subtract 
+					   current-time
+					   (get file-cache-var 'timestamp)))
+			      cache-validity-seconds)))
+	   (cached-files (and use-cache (symbol-value file-cache-var))))
+
+      (if use-cache
+	  (message "Using cached file list (%d files)" (length cached-files))
+	;; Build cache using external commands for speed
+	(message "Building file list from %d projects..." (length projects))
+	(let ((all-files '())
+	      (temp-file (make-temp-file "projectile-files-")))
+	  ;; Using external find/sort is much faster than pure elisp
+	  (with-temp-file temp-file
+	    (dolist (project projects)
+	      (when (file-exists-p project)
+		(let* ((project-name (file-name-nondirectory 
+				      (directory-file-name project)))
+		       ;; Add project name prefix to each file for context
+		       (cmd (format "cd %s && find . -type f -not -path \"*/\\.*\" | sort | sed 's|^\\.|%s:|'"
+				    (shell-quote-argument project)
+				    project-name)))
+		  (call-process-shell-command cmd nil t)))))
+
+	  ;; Read results back and build alist of (display . filepath)
+	  (with-temp-buffer
+	    (insert-file-contents temp-file)
+	    (goto-char (point-min))
+	    (while (not (eobp))
+	      (let* ((line (buffer-substring-no-properties (point) (line-end-position)))
+		     ;; Fix: Only split on the first colon
+		     (split-pos (string-match ":" line))
+		     (project-name (when split-pos (substring line 0 split-pos)))
+		     (rel-file (when split-pos (substring line (1+ split-pos))))
+		     (full-path (when (and project-name rel-file)
+				  (expand-file-name
+				   (string-remove-prefix "./" rel-file)
+				   (car (seq-filter (lambda (p) 
+						      (string-suffix-p project-name p))
+						    projects))))))
+		(when (and project-name rel-file full-path)
+		  (push (cons (concat project-name ":" rel-file) full-path) all-files)))
+	      (forward-line 1)))
+
+	  (delete-file temp-file)
+	  ;; Save and timestamp the cache
+	  (set file-cache-var all-files)
+	  (put file-cache-var 'timestamp current-time)
+	  (message "Found %d files across projects" (length all-files))))
+
+      ;; Use the cached or newly-built list
+      (let ((file-list (if use-cache cached-files (symbol-value file-cache-var))))
+	(if file-list
+	    ;; Use completing-read for the selection interface
+	    (let* ((chosen (completing-read "Find file in projects: " 
+					    (mapcar #'car file-list) nil t))
+		   (file-path (cdr (assoc chosen file-list))))
+	      (when file-path
+		(find-file file-path)))
+	  (message "No files found across projects")))))
+
+  (defun my/open-pr-url-at-point ()
+    "Open the PR_URL property of the current org agenda item."
+    (interactive)
+    (let* ((marker (or (org-get-at-bol 'org-marker)
+		       (org-agenda-error)))
+	   (buffer (marker-buffer marker))
+	   (pos (marker-position marker))
+	   url)
+      (with-current-buffer buffer
+	(save-excursion
+	  (goto-char pos)
+	  (setq url (org-entry-get (point) "PR_URL"))))
+      (when url
+	(browse-url url))))
 #+end_src
 #+RESULTS:
 
@@ -2107,6 +2143,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-		      ;;; init.el ends here
+			;;; init.el ends here
 #+end_src
 
