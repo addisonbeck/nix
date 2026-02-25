@@ -230,6 +230,46 @@ Coordinators return PhaseResult containing:
 
 6. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
 
+### Operational Lessons
+
+These lessons distill recurring failure modes observed across multiple Task Group A executions. Each lesson identifies where the capability lives in the agent ecosystem and provides a specific Bobert action directive to prevent recurrence.
+
+1. **Build Verification is a Phase 2 Gate**
+
+   `code-monkey` includes a Phase 4.5 Build Verification Gate that executes project-wide health checks (cargo check, cargo clippy, cargo fmt --check, cargo test) when the implementation plan includes a `## Build Verification Commands` section. Build verification failures block commit creation -- code-monkey will not proceed to git-historian until all verification commands pass. This capability lives in `code-monkey` (Phase 4.5: Build Verification Gate).
+
+   **Bobert action**: When constructing Phase 2 PhaseContext, verify that the implementation plan passed from Phase 1 includes a `## Build Verification Commands` section. If missing for projects with a build system, flag to `implementation-plan-maintainer` before starting Phase 2 -- build verification cannot gate what it cannot see.
+
+2. **Formatting Checks are Part of CI Simulation**
+
+   `git-historian` discovers project-specific formatters by scanning configuration files (flake.nix, Cargo.toml, package.json, pyproject.toml) and executes formatting checks in check/dry-run mode as Phase 5C before every commit. Formatting failures block commit creation. In pipeline mode, git-historian reports violations to the coordinating agent and recommends delegating the fix to code-monkey. This capability lives in `git-historian` (Phase 5B: Formatter Discovery, Phase 5C: Formatting Check Execution).
+
+   **Bobert action**: Do not treat formatting failures as surprising -- they are expected CI simulation behavior. When `implementation-coordinator` reports CI simulation FAIL with formatting violations, this is the system working correctly. Ensure the remediation loop (code-monkey fix -> git-historian retry) executes before escalating. Only escalate after 2 failed formatting fix-and-retry cycles.
+
+3. **CI Simulation Validates Phase 2 Completion**
+
+   `implementation-coordinator` synthesizes CI simulation status by probing both `code-monkey` (for build verification results) and `git-historian` (for formatting check results) via SendMessage. The coordinator does not re-run checks itself -- it extracts outcomes from the agents that already ran them. CI simulation status (PASS/FAIL/NOT_APPLICABLE) is a Phase 2 completion gate: if FAIL, the coordinator must not construct a PhaseResult with status COMPLETE. This capability lives in `implementation-coordinator` (Phase Validation 7-Point Checklist, item #7: CI Simulation Validation).
+
+   **Bobert action**: When reviewing Phase 2 PhaseResults, verify that `validation.criteriaChecked` includes CI simulation entries. If the PhaseResult reports COMPLETE but omits CI simulation criteria, reject it and instruct `implementation-coordinator` to complete the 7-point checklist before returning.
+
+4. **Debris Cleanup is a Phase 0 Prerequisite**
+
+   `work-starter` includes a Phase 1.5 that detects existing related work (WIP branches, stale worktrees, orphaned branches) and cleans test debris from previous sessions. Debris cleanup MUST complete before worktree creation -- stale worktrees, orphaned branches, and lock files from previous sessions cause worktree creation failures and wasted iterations. This capability lives in `work-starter` (Phase 1.5: Existing Work Detection and Test Debris Cleanup).
+
+   **Bobert action**: When constructing Phase 0 PhaseContext, include an explicit constraint that `work-starter` must complete debris cleanup before `worktree-manager` creates new worktrees. If Phase 0 PhaseResult reports worktree creation failures, investigate whether debris cleanup was skipped or incomplete before retrying.
+
+5. **Memory UUIDs Route Through Coordinators**
+
+   Phase coordinators pass memory UUIDs in SendMessage delegation messages to downstream agents -- they never load memory content directly. Agents that need memory content use `read_memory` to load it themselves, which triggers the Required Reading hook to load transitive dependencies. Mismatching this pattern causes context loss (coordinator loads content agents need) or wasted tokens (agents load content coordinators already summarized). This capability is documented in the Memory Access Patterns section of `/Users/me/nix/system/modules/claude/CLAUDE.md`.
+
+   **Bobert action**: When constructing PhaseContext, include memory UUIDs (TODO UUID, breakdown UUID, implementation plan UUID) as string references, not as loaded content. Verify that coordinator delegation messages pass UUIDs for agents to load, not pre-digested content summaries. If a coordinator reports context issues, check whether UUID routing was followed correctly.
+
+6. **Coordinators Execute Autonomously After PhaseContext**
+
+   Once Bobert delegates a phase to a coordinator via Task tool with a complete PhaseContext, the coordinator manages all tactical execution autonomously: spawning agents from the roster, distributing tasks, monitoring progress, validating completion, and returning a structured PhaseResult. Bobert does not intervene during phase execution unless the coordinator escalates. Premature Bobert intervention disrupts coordinator autonomy and creates conflicting instructions. This pattern is the core Strategic vs Tactical Separation (see next section).
+
+   **Bobert action**: After delegating to a coordinator, wait for the PhaseResult. Do not send additional messages to the coordinator or its agents during execution. If a phase takes longer than expected, wait for the coordinator's completion signal or escalation -- implementation tasks may take 20-40 minutes per chunk, and multiple implementation/commit cycles are expected behavior. Only intervene when a PhaseResult is returned with status FAILED or BLOCKED.
+
 ### Strategic vs Tactical Separation
 
 **Bobert Retains (Strategic)**:
