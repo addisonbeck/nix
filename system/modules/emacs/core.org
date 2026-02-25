@@ -1794,12 +1794,20 @@ It would be cool if this also had some kind of interactive starting directory / 
 #+end_src
 
 ** The "Emacs State" Menu
+
 #+begin_src emacs-lisp :tangle core.el
+  (defun my/toggle-visual-line-mode ()
+    "Toggle visual-line-mode for text wrapping."
+    (interactive)
+    (visual-line-mode (if visual-line-mode -1 1))
+    (message "Visual line mode %s" (if visual-line-mode "enabled" "disabled")))
+
   (transient-define-prefix my/emacs-state-menu ()
     "Transient menu for managing Emacs visual state."
     ["Emacs State"
      ("o" "Toggle Olivetti" my/toggle-olivetti)
-     ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)])
+     ("c" "Toggle VTerm Copy Mode" vterm-copy-mode)
+     ("w" "Toggle Visual Line Wrap" my/toggle-visual-line-mode)])
 #+end_src
 
 * Kill Thing Running On Port
