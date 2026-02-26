@@ -131,6 +131,7 @@
       pkgs.utm
       pkgs.spotify
       pkgs.binaryen
+      pkgs.poppler
     ];
 
     home.sessionPath = [];
@@ -138,8 +139,8 @@
       EDITOR = "emacsclient -r";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";
 
-      VISUAL = "ec";
-      GIT_EDITOR = "ec";
+      VISUAL = "emacsclient -r";
+      GIT_EDITOR = "emacsclient -r";
     };
     home.file.".ssh/authorized_keys".text = ''
       ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDNpUr2VpDB4sRMr6p5Pa+Wq7168eN6icFiTv6zp9w7S me@phone
