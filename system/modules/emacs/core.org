@@ -1612,6 +1612,11 @@ This cool and lame at the same time
     "Opens the inbox-mobile.org file in the notes directory."
     (interactive)
     (find-file (expand-file-name "roam/mobile-inbox.org" my-notes-directory)))
+  (defun my/open-boberts-inbox ()
+    (interactive)
+    "Opens the boberts-inbox.org file in the notes directory."
+    (interactive)
+    (find-file (expand-file-name "roam/boberts-inbox.org" my-notes-directory)))
   (defun my/open-handwritten-inbox ()
     (interactive)
     "Opens the handwritten-inbox.org file in the notes directory."
@@ -1667,7 +1672,8 @@ This cool and lame at the same time
 			   ["Submenu Actions"
 			    ("i" "Inbox" my/open-inbox)
 			    ("m" "Mobile Inbox" my/open-mobile-inbox)
-			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
+			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
+			    ("b" "Bobert Inbox" my/open-boberts-inbox)])
 
   ;; Define a submenu for "Go To Link"
   (transient-define-prefix my/go-to-link-menu ()
