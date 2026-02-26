@@ -11,8 +11,8 @@ This skill provides orchestration guidance for **Task Group A**, Bobert's canoni
 When invoked, Bobert follows this instruction playbook to:
 1. Form the 11-agent work team plus 4 phase coordinators
 2. Execute four sequential phases (Intake → Research/Design → Implementation → Finalization)
-3. Construct PhaseContext for each phase with agent roster and completion criteria
-4. Delegate tactical phase management to specialized coordinators
+3. Construct PhaseContext for each phase (goal, criteria, constraints - NOT roster)
+4. Delegate to coordinators who specify roster needs before spawning agents
 5. Validate PhaseResults before advancing to next phase
 6. Maintain continuous TODO updates throughout all phases
 
@@ -102,7 +102,7 @@ Input Source (Jira, memory stub, or prompt)
 |  Delegated to: intake-coordinator                       |
 |  Agents: work-starter, worktree-manager,                |
 |          todo-spec-memory-maintainer                    |
-|  Bobert provides: PhaseContext with input + roster      |
+|  Bobert provides: PhaseContext with input (NO roster)   |
 |  Coordinator returns: PhaseResult with TODO UUID,       |
 |                       worktree path                     |
 +---------------------------------------------------------+
@@ -114,7 +114,7 @@ Input Source (Jira, memory stub, or prompt)
 |  Agents: deep-researcher, Explore, adr-maintainer,      |
 |          technical-breakdown-maintainer,                 |
 |          implementation-plan-maintainer                  |
-|  Bobert provides: PhaseContext with TODO UUID + roster   |
+|  Bobert provides: PhaseContext with TODO UUID (NO roster)|
 |  Coordinator returns: PhaseResult with breakdown UUID,   |
 |                       implementation plan UUID           |
 |                                                          |
@@ -157,9 +157,6 @@ Bobert constructs PhaseContext for each phase containing:
 {
   "phaseId": "phase-N-name",
   "phaseGoal": "Clear statement of what this phase must accomplish",
-  "agentRoster": [
-    {"name": "agent-name", "role": "What this agent does in this phase"}
-  ],
   "completionCriteria": {
     "requiredOutputs": ["Output 1", "Output 2"],
     "validationCommands": ["command to verify output 1", "command to verify output 2"]
@@ -180,7 +177,98 @@ Bobert constructs PhaseContext for each phase containing:
 }
 ```
 
+**PhaseContext establishes WHAT (phase goal), not WHO (agent roster)**. PhaseContext does NOT include agentRoster -- coordinators specify roster needs after receiving PhaseContext per ADR-053.
+
 **Scope Anchor**: Bobert populates `scopeAnchor` during Plan phase and carries it forward through all PhaseContexts. This ensures every coordinator can validate that their phase's deliverables address the ticket's actual requirement rather than documenting existing code. The scope anchor is derived from the ticket requirement analysis performed during Plan phase.
+
+### Roster Request/Response Protocol (ADR-053)
+
+**Coordinators specify agent rosters -- Bobert does not pre-provide rosters in PhaseContext.**
+
+This 4-step protocol separates strategic authority (which coordinator to use) from tactical authority (which agents the coordinator needs):
+
+#### Step 1: Bobert Delegates Phase WITHOUT Roster
+
+Bobert:
+- Constructs PhaseContext with goal, completion criteria, constraints, prerequisites (WHAT needs to be done)
+- Does NOT include agentRoster in PhaseContext
+- Spawns coordinator via Task tool with PhaseContext JSON
+- Expects coordinator to specify roster before execution begins
+
+#### Step 2: Coordinator Specifies Roster with Justification
+
+Coordinator:
+- Analyzes phase requirements from PhaseContext
+- Determines roster needs based on:
+  - Typical roster for this phase (documented default below)
+  - Phase-specific variations (complexity, parallelization, specialization)
+  - Agent reuse opportunities (prefer reusing existing team members)
+- Returns roster specification to Bobert with:
+  - Agent roles needed (e.g., work-starter, worktree-manager, todo-spec-memory-maintainer)
+  - Justification for variations from typical roster
+  - Reuse preferences (e.g., reuse todo-spec-memory-maintainer from Phase 0)
+
+**Example Roster Specification**:
+```
+Phase 1 roster request:
+- deep-researcher (domain investigation)
+- explore-agent (codebase reconnaissance)
+- adr-maintainer (design decisions)
+- technical-breakdown-maintainer (synthesis)
+- implementation-plan-maintainer (execution specs)
+- todo-spec-memory-maintainer (REUSE from Phase 0)
+
+Justification: Standard Phase 1 roster. Reusing todo-spec-memory-maintainer to maintain continuity with Phase 0 TODO.
+```
+
+#### Step 3: Bobert Spawns Agents from Specification
+
+Bobert:
+- Receives roster specification from coordinator
+- Validates roster (agents exist, roles appropriate for phase)
+- Spawns agents:
+  - New agents: Via Task tool with team_name and role context
+  - Reused agents: Sends notification via SendMessage (agent already exists on team)
+- Confirms roster ready: Notifies coordinator that all agents are spawned and available
+
+#### Step 4: Coordinator Proceeds Autonomously
+
+Coordinator:
+- Receives confirmation that roster is ready
+- Proceeds autonomously with phase execution:
+  - Delegates tasks to agents via SendMessage
+  - Monitors agent progress via task lists and mailbox
+  - Validates work products against completion criteria
+- Does NOT wait for additional authorization (PhaseContext + roster = complete authorization)
+
+#### Typical Rosters (Reference from TODO #6 Work)
+
+These rosters represent validated patterns from Take 8 execution. Coordinators should use these as defaults and justify variations.
+
+**Phase 0 (Intake)**: 3 agents
+- work-starter (ticket intake, TODO creation, worktree setup, debris cleanup)
+- worktree-manager (worktree lifecycle)
+- todo-spec-memory-maintainer (TODO population)
+
+**Phase 1 (Research/Design)**: 5 agents (6 with reuse)
+- deep-researcher (domain investigation)
+- explore-agent (codebase reconnaissance)
+- adr-maintainer (design decisions)
+- technical-breakdown-maintainer (synthesis)
+- implementation-plan-maintainer (execution specs)
+- todo-spec-memory-maintainer (REUSE from Phase 0)
+
+**Phase 2 (Implementation)**: 2 agents (3 with reuse)
+- code-monkey (implementation)
+- git-historian (atomic commits)
+- todo-spec-memory-maintainer (REUSE from Phase 0)
+
+**Phase 3 (Finalization)**: 3 agents (all reused from prior phases)
+- technical-breakdown-maintainer (REUSE from Phase 1, finalization)
+- pr-maintainer (draft PR creation)
+- todo-spec-memory-maintainer (REUSE from Phase 0, mark DONE)
+
+**Rationale**: Take 8 validation showed coordinator-specified rosters eliminated 12-15 minutes of reactive spawning overhead (War Story #1: Role Inversion). Phases 1-3 executed with zero reactive spawn cycles when coordinators specified rosters upfront.
 
 ### PhaseResult Structure
 
@@ -273,18 +361,24 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 ### Strategic vs Tactical Separation
 
 **Bobert Retains (Strategic)**:
-- Which agents go on which roster (team composition)
+- Which coordinator to use for each phase (intake, research-design, implementation, finalization)
 - Whether to advance to next phase (phase transition authorization)
 - How to handle coordinator escalations (scope changes, goal conflicts)
 - Whether to abort, retry, or adjust after FAILED PhaseResults
 - Cross-phase state tracking and quality gates
+- Team formation infrastructure (spawning agents, managing team lifecycle)
 
 **Coordinators Handle (Tactical)**:
-- Agent spawning from provided roster (no autonomous agent selection)
-- Task distribution via TaskList
-- Progress monitoring and status updates
-- Completion validation against explicit criteria
+- Which agents within phase (roster composition based on phase needs)
+- How agents execute tasks (delegation, sequencing, parallelization)
+- When to validate work products (timing of completion checks)
+- How to recover from tactical failures (retry, reassign, iterate)
 - Structured PhaseResult reporting
+
+**Escalation Boundary**:
+- Coordinators escalate when roster needs change mid-phase (scope expansion requires additional agents)
+- Coordinators escalate when typical roster proves insufficient (unexpected complexity)
+- Coordinators DO NOT escalate for tactical decisions (which agent to assign task, how to sequence work)
 
 ## Environment Dependencies
 
