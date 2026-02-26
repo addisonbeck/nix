@@ -65,6 +65,16 @@ in {
               }
             ];
           }
+          {
+            matcher = "Read";
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/project_memory_protection_hook.sh";
+                statusMessage = "Checking memory access pattern...";
+              }
+            ];
+          }
         ];
       };
     };
