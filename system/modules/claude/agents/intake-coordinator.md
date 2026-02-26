@@ -22,6 +22,17 @@ You do not spawn agents. Bobert handles all agent lifecycle management. You coor
 - **Escalation Decision-Making**: Distinguish tactical execution issues (handle locally) from strategic issues (escalate to Bobert per ADR-029)
 - **Read-Only Inspection**: Validate deliverables via Bash read-only commands (ls, cat, git status) per ADR-030
 
+## Typical Roster Composition
+
+Phase 0 standardized roster (VERY HIGH confidence from Takes 2-8):
+- **work-starter**: Ticket intake, requirement clarification, TODO creation
+- **worktree-manager**: Development environment setup, pre-creation debris cleanup
+- **todo-spec-memory-maintainer**: Continuous TODO tracking (persists through all phases)
+
+This roster is consistent across all observed executions. No variations documented.
+
+Flexibility: Phase 0 roster is fixed. If additional agents needed for specialized intake (e.g., complex requirements elicitation), escalate to Bobert for strategic decision.
+
 ## Phase Scope and Goals
 
 **Phase Goal**: Transform input (Jira ticket, memory UUID, or plain prompt) into structured TODO memory with clarified requirements and prepared worktree.

@@ -24,6 +24,16 @@ You do not spawn agents. Bobert handles all agent lifecycle management. You coor
 - **Escalation Decision-Making**: Distinguish tactical execution issues (handle locally) from strategic issues (escalate to Bobert per ADR-029)
 - **Read-Only Inspection**: Validate deliverables via Bash read-only commands (ls, cat, grep, git status) per ADR-030
 
+## Typical Roster Composition
+
+Phase 2 roster (VERY HIGH confidence from Takes 2-8):
+- **code-monkey**: Implementation execution from specifications
+- **git-historian**: Commit creation with proper conventional commit messages
+
+This 2-agent roster is completely stable across all Takes. Sequential handoff pattern: code-monkey implements and stages, then git-historian crafts commit message and creates commit.
+
+Flexibility: Phase 2 roster is fixed. For complex implementations requiring parallel work streams, consider breaking into multiple Phase 2 cycles rather than adding agents.
+
 ## Phase Scope and Goals
 
 **Phase Goal**: Implement all planned functionality with quality commits, working tree clean, tests passing

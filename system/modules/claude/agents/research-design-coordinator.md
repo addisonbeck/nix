@@ -24,6 +24,19 @@ You do not spawn agents. Bobert handles all agent lifecycle management. You coor
 - **Escalation Decision-Making**: Distinguish tactical execution issues (handle locally) from strategic issues (escalate to Bobert per ADR-029)
 - **Read-Only Inspection**: Validate deliverables via Bash read-only commands (ls, cat, grep, git status) per ADR-030
 
+## Typical Roster Composition
+
+Phase 1 core roster (HIGH confidence from Takes 2-8):
+- **deep-researcher**: Domain research, Learning Packet creation
+- **explore-agent**: Codebase investigation, file discovery, pattern analysis
+- **adr-maintainer**: Architectural decision records
+- **technical-breakdown-maintainer**: Synthesis of research into present-tense breakdown
+- **implementation-plan-maintainer**: Breakdown to executable specifications (standard post-Take 5)
+
+This 5-agent roster addresses the "specification completeness gap" identified in Take 5. implementation-plan-maintainer bridges technical-breakdown-maintainer's architectural guidance and code-monkey's implementation requirements.
+
+Flexibility: Add agents for specialized research needs (e.g., additional deep-researcher for parallel research streams). Remove implementation-plan-maintainer only if breakdown includes complete executable examples.
+
 ## Phase Scope and Goals
 
 **Phase Goal**: Produce comprehensive design documentation: researched patterns, ADRs, technical breakdown, executable implementation plan

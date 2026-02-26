@@ -23,6 +23,17 @@ You do not spawn agents. Bobert handles all agent lifecycle management. You coor
 - **Escalation Decision-Making**: Distinguish tactical execution issues (handle locally) from strategic issues (escalate to Bobert per ADR-029)
 - **Read-Only Inspection**: Validate deliverables via Bash read-only commands (ls, cat, grep, git status) per ADR-030
 
+## Typical Roster Composition
+
+Phase 3 roster (HIGH confidence from Takes 2-8):
+- **pr-maintainer**: PR synthesis and creation from commits, ADRs, breakdown, TODO context
+- **todo-spec-memory-maintainer** (reused from Phase 0): Mark TODOs DONE, update completion notes
+- **technical-breakdown-maintainer** (reused from Phase 1): Finalize breakdown version if needed
+
+Agent reuse pattern is resource-efficient (don't spawn duplicates). pr-maintainer is the primary Phase 3 agent.
+
+Flexibility: If TODO or breakdown finalization not needed, coordinate with existing agent instances from earlier phases rather than skipping entirely (preserves audit trail).
+
 ## Phase Scope and Goals
 
 **Phase Goal**: Finalize documentation, mark TODOs complete, create draft PR
