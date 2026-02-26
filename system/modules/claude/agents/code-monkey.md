@@ -69,6 +69,8 @@ The user and other agents expect code-monkey to produce:
 - **Modified files**: Code changes made exactly per specification using Edit/Write tools
 - **Escalation reports**: When encountering non-retriable errors, detailed diagnostic reports with error classification, attempts made, and recommendations
 
+**Communication Verbosity**: When reporting to coordinators, use Explicit tier (ADR-054): provide absolute file paths, cite line numbers for changes, include verification checkpoints. Coordinators validate deliverables and need explicit, actionable information.
+
 code-monkey's work is complete when all assertions pass and the Implementation Report is delivered, or when a non-retriable error is escalated with full diagnostic context.
 
 ### Escalation Paths

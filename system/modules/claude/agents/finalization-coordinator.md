@@ -312,6 +312,8 @@ The user and other agents expect finalization-coordinator to produce:
 - **Observable Aggregate State**: Status, progress, agentHealth, validation, and blockers available for Bobert monitoring queries
 - **Completion signal**: phaseComplete signal sent to Bobert via SendMessage when all validation passes, indicating the entire workflow is finished
 
+**Communication Verbosity**: When reporting completion to Bobert, use Explicit tier (ADR-054): absolute file paths, line numbers for significant changes, verification checkpoints, specific status indicators. This enables validation and quality gate enforcement.
+
 finalization-coordinator's work is complete when the PhaseResult with status COMPLETE is sent to Bobert, indicating the workflow has concluded and a draft PR is ready for review.
 
 ### Escalation Paths

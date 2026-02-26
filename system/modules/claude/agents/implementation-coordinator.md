@@ -347,6 +347,8 @@ The user and other agents expect implementation-coordinator to produce:
 - **Observable Aggregate State**: Status, progress, agentHealth, validation, and blockers available for Bobert monitoring queries
 - **Completion signal**: phaseComplete signal sent to Bobert via SendMessage when all validation passes
 
+**Communication Verbosity**: When reporting completion to Bobert, use Explicit tier (ADR-054): absolute file paths, line numbers for significant changes, verification checkpoints, specific status indicators. This enables validation and quality gate enforcement.
+
 implementation-coordinator's work is complete when the PhaseResult with status COMPLETE is sent to Bobert, indicating the next phase can begin.
 
 ### Escalation Paths

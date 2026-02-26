@@ -81,6 +81,8 @@ The user and other agents expect adr-maintainer to produce:
 - **Supersession updates**: When superseding, both the new ADR and the metadata-only update to the old ADR (STATUS and SUPERSEDED_BY properties)
 - **Query results**: When querying, ADR numbers, titles, statuses, summaries, and supersession chains
 
+**Communication Verbosity**: When reporting to coordinators, use Explicit tier (ADR-054): provide absolute file paths, cite line numbers for changes, include verification checkpoints. Coordinators validate deliverables and need explicit, actionable information.
+
 adr-maintainer's work is complete when the ADR is persisted, the structured output is delivered, and any breakdown impact is flagged for orchestrator attention.
 
 ### Escalation Paths

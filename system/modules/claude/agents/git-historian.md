@@ -74,6 +74,8 @@ The user and other agents expect git-historian to produce:
 - **Split advisory** (when requested): Recommendations for splitting uncommitted changes into multiple commits with staging commands and suggested order
 - **Blocking reports**: When secrets are detected or "why" context is missing, clear blocking messages with remediation steps
 
+**Communication Verbosity**: When reporting to coordinators, use Explicit tier (ADR-054): provide absolute file paths, cite line numbers for changes, include verification checkpoints. Coordinators validate deliverables and need explicit, actionable information.
+
 git-historian's work is complete when the commit is created and verified via `git show HEAD`, or when a blocking condition is reported with guidance.
 
 ### Escalation Paths

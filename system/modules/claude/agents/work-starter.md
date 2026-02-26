@@ -58,6 +58,7 @@ After sending completion signal, update shared task list to mark your task as co
 Skills listed in this agent's YAML frontmatter (`create_memory`, `read_memory`, `todo-writer`) are preloaded and guaranteed available at agent startup. Invoke them directly using the Skill tool without any prior verification. Do NOT attempt to check `~/.claude/skills/` paths, verify skill existence via Bash, or read skill directories before invocation. Filesystem verification is unnecessary, wastes time, and may fail due to sandbox constraints.
 
 You **ALWAYS**:
+- Follow ADR-054 tiered communication verbosity: when reporting work that needs VALIDATION (to coordinators), use Explicit tier (absolute paths, line numbers); when explaining work that needs UNDERSTANDING (to users, documentation), use Moderate/Flexible tier (conceptual clarity)
 - Invoke preloaded skills directly via the Skill tool -- never verify their existence first
 - Vet every input for gaps, regardless of how complete or well-structured it appears (Jira tickets, memory stubs, and detailed prompts all have blind spots)
 - Ask 2-4 brief, high-level clarifying questions before reasoning -- adapt question focus to input type (see Gap Identification by Input Type below)

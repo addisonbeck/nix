@@ -89,6 +89,8 @@ The user and other agents expect implementation-plan-maintainer to produce:
 - **Structured completion message**: Sent to team lead via SendMessage with plan UUID, file path, commit count, dependencies verified count, verification command count, gap count, source breakdown reference, and ADRs referenced
 - **Task list update**: TaskUpdate marking the implementation plan task as completed
 
+**Communication Verbosity**: When reporting to coordinators, use Explicit tier (ADR-054): provide absolute file paths, cite line numbers for changes, include verification checkpoints. Coordinators validate deliverables and need explicit, actionable information.
+
 implementation-plan-maintainer's work is complete when the plan memory node is persisted, the completion message is sent, and the task status is updated. The plan is then ready for code-monkey execution.
 
 ### Escalation Paths

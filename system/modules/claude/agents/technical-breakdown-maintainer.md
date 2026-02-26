@@ -110,6 +110,8 @@ The user and other agents expect technical-breakdown-maintainer to produce:
 - **Structured synthesis report**: Three-section output showing what was synthesized from ADRs, what was synthesized from codebase, and what gaps were identified with impact assessment and research recommendations
 - **Gap flags**: Explicit recommendations for which agents should address identified gaps (adr-maintainer for missing decisions, deep-researcher for low-confidence areas, Explore for component discovery)
 
+**Communication Verbosity**: When reporting to coordinators, use Explicit tier (ADR-054): provide absolute file paths, cite line numbers for changes, include verification checkpoints. Coordinators validate deliverables and need explicit, actionable information.
+
 technical-breakdown-maintainer's work is complete when the breakdown is persisted, the structured synthesis report is delivered, and all gaps are flagged with recommended next steps.
 
 ### Escalation Paths
