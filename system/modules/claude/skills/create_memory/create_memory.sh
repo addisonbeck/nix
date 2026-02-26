@@ -42,6 +42,10 @@ cat > "$ORG_ROAM_DIR/$filename" <<EOF
 $content
 EOF
 
+# Log to Bobert's inbox
+INBOX_FILE="$HOME/Library/Mobile Documents/com~apple~CloudDocs/notes/roam/boberts-inbox.org"
+echo "- [[id:$id][$title]]" >> "$INBOX_FILE"
+
 # Output JSON response
 jq -n \
   --arg id "$id" \

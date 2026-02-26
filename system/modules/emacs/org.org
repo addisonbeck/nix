@@ -200,6 +200,7 @@ Don't show DONE items in the agenda
         (expand-file-name "budget.org" my-notes-directory)
         (expand-file-name "roam/inbox.org" my-notes-directory)
         (expand-file-name "roam/mobile-inbox.org" my-notes-directory)
+        (expand-file-name "roam/boberts-inbox.org" my-notes-directory)
         (expand-file-name "roam/handwritten-inbox.org" my-notes-directory)
         (expand-file-name "reminders.org" my-notes-directory)
         (expand-file-name "meal-plan.org" my-notes-directory)
