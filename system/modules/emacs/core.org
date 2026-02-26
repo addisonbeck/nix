@@ -1667,32 +1667,33 @@ This cool and lame at the same time
 *** Go Menu Definition
 
 #+begin_src emacs-lisp
-  (transient-define-prefix my/inbox-menu ()
-			   "Transient menu for getting to my inboxes"
-			   ["Submenu Actions"
-			    ("i" "Inbox" my/open-inbox)
-			    ("m" "Mobile Inbox" my/open-mobile-inbox)
-			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
-			    ("b" "Bobert Inbox" my/open-boberts-inbox)])
+(transient-define-prefix my/inbox-menu ()
+		   "Transient menu for getting to my inboxes"
+		   ["Submenu Actions"
+		    ("i" "Inbox" my/open-inbox)
+		    ("m" "Mobile Inbox" my/open-mobile-inbox)
+		    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
+		    ("b" "Bobert Inbox" my/open-boberts-inbox)])
+;; does this kick off a full rebuild?
 
-  ;; Define a submenu for "Go To Link"
-  (transient-define-prefix my/go-to-link-menu ()
-			   "Go to link submenu."
-			   ["Go To Link"
-			    ("g" "Follow link in same window" org-open-at-point)
-			    ("h" "Force open in current window" org-force-open-current-window)])
+;; Define a submenu for "Go To Link"
+(transient-define-prefix my/go-to-link-menu ()
+		   "Go to link submenu."
+		   ["Go To Link"
+		    ("g" "Follow link in same window" org-open-at-point)
+		    ("h" "Force open in current window" org-force-open-current-window)])
 
-  (transient-define-prefix my/go-menu ()
-			   "Transient menu for navigating key files."
-			   ["Go To"
-			    ("i" "Inboxes" my/inbox-menu)
-			    ("e" "Emacs Config" my/open-emacs-config)
-			    ("g" "Follow link" my/go-to-link-menu)
-			    ("p" "Prompts" my/open-prompts)
-			    ("b" "Budget" my/open-budget)
-			    ("m" "Magit" my/projectile-magit-status)
-			    ("r" "Elfreed" elfeed)
-			    ("l" "Log" my/open-log)])
+(transient-define-prefix my/go-menu ()
+		   "Transient menu for navigating key files."
+		   ["Go To"
+		    ("i" "Inboxes" my/inbox-menu)
+		    ("e" "Emacs Config" my/open-emacs-config)
+		    ("g" "Follow link" my/go-to-link-menu)
+		    ("p" "Prompts" my/open-prompts)
+		    ("b" "Budget" my/open-budget)
+		    ("m" "Magit" my/projectile-magit-status)
+		    ("r" "Elfreed" elfeed)
+		    ("l" "Log" my/open-log)])
 #+end_src
 
 ** The "Insert" Menu
