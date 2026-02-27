@@ -9,12 +9,15 @@ description: |
 This skill provides orchestration guidance for **Task Group A**, Bobert's canonical team composition for full-lifecycle work delivery. Task Group A takes work from initial input (Jira ticket, memory stub, or plain prompt) through intake, research, design, implementation, and finalization to produce a draft pull request.
 
 When invoked, Bobert follows this instruction playbook to:
-1. Form the 11-agent work team plus 4 phase coordinators
-2. Execute four sequential phases (Intake → Research/Design → Implementation → Finalization)
-3. Construct PhaseContext for each phase (goal, criteria, constraints - NOT roster)
-4. Delegate to coordinators who specify roster needs before spawning agents
-5. Validate PhaseResults before advancing to next phase
-6. Maintain continuous TODO updates throughout all phases
+1. Form the team via TeamCreate
+2. For each phase: Spawn coordinator as teammate, send PhaseContext, receive roster specification, spawn work agents as teammates
+3. Execute four sequential phases (Intake → Research/Design → Implementation → Finalization)
+4. Construct PhaseContext for each phase (goal, criteria, constraints - NOT roster)
+5. Coordinators specify roster needs, Bobert spawns agents, coordinators execute autonomously
+6. Validate PhaseResults before advancing to next phase
+7. Maintain continuous TODO updates throughout all phases
+
+**Critical**: ALL agents (coordinators + work agents) MUST be spawned as teammates in the same team to ensure consistent message infrastructure.
 
 ## Purpose & When to Use
 
@@ -187,13 +190,16 @@ Bobert constructs PhaseContext for each phase containing:
 
 This 4-step protocol separates strategic authority (which coordinator to use) from tactical authority (which agents the coordinator needs):
 
-#### Step 1: Bobert Delegates Phase WITHOUT Roster
+#### Step 1: Bobert Spawns Coordinator and Requests Roster
 
 Bobert:
 - Constructs PhaseContext with goal, completion criteria, constraints, prerequisites (WHAT needs to be done)
 - Does NOT include agentRoster in PhaseContext
-- Spawns coordinator via Task tool with PhaseContext JSON
+- Spawns coordinator as teammate via Task tool WITH team_name parameter (critical: coordinator must be team member to receive messages)
+- Sends PhaseContext to coordinator via SendMessage with roster request
 - Expects coordinator to specify roster before execution begins
+
+**Critical**: Coordinators MUST be spawned as teammates (not pure subagents) BEFORE receiving PhaseContext. This ensures coordinators have team communication infrastructure (SendMessage, Mailbox, TaskList) when work agents attempt to message them later.
 
 #### Step 2: Coordinator Specifies Roster with Justification
 
@@ -224,12 +230,14 @@ Justification: Standard Phase 1 roster. Reusing todo-spec-memory-maintainer to m
 #### Step 3: Bobert Spawns Agents from Specification
 
 Bobert:
-- Receives roster specification from coordinator
+- Receives roster specification from coordinator via mailbox message
 - Validates roster (agents exist, roles appropriate for phase)
-- Spawns agents:
-  - New agents: Via Task tool with team_name and role context
+- Spawns agents as teammates:
+  - New agents: Via Task tool WITH team_name parameter and role context
   - Reused agents: Sends notification via SendMessage (agent already exists on team)
-- Confirms roster ready: Notifies coordinator that all agents are spawned and available
+- Confirms roster ready: Notifies coordinator via SendMessage that all agents are spawned and available
+
+**Critical**: All work agents MUST be spawned with team_name parameter to ensure they can SendMessage to coordinator and receive messages from coordinator. Consistent spawn mechanism prevents addressing mismatches.
 
 #### Step 4: Coordinator Proceeds Autonomously
 
@@ -317,6 +325,34 @@ Coordinators return PhaseResult containing:
 5. **Specification Bridge**: `implementation-plan-maintainer` in Phase 1 translates architecture into executable step-by-step specifications before Phase 2 begins. This bridges strategic design to tactical implementation.
 
 6. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
+
+### Critical Constraints
+
+These constraints are non-negotiable and prevent catastrophic failures in Task Group A execution:
+
+1. **Spawn Mechanism Consistency (Critical)**
+
+   **Constraint**: ALL agents (coordinators + work agents) MUST be spawned as teammates in the same team using the Task tool WITH team_name parameter.
+
+   **Why This Matters**: Hybrid spawn models where coordinators are spawned as pure subagents (Task without team_name) while work agents are spawned as teammates create addressing mismatches. Work agents attempt to SendMessage to coordinators who have no team mailbox infrastructure, resulting in 0% message delivery, exponential retry loops, and complete phase coordination failure.
+
+   **Root Cause**: Coordinators outside team communication system cannot receive messages from work agents. The Task tool has two modes:
+   - WITH team_name: Spawns agent as teammate with SendMessage/Mailbox/TaskList tools
+   - WITHOUT team_name: Spawns agent as pure subagent with no team communication infrastructure
+
+   **Bobert Action**:
+   - Phase 0-3: Spawn ALL coordinators using `Task tool WITH team_name`
+   - Phase 0-3: Spawn ALL work agents using `Task tool WITH team_name`
+   - NEVER spawn coordinators as pure subagents (Task without team_name)
+   - VERIFY all agents have team communication tools before delegation begins
+
+   **Observable Symptoms of Violation**:
+   - Work agents report "SendMessage failed" when attempting to contact coordinator
+   - Coordinator never receives messages from work agents despite agents showing message as sent
+   - Phase coordination collapses into retry loops as agents cannot report status
+   - Result: 0% message delivery rate, phase cannot complete
+
+   **Take 9 Lesson**: Inconsistent spawn mechanism (coordinators as subagents, work agents as teammates) caused complete message infrastructure failure. This constraint prevents recurrence.
 
 ### Operational Lessons
 
@@ -414,8 +450,12 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 2. **Phase 0 Execution**:
    ```
    Construct PhaseContext for Phase 0 (include scopeAnchor from Plan phase)
-   Delegate to intake-coordinator via Task tool
-   Wait for PhaseResult
+   Spawn intake-coordinator as teammate (Task tool WITH team_name="task-group-a-{ticket}")
+   Send PhaseContext to intake-coordinator via SendMessage with roster request
+   Receive roster specification from intake-coordinator (work-starter, worktree-manager, todo-spec-memory-maintainer)
+   Spawn work agents as teammates per roster specification
+   Notify intake-coordinator that roster is ready via SendMessage
+   Wait for PhaseResult from intake-coordinator
    Validate: status == COMPLETE, TODO UUID present, worktree path present
    Scope check: TODO memory's scope aligns with ticket requirement (scopeAnchor)
    ```
@@ -423,8 +463,12 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 3. **Phase 1 Execution**:
    ```
    Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0 + scopeAnchor)
-   Delegate to research-design-coordinator via Task tool
-   Wait for PhaseResult
+   Spawn research-design-coordinator as teammate (Task tool WITH team_name)
+   Send PhaseContext to research-design-coordinator via SendMessage with roster request
+   Receive roster specification (deep-researcher, Explore, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, reuse todo-spec-memory-maintainer)
+   Spawn work agents as teammates per roster specification (or notify existing agents if reused)
+   Notify research-design-coordinator that roster is ready via SendMessage
+   Wait for PhaseResult from research-design-coordinator
    Validate: status == COMPLETE, breakdown UUID present (v1.0.0), impl plan UUID present
    Scope check: scopeValidation.deliverableAddressed == true
    Scope check: Technical breakdown describes NEW work, not existing implementation
@@ -434,16 +478,24 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 4. **Phase 2 Execution**:
    ```
    Construct PhaseContext for Phase 2 (pass impl plan UUID, worktree path)
-   Delegate to implementation-coordinator via Task tool
-   Wait for PhaseResult
+   Spawn implementation-coordinator as teammate (Task tool WITH team_name)
+   Send PhaseContext to implementation-coordinator via SendMessage with roster request
+   Receive roster specification (code-monkey, git-historian, reuse todo-spec-memory-maintainer)
+   Spawn work agents as teammates per roster specification (or notify existing agents if reused)
+   Notify implementation-coordinator that roster is ready via SendMessage
+   Wait for PhaseResult from implementation-coordinator
    Validate: status == COMPLETE, commit SHAs present, working tree clean
    ```
 
 5. **Phase 3 Execution**:
    ```
    Construct PhaseContext for Phase 3 (pass commits, worktree path)
-   Delegate to finalization-coordinator via Task tool
-   Wait for PhaseResult
+   Spawn finalization-coordinator as teammate (Task tool WITH team_name)
+   Send PhaseContext to finalization-coordinator via SendMessage with roster request
+   Receive roster specification (reuse technical-breakdown-maintainer, pr-maintainer, reuse todo-spec-memory-maintainer)
+   Spawn work agents as teammates per roster specification (or notify existing agents if reused)
+   Notify finalization-coordinator that roster is ready via SendMessage
+   Wait for PhaseResult from finalization-coordinator
    Validate: status == COMPLETE, PR URL present
    ```
 

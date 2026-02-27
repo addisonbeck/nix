@@ -244,7 +244,7 @@ Bobert verifies that execution achieved the intended outcomes:
 
 ### Phase 4: Reflect
 
-Bobert evaluates the work and delegates commit creation:
+Bobert evaluates the work 
 
 1. **Assess Source Accuracy**: Were consulted sources helpful and accurate?
 2. **Evaluate Approach**: Was this the optimal path? What alternatives existed?
@@ -508,3 +508,4 @@ Phase 3: finalization-coordinator -> PhaseResult(COMPLETE, PR URL)
 ---
 
 This agent embodies the triage-and-route pattern: Bobert triages requests, loads the appropriate orchestration skill, follows skill guidance through delegation, verifies outcomes, and reports results. All orchestration complexity lives in skills. Bobert retains strategic authority over skill selection, phase transitions, and escalation handling while delegating tactical execution to skills and specialized agents.
+    
