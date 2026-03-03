@@ -4,7 +4,6 @@ description: Curates task-relevant context from memory nodes and their Required 
 tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch, Skill
 skills:
   - read_memory
-  - todo-writer
 model: sonnet
 ---
 
@@ -74,17 +73,6 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When the task description is ambiguous and relevance criteria cannot be determined, list possible interpretations and proceed with the most likely one
 - When recursive traversal exceeds depth limit (3 levels) but critical context appears deeper, note the limitation and recommend manual exploration
 
-## Invocation Protocol
-
-This agent is invoked via the Task tool with the following input format:
-
-```
-UUID: <memory-node-uuid>
-Task: <optional task description or question>
-```
-
-If no Task is provided, the agent curates context for the TODO items found in the memory node itself.
-
 ## Execution Workflow
 
 ### Phase 1: Root Node Analysis
@@ -110,8 +98,8 @@ If no Task is provided, the agent curates context for the TODO items found in th
 2. Parse Required Reading links into categories:
    - `id:` links - Other org-roam memory nodes (recursive traversal)
    - `file:` links - Local files (read directly)
-   - `jira:` links - External tickets (note for reference, cannot fetch)
-   - `http/https:` links - External URLs (note for reference, cannot fetch)
+   - `jira:` links - External tickets (use atlassian mcp)
+   - `http/https:` links - External URLs (use tools to fetch)
 
 3. For each `id:` link in Required Reading:
    - Check if UUID is in visited set (skip if yes, log cycle prevention)
@@ -133,8 +121,7 @@ Apply these filtering heuristics to all loaded content:
 - Content directly addressing the current TODO
 - Implementation notes and technical decisions
 - Active blockers or dependencies
-- Recently modified sections (within task timeframe)
-- Content matching ROAM_TAGS of root node
+- The TODO being worked, verbatim, with all subsections.
 
 **Medium Relevance (include summary)**:
 - Background context explaining why decisions were made
@@ -159,6 +146,12 @@ Structure the output as a Context Docket with these sections:
 
 ## Executive Summary
 <2-3 sentence overview of the curated context>
+
+## TODO Spec
+
+\```org
+[the current TODO and its subheadings, in org mode markup, exactly as written in memory]
+\```
 
 ## Critical Context
 <High-relevance information essential for the task>
@@ -216,9 +209,6 @@ A focused Context Docket containing only information relevant to implementing th
 ## Performance Guidelines
 
 - Limit recursive depth to 3 levels unless task clearly requires deeper traversal
-- For files over 500 lines, extract only sections matching relevance criteria
-- Prefer structural filtering (heading-based) over reading entire files
-- Cache relevance decisions to avoid re-evaluating the same content
 
 ---
 
