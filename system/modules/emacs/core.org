@@ -2165,7 +2165,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 #+begin_src emacs-lisp
   (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
   (evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
-  (evil-define-key '(normal insert) 'global (kbd "C-m") #'my/insert-menu)
   (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
   (evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
   (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
@@ -2186,14 +2185,12 @@ These are usually called from a mode init hook
     (local-set-key (kbd "C-b") #'my/create-menu)
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
-    (local-set-key (kbd "C-m") #'my/insert-menu)
     (local-set-key (kbd "C-s") #'my/search-menu)
     (local-set-key (kbd "C-x") #'my/execute-menu)
 
     (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-m") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
 		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
@@ -2212,7 +2209,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (local-set-key (kbd "C-b") #'my/create-menu)
     (local-set-key (kbd "C-g") #'my/go-menu)
     (local-set-key (kbd "C-<return>") #'my/insert-menu)
-    (local-set-key (kbd "C-m") #'my/insert-menu)
     (local-set-key (kbd "C-s") #'my/search-menu)
     (local-set-key (kbd "C-x") #'my/execute-menu)
 
@@ -2220,7 +2216,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-m") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
 		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
