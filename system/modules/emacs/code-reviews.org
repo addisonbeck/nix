@@ -29,7 +29,7 @@
       ("Dani's PRs" . "is:open is:pr author:dani-garcia")
       ("My Drafts" . "is:pr is:draft is:open author:addisonbeck"))
     "List of GitHub search queries for PRs.
-      Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
+	Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
     :type '(alist :key-type string :value-type string)
     :group 'my/code-reviews)
 
@@ -101,28 +101,28 @@
 
   (defun my/code-reviews--fetch-prs-for-query (query-name query-string)
     "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
-      Returns list of PR data structures."
+	Returns list of PR data structures."
     (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
 			  query-name query-string)
     (let* ((response (ghub-graphql
 		      "query($query: String!) {
-			    search(query: $query, type: ISSUE, first: 100) {
-			      nodes {
-				... on PullRequest {
-				  title
-				  url
-				  repository {
-				    nameWithOwner
+			      search(query: $query, type: ISSUE, first: 100) {
+				nodes {
+				  ... on PullRequest {
+				    title
+				    url
+				    repository {
+				      nameWithOwner
+				    }
+				    author {
+				      login
+				    }
+				    updatedAt
+				    state
 				  }
-				  author {
-				    login
-				  }
-				  updatedAt
-				  state
 				}
 			      }
-			    }
-			  }"
+			    }"
 		      `((query . ,query-string))))
 	   (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
       (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
@@ -134,7 +134,7 @@
 
   (defun my/code-reviews--create-pr-memory (pr)
     "Create an org-roam memory for PR data structure.
-    Returns a plist with :id, :title, :file or nil on error."
+      Returns a plist with :id, :title, :file or nil on error."
     (let-alist pr
       (when-let* ((pr-path (pr-review-url-parse .url))
 		  (repo-parts (split-string .repository.nameWithOwner "/"))
@@ -233,7 +233,7 @@
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
     "Format a single PR data structure into org-mode entry text.
-    If MEMORY-ID is provided, use org-roam id-based link for the title."
+      If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
       (if memory-id
 	  (concat "* TODO [[id:" memory-id "][CR: " .title "]]\n"
@@ -254,7 +254,7 @@
 
   (defun my/code-reviews--insert-new-prs (prs)
     "Insert new PRs into the org file.
-      PRS should be a list of PR data structures."
+	PRS should be a list of PR data structures."
     (my/code-reviews--log "DEBUG" "Processing %d PRs for insertion" (length prs))
     (let ((new-count 0))
       (dolist (pr prs)
@@ -413,7 +413,7 @@
 #+begin_src emacs-lisp 
   (defun my/pr-review-from-org-entry ()
     "Start pr-review from current org entry's PR_URL property.
-  Works from both org-mode buffers and org-agenda."
+    Works from both org-mode buffers and org-agenda."
     (interactive)
     (let ((pr-url 
 	   (cond
@@ -482,7 +482,7 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
 #+begin_src emacs-lisp :tangle code-reviews.el
   (defun my/pr-context-from-org-property ()
     "Extract PR number from org-mode PR_URL property.
-  Returns PR number as string or nil if not in org-mode or PR_URL not found."
+    Returns PR number as string or nil if not in org-mode or PR_URL not found."
     (when (derived-mode-p 'org-mode)
       (when-let* ((pr-url (org-entry-get nil "PR_URL"))
 		  (pr-num (string-match "github\\.com/.*/pull/\\([0-9]+\\)" pr-url)))
@@ -490,20 +490,20 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
 
   (defun my/pr-context-from-url-at-point ()
     "Extract PR number from GitHub URL at point.
-  Returns PR number as string or nil if no URL at point or URL not a GitHub PR."
+    Returns PR number as string or nil if no URL at point or URL not a GitHub PR."
     (when-let* ((url (thing-at-point-url-at-point))
 		(pr-num (string-match "github\\.com/.*/pull/\\([0-9]+\\)" url)))
       (match-string 1 url)))
 
   (defun my/pr-context-from-prompt ()
     "Prompt user for PR number.
-  Returns PR number as string from user input."
+    Returns PR number as string from user input."
     (read-string "Enter PR number: "))
 
   (defun my/pr-detect-context ()
     "Detect PR number from context with priority chain.
-  Priority: org-property -> URL-at-point -> prompt.
-  Returns PR number as string."
+    Priority: org-property -> URL-at-point -> prompt.
+    Returns PR number as string."
     (or (my/pr-context-from-org-property)
 	(my/pr-context-from-url-at-point)
 	(my/pr-context-from-prompt)))
@@ -542,6 +542,34 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
 
   (defvar-local my/pr-metadata-cache nil
     "Alist of PR metadata: ((title . \"...\") (author . \"...\") (branch . \"...\"))")
+#+end_src
+
+*** vterm Buffer Management
+
+#+begin_src emacs-lisp :tangle code-reviews.el
+  (defun my/pr-review-in-vterm (pr-number command &optional env-vars)
+    "Execute COMMAND in vterm buffer named *PR-Review-<PR-NUMBER>*.
+  Creates buffer if it doesn't exist, reuses if it does.
+  ENV-VARS is optional list of environment variable strings (\"VAR=value\" format)."
+    (let* ((buf-name (format "*PR-Review-%s*" pr-number))
+	   (buf (get-buffer buf-name)))
+      (if buf
+	  ;; Reuse existing buffer
+	  (with-current-buffer buf
+	    (when env-vars
+	      (setq-local process-environment
+			  (append env-vars process-environment)))
+	    (vterm-send-string (concat "clear && " command))
+	    (vterm-send-return))
+	;; Create new buffer
+	(vterm buf-name)
+	(with-current-buffer buf-name
+	  (when env-vars
+	    (setq-local process-environment
+			(append env-vars process-environment)))
+	  (vterm-send-string command)
+	  (vterm-send-return)))
+      (switch-to-buffer buf-name)))
 #+end_src
 
 
