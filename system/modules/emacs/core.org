@@ -1773,6 +1773,19 @@ This cool and lame at the same time
 	  (save-window-excursion
 	    (projectile-switch-project))
 	(set-marker origin-pos nil))))
+
+  (defun my/insert-org-link-to-pdf ()
+    "Select a PDF from marked-up-pdfs folder and insert an org link at point."
+    (interactive)
+    (require 'org)
+    (let* ((pdf-dir (expand-file-name "~/notes/roam/marked-up-pdfs/"))
+           (file (read-file-name "PDF: " pdf-dir nil t))
+           (link (org-link-make-string
+                  (concat "file:" (file-truename file))
+                  (file-name-nondirectory file))))
+      (if (derived-mode-p 'vterm-mode)
+          (vterm-send-string link)
+        (insert link))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1783,6 +1796,7 @@ This cool and lame at the same time
 			    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
 			    ("b" "Org Block" my/insert-org-block)
 			    ("p" "Projectile File" my/projectile-insert-org-link-to-file)
+			    ("f" "PDF Link" my/insert-org-link-to-pdf)
 			    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
 
