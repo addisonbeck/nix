@@ -481,29 +481,68 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
 
 #+begin_src emacs-lisp :tangle code-reviews.el
   (defun my/pr-context-from-org-property ()
-    "Extract PR number from org-mode PR_URL property.
-	    Returns PR number as string or nil if not in org-mode or PR_URL not found."
-    (when (derived-mode-p 'org-mode)
-      (when-let* ((pr-url (org-entry-get nil "PR_URL"))
-		  (pr-num (string-match "github\\.com/.*/pull/\\([0-9]+\\)" pr-url)))
-	(match-string 1 pr-url))))
+    "Extract PR context from org properties at point.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (when-let* ((pr-url (org-entry-get (point) "PR_URL"))
+                (repo (org-entry-get (point) "REPO")))
+      (when (string-match "github\\.com/[^/]+/[^/]+/pull/\\([0-9]+\\)" pr-url)
+        (list :pr-number (match-string 1 pr-url)
+              :pr-url pr-url
+              :repo repo))))
 
   (defun my/pr-context-from-url-at-point ()
-    "Extract PR number from GitHub URL at point.
-	    Returns PR number as string or nil if no URL at point or URL not a GitHub PR."
-    (when-let* ((url (thing-at-point-url-at-point))
-		(pr-num (string-match "github\\.com/.*/pull/\\([0-9]+\\)" url)))
-      (match-string 1 url)))
+    "Extract PR context from GitHub URL at point.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (when-let* ((url (thing-at-point-url-at-point)))
+      (when (string-match "github\\.com/\\([^/]+/[^/]+\\)/pull/\\([0-9]+\\)" url)
+        (list :pr-number (match-string 2 url)
+              :pr-url url
+              :repo (match-string 1 url)))))
 
   (defun my/pr-context-from-prompt ()
-    "Prompt user for PR number.
-	    Returns PR number as string from user input."
-    (read-string "Enter PR number: "))
+    "Prompt user for PR number with completion from org file.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (let* ((parsed (my/pr-candidates-from-org-file))
+           (candidates (car parsed))
+           (candidate-hash (cdr parsed)))
+      (if (null candidates)
+          ;; Fallback to read-string if no candidates
+          (let ((pr-num (read-string "Enter PR number: ")))
+            (list :pr-number pr-num :pr-url nil :repo nil))
+        ;; Use completing-read with candidates
+        (let* ((selection (completing-read "Select PR: " candidates nil nil))
+               (plist (gethash selection candidate-hash)))
+          plist))))
+
+  (defun my/pr-candidates-from-org-file ()
+    "Parse ~/notes/code-reviews.org and return list of plists with PR metadata.
+Each plist has :pr-number, :pr-url, :repo, :display-string keys."
+    (let ((org-file (expand-file-name "~/notes/code-reviews.org"))
+          (candidates '())
+          (candidate-hash (make-hash-table :test 'equal)))
+      (when (file-exists-p org-file)
+        (with-current-buffer (find-file-noselect org-file)
+          (org-map-entries
+           (lambda ()
+             (let* ((pr-url (org-entry-get (point) "PR_URL"))
+                    (repo (org-entry-get (point) "REPO"))
+                    (heading (org-get-heading t t t t)))
+               (when (and pr-url repo)
+                 (when (string-match "github\\.com/[^/]+/[^/]+/pull/\\([0-9]+\\)" pr-url)
+                   (let* ((pr-number (match-string 1 pr-url))
+                          (display-string (format "#%s: %s [%s]" pr-number heading repo))
+                          (plist (list :pr-number pr-number
+                                       :pr-url pr-url
+                                       :repo repo
+                                       :display-string display-string)))
+                     (push display-string candidates)
+                     (puthash display-string plist candidate-hash))))))
+           nil 'file)))
+      (cons (nreverse candidates) candidate-hash)))
 
   (defun my/pr-detect-context ()
-    "Detect PR number from context with priority chain.
-	    Priority: org-property -> URL-at-point -> prompt.
-	    Returns PR number as string."
+    "Detect PR context with priority: org property > URL at point > prompt.
+Returns plist with :pr-number, :pr-url, :repo keys."
     (or (my/pr-context-from-org-property)
 	(my/pr-context-from-url-at-point)
 	(my/pr-context-from-prompt)))
@@ -580,31 +619,39 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
   (defun my/pr-review-start ()
     "Start PR review in terminal view using gh CLI."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr view %s" pr-number))))
+			     (format "gh pr view %s" pr-url))))
 
   (defun my/pr-diff ()
     "View PR diff with delta pager."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr diff %s" pr-number)
+			     (format "gh pr diff %s" pr-url)
 			     '("GIT_PAGER=delta"))))
 
   (defun my/pr-files ()
     "Browse PR files using gh CLI."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr view %s --json files --jq '.files[].path'" pr-number))))
+			     (format "gh pr view %s --json files --jq '.files[].path'" pr-url))))
 
   (defun my/pr-comments ()
     "View PR comments using gh CLI."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr view %s --comments" pr-number))))
+			     (format "gh pr view %s --comments" pr-url))))
 #+end_src
 
 **** Actions Workflows
@@ -613,16 +660,20 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
   (defun my/pr-add-comment ()
     "Add comment to PR using gh CLI interactive editor."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr comment %s" pr-number))))
+			     (format "gh pr comment %s" pr-url))))
 
   (defun my/pr-submit-review ()
     "Submit PR review using gh CLI interactive flow."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr review %s" pr-number))))
+			     (format "gh pr review %s" pr-url))))
 #+end_src
 
 **** Status Workflows
@@ -631,16 +682,20 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
   (defun my/pr-checks ()
     "Check CI status for PR using gh CLI."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr checks %s" pr-number))))
+			     (format "gh pr checks %s" pr-url))))
 
   (defun my/pr-review-history ()
     "View PR review history using gh-dash TUI."
     (interactive)
-    (let ((pr-number (my/pr-detect-context)))
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh dash --pr %s" pr-number))))
+			     (format "gh dash --pr %s" pr-url))))
 #+end_src
 
 *** Integration Documentation
