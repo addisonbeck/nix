@@ -74,7 +74,7 @@
       ./with/program/node.nix
       ./with/program/sed.nix
       ./with/program/github-cli.nix
-      #./with/program/gh-dash.nix
+      ./with/program/gh-dash.nix
       #./with/program/jira-cli.nix
       ./with/program/vscode.nix
       #./with/program/emacs.nix
