@@ -54,6 +54,7 @@
       # <3
 
       ./with/program/lazygit.nix
+      ./with/program/delta.nix
       ./with/program/nixfmt.nix
       #./with/program/raycast.nix
       ./with/program/dotnet.nix
