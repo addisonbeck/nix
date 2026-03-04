@@ -29,7 +29,7 @@
       ("Dani's PRs" . "is:open is:pr author:dani-garcia")
       ("My Drafts" . "is:pr is:draft is:open author:addisonbeck"))
     "List of GitHub search queries for PRs.
-    Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
+      Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
     :type '(alist :key-type string :value-type string)
     :group 'my/code-reviews)
 
@@ -101,28 +101,28 @@
 
   (defun my/code-reviews--fetch-prs-for-query (query-name query-string)
     "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
-    Returns list of PR data structures."
+      Returns list of PR data structures."
     (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
 			  query-name query-string)
     (let* ((response (ghub-graphql
 		      "query($query: String!) {
-			  search(query: $query, type: ISSUE, first: 100) {
-			    nodes {
-			      ... on PullRequest {
-				title
-				url
-				repository {
-				  nameWithOwner
+			    search(query: $query, type: ISSUE, first: 100) {
+			      nodes {
+				... on PullRequest {
+				  title
+				  url
+				  repository {
+				    nameWithOwner
+				  }
+				  author {
+				    login
+				  }
+				  updatedAt
+				  state
 				}
-				author {
-				  login
-				}
-				updatedAt
-				state
 			      }
 			    }
-			  }
-			}"
+			  }"
 		      `((query . ,query-string))))
 	   (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
       (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
@@ -134,7 +134,7 @@
 
   (defun my/code-reviews--create-pr-memory (pr)
     "Create an org-roam memory for PR data structure.
-  Returns a plist with :id, :title, :file or nil on error."
+    Returns a plist with :id, :title, :file or nil on error."
     (let-alist pr
       (when-let* ((pr-path (pr-review-url-parse .url))
 		  (repo-parts (split-string .repository.nameWithOwner "/"))
@@ -233,7 +233,7 @@
 
   (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
     "Format a single PR data structure into org-mode entry text.
-  If MEMORY-ID is provided, use org-roam id-based link for the title."
+    If MEMORY-ID is provided, use org-roam id-based link for the title."
     (let-alist pr
       (if memory-id
 	  (concat "* TODO [[id:" memory-id "][CR: " .title "]]\n"
@@ -254,7 +254,7 @@
 
   (defun my/code-reviews--insert-new-prs (prs)
     "Insert new PRs into the org file.
-    PRS should be a list of PR data structures."
+      PRS should be a list of PR data structures."
     (my/code-reviews--log "DEBUG" "Processing %d PRs for insertion" (length prs))
     (let ((new-count 0))
       (dolist (pr prs)
@@ -375,29 +375,29 @@
 * Reviewing PRs
 ** pr-review package declaration
 #+begin_src emacs-lisp 
-;; PR Review package setup
-(use-package pr-review
-  :ensure nil
-  :load-path "/Users/me/binwarden/blahgeek-emacs-pr-review/master"
-  ;;:config
-  ;;(setq pr-review-ghub-auth-name "ghub")
-  
-  ;;(with-eval-after-load 'evil
+  ;; PR Review package setup
+  (use-package pr-review
+    :ensure nil
+    :load-path "/Users/me/binwarden/blahgeek-emacs-pr-review/master"
+    ;;:config
+    ;;(setq pr-review-ghub-auth-name "ghub")
+
+    ;;(with-eval-after-load 'evil
     ;;(evil-define-key 'normal pr-review-mode-map
-      ;;(kbd "q") 'pr-review-quit
-      ;;(kbd "r") 'pr-review-refresh
-      ;;(kbd "c") 'pr-review-comment-add
-      ;;(kbd "C") 'pr-review-comment-reply
-      ;;(kbd "d") 'pr-review-comment-delete
-      ;;(kbd "e") 'pr-review-comment-edit
-      ;;(kbd "s") 'pr-review-submit-review
-      ;;(kbd "a") 'pr-review-approve
-      ;;(kbd "R") 'pr-review-request-changes
-      ;;(kbd "TAB") 'pr-review-next-comment
-      ;;(kbd "<backtab>") 'pr-review-prev-comment
-      ;;(kbd "o") 'pr-review-open-file-at-point
-      ;;(kbd "RET") 'pr-review-view-comment-at-point))
-  )
+    ;;(kbd "q") 'pr-review-quit
+    ;;(kbd "r") 'pr-review-refresh
+    ;;(kbd "c") 'pr-review-comment-add
+    ;;(kbd "C") 'pr-review-comment-reply
+    ;;(kbd "d") 'pr-review-comment-delete
+    ;;(kbd "e") 'pr-review-comment-edit
+    ;;(kbd "s") 'pr-review-submit-review
+    ;;(kbd "a") 'pr-review-approve
+    ;;(kbd "R") 'pr-review-request-changes
+    ;;(kbd "TAB") 'pr-review-next-comment
+    ;;(kbd "<backtab>") 'pr-review-prev-comment
+    ;;(kbd "o") 'pr-review-open-file-at-point
+    ;;(kbd "RET") 'pr-review-view-comment-at-point))
+    )
 #+end_src
 
 ** pr-review mode hook
@@ -411,43 +411,43 @@
 
 ** Helper Functions For Getting To PRs
 #+begin_src emacs-lisp 
-(defun my/pr-review-from-org-entry ()
-  "Start pr-review from current org entry's PR_URL property.
-Works from both org-mode buffers and org-agenda."
-  (interactive)
-  (let ((pr-url 
-         (cond
-          ;; If in agenda, go to the actual org entry
-          ((eq major-mode 'org-agenda-mode)
-           (org-agenda-check-no-diary)
-           (let* ((marker (or (org-get-at-bol 'org-marker)
-                             (org-agenda-error)))
-                  (buffer (marker-buffer marker))
-                  (pos (marker-position marker)))
-             (with-current-buffer buffer
-               (save-excursion
-                 (goto-char pos)
-                 (org-entry-get nil "PR_URL")))))
-          ;; If in org-mode, use directly
-          ((derived-mode-p 'org-mode)
-           (org-entry-get nil "PR_URL"))
-          ;; Otherwise error
-          (t (user-error "Must be called from org-mode or org-agenda")))))
-    (if pr-url
-        (progn
-          (my/code-reviews--log "INFO" "Starting PR review for: %s" pr-url)
-          (pr-review pr-url))
-      (user-error "No PR_URL property found in current org entry"))))
-  
+  (defun my/pr-review-from-org-entry ()
+    "Start pr-review from current org entry's PR_URL property.
+  Works from both org-mode buffers and org-agenda."
+    (interactive)
+    (let ((pr-url 
+	   (cond
+	    ;; If in agenda, go to the actual org entry
+	    ((eq major-mode 'org-agenda-mode)
+	     (org-agenda-check-no-diary)
+	     (let* ((marker (or (org-get-at-bol 'org-marker)
+				(org-agenda-error)))
+		    (buffer (marker-buffer marker))
+		    (pos (marker-position marker)))
+	       (with-current-buffer buffer
+		 (save-excursion
+		   (goto-char pos)
+		   (org-entry-get nil "PR_URL")))))
+	    ;; If in org-mode, use directly
+	    ((derived-mode-p 'org-mode)
+	     (org-entry-get nil "PR_URL"))
+	    ;; Otherwise error
+	    (t (user-error "Must be called from org-mode or org-agenda")))))
+      (if pr-url
+	  (progn
+	    (my/code-reviews--log "INFO" "Starting PR review for: %s" pr-url)
+	    (pr-review pr-url))
+	(user-error "No PR_URL property found in current org entry"))))
+
   ;; Keybinding to start review from org entry
   (with-eval-after-load 'org
     (define-key org-mode-map (kbd "C-c r") 'my/pr-review-from-org-entry))
-  
+
   ;; Add evil keybinding for org mode
   (with-eval-after-load 'evil-org
     (evil-define-key 'normal org-mode-map
-      (kbd "<leader>r") 'my/pr-review-from-org-entry))
-  
+		     (kbd "<leader>r") 'my/pr-review-from-org-entry))
+
   ;; Test function for pr-review setup
   (defun my/test-pr-review-setup ()
     "Test pr-review package configuration and authentication."
@@ -455,21 +455,21 @@ Works from both org-mode buffers and org-agenda."
     (cond
      ((not (featurep 'pr-review))
       (if (require 'pr-review nil t)
-          (my/code-reviews--log "INFO" "pr-review package loaded successfully")
-        (my/code-reviews--log "ERROR" "pr-review package not available")))
+	  (my/code-reviews--log "INFO" "pr-review package loaded successfully")
+	(my/code-reviews--log "ERROR" "pr-review package not available")))
      (t (my/code-reviews--log "INFO" "pr-review package already loaded")))
-    
-          (ghub-get "/user")
-          (my/code-reviews--log "INFO" "GitHub authentication working"))
-    ;; Test ghub authentication (same auth used by pr-review)
-    
 
-(with-eval-after-load 'transient
-  (transient-append-suffix 'my/go-menu "l"
-    '("z" "PR Review" my/pr-review-from-org-entry)))
+    (ghub-get "/user")
+    (my/code-reviews--log "INFO" "GitHub authentication working"))
+  ;; Test ghub authentication (same auth used by pr-review)
 
-(add-to-list 'browse-url-default-handlers
-             '(pr-review-url-parse . pr-review-open-url))
+
+  (with-eval-after-load 'transient
+    (transient-append-suffix 'my/go-menu "l"
+      '("z" "PR Review" my/pr-review-from-org-entry)))
+
+  (add-to-list 'browse-url-default-handlers
+	       '(pr-review-url-parse . pr-review-open-url))
 #+end_src
 
 
@@ -507,6 +507,41 @@ This section implements terminal-based PR review workflows using gh CLI and gh-d
     (or (my/pr-context-from-org-property)
 	(my/pr-context-from-url-at-point)
 	(my/pr-context-from-prompt)))
+#+end_src
+
+*** Transient Menu
+
+#+begin_src emacs-lisp :tangle code-reviews.el
+  (transient-define-prefix my/pr-review-menu ()
+			   "PR Review workflows via gh CLI and gh-dash in vterm"
+			   [["Review"
+			     ("r" "Review PR (terminal view)" my/pr-review-start)
+			     ("d" "View diff (delta)" my/pr-diff)
+			     ("f" "Browse files" my/pr-files)
+			     ("c" "View comments" my/pr-comments)]
+			    ["Actions"
+			     ("a" "Add comment" my/pr-add-comment)
+			     ("s" "Submit review" my/pr-submit-review)]
+			    ["Status"
+			     ("i" "Check CI status" my/pr-checks)
+			     ("h" "View review history (gh-dash)" my/pr-review-history)]])
+#+end_src
+
+*** Keybinding Registration
+
+#+begin_src emacs-lisp :tangle code-reviews.el
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global (kbd "C-o") #'my/pr-review-menu))
+#+end_src
+
+*** State Management Variables
+
+#+begin_src emacs-lisp :tangle code-reviews.el
+  (defvar-local my/pr-review-buffer nil
+    "vterm buffer name for current PR review session.")
+
+  (defvar-local my/pr-metadata-cache nil
+    "Alist of PR metadata: ((title . \"...\") (author . \"...\") (branch . \"...\"))")
 #+end_src
 
 
