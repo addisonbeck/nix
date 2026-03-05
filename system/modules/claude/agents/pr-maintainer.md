@@ -330,6 +330,8 @@ EOF
 
 **Important distinction**: If `gh pr create` fails because the branch does not exist on the remote, this is NOT an authentication failure -- it is the SSH hardware key quality gate. The branch must be pushed by a human (SSH ED25519-SK keys require interactive approval). Escalate to the coordinating agent for human branch push. Do not execute the Auth Failure Protocol for this case.
 
+**Dual authentication channels**: Git commands and the gh CLI use independent authentication mechanisms. Git operations (push, fetch, pull) authenticate via SSH using ED25519-SK hardware keys, which require physical interaction and can fail when the hardware key is unavailable. The gh CLI authenticates via GitHub API token (OAuth or PAT), which operates independently of SSH. This means `gh pr create` can succeed even when `git push` has failed due to SSH key issues -- the two channels do not share authentication state. When git SSH fails, always attempt `gh pr create` before escalating; do not assume a git SSH failure implies gh CLI will also fail.
+
 When `gh pr create` fails due to genuine authentication, credential, or API issues (NOT missing branch), you MUST share the complete synthesized PR content immediately. The team lead or user should never need to ask for it.
 
 **Step 1: Share synthesized PR content as LITERAL TEXT**
