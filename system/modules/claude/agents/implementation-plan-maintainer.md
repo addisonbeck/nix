@@ -466,65 +466,81 @@ Before marking any implementation plan as version 1.0.0 and persisting to memory
 
 **Example Evidence**:
 ```
-Commit 1 (Add types): Compiles - introduces RetryPolicy struct and RetryableStatus enum with no dependencies beyond std
-Commit 2 (Add logic): Compiles - references RetryPolicy (added in Commit 1), uses tokio (in Cargo.lock, verified)
+Commit 1 (Add types): Compiles - introduces RetryPolicy and RetryableStatus types with no external dependencies
+Commit 2 (Add logic): Compiles - references RetryPolicy (added in Commit 1), uses verified dependency from lock file
 Commit 3 (Integration): Compiles - references retry module (added in Commit 1+2), modifies existing client builder (verified at path)
-Commit 4 (Tests): Compiles - imports retry module (exists after Commit 1-3), adds test-only code in #[cfg(test)]
+Commit 4 (Tests): Compiles - imports retry module (exists after Commit 1-3), adds test-only code
 ```
 
 **Status**: [ ] PASS [ ] FAIL
 
 ---
 
-#### Checklist Item 2: Trait Bounds Compatibility
+#### Checklist Item 2: Concurrency Safety Annotations
 
-**Criterion**: All async traits used in Send contexts have explicit `+ Send` bounds, and all trait objects in multi-threaded contexts have `+ Send + Sync` bounds.
+**Criterion**: All types and interfaces used in concurrent contexts have appropriate thread-safety annotations or constraints for the target language.
 
 **Validation Method**:
-1. Review all code examples for trait definitions and trait bounds
-2. For each async trait: Check if used in async contexts (async fn, spawn, channels)
-3. For each trait without explicit Send bound: Verify NOT used in concurrent contexts
-4. For each trait object (`Box<dyn Trait>`): Check if shared across threads (Arc, channels) and verify `+ Send + Sync` if so
+1. Review all code examples for types used in concurrent contexts (async/await, threads, channels, shared state)
+2. For each language, verify appropriate annotations:
+   - **Rust**: Async traits in Send contexts have `+ Send` bounds, trait objects shared across threads have `+ Send + Sync`
+   - **TypeScript**: Promise-returning functions that spawn concurrent work are properly typed, shared mutable state uses appropriate synchronization primitives
+   - **Go**: Interfaces used with goroutines document goroutine-safety, channel types match usage patterns
+   - **Python**: async functions used with asyncio have proper type hints, thread-shared objects use thread-safe primitives
+3. For each type without explicit concurrency annotation: Verify NOT used in concurrent contexts
 
 **Evidence Required**:
-- List all trait definitions with their bounds: `trait MyTrait: OtherTrait + Send`
-- List all trait objects with their bounds: `Box<dyn MyTrait + Send + Sync>`
-- For each async trait, document: "Used in [context], requires Send: [yes/no]"
+- List all types/interfaces used in concurrent contexts with their annotations
+- For each concurrent type, document: "Used in [context], thread-safety annotation: [present/not needed]"
 
-**Pass Condition**: All async traits in Send contexts have explicit `+ Send` bounds, all trait objects in concurrent contexts have `+ Send + Sync` bounds
+**Pass Condition**: All types used in concurrent contexts have appropriate thread-safety annotations for the target language
 
-**Fail Condition**: Any async trait used in concurrent context lacks Send bound, OR any trait object shared across threads lacks Send+Sync bounds
+**Fail Condition**: Any type used in concurrent context lacks required thread-safety annotation or constraint
 
 **Failure Escalation**:
-- If trait bounds missing in code examples: Add explicit bounds to trait definitions in plan's code examples
+- If annotations missing in code examples: Add appropriate thread-safety constraints to type definitions in plan's code examples
 - If breakdown doesn't specify concurrency context: Escalate to technical-breakdown-maintainer for Cross-Cutting Concerns: Scalability clarification
-- If trait bound conflict with existing codebase: Escalate to adr-maintainer for pattern conflict resolution
+- If annotation requirements conflict with existing codebase: Escalate to adr-maintainer for pattern conflict resolution
 
-**Example Evidence**:
+**Example Evidence (Rust)**:
 ```
-Trait definitions in plan:
+Types in concurrent contexts:
 1. `trait RetryStrategy: Send` - Used in async context (tokio spawn), Send bound present ✓
 2. `Box<dyn RetryStrategy + Send + Sync>` - Stored in Arc for sharing, Send+Sync present ✓
-3. `trait Logger` - Used only in single-threaded context, no Send bound needed ✓
+3. `struct Logger` - Used only in single-threaded context, no Send bound needed ✓
 ```
 
-**Status**: [ ] PASS [ ] FAIL [ ] N/A (no traits in plan)
+**Example Evidence (TypeScript)**:
+```
+Types in concurrent contexts:
+1. `interface RetryStrategy` with `Promise<Result>` - Used in async/await context, properly typed ✓
+2. `class ConnectionPool` with internal locks - Shared across async tasks, uses Mutex for state ✓
+3. `class Logger` - Used only in single event loop, no concurrency concerns ✓
+```
+
+**Status**: [ ] PASS [ ] FAIL [ ] N/A (no concurrent types in plan)
 
 ---
 
-#### Checklist Item 3: Dependency Analysis
+#### Checklist Item 3: Module/Package Declaration Order
 
-**Criterion**: All module declarations (`pub mod X;` or `mod X;`) precede first usage of that module's items.
+**Criterion**: All module/package declarations and exports precede first usage of those modules' items.
 
 **Validation Method**:
 1. Trace through commits in sequence
-2. For each commit that creates a new module: Note which commit adds the module declaration
-3. For each commit that uses a module's items: Verify the module declaration exists in current or prior commit
-4. Check that `use` statements reference modules that have been declared
+2. For each commit that creates a new module/package: Note which commit adds the declaration/export
+3. For each commit that uses module items: Verify the module declaration exists in current or prior commit
+4. Verify import/require/use statements reference modules that have been declared
+
+Language-specific patterns:
+- **Rust**: `pub mod X;` or `mod X;` declaration before `use crate::X::Item`
+- **TypeScript**: `export` statement before `import { Item } from './module'`
+- **Python**: Module file creation before `from module import Item` or `import module`
+- **Go**: Package declaration before imports in other packages
 
 **Evidence Required**:
-- List all new modules with their declaration commit: "Commit 1: Declares `pub mod retry` in middleware/mod.rs"
-- List all module usage with declaration reference: "Commit 2: Uses `retry::RetryPolicy` - OK, retry module declared in Commit 1"
+- List all new modules with their declaration commit
+- List all module usage with declaration reference
 
 **Pass Condition**: Every module usage is preceded by that module's declaration in current or earlier commit
 
@@ -535,13 +551,21 @@ Trait definitions in plan:
 - If module structure unclear in breakdown: Escalate to technical-breakdown-maintainer for Component Documentation: Dependencies clarification
 - If module organization conflicts with existing patterns: Escalate to adr-maintainer for module organization decision
 
-**Example Evidence**:
+**Example Evidence (Rust)**:
 ```
 Module declarations and usage:
 Commit 1: Declares `pub mod retry` in src/http/middleware/mod.rs
 Commit 1: Creates src/http/middleware/retry.rs with RetryPolicy type
 Commit 2: Uses `crate::http::middleware::retry::RetryPolicy` - OK, module declared in Commit 1 ✓
 Commit 3: Uses `retry::RetryableStatus` - OK, module still present from Commit 1 ✓
+```
+
+**Example Evidence (TypeScript)**:
+```
+Module declarations and usage:
+Commit 1: Creates src/retry/index.ts with `export class RetryPolicy`
+Commit 2: Uses `import { RetryPolicy } from './retry'` - OK, module exported in Commit 1 ✓
+Commit 3: Uses `import { RetryableStatus } from './retry'` - OK, module still present from Commit 1 ✓
 ```
 
 **Status**: [ ] PASS [ ] FAIL [ ] N/A (no new modules)
@@ -592,13 +616,17 @@ NEW Components:
 
 **Validation Method**:
 1. Check breakdown's Testing Documentation section for test infrastructure state
-2. If test baseline not documented, run: `cargo test --package <target> --no-run` or equivalent no-run test compilation command
+2. If test baseline not documented, run appropriate no-run test compilation command for the language:
+   - **Rust**: `cargo test --package <target> --no-run`
+   - **TypeScript/JavaScript**: `npm test -- --listTests` or `yarn test --listTests`
+   - **Go**: `go test -run=^$ ./...` (compiles tests without running)
+   - **Python**: `pytest --collect-only` or `python -m pytest --collect-only`
 3. If baseline test compilation SUCCEEDS: Document this as baseline state
-4. If baseline test compilation FAILS: Document the gap and adjust verification strategy to library-only (`cargo check --lib`, `cargo clippy --lib`)
+4. If baseline test compilation FAILS: Document the gap and adjust verification strategy to library-only compilation/linting
 
 **Evidence Required**:
-- Document baseline test state: "Test infrastructure baseline: `cargo test --package http-client --no-run` exits 0" OR "Test infrastructure gap: `cargo test --no-run` fails with [error summary]"
-- If gap exists, document adjusted strategy: "Verification scoped to library-level: `cargo check --lib` and `cargo clippy --lib` only, new test code validated for syntax but not executed"
+- Document baseline test state with language-appropriate command
+- If gap exists, document adjusted strategy: "Verification scoped to library-level compilation/linting only, new test code validated for syntax but not executed"
 - Document verification scope: "Verification scope: new/modified tests only" OR "Verification scope: full package test suite (ticket requires remediation)"
 
 **Pass Condition**: Test infrastructure baseline is documented (success OR gap with mitigation) AND verification scope is explicit
@@ -610,7 +638,7 @@ NEW Components:
 - If pre-existing test gap blocks all verification: Escalate to technical-breakdown-maintainer to add test infrastructure gap to Open Questions
 - If unclear whether ticket requires full suite remediation: Escalate to Bobert for ticket scope clarification
 
-**Example Evidence (Baseline Success)**:
+**Example Evidence (Baseline Success - Rust)**:
 ```
 Test Infrastructure Baseline: VERIFIED
 - Command: `cargo test --package http-client --no-run`
@@ -619,7 +647,16 @@ Test Infrastructure Baseline: VERIFIED
 - Verification strategy: Full `cargo test` for new tests
 ```
 
-**Example Evidence (Baseline Gap)**:
+**Example Evidence (Baseline Success - TypeScript)**:
+```
+Test Infrastructure Baseline: VERIFIED
+- Command: `npm test -- --listTests`
+- Result: Exit 0, all test files discovered, jest configuration valid
+- Verification scope: New/modified tests only (Commit 4 adds retry middleware integration tests)
+- Verification strategy: Full `npm test` for new tests
+```
+
+**Example Evidence (Baseline Gap - Rust)**:
 ```
 Test Infrastructure Baseline: GAP DETECTED
 - Command: `cargo test --package http-client --no-run`
@@ -628,6 +665,17 @@ Test Infrastructure Baseline: GAP DETECTED
 - Adjusted verification: Library-level only (`cargo check --lib`, `cargo clippy --lib`)
 - Verification scope: New code validated for compilation, tests validated for syntax only, NOT executed
 - Remediation: Out of scope (ticket does not require test infrastructure fix)
+```
+
+**Example Evidence (Baseline Gap - Python)**:
+```
+Test Infrastructure Baseline: GAP DETECTED
+- Command: `pytest --collect-only`
+- Result: Exit 5, pytest not installed or configured
+- Gap documented: Pre-existing test infrastructure incomplete, not ticket-specific
+- Adjusted verification: Module-level only (`python -m py_compile <files>`, `mypy <files>`)
+- Verification scope: New code validated for syntax, tests validated for syntax only, NOT executed
+- Remediation: Out of scope (ticket does not require test infrastructure setup)
 ```
 
 **Status**: [ ] PASS (baseline documented + strategy clear) [ ] FAIL (baseline unknown or no mitigation)
