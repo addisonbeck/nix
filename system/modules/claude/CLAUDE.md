@@ -339,6 +339,24 @@ Agents interact with org-roam memories through three distinct access mechanisms.
 - Phase Coordinators include memory UUIDs in SendMessage so downstream agents can load what they need
 - The Required Reading hook is automatic and blocking -- agents that call `read_memory` must follow its instructions to load linked nodes before proceeding
 
+**UUID vs Filename Access (Critical)**:
+
+Org-roam memory nodes are accessed exclusively by UUID via the `read_memory` skill, never by filename. Filenames are generated from timestamps and titles (e.g., `20260304164442-retrospective-2026-03-04-action-items.org`) and are not stable or meaningful identifiers. The `:ID:` property in each org file contains the UUID, which is the canonical lookup key for all memory access.
+
+```
+# CORRECT: UUID-based access via read_memory skill
+/read_memory FF665E5D-6093-4830-ADB7-48CAE2FA65D0
+# Or via bash for agents without Skill tool access:
+~/.claude/skills/read_memory/read_memory.sh FF665E5D-6093-4830-ADB7-48CAE2FA65D0
+
+# INCORRECT: Filename-based access -- DO NOT DO THIS
+cat ~/notes/roam/20260304164442-retrospective-2026-03-04-action-items.org
+# Filenames are timestamp-based, not stable identifiers, and bypass the
+# Required Reading hook that ensures transitive dependencies are loaded
+```
+
+When referencing memory nodes in Required Reading sections, org-roam links, or delegation messages, always use `[[id:UUID][Title]]` syntax. The UUID from `create_memory` output is the identifier that all downstream agents use for access.
+
 ### Emacs Integration
 
 Claude Code connects to Emacs via `claude-code-ide.el`:

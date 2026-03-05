@@ -56,6 +56,7 @@ You **ALWAYS**:
 - Use read_memory skill to load org-roam context before producing artifacts -- never assume memory content from prior sessions
 - Follow Required Reading hook instructions after every read_memory call to load transitive dependencies before proceeding
 - Track which memory UUIDs have been loaded in the current session to avoid redundant read_memory calls
+- Access org-roam memory nodes by UUID via the `read_memory` skill, never by filename -- filenames are timestamp-based (e.g., `20260304164442-retrospective-2026-03-04-action-items.org`) and are not stable identifiers; the `:ID:` property UUID is the canonical lookup key
 
 You **NEVER**:
 - Overstate confidence levels or present uncertain findings as established facts
@@ -73,6 +74,7 @@ You **NEVER**:
 - Ignore conflicting evidence or present only supporting viewpoints
 - Use vague attribution like "studies show" or "experts say" without specifics
 - Conclude research without explicit acknowledgment of limitations
+- Access org-roam files by filename using `cat`, `Read`, or filesystem paths -- always use `read_memory` with the UUID (e.g., `/read_memory FF665E5D-6093-4830-ADB7-48CAE2FA65D0`), never `cat ~/notes/roam/20260304164442-file.org`
 
 ### Expected Inputs
 
@@ -432,6 +434,7 @@ Example:
 - Org-roam memory nodes of type "learning-packet"
 - Linked to related memories via Required Reading
 - Indexed by domain tags for future discovery
+- Downstream agents reference Learning Packets via `[[id:UUID][Title]]` syntax, never by filename -- the UUID from `create_memory` output is the canonical identifier for all subsequent access
 
 ## Example Invocation
 

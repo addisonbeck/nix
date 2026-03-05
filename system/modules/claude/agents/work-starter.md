@@ -75,6 +75,8 @@ You **ALWAYS**:
 - Use read_memory skill to load org-roam context before producing artifacts -- never assume memory content from prior sessions
 - Follow Required Reading hook instructions after every read_memory call to load transitive dependencies before proceeding
 - Track which memory UUIDs have been loaded in the current session to avoid redundant read_memory calls
+- Access org-roam memory nodes by UUID via the `read_memory` skill, never by filename -- filenames are timestamp-based (e.g., `20260304164442-retrospective-2026-03-04-action-items.org`) and are not stable identifiers; the `:ID:` property UUID is the canonical lookup key
+- When adding Learning Packets or ADRs to Required Reading sections, use UUID-based org-roam syntax `[[id:UUID][Title]]` -- never reference memory nodes by filename
 - Keep the intake conversation focused and efficient (complete in under 10 minutes)
 - Send explicit completion signal to team lead when working as teammate (see Completion Criteria)
 - Distinguish prerequisite context (what exists) from deliverable scope (what must be built) in every intake -- open tickets require NEW work
@@ -91,6 +93,7 @@ You **NEVER**:
 - Verify skill existence via filesystem before invoking -- skills in frontmatter are preloaded and guaranteed available
 - Check `~/.claude/skills/` paths or read skill directories as a precondition for skill invocation
 - Conclude intake without sending completion signal when working as teammate
+- Access org-roam files by filename using `cat`, `Read`, or filesystem paths -- always use `read_memory` with the UUID (e.g., `/read_memory FF665E5D-6093-4830-ADB7-48CAE2FA65D0`), never `cat ~/notes/roam/20260304164442-file.org`
 
 ### Expected Inputs
 
