@@ -246,6 +246,9 @@ WINDOW is the window that was selected/deselected."
   ;; Register setup function in vterm-mode-hook
   (add-hook 'vterm-mode-hook #'my/vterm--setup-dynamic-resize)
 
+  ;; Enable with-editor for gh CLI integration
+  (add-hook 'vterm-mode-hook #'with-editor-export-editor)
+
   ;; Pass shift+up and shift+down directly to the terminal.
   ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
   ;; shift variants must be added explicitly for terminal apps that need them.
@@ -1202,6 +1205,11 @@ Interactively, prompt for COMMAND using `shell-command-history`."
   "Opens the inbox-mobile.org file in the notes directory."
   (interactive)
   (find-file (expand-file-name "roam/mobile-inbox.org" my-notes-directory)))
+(defun my/open-boberts-inbox ()
+  (interactive)
+  "Opens the boberts-inbox.org file in the notes directory."
+  (interactive)
+  (find-file (expand-file-name "roam/boberts-inbox.org" my-notes-directory)))
 (defun my/open-handwritten-inbox ()
   (interactive)
   "Opens the handwritten-inbox.org file in the notes directory."
@@ -1245,30 +1253,32 @@ Interactively, prompt for COMMAND using `shell-command-history`."
     (org-open-at-point)))
 
 (transient-define-prefix my/inbox-menu ()
-			   "Transient menu for getting to my inboxes"
-			   ["Submenu Actions"
-			    ("i" "Inbox" my/open-inbox)
-			    ("m" "Mobile Inbox" my/open-mobile-inbox)
-			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)])
+		   "Transient menu for getting to my inboxes"
+		   ["Submenu Actions"
+		    ("i" "Inbox" my/open-inbox)
+		    ("m" "Mobile Inbox" my/open-mobile-inbox)
+		    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
+		    ("b" "Bobert Inbox" my/open-boberts-inbox)])
+;; does this kick off a full rebuild?
 
 ;; Define a submenu for "Go To Link"
 (transient-define-prefix my/go-to-link-menu ()
-			   "Go to link submenu."
-			   ["Go To Link"
-			    ("g" "Follow link in same window" org-open-at-point)
-			    ("h" "Force open in current window" org-force-open-current-window)])
+		   "Go to link submenu."
+		   ["Go To Link"
+		    ("g" "Follow link in same window" org-open-at-point)
+		    ("h" "Force open in current window" org-force-open-current-window)])
 
 (transient-define-prefix my/go-menu ()
-			   "Transient menu for navigating key files."
-			   ["Go To"
-			    ("i" "Inboxes" my/inbox-menu)
-			    ("e" "Emacs Config" my/open-emacs-config)
-			    ("g" "Follow link" my/go-to-link-menu)
-			    ("p" "Prompts" my/open-prompts)
-			    ("b" "Budget" my/open-budget)
-			    ("m" "Magit" my/projectile-magit-status)
-			    ("r" "Elfreed" elfeed)
-			    ("l" "Log" my/open-log)])
+		   "Transient menu for navigating key files."
+		   ["Go To"
+		    ("i" "Inboxes" my/inbox-menu)
+		    ("e" "Emacs Config" my/open-emacs-config)
+		    ("g" "Follow link" my/go-to-link-menu)
+		    ("p" "Prompts" my/open-prompts)
+		    ("b" "Budget" my/open-budget)
+		    ("m" "Magit" my/projectile-magit-status)
+		    ("r" "Elfreed" elfeed)
+		    ("l" "Log" my/open-log)])
 
 (defun my/insert-org-heading-with-timestamp (level text)
   "Insert an org heading with specified text at the specified level.
@@ -1346,6 +1356,19 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 	    (projectile-switch-project))
 	(set-marker origin-pos nil))))
 
+(defun my/insert-org-link-to-pdf ()
+  "Select a PDF from marked-up-pdfs folder and insert an org link at point."
+  (interactive)
+  (require 'org)
+  (let* ((pdf-dir (expand-file-name "~/notes/roam/marked-up-pdfs/"))
+         (file (read-file-name "PDF: " pdf-dir nil t))
+         (link (org-link-make-string
+                (concat "file:" (file-truename file))
+                (file-name-nondirectory file))))
+    (if (derived-mode-p 'vterm-mode)
+        (vterm-send-string link)
+      (insert link))))
+
 (transient-define-prefix my/insert-menu ()
 			   "Transient menu for inserting stuff places (usually under the cursor)."
 			   ["Insert"
@@ -1353,6 +1376,7 @@ Interactively, prompt for COMMAND using `shell-command-history`."
 			    ("h" "Org Heading" my/insert-org-heading-with-timestamp)
 			    ("b" "Org Block" my/insert-org-block)
 			    ("p" "Projectile File" my/projectile-insert-org-link-to-file)
+			    ("f" "PDF Link" my/insert-org-link-to-pdf)
 			    ("m" "Memory Link" org-roam-node-insert)])
 
 (defun my/search-notes ()
@@ -1677,7 +1701,6 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
 
 (evil-define-key 'normal 'global (kbd "C-g") #'my/go-menu)
 (evil-define-key '(normal insert) 'global (kbd "C-<return>") #'my/insert-menu)
-(evil-define-key '(normal insert) 'global (kbd "C-m") #'my/insert-menu)
 (evil-define-key 'normal 'global (kbd "C-s") #'my/search-menu)
 (evil-define-key 'normal 'global (kbd "C-e") 'my/emacs-state-menu)
 (evil-define-key 'normal 'global (kbd "C-l") 'gptel-menu)
@@ -1691,14 +1714,12 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
   (local-set-key (kbd "C-b") #'my/create-menu)
   (local-set-key (kbd "C-g") #'my/go-menu)
   (local-set-key (kbd "C-<return>") #'my/insert-menu)
-  (local-set-key (kbd "C-m") #'my/insert-menu)
   (local-set-key (kbd "C-s") #'my/search-menu)
   (local-set-key (kbd "C-x") #'my/execute-menu)
 
   (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-m") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
 		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
@@ -1711,7 +1732,6 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
   (local-set-key (kbd "C-b") #'my/create-menu)
   (local-set-key (kbd "C-g") #'my/go-menu)
   (local-set-key (kbd "C-<return>") #'my/insert-menu)
-  (local-set-key (kbd "C-m") #'my/insert-menu)
   (local-set-key (kbd "C-s") #'my/search-menu)
   (local-set-key (kbd "C-x") #'my/execute-menu)
 
@@ -1719,7 +1739,6 @@ Buffer is named: claude-[sanitized-project]-[sanitized-description]"
   (evil-define-key '(normal visual motion) magit-status-mode-map
 		     (kbd "C-g") #'my/go-menu
 		     (kbd "C-<return>") #'my/insert-menu
-		     (kbd "C-m") #'my/insert-menu
 		     (kbd "C-s") #'my/search-menu
 		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)

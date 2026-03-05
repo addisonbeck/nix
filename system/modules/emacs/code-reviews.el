@@ -1,329 +1,369 @@
 (require 'ghub)
-  (require 'cl-lib)
-  (require 'pr-review nil t)  
-  (require 'org-roam nil t)
-  (require 'org-id nil t)
+(require 'cl-lib)
+(require 'pr-review nil t)  
+(require 'org-roam nil t)
+(require 'org-id nil t)
 
-  ;; Configuration
-  (defgroup my/code-reviews nil
-    "Configuration for GitHub PR review automation."
-    :group 'external)
+;; Configuration
+(defgroup my/code-reviews nil
+  "Configuration for GitHub PR review automation."
+  :group 'external)
 
-  (defcustom my/github-pr-file "~/notes/code-reviews.org"
-    "File to store GitHub PR todos."
-    :type 'file
-    :group 'my/code-reviews)
+(defcustom my/github-pr-file "~/notes/code-reviews.org"
+  "File to store GitHub PR todos."
+  :type 'file
+  :group 'my/code-reviews)
 
-  (defcustom my/github-pr-queries
-    '(("Involved PRs" . "is:open is:pr involves:addisonbeck -author:addisonbeck"))
-    "List of GitHub search queries for PRs.
-  Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
-    :type '(alist :key-type string :value-type string)
-    :group 'my/code-reviews)
+(defcustom my/github-pr-queries
+  '(("Involved PRs" . "is:open is:pr involves:addisonbeck")
+    ("Coroiu's PRs" . "is:open is:pr author:coroiu")
+    ("Daniel's PRs" . "is:open is:pr author:djsmith85")
+    ("Derek's PRs" . "is:open is:pr author:dereknance")
+    ("Todd's PRs" . "is:open is:pr author:trmartin4")
+    ("Dani's PRs" . "is:open is:pr author:dani-garcia")
+    ("My Drafts" . "is:pr is:draft is:open author:addisonbeck"))
+  "List of GitHub search queries for PRs.
+		Each element is a cons cell (SECTION-NAME . QUERY-STRING)."
+  :type '(alist :key-type string :value-type string)
+  :group 'my/code-reviews)
 
-  (defcustom my/code-reviews-fetch-interval (* 60 60)
-    "Interval in seconds between automatic PR fetches."
-    :type 'integer
-    :group 'my/code-reviews)
+(defcustom my/code-reviews-fetch-interval (* 60 60)
+  "Interval in seconds between automatic PR fetches."
+  :type 'integer
+  :group 'my/code-reviews)
 
-  ;; Internal variables
-  (defvar my/code-reviews--timer nil
-    "Timer object for periodic PR fetching.")
+;; Internal variables
+(defvar my/code-reviews--timer nil
+  "Timer object for periodic PR fetching.")
 
-  (defvar my/code-reviews--url-cache nil
-    "Cache of existing PR URLs to avoid file I/O.")
+(defvar my/code-reviews--url-cache nil
+  "Cache of existing PR URLs to avoid file I/O.")
 
-  ;; Utility functions
-  (defcustom my/code-reviews-debug nil
-    "Enable debug logging for code reviews."
-    :type 'boolean
-    :group 'my/code-reviews)
+;; Utility functions
+(defcustom my/code-reviews-debug nil
+  "Enable debug logging for code reviews."
+  :type 'boolean
+  :group 'my/code-reviews)
 
-  (defun my/code-reviews--log (level message &rest args)
-    "Log MESSAGE at LEVEL with optional ARGS."
-    (when (or (not (equal level "DEBUG")) my/code-reviews-debug)
-      (when (>= (length args) 0)
-        (setq message (apply #'format message args)))
-      (message "[%s] Code Reviews %s: %s" 
-               (format-time-string "%H:%M:%S")
-               level
-               message)))
+(defun my/code-reviews--log (level message &rest args)
+  "Log MESSAGE at LEVEL with optional ARGS."
+  (when (or (not (equal level "DEBUG")) my/code-reviews-debug)
+    (when (>= (length args) 0)
+	(setq message (apply #'format message args)))
+    (message "[%s] Code Reviews %s: %s" 
+	       (format-time-string "%H:%M:%S")
+	       level
+	       message)))
 
-  (defun my/code-reviews-enable-debug ()
-    "Enable debug logging for code reviews."
-    (interactive)
-    (setq my/code-reviews-debug t)
-    (message "Code reviews debug logging enabled"))
+(defun my/code-reviews-enable-debug ()
+  "Enable debug logging for code reviews."
+  (interactive)
+  (setq my/code-reviews-debug t)
+  (message "Code reviews debug logging enabled"))
 
-  (defun my/code-reviews--validate-config ()
-    "Validate that required configuration is set."
-    (unless my/github-pr-file
-      (error "my/github-pr-file must be set"))
-    (unless my/github-pr-queries
-      (error "my/github-pr-queries must be set"))
-    (unless (file-directory-p (file-name-directory my/github-pr-file))
-      (error "Directory for PR file does not exist: %s" 
-             (file-name-directory my/github-pr-file))))
+(defun my/code-reviews--validate-config ()
+  "Validate that required configuration is set."
+  (unless my/github-pr-file
+    (error "my/github-pr-file must be set"))
+  (unless my/github-pr-queries
+    (error "my/github-pr-queries must be set"))
+  (unless (file-directory-p (file-name-directory my/github-pr-file))
+    (error "Directory for PR file does not exist: %s" 
+	     (file-name-directory my/github-pr-file))))
 
-  (defun my/code-reviews--build-url-cache ()
-    "Build cache of existing PR URLs from the org file."
-    (setq my/code-reviews--url-cache (make-hash-table :test 'equal))
-    (when (file-exists-p my/github-pr-file)
-      (with-temp-buffer
-        (insert-file-contents my/github-pr-file)
-        (goto-char (point-min))
-        (while (re-search-forward ":PR_URL: \\(https://[^\n]+\\)" nil t)
-          (puthash (match-string 1) t my/code-reviews--url-cache)))))
+(defun my/code-reviews--build-url-cache ()
+  "Build cache of existing PR URLs from the org file."
+  (setq my/code-reviews--url-cache (make-hash-table :test 'equal))
+  (when (file-exists-p my/github-pr-file)
+    (with-temp-buffer
+	(insert-file-contents my/github-pr-file)
+	(goto-char (point-min))
+	(while (re-search-forward ":PR_URL: \\(https://[^\n]+\\)" nil t)
+	  (puthash (match-string 1) t my/code-reviews--url-cache)))))
 
-  (defun my/code-reviews--pr-exists-p (url)
-    "Check if PR with URL already exists using cache."
-    (unless my/code-reviews--url-cache
-      (my/code-reviews--build-url-cache))
-    (gethash url my/code-reviews--url-cache))
+(defun my/code-reviews--pr-exists-p (url)
+  "Check if PR with URL already exists using cache."
+  (unless my/code-reviews--url-cache
+    (my/code-reviews--build-url-cache))
+  (gethash url my/code-reviews--url-cache))
 
-  (defun my/code-reviews--add-pr-to-cache (url)
-    "Add URL to the PR cache."
-    (unless my/code-reviews--url-cache
-      (my/code-reviews--build-url-cache))
-    (puthash url t my/code-reviews--url-cache))
+(defun my/code-reviews--add-pr-to-cache (url)
+  "Add URL to the PR cache."
+  (unless my/code-reviews--url-cache
+    (my/code-reviews--build-url-cache))
+  (puthash url t my/code-reviews--url-cache))
 
-  (defun my/code-reviews--fetch-prs-for-query (query-name query-string)
-    "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
-  Returns list of PR data structures."
-    (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
-                          query-name query-string)
-    (let* ((response (ghub-graphql
-                      "query($query: String!) {
-                        search(query: $query, type: ISSUE, first: 100) {
-                          nodes {
-                            ... on PullRequest {
-                              title
-                              url
-                              repository {
-                                nameWithOwner
-                              }
-                              author {
-                                login
-                              }
-                              updatedAt
-                              state
-                            }
-                          }
-                        }
-                      }"
-                      `((query . ,query-string))))
-           (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
-      (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
-                            query-name (length nodes))
-      (when (> (length nodes) 0)
-        (my/code-reviews--log "DEBUG" "First PR sample: %s" 
-                              (prin1-to-string (car nodes))))
-      nodes))
+(defun my/code-reviews--fetch-prs-for-query (query-name query-string)
+  "Fetch PRs for a single QUERY-STRING with QUERY-NAME.
+		Returns list of PR data structures."
+  (my/code-reviews--log "DEBUG" "Fetching PRs for query '%s' with string: %s" 
+			  query-name query-string)
+  (let* ((response (ghub-graphql
+		      "query($query: String!) {
+				      search(query: $query, type: ISSUE, first: 100) {
+					nodes {
+					  ... on PullRequest {
+					    title
+					    url
+					    repository {
+					      nameWithOwner
+					    }
+					    author {
+					      login
+					    }
+					    updatedAt
+					    state
+					  }
+					}
+				      }
+				    }"
+		      `((query . ,query-string))))
+	   (nodes (alist-get 'nodes (alist-get 'search (alist-get 'data response)))))
+    (my/code-reviews--log "DEBUG" "GraphQL response for '%s': found %d nodes" 
+			    query-name (length nodes))
+    (when (> (length nodes) 0)
+	(my/code-reviews--log "DEBUG" "First PR sample: %s" 
+			      (prin1-to-string (car nodes))))
+    nodes))
 
-  (defun my/code-reviews--create-pr-memory (pr)
-    "Create an org-roam memory for PR data structure.
-Returns a plist with :id, :title, :file or nil on error."
-        (let-alist pr
-          (when-let* ((pr-path (pr-review-url-parse .url))
-                      (repo-parts (split-string .repository.nameWithOwner "/"))
-                      (repo-org (downcase (car repo-parts)))
-                      (repo-name (downcase (cadr repo-parts)))
-                      (pr-author (downcase .author.login))
-                      (pr-title (format "CR: %s" .title))
-                      (tags (list repo-org repo-name pr-author))
-                      )
-            (my/code-reviews--log "INFO" "Creating memory for PR: %s" pr-title)
-            (let ((memory-result (my/create-memory
-                                  :title pr-title
-                                  :memory-type 'episodic
-                                  :tags tags
-                                  :aliases '()
-                                  :content "")))
-              
-              ;; Create separate .pr-review file for workflow
-              (condition-case review-file-err
-                  (let* ((memory-file (plist-get memory-result :file))
-                         (memory-dir (file-name-directory memory-file))
-                         (hyphenated-title (replace-regexp-in-string
-                                           "[^a-z0-9]+" "-" 
-                                           (downcase .title)))
-                         (review-filename (format "code-review-%s.pr-review" 
-                                                 hyphenated-title))
-                         (review-filepath (expand-file-name review-filename memory-dir))
-                         (review-content (concat ":PROPERTIES:\n"
-                                                ":PR_PATH: " (prin1-to-string pr-path) "\n"
-                                                ":CURRENT_SHOW_LEVEL: 3\n"
-                                                ":SELECTED_COMMITS: nil\n" 
-                                                ":SELECTED_COMMIT_BASE: nil\n"
-                                                ":SELECTED_COMMIT_HEAD: nil\n"
-                                                ":END:\n")))
-                    
-                    ;; Create the .pr-review file
-                    (with-temp-file review-filepath
-                      (insert review-content))
-                    
-                    ;; Add link to review file in the memory
-                    (with-current-buffer (find-file-noselect memory-file)
-                      (goto-char (point-max))
-                      (insert (concat "* Required Reading\n"
-                                     "- [[file:" review-filepath "][" pr-title" ]]\n"))
-                      (save-buffer))
-                    
-                    ;; Populate review file with live GitHub content
-                    (condition-case refresh-err
-                        (with-current-buffer (find-file-noselect review-filepath)
-                          (pr-review-restore-and-refresh)
-                          (save-buffer))
-                      (error 
-                       (my/code-reviews--log "WARNING" "Failed to populate PR review file %s: %s" 
-                                             review-filepath (error-message-string refresh-err))))
-                    
-                    (my/code-reviews--log "INFO" "Created review file for PR: %s" review-filepath)
-                    memory-result)
-                (error 
-                 (my/code-reviews--log "ERROR" "Failed to create review file for PR %s: %s" 
-                                       pr-title (error-message-string review-file-err))
-                 memory-result))))))
+(defun my/code-reviews--create-pr-memory (pr)
+  "Create an org-roam memory for PR data structure.
+	      Returns a plist with :id, :title, :file or nil on error."
+  (let-alist pr
+    (when-let* ((pr-path (pr-review-url-parse .url))
+		  (repo-parts (split-string .repository.nameWithOwner "/"))
+		  (repo-org (downcase (car repo-parts)))
+		  (repo-name (downcase (cadr repo-parts)))
+		  (pr-author (downcase .author.login))
+		  (pr-title (format "CR: %s" .title))
+		  (tags (list repo-org repo-name pr-author))
+		  )
+	(my/code-reviews--log "INFO" "Creating memory for PR: %s" pr-title)
+	(let ((memory-result (my/create-memory
+			      :title pr-title
+			      :memory-type 'episodic
+			      :tags tags
+			      :aliases '()
+			      :content "")))
 
-  (defun my/code-reviews--format-pr-entry (pr &optional memory-id)
-    "Format a single PR data structure into org-mode entry text.
-If MEMORY-ID is provided, use org-roam id-based link for the title."
-    (let-alist pr
-      (if memory-id
-          (concat "* TODO [[id:" memory-id "][Code Review: " .title "]]\n"
-                  "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
-                  ":PROPERTIES:\n"
-                  ":PR_URL: " .url "\n"
-                  ":REPO: " .repository.nameWithOwner "\n" 
-                  ":AUTHOR: " .author.login "\n"
-                  ":END:\n\n")
-        ;; Fallback to plain text if memory creation failed
-        (concat "* TODO " .title "\n"
-                "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
-                ":PROPERTIES:\n"
-                ":PR_URL: " .url "\n"
-                ":REPO: " .repository.nameWithOwner "\n"
-                ":AUTHOR: " .author.login "\n"
-                ":END:\n\n"))))
+	  ;; Create separate .pr-review file for workflow
+	  (condition-case review-file-err
+	      (let* ((memory-file (plist-get memory-result :file))
+		     (memory-dir (file-name-directory memory-file))
+		     (hyphenated-title (replace-regexp-in-string
+					"[^a-z0-9]+" "-" 
+					(downcase .title)))
+		     (review-filename (format "code-review-%s.pr-review" 
+					      hyphenated-title))
+		     (review-filepath (expand-file-name review-filename memory-dir))
+		     (review-content (concat ":PROPERTIES:\n"
+					     ":PR_PATH: " (prin1-to-string pr-path) "\n"
+					     ":CURRENT_SHOW_LEVEL: 3\n"
+					     ":SELECTED_COMMITS: nil\n" 
+					     ":SELECTED_COMMIT_BASE: nil\n"
+					     ":SELECTED_COMMIT_HEAD: nil\n"
+					     ":END:\n"))
+		     (conversation-initial-memory-result 
+		      (my/create-memory
+		       :title (concat "Conversation: Intake: " pr-title "")
+		       :memory-type 'episodic
+		       :tags '("conversation codereview intake")
+		       :aliases '()  
+		       :content ""))
+		     (conversation-quiz-memory-result 
+		      (my/create-memory
+		       :title (concat "Conversation: Quiz: " pr-title "")
+		       :memory-type 'episodic
+		       :tags '("conversation codereview quiz")
+		       :aliases '()  
+		       :content "")))
 
-  (defun my/code-reviews--insert-new-prs (prs)
-    "Insert new PRs into the org file.
-  PRS should be a list of PR data structures."
-    (my/code-reviews--log "DEBUG" "Processing %d PRs for insertion" (length prs))
-    (let ((new-count 0))
-      (dolist (pr prs)
-        (let-alist pr
-          (my/code-reviews--log "DEBUG" "Checking PR: %s (URL: %s)" .title .url)
-          (if (my/code-reviews--pr-exists-p .url)
-              (my/code-reviews--log "DEBUG" "PR already exists, skipping: %s" .title)
-            (progn
-              (my/code-reviews--log "DEBUG" "New PR found, processing: %s" .title)
-              (goto-char (point-max))
-              ;; Phase 2: Create org-roam memory for this PR
-              (let* ((memory-result (my/code-reviews--create-pr-memory pr))
-                     (memory-id (plist-get memory-result :id)))
-                (if memory-id
-                    (progn
-                      (my/code-reviews--log "INFO" "Created memory for PR: %s (ID: %s)" 
-                                            .title memory-id)
-                      (insert (my/code-reviews--format-pr-entry pr memory-id)))
-                  ;; Fallback to plain text if memory creation failed
-                  (progn
-                    (my/code-reviews--log "WARNING" "Memory creation failed for PR: %s, using plain text" 
-                                          .title)
-                    (insert (my/code-reviews--format-pr-entry pr)))))
-              (my/code-reviews--add-pr-to-cache .url)
-              (cl-incf new-count)))))
-      (my/code-reviews--log "DEBUG" "Inserted %d new PRs" new-count)
-      new-count))
+		;; Create the .pr-review file
+		(with-temp-file review-filepath
+		  (insert review-content))
 
-  (defun my/code-reviews--process-queries ()
-    "Process all configured PR queries and return total new PRs added."
-    (my/code-reviews--log "DEBUG" "Starting to process %d configured queries" 
-                          (length my/github-pr-queries))
-    (let ((total-new 0))
-      (dolist (query-pair my/github-pr-queries)
-        (let* ((section-name (car query-pair))
-               (query-string (cdr query-pair)))
-          (my/code-reviews--log "DEBUG" "Processing query '%s'" section-name)
-          (let ((prs (my/code-reviews--fetch-prs-for-query section-name query-string)))
-            (if prs
-                (let ((new-count (my/code-reviews--insert-new-prs prs)))
-                  (cl-incf total-new new-count)
-                  (when (> new-count 0)
-                    (my/code-reviews--log "INFO" "Added %d new PRs from query '%s'" 
-                                          new-count section-name)))
-              (my/code-reviews--log "DEBUG" "No PRs returned from query '%s'" section-name)))))
-      (my/code-reviews--log "DEBUG" "Total new PRs added across all queries: %d" total-new)
-      total-new))
+		;; Create some conversation nodes
 
-  ;; Public interface
-  (defun my/fetch-github-prs ()
-    "Fetch PRs and create new org entries if they don't exist."
-    (interactive)
-    (my/code-reviews--validate-config)
-    (my/code-reviews--log "INFO" "Fetching PRs to review...")
-    (my/code-reviews--log "DEBUG" "Using PR file: %s" my/github-pr-file)
-    (my/code-reviews--log "DEBUG" "Configured queries: %s" 
-                          (mapcar #'car my/github-pr-queries))
-    
-    (let ((buf (find-file-noselect my/github-pr-file))
-          (total-new 0))
-      (with-current-buffer buf
-        (org-mode)
-        (my/code-reviews--log "DEBUG" "Processing queries in buffer: %s" 
-                              (buffer-name))
-        (setq total-new (my/code-reviews--process-queries))
-        (save-buffer))
-      
-      (if (> total-new 0)
-          (my/code-reviews--log "INFO" "Completed: %d new PRs added" total-new)
-        (my/code-reviews--log "INFO" "Completed: No new PRs found"))))
+		;; Add link to review file in the memory
+		(with-current-buffer (find-file-noselect memory-file)
+		  (goto-char (point-max))
+		  (insert (concat "* Required Reading\n"
+				  "- [[file:" review-filepath "][" pr-title " ]]\n"
+				  "- [[id:A747158F-494D-479C-A962-2C1A93BF5E52][On Reviewing Code]]\n\n"
+				  "* Conversation History\n"
+				  "- [[id:" (format "%s" (plist-get conversation-initial-memory-result :id)) "][" (format "%s" (plist-get conversation-initial-memory-result :title)) "]]\n"
+				  "- [[id:" (format "%s" (plist-get conversation-quiz-memory-result :id)) "][" (format "%s" (plist-get conversation-quiz-memory-result :title)) "]]\n\n"
+				  "* TODO CR: " pr-title "\n"
+				  "** TODO Initial Review\n"
+				  "*** Goal\n"
+				  "Develop an understanding of the changes presented in this PR\n"
+				  "*** Prompt\n"
+				  "ELI5 the changes being proposed by this PR. Give an initial code review of the change, and indicate if it should be approved or if Bobert thingks it needs refinement. Save this initial review to memory and link it here as an Outcome. Suggest topical followup questions [[id:0DC930ED-C578-4437-BB19-343436415CCE][the human user]] could ask. Do not mark this TODO complete until verbally asked too.\n"
+				  "*** Outcomes\n\n"
+				  "** TODO Quiz!\n"
+				  "*** Goal\n"
+				  "Ensure Bobert and the human both really understand these changes\n"
+				  "*** Prompt\n"
+				  "Bobert should ensure the human understands the changes being made. This helps us both stay accountable. Bobert should ask the human a series of questions about the PR meant to gauge technical understanding, language concepts, security practices, etc. At the end of the quiz Bobert should grade the human and propose learning resources for any that was missed. Bobert should save a graded test to memory and link it here as an Outcome.\n"
+				  "*** Outcomes\n\n"
+				  ))
+		  (save-buffer))
 
-  (defun my/code-reviews-remove-duplicates ()
-    "Remove duplicate org entries based on PR_URL."
-    (interactive)
-    (let ((seen-urls (make-hash-table :test 'equal))
-          (removed-count 0))
-      (org-map-entries
-       (lambda ()
-         (let ((pr-url (org-entry-get nil "PR_URL")))
-           (if (and pr-url (gethash pr-url seen-urls))
-               (progn
-                 (org-cut-subtree)
-                 (cl-incf removed-count))
-             (when pr-url
-               (puthash pr-url t seen-urls))))))
-      (when (> removed-count 0)
-        (my/code-reviews--log "INFO" "Removed %d duplicate entries" removed-count)
-        (save-buffer))
-      removed-count))
+		;; Populate review file with live GitHub content
+		(condition-case refresh-err
+		    (with-current-buffer (find-file-noselect review-filepath)
+		      (pr-review-restore-and-refresh)
+		      (save-buffer))
+		  (error 
+		   (my/code-reviews--log "WARNING" "Failed to populate PR review file %s: %s" 
+					 review-filepath (error-message-string refresh-err))))
 
-  (defun my/code-reviews-start-timer ()
-    "Start the automatic PR fetching timer."
-    (interactive)
-    (my/code-reviews-stop-timer)
-    (setq my/code-reviews--timer
-          (run-with-timer 0 my/code-reviews-fetch-interval #'my/fetch-github-prs))
-    (my/code-reviews--log "INFO" "Started automatic PR fetching (interval: %d seconds)" 
-                          my/code-reviews-fetch-interval))
+		(my/code-reviews--log "INFO" "Created review file for PR: %s" review-filepath)
+		memory-result)
+	    (error 
+	     (my/code-reviews--log "ERROR" "Failed to create review file for PR %s: %s" 
+				   pr-title (error-message-string review-file-err))
+	     memory-result))))))
 
-  (defun my/code-reviews-stop-timer ()
-    "Stop the automatic PR fetching timer."
-    (interactive)
-    (when my/code-reviews--timer
-      (cancel-timer my/code-reviews--timer)
-      (setq my/code-reviews--timer nil)
-      (my/code-reviews--log "INFO" "Stopped automatic PR fetching")))
+(defun my/code-reviews--format-pr-entry (pr &optional memory-id)
+  "Format a single PR data structure into org-mode entry text.
+	      If MEMORY-ID is provided, use org-roam id-based link for the title."
+  (let-alist pr
+    (if memory-id
+	  (concat "* TODO [[id:" memory-id "][CR: " .title "]]\n"
+		  "DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
+		  ":PROPERTIES:\n"
+		  ":PR_URL: " .url "\n"
+		  ":REPO: " .repository.nameWithOwner "\n" 
+		  ":AUTHOR: " .author.login "\n"
+		  ":END:\n\n")
+	;; Fallback to plain text if memory creation failed
+	(concat "* TODO " .title "\n"
+		"DEADLINE: <" (format-time-string "%Y-%m-%d") " -0d>\n"
+		":PROPERTIES:\n"
+		":PR_URL: " .url "\n"
+		":REPO: " .repository.nameWithOwner "\n"
+		":AUTHOR: " .author.login "\n"
+		":END:\n\n"))))
 
-  (defun my/code-reviews-clear-cache ()
-    "Clear the PR URL cache, forcing a rebuild on next access."
-    (interactive)
-    (setq my/code-reviews--url-cache nil)
-    (my/code-reviews--log "INFO" "Cleared PR URL cache"))
+(defun my/code-reviews--insert-new-prs (prs)
+  "Insert new PRs into the org file.
+		PRS should be a list of PR data structures."
+  (my/code-reviews--log "DEBUG" "Processing %d PRs for insertion" (length prs))
+  (let ((new-count 0))
+    (dolist (pr prs)
+	(let-alist pr
+	  (my/code-reviews--log "DEBUG" "Checking PR: %s (URL: %s)" .title .url)
+	  (if (my/code-reviews--pr-exists-p .url)
+	      (my/code-reviews--log "DEBUG" "PR already exists, skipping: %s" .title)
+	    (progn
+	      (my/code-reviews--log "DEBUG" "New PR found, processing: %s" .title)
+	      (goto-char (point-max))
+	      ;; Phase 2: Create org-roam memory for this PR
+	      (let* ((memory-result (my/code-reviews--create-pr-memory pr))
+		     (memory-id (plist-get memory-result :id)))
+		(if memory-id
+		    (progn
+		      (my/code-reviews--log "INFO" "Created memory for PR: %s (ID: %s)" 
+					    .title memory-id)
+		      (insert (my/code-reviews--format-pr-entry pr memory-id)))
+		  ;; Fallback to plain text if memory creation failed
+		  (progn
+		    (my/code-reviews--log "WARNING" "Memory creation failed for PR: %s, using plain text" 
+					  .title)
+		    (insert (my/code-reviews--format-pr-entry pr)))))
+	      (my/code-reviews--add-pr-to-cache .url)
+	      (cl-incf new-count)))))
+    (my/code-reviews--log "DEBUG" "Inserted %d new PRs" new-count)
+    new-count))
 
-  ;; Initialize
-;  (my/code-reviews-start-timer)
+(defun my/code-reviews--process-queries ()
+  "Process all configured PR queries and return total new PRs added."
+  (my/code-reviews--log "DEBUG" "Starting to process %d configured queries" 
+			  (length my/github-pr-queries))
+  (let ((total-new 0))
+    (dolist (query-pair my/github-pr-queries)
+	(let* ((section-name (car query-pair))
+	       (query-string (cdr query-pair)))
+	  (my/code-reviews--log "DEBUG" "Processing query '%s'" section-name)
+	  (let ((prs (my/code-reviews--fetch-prs-for-query section-name query-string)))
+	    (if prs
+		(let ((new-count (my/code-reviews--insert-new-prs prs)))
+		  (cl-incf total-new new-count)
+		  (when (> new-count 0)
+		    (my/code-reviews--log "INFO" "Added %d new PRs from query '%s'" 
+					  new-count section-name)))
+	      (my/code-reviews--log "DEBUG" "No PRs returned from query '%s'" section-name)))))
+    (my/code-reviews--log "DEBUG" "Total new PRs added across all queries: %d" total-new)
+    total-new))
+
+;; Public interface
+(defun my/fetch-github-prs ()
+  "Fetch PRs and create new org entries if they don't exist."
+  (interactive)
+  (my/code-reviews--validate-config)
+  (my/code-reviews--log "INFO" "Fetching PRs to review...")
+  (my/code-reviews--log "DEBUG" "Using PR file: %s" my/github-pr-file)
+  (my/code-reviews--log "DEBUG" "Configured queries: %s" 
+			  (mapcar #'car my/github-pr-queries))
+
+  (let ((buf (find-file-noselect my/github-pr-file))
+	  (total-new 0))
+    (with-current-buffer buf
+	(org-mode)
+	(my/code-reviews--log "DEBUG" "Processing queries in buffer: %s" 
+			      (buffer-name))
+	(setq total-new (my/code-reviews--process-queries))
+	(save-buffer))
+
+    (if (> total-new 0)
+	  (my/code-reviews--log "INFO" "Completed: %d new PRs added" total-new)
+	(my/code-reviews--log "INFO" "Completed: No new PRs found"))))
+
+(defun my/code-reviews-remove-duplicates ()
+  "Remove duplicate org entries based on PR_URL."
+  (interactive)
+  (let ((seen-urls (make-hash-table :test 'equal))
+	  (removed-count 0))
+    (org-map-entries
+     (lambda ()
+	 (let ((pr-url (org-entry-get nil "PR_URL")))
+	   (if (and pr-url (gethash pr-url seen-urls))
+	       (progn
+		 (org-cut-subtree)
+		 (cl-incf removed-count))
+	     (when pr-url
+	       (puthash pr-url t seen-urls))))))
+    (when (> removed-count 0)
+	(my/code-reviews--log "INFO" "Removed %d duplicate entries" removed-count)
+	(save-buffer))
+    removed-count))
+
+(defun my/code-reviews-start-timer ()
+  "Start the automatic PR fetching timer."
+  (interactive)
+  (my/code-reviews-stop-timer)
+  (setq my/code-reviews--timer
+	  (run-with-timer 0 my/code-reviews-fetch-interval #'my/fetch-github-prs))
+  (my/code-reviews--log "INFO" "Started automatic PR fetching (interval: %d seconds)" 
+			  my/code-reviews-fetch-interval))
+
+(defun my/code-reviews-stop-timer ()
+  "Stop the automatic PR fetching timer."
+  (interactive)
+  (when my/code-reviews--timer
+    (cancel-timer my/code-reviews--timer)
+    (setq my/code-reviews--timer nil)
+    (my/code-reviews--log "INFO" "Stopped automatic PR fetching")))
+
+(defun my/code-reviews-clear-cache ()
+  "Clear the PR URL cache, forcing a rebuild on next access."
+  (interactive)
+  (setq my/code-reviews--url-cache nil)
+  (my/code-reviews--log "INFO" "Cleared PR URL cache"))
+
+;; Initialize
+;;  (my/code-reviews-start-timer)
 
 ;; PR Review package setup
 (use-package pr-review
@@ -331,22 +371,22 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
   :load-path "/Users/me/binwarden/blahgeek-emacs-pr-review/master"
   ;;:config
   ;;(setq pr-review-ghub-auth-name "ghub")
-  
+
   ;;(with-eval-after-load 'evil
-    ;;(evil-define-key 'normal pr-review-mode-map
-      ;;(kbd "q") 'pr-review-quit
-      ;;(kbd "r") 'pr-review-refresh
-      ;;(kbd "c") 'pr-review-comment-add
-      ;;(kbd "C") 'pr-review-comment-reply
-      ;;(kbd "d") 'pr-review-comment-delete
-      ;;(kbd "e") 'pr-review-comment-edit
-      ;;(kbd "s") 'pr-review-submit-review
-      ;;(kbd "a") 'pr-review-approve
-      ;;(kbd "R") 'pr-review-request-changes
-      ;;(kbd "TAB") 'pr-review-next-comment
-      ;;(kbd "<backtab>") 'pr-review-prev-comment
-      ;;(kbd "o") 'pr-review-open-file-at-point
-      ;;(kbd "RET") 'pr-review-view-comment-at-point))
+  ;;(evil-define-key 'normal pr-review-mode-map
+  ;;(kbd "q") 'pr-review-quit
+  ;;(kbd "r") 'pr-review-refresh
+  ;;(kbd "c") 'pr-review-comment-add
+  ;;(kbd "C") 'pr-review-comment-reply
+  ;;(kbd "d") 'pr-review-comment-delete
+  ;;(kbd "e") 'pr-review-comment-edit
+  ;;(kbd "s") 'pr-review-submit-review
+  ;;(kbd "a") 'pr-review-approve
+  ;;(kbd "R") 'pr-review-request-changes
+  ;;(kbd "TAB") 'pr-review-next-comment
+  ;;(kbd "<backtab>") 'pr-review-prev-comment
+  ;;(kbd "o") 'pr-review-open-file-at-point
+  ;;(kbd "RET") 'pr-review-view-comment-at-point))
   )
 
 (defun pr-review-mode-init ()
@@ -356,60 +396,250 @@ If MEMORY-ID is provided, use org-roam id-based link for the title."
 
 (defun my/pr-review-from-org-entry ()
   "Start pr-review from current org entry's PR_URL property.
-Works from both org-mode buffers and org-agenda."
+	    Works from both org-mode buffers and org-agenda."
   (interactive)
   (let ((pr-url 
-         (cond
-          ;; If in agenda, go to the actual org entry
-          ((eq major-mode 'org-agenda-mode)
-           (org-agenda-check-no-diary)
-           (let* ((marker (or (org-get-at-bol 'org-marker)
-                             (org-agenda-error)))
-                  (buffer (marker-buffer marker))
-                  (pos (marker-position marker)))
-             (with-current-buffer buffer
-               (save-excursion
-                 (goto-char pos)
-                 (org-entry-get nil "PR_URL")))))
-          ;; If in org-mode, use directly
-          ((derived-mode-p 'org-mode)
-           (org-entry-get nil "PR_URL"))
-          ;; Otherwise error
-          (t (user-error "Must be called from org-mode or org-agenda")))))
+	   (cond
+	    ;; If in agenda, go to the actual org entry
+	    ((eq major-mode 'org-agenda-mode)
+	     (org-agenda-check-no-diary)
+	     (let* ((marker (or (org-get-at-bol 'org-marker)
+				(org-agenda-error)))
+		    (buffer (marker-buffer marker))
+		    (pos (marker-position marker)))
+	       (with-current-buffer buffer
+		 (save-excursion
+		   (goto-char pos)
+		   (org-entry-get nil "PR_URL")))))
+	    ;; If in org-mode, use directly
+	    ((derived-mode-p 'org-mode)
+	     (org-entry-get nil "PR_URL"))
+	    ;; Otherwise error
+	    (t (user-error "Must be called from org-mode or org-agenda")))))
     (if pr-url
-        (progn
-          (my/code-reviews--log "INFO" "Starting PR review for: %s" pr-url)
-          (pr-review pr-url))
-      (user-error "No PR_URL property found in current org entry"))))
-  
-  ;; Keybinding to start review from org entry
-  (with-eval-after-load 'org
-    (define-key org-mode-map (kbd "C-c r") 'my/pr-review-from-org-entry))
-  
-  ;; Add evil keybinding for org mode
-  (with-eval-after-load 'evil-org
-    (evil-define-key 'normal org-mode-map
-      (kbd "<leader>r") 'my/pr-review-from-org-entry))
-  
-  ;; Test function for pr-review setup
-  (defun my/test-pr-review-setup ()
-    "Test pr-review package configuration and authentication."
-    (interactive)
-    (cond
-     ((not (featurep 'pr-review))
-      (if (require 'pr-review nil t)
-          (my/code-reviews--log "INFO" "pr-review package loaded successfully")
-        (my/code-reviews--log "ERROR" "pr-review package not available")))
-     (t (my/code-reviews--log "INFO" "pr-review package already loaded")))
-    
-          (ghub-get "/user")
-          (my/code-reviews--log "INFO" "GitHub authentication working"))
-    ;; Test ghub authentication (same auth used by pr-review)
-    
+	  (progn
+	    (my/code-reviews--log "INFO" "Starting PR review for: %s" pr-url)
+	    (pr-review pr-url))
+	(user-error "No PR_URL property found in current org entry"))))
+
+;; Keybinding to start review from org entry
+(with-eval-after-load 'org
+  (define-key org-mode-map (kbd "C-c r") 'my/pr-review-from-org-entry))
+
+;; Add evil keybinding for org mode
+(with-eval-after-load 'evil-org
+  (evil-define-key 'normal org-mode-map
+		     (kbd "<leader>r") 'my/pr-review-from-org-entry))
+
+;; Test function for pr-review setup
+(defun my/test-pr-review-setup ()
+  "Test pr-review package configuration and authentication."
+  (interactive)
+  (cond
+   ((not (featurep 'pr-review))
+    (if (require 'pr-review nil t)
+	  (my/code-reviews--log "INFO" "pr-review package loaded successfully")
+	(my/code-reviews--log "ERROR" "pr-review package not available")))
+   (t (my/code-reviews--log "INFO" "pr-review package already loaded")))
+
+  (ghub-get "/user")
+  (my/code-reviews--log "INFO" "GitHub authentication working"))
+;; Test ghub authentication (same auth used by pr-review)
+
 
 (with-eval-after-load 'transient
   (transient-append-suffix 'my/go-menu "l"
     '("z" "PR Review" my/pr-review-from-org-entry)))
 
 (add-to-list 'browse-url-default-handlers
-             '(pr-review-url-parse . pr-review-open-url))
+	       '(pr-review-url-parse . pr-review-open-url))
+
+(defun my/pr-context-from-org-property ()
+    "Extract PR context from org properties at point.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (when-let* ((pr-url (org-entry-get (point) "PR_URL"))
+                (repo (org-entry-get (point) "REPO")))
+      (when (string-match "github\\.com/[^/]+/[^/]+/pull/\\([0-9]+\\)" pr-url)
+        (list :pr-number (match-string 1 pr-url)
+              :pr-url pr-url
+              :repo repo))))
+
+  (defun my/pr-context-from-url-at-point ()
+    "Extract PR context from GitHub URL at point.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (when-let* ((url (thing-at-point-url-at-point)))
+      (when (string-match "github\\.com/\\([^/]+/[^/]+\\)/pull/\\([0-9]+\\)" url)
+        (list :pr-number (match-string 2 url)
+              :pr-url url
+              :repo (match-string 1 url)))))
+
+  (defun my/pr-context-from-prompt ()
+    "Prompt user for PR number with completion from org file.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (let* ((parsed (my/pr-candidates-from-org-file))
+           (candidates (car parsed))
+           (candidate-hash (cdr parsed)))
+      (if (null candidates)
+          ;; Fallback to read-string if no candidates
+          (let ((pr-num (read-string "Enter PR number: ")))
+            (list :pr-number pr-num :pr-url nil :repo nil))
+        ;; Use completing-read with candidates
+        (let* ((selection (completing-read "Select PR: " candidates nil nil))
+               (plist (gethash selection candidate-hash)))
+          plist))))
+
+  (defun my/pr-candidates-from-org-file ()
+    "Parse ~/notes/code-reviews.org and return list of plists with PR metadata.
+Each plist has :pr-number, :pr-url, :repo, :display-string keys."
+    (let ((org-file (expand-file-name "~/notes/code-reviews.org"))
+          (candidates '())
+          (candidate-hash (make-hash-table :test 'equal)))
+      (when (file-exists-p org-file)
+        (with-current-buffer (find-file-noselect org-file)
+          (org-map-entries
+           (lambda ()
+             (let* ((pr-url (org-entry-get (point) "PR_URL"))
+                    (repo (org-entry-get (point) "REPO"))
+                    (heading (org-get-heading t t t t)))
+               (when (and pr-url repo)
+                 (when (string-match "github\\.com/[^/]+/[^/]+/pull/\\([0-9]+\\)" pr-url)
+                   (let* ((pr-number (match-string 1 pr-url))
+                          (display-string (format "#%s: %s [%s]" pr-number heading repo))
+                          (plist (list :pr-number pr-number
+                                       :pr-url pr-url
+                                       :repo repo
+                                       :display-string display-string)))
+                     (push display-string candidates)
+                     (puthash display-string plist candidate-hash))))))
+           nil 'file)))
+      (cons (nreverse candidates) candidate-hash)))
+
+  (defun my/pr-detect-context ()
+    "Detect PR context with priority: org property > URL at point > prompt.
+Returns plist with :pr-number, :pr-url, :repo keys."
+    (or (my/pr-context-from-org-property)
+	(my/pr-context-from-url-at-point)
+	(my/pr-context-from-prompt)))
+
+(transient-define-prefix my/pr-review-menu ()
+			   "PR Review workflows via gh CLI and gh-dash in vterm"
+			   [["Review"
+			     ("r" "Review PR (terminal view)" my/pr-review-start)
+			     ("d" "View diff (delta)" my/pr-diff)
+			     ("f" "Browse files" my/pr-files)
+			     ("c" "View comments" my/pr-comments)]
+			    ["Actions"
+			     ("a" "Add comment" my/pr-add-comment)
+			     ("s" "Submit review" my/pr-submit-review)]
+			    ["Status"
+			     ("i" "Check CI status" my/pr-checks)
+			     ("h" "View review history (gh-dash)" my/pr-review-history)]])
+
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "C-o") #'my/pr-review-menu))
+
+(defvar-local my/pr-review-buffer nil
+  "vterm buffer name for current PR review session.")
+
+(defvar-local my/pr-metadata-cache nil
+  "Alist of PR metadata: ((title . \"...\") (author . \"...\") (branch . \"...\"))")
+
+(defun my/pr-review-in-vterm (pr-number command &optional env-vars)
+  "Execute COMMAND in vterm buffer named *PR-Review-<PR-NUMBER>*.
+	  Creates buffer if it doesn't exist, reuses if it does.
+	  ENV-VARS is optional list of environment variable strings (\"VAR=value\" format)."
+  (let* ((buf-name (format "*PR-Review-%s*" pr-number))
+	   (buf (get-buffer buf-name)))
+    (if buf
+	  ;; Reuse existing buffer
+	  (with-current-buffer buf
+	    (when env-vars
+	      (setq-local process-environment
+			  (append env-vars process-environment)))
+	    (vterm-send-string (concat "clear && " command))
+	    (vterm-send-return))
+	;; Create new buffer
+	(vterm buf-name)
+	(with-current-buffer buf-name
+	  (when env-vars
+	    (setq-local process-environment
+			(append env-vars process-environment)))
+	  (vterm-send-string command)
+	  (vterm-send-return)))
+    (switch-to-buffer buf-name)))
+
+(defun my/pr-review-start ()
+  "Start PR review in terminal view using gh CLI."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr view %s" pr-url)
+			     '("GH_PAGER="))))
+
+(defun my/pr-diff ()
+  "View PR diff with delta pager."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr diff %s" pr-url)
+			     '("GIT_PAGER=delta"))))
+
+(defun my/pr-files ()
+  "Browse PR files using gh CLI."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr view %s --json files --jq '.files[].path'" pr-url))))
+
+(defun my/pr-comments ()
+  "View PR comments using gh CLI."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr view %s --comments" pr-url)
+			     '("GH_PAGER="))))
+
+(defun my/pr-add-comment ()
+  "Add comment to PR using gh CLI interactive editor."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr comment %s" pr-url))))
+
+(defun my/pr-submit-review ()
+  "Submit PR review using gh CLI interactive flow."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr review %s" pr-url))))
+
+(defun my/pr-checks ()
+  "Check CI status for PR using gh CLI."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh pr checks %s" pr-url)
+			     '("GH_PAGER="))))
+
+(defun my/pr-review-history ()
+  "View PR review history using gh-dash TUI."
+  (interactive)
+  (let* ((ctx (my/pr-detect-context))
+         (pr-number (plist-get ctx :pr-number))
+         (pr-url (or (plist-get ctx :pr-url) pr-number)))
+    (my/pr-review-in-vterm pr-number
+			     (format "gh dash --pr %s" pr-url))))

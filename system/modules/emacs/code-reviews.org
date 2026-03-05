@@ -623,7 +623,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
            (pr-number (plist-get ctx :pr-number))
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr view %s" pr-url))))
+			     (format "gh pr view %s" pr-url)
+			     '("GH_PAGER="))))
 
   (defun my/pr-diff ()
     "View PR diff with delta pager."
@@ -651,7 +652,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
            (pr-number (plist-get ctx :pr-number))
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr view %s --comments" pr-url))))
+			     (format "gh pr view %s --comments" pr-url)
+			     '("GH_PAGER="))))
 #+end_src
 
 **** Actions Workflows
@@ -686,7 +688,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
            (pr-number (plist-get ctx :pr-number))
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
-			     (format "gh pr checks %s" pr-url))))
+			     (format "gh pr checks %s" pr-url)
+			     '("GH_PAGER="))))
 
   (defun my/pr-review-history ()
     "View PR review history using gh-dash TUI."
@@ -697,47 +700,4 @@ Returns plist with :pr-number, :pr-url, :repo keys."
       (my/pr-review-in-vterm pr-number
 			     (format "gh dash --pr %s" pr-url))))
 #+end_src
-
-*** Integration Documentation
-
-This CLI/TUI PR review workflow provides terminal-based PR review capabilities
-within Emacs vterm buffers, combining gh CLI and gh-dash tools.
-
-**** Usage
-
-Press =C-o= in any buffer to open the PR review menu. The menu provides 8 workflows:
-
-- Review :: View PR details, diffs, files, and comments
-- Actions :: Add comments and submit reviews interactively
-- Status :: Check CI/CD results and review timeline
-
-**** Context Detection
-
-PR context is automatically detected from:
-1. org-mode =PR_URL= property (for task tracking)
-2. GitHub PR URL at point (for ad-hoc reviews)
-3. User prompt (fallback)
-
-**** Buffer Management
-
-Each PR gets a dedicated vterm buffer (=*PR-Review-<NUMBER>*=) that persists
-across workflow invocations. This allows switching between multiple PRs while
-maintaining separate terminal states.
-
-**** Dependencies
-
-- =gh= CLI tool (GitHub CLI)
-- =gh-dash= extension (interactive PR dashboard)
-- =delta= pager (syntax-highlighted diffs)
-- =vterm.el= (terminal emulation)
-
-**** Example Workflow
-
-1. Navigate to org-mode TODO with =PR_URL= property
-2. Press =C-o= to open review menu
-3. Press =d= to view diff with delta rendering
-4. Press =c= to read existing comments
-5. Press =a= to add your comment
-6. Press =s= to submit review
-
 

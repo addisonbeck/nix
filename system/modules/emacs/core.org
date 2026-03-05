@@ -278,6 +278,9 @@ WINDOW is the window that was selected/deselected."
   ;; Register setup function in vterm-mode-hook
   (add-hook 'vterm-mode-hook #'my/vterm--setup-dynamic-resize)
 
+  ;; Enable with-editor for gh CLI integration
+  (add-hook 'vterm-mode-hook #'with-editor-export-editor)
+
   ;; Pass shift+up and shift+down directly to the terminal.
   ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
   ;; shift variants must be added explicitly for terminal apps that need them.
