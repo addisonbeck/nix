@@ -455,6 +455,9 @@ Mobile mode provides better ergonomics when using Emacs over SSH on mobile devic
     (setq auth-sources '("~/.authinfo"))
     ;; Optionally set the number of items to fetch
     (setq forge-topic-list-limit '(60 . 0)))
+
+  (use-package magit-delta
+    :hook (magit-mode . magit-delta-mode))
 #+end_src
 
 * Basic Settings and Markdown Configuration

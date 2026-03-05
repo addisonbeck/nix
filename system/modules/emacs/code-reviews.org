@@ -569,8 +569,12 @@ Returns plist with :pr-number, :pr-url, :repo keys."
 *** Keybinding Registration
 
 #+begin_src emacs-lisp :tangle code-reviews.el
-  (with-eval-after-load 'evil
-    (evil-define-key 'normal 'global (kbd "C-o") #'my/pr-review-menu))
+(with-eval-after-load 'evil
+  (evil-define-key 'normal 'global (kbd "C-o") #'my/pr-review-menu))
+
+(with-eval-after-load 'evil-org-agenda
+  (evil-define-key '(normal visual motion) org-agenda-mode-map
+    (kbd "C-o") #'my/pr-review-menu))
 #+end_src
 
 *** State Management Variables
@@ -633,7 +637,7 @@ that are prepended to the command as inline shell environment variables."
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
 			     (format "gh pr diff %s" pr-url)
-			     '("GIT_PAGER=delta"))))
+			     '("GH_PAGER=delta" "DELTA_PAGER="))))
 
   (defun my/pr-files ()
     "Browse PR files using gh CLI."

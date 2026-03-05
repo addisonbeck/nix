@@ -154,6 +154,7 @@ in {
           company
           treemacs
           magit
+          magit-delta
           which-key
           consult
           gruvbox-theme

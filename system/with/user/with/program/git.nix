@@ -1,6 +1,9 @@
 {...}: {
   programs.git = {
     enable = true;
+    delta = {
+      enable = true;
+    };
     extraConfig = {
       pull.rebase = true;
       column.ui = "auto";
