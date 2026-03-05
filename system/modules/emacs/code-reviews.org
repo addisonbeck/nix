@@ -588,26 +588,25 @@ Returns plist with :pr-number, :pr-url, :repo keys."
 #+begin_src emacs-lisp :tangle code-reviews.el
   (defun my/pr-review-in-vterm (pr-number command &optional env-vars)
     "Execute COMMAND in vterm buffer named *PR-Review-<PR-NUMBER>*.
-	  Creates buffer if it doesn't exist, reuses if it does.
-	  ENV-VARS is optional list of environment variable strings (\"VAR=value\" format)."
+Creates buffer if it doesn't exist, reuses if it does.
+ENV-VARS is optional list of environment variable strings (\"VAR=value\" format)
+that are prepended to the command as inline shell environment variables."
     (let* ((buf-name (format "*PR-Review-%s*" pr-number))
-	   (buf (get-buffer buf-name)))
+           (buf (get-buffer buf-name))
+           (env-prefix (if env-vars
+                           (concat (mapconcat #'identity env-vars " ") " ")
+                         ""))
+           (full-command (concat env-prefix command)))
       (if buf
-	  ;; Reuse existing buffer
-	  (with-current-buffer buf
-	    (when env-vars
-	      (setq-local process-environment
-			  (append env-vars process-environment)))
-	    (vterm-send-string (concat "clear && " command))
-	    (vterm-send-return))
-	;; Create new buffer
-	(vterm buf-name)
-	(with-current-buffer buf-name
-	  (when env-vars
-	    (setq-local process-environment
-			(append env-vars process-environment)))
-	  (vterm-send-string command)
-	  (vterm-send-return)))
+          ;; Reuse existing buffer
+          (with-current-buffer buf
+            (vterm-send-string (concat "clear && " full-command))
+            (vterm-send-return))
+        ;; Create new buffer
+        (vterm buf-name)
+        (with-current-buffer buf-name
+          (vterm-send-string full-command)
+          (vterm-send-return)))
       (switch-to-buffer buf-name)))
 #+end_src
 
