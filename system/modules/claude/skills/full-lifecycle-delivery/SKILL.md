@@ -143,8 +143,11 @@ Input Source (Jira, memory stub, or prompt)
 |  Agents: technical-breakdown-maintainer,                |
 |          todo-spec-memory-maintainer, pr-maintainer     |
 |  Bobert provides: PhaseContext with commits + worktree  |
+|                   + branchPushed validation             |
 |  Coordinator returns: PhaseResult with PR URL           |
 |                                                          |
+|  PREREQUISITE: Branch pushed to remote (human quality   |
+|                gate for SSH hardware keys)              |
 |  COMPLETION: Draft PR created                           |
 +---------------------------------------------------------+
              |
@@ -489,7 +492,14 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 
 5. **Phase 3 Execution**:
    ```
-   Construct PhaseContext for Phase 3 (pass commits, worktree path)
+   PREREQUISITE: Branch must be pushed to remote before finalization begins
+   - Validate: git ls-remote origin <branch>
+   - This is a human-only operation when using SSH hardware keys (ED25519-SK)
+   - SSH hardware keys require interactive approval for push operations
+   - This is a security feature and quality gate, not a bug
+   - If branch is not on remote, STOP and request human to push branch
+
+   Construct PhaseContext for Phase 3 (pass commits, worktree path, branchPushed: true)
    Spawn finalization-coordinator as teammate (Task tool WITH team_name)
    Send PhaseContext to finalization-coordinator via SendMessage with roster request
    Receive roster specification (reuse technical-breakdown-maintainer, pr-maintainer, reuse todo-spec-memory-maintainer)

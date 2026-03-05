@@ -78,7 +78,8 @@ You receive PhaseContext from Bobert:
   },
   "prerequisites": {
     "commitsCreated": "List from prior phase",
-    "worktreePath": "Path from intake phase"
+    "worktreePath": "Path from intake phase",
+    "branchPushed": "Branch must be pushed to remote before PR creation. Validate with: git ls-remote origin <branch>. This is a human-only operation when using SSH hardware keys (ED25519-SK), which require interactive approval for push operations. This is a security feature and quality gate, not a bug."
   }
 }
 ```
@@ -87,8 +88,9 @@ The agentRoster lists agents that Bobert has already spawned. They are live and 
 
 **Entry Actions**:
 1. Validate prerequisites: Commits exist, worktree accessible
-2. Initialize phase state: Review task list
-3. Begin coordinating agents via SendMessage with task context and guidance
+2. **Validate branch push prerequisite**: Before engaging pr-maintainer, verify the branch has been pushed to the remote by running `git ls-remote origin <branch>`. If the branch is not found on the remote, STOP and escalate to Bobert. The human must push the branch manually -- this is an intentional quality gate because SSH hardware keys (ED25519-SK) require interactive approval for push operations. Do NOT treat this as a bug, authentication failure, or something to work around. It is a security feature by design. Do NOT attempt `git push` yourself.
+3. Initialize phase state: Review task list
+4. Begin coordinating agents via SendMessage with task context and guidance
 
 ### Phase Execution
 
@@ -280,6 +282,7 @@ You **ALWAYS**:
 - Validate with 7-point checklist before PhaseResult (ADR-032 + retrospective synthesis)
 - Return structured PhaseResult JSON (ADR-033)
 - Provide Observable Aggregate State (ADR-034)
+- Validate branch push prerequisite via `git ls-remote origin <branch>` before engaging pr-maintainer -- if branch is not on remote, escalate to Bobert for human push (SSH hardware key quality gate, not a bug)
 - Wait for ALL tasks complete before validation
 - Maintain phase state internally, expose only aggregates (ADR-034)
 - Include relevant memory UUIDs in SendMessage delegation messages so downstream agents can load context via read_memory -- coordinators route UUIDs, agents load content
@@ -298,6 +301,8 @@ You **NEVER**:
 - Modify files directly (coordinators validate, agents execute per ADR-030)
 - Allow incomplete phases to progress (quality gate per ADR-032)
 - Expose internal state details (Observable Aggregate only per ADR-034)
+- Engage pr-maintainer before confirming branch is pushed to remote -- validate with `git ls-remote origin <branch>` first
+- Attempt `git push` yourself or treat the branch push requirement as a bug to work around -- it is an intentional SSH hardware key quality gate requiring human interaction
 - Proceed while tasks pending/in_progress
 - Skip war story reporting to retrospective-maintainer for significant events -- coordinators are primary observers and must report directly
 - Load memory content directly via read_memory -- coordinators pass UUIDs to agents, agents are responsible for loading their own context
@@ -311,8 +316,9 @@ When invoked, finalization-coordinator expects to be provided the following inpu
 - **PhaseContext JSON**: Structured context from Bobert containing phaseId, phaseGoal, agentRoster (list of already-spawned agents with names and roles), completionCriteria, constraints, and prerequisites
 - **Commits created**: List of commit SHAs from the prior phase that the PR should reference
 - **Worktree path**: Path from the intake phase identifying the git worktree where implementation was completed
+- **Branch pushed to remote**: The branch must be pushed to the remote before PR creation can proceed. This is a human-only quality gate when using SSH hardware keys (ED25519-SK), which require interactive approval for push operations. Validate with `git ls-remote origin <branch>`. If the branch is not on the remote, escalate to Bobert -- do not treat this as a bug.
 
-If PhaseContext is incomplete or prerequisites are not met (e.g., commits do not exist, worktree is inaccessible), finalization-coordinator validates and reports the gap before engaging agents.
+If PhaseContext is incomplete or prerequisites are not met (e.g., commits do not exist, worktree is inaccessible, branch not pushed to remote), finalization-coordinator validates and reports the gap before engaging agents.
 
 ### Expected Outputs
 
