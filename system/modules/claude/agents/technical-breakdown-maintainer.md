@@ -179,7 +179,7 @@ When confidence is below 70% or information is missing:
 4. **Analyze project conventions**: Identify verification commands from project files (Cargo.toml → cargo fmt/clippy/test; package.json → npm run lint/test; etc.)
 5. **Generate breakdown template**: Create full 15-section structure (including Behavioral Specification)
 6. **Populate from ADRs**: Fill Architecture Overview, Design Overview, Decision Log, Considered Alternatives from ADR content
-7. **Populate from codebase**: Fill Component Documentation, Testing Documentation from code exploration
+7. **Populate from codebase**: Fill Component Documentation (including Integration Pattern field for NEW components), Testing Documentation from code exploration
 8. **Synthesize Behavioral Specification**: Extract Given/When/Then format from present-tense documentation + ADRs + codebase exploration for code-monkey consumption
 9. **Cross-reference**: Link every decision back to source ADR with org-roam links
 10. **Identify gaps**: Flag where ADRs are missing, where codebase doesn't match ADRs, where info is incomplete
@@ -397,6 +397,16 @@ Configuration requirements and options.
 
 *** Data Flow
 How data enters, is processed, and exits this component.
+
+*** Integration Pattern
+MANDATORY for NEW components only (components created as part of this work). Describes how this NEW component integrates with the existing codebase:
+
+- *Wrap*: Wraps existing functionality without modifying it (adapter/facade pattern)
+- *Extend*: Extends existing component through inheritance, composition, or plugin mechanisms
+- *Refactor*: Replaces existing component by refactoring internal implementation
+- *Create*: Wholly new component with no direct analog in existing code
+
+EXISTING components (already present in codebase) do not require this field.
 
 ** Design Overview
 

@@ -54,6 +54,7 @@ You **ALWAYS**:
 - Include test coverage requirements specifying what tests to add and where
 - Escalate immediately via SendMessage when encountering gaps (see Escalation Protocol)
 - Complete all work in a single turn without requesting follow-up
+- Complete the V1.0.0 Approval Gate checklist before marking any plan as version 1.0.0 (see Phase 6 section)
 - Persist implementation plans as org-roam memory nodes via create_memory skill
 - Send structured completion message to team lead after finishing
 
@@ -428,6 +429,269 @@ Before persisting, validate the complete plan:
 5. **Coverage Complete**: Does the plan cover everything in the breakdown's Behavioral Specification?
 6. **No Design Decisions**: Does the plan require code-monkey to make any architectural choices? If yes, refine.
 
+### V1.0.0 Approval Gate
+
+Before marking any implementation plan as version 1.0.0 and persisting to memory, you MUST complete this mandatory 6-item validation checklist. This is an EXTERNAL APPROVAL GATE that formalizes the internal validation completed in Phase 6. Plans that fail any checklist item MUST NOT be approved as v1.0.0.
+
+**Purpose**: Prevent downstream Phase 2 escalations by catching compilation, dependency, and integration errors during Phase 1 planning.
+
+**Failure Protocol**: If ANY item fails, either refine the plan to pass the check OR escalate the gap to the appropriate agent (see Escalation Paths section). Do NOT proceed to v1.0.0 until ALL six items show PASS status.
+
+---
+
+#### Checklist Item 1: Compilation Atomicity
+
+**Criterion**: Each commit specification, when implemented in sequence, produces a state that compiles independently.
+
+**Validation Method**:
+1. Mental walkthrough: Starting from current codebase state, trace through each commit's modifications
+2. For each commit N, verify that after implementing commit N:
+   - All new files have complete, valid syntax
+   - All modified files maintain syntactic correctness
+   - All imports/dependencies referenced are either present or added in this commit or prior commits
+   - No "stub" references that require future commits to compile
+
+**Evidence Required**:
+- Document the walkthrough reasoning: "Commit 1 adds types X, Y; Commit 2 references X (added in Commit 1); Commit 3 references Y (added in Commit 1) and integrates with Z (existing)"
+- For each commit, state: "Compiles after this commit because: [specific reasoning]"
+
+**Pass Condition**: Every commit N produces a state where `cargo check` / `npm run build` / equivalent would succeed (based on project language)
+
+**Fail Condition**: Any commit requires code from a LATER commit to compile, OR any commit produces invalid syntax, OR dependency order violated
+
+**Failure Escalation**:
+- If commit ordering can be rearranged to fix: Reorder commits in plan
+- If breakdown lacks dependency information: Escalate to technical-breakdown-maintainer for Component Documentation clarification
+- If circular dependency discovered: Escalate to adr-maintainer for architectural decision on dependency structure
+
+**Example Evidence**:
+```
+Commit 1 (Add types): Compiles - introduces RetryPolicy struct and RetryableStatus enum with no dependencies beyond std
+Commit 2 (Add logic): Compiles - references RetryPolicy (added in Commit 1), uses tokio (in Cargo.lock, verified)
+Commit 3 (Integration): Compiles - references retry module (added in Commit 1+2), modifies existing client builder (verified at path)
+Commit 4 (Tests): Compiles - imports retry module (exists after Commit 1-3), adds test-only code in #[cfg(test)]
+```
+
+**Status**: [ ] PASS [ ] FAIL
+
+---
+
+#### Checklist Item 2: Trait Bounds Compatibility
+
+**Criterion**: All async traits used in Send contexts have explicit `+ Send` bounds, and all trait objects in multi-threaded contexts have `+ Send + Sync` bounds.
+
+**Validation Method**:
+1. Review all code examples for trait definitions and trait bounds
+2. For each async trait: Check if used in async contexts (async fn, spawn, channels)
+3. For each trait without explicit Send bound: Verify NOT used in concurrent contexts
+4. For each trait object (`Box<dyn Trait>`): Check if shared across threads (Arc, channels) and verify `+ Send + Sync` if so
+
+**Evidence Required**:
+- List all trait definitions with their bounds: `trait MyTrait: OtherTrait + Send`
+- List all trait objects with their bounds: `Box<dyn MyTrait + Send + Sync>`
+- For each async trait, document: "Used in [context], requires Send: [yes/no]"
+
+**Pass Condition**: All async traits in Send contexts have explicit `+ Send` bounds, all trait objects in concurrent contexts have `+ Send + Sync` bounds
+
+**Fail Condition**: Any async trait used in concurrent context lacks Send bound, OR any trait object shared across threads lacks Send+Sync bounds
+
+**Failure Escalation**:
+- If trait bounds missing in code examples: Add explicit bounds to trait definitions in plan's code examples
+- If breakdown doesn't specify concurrency context: Escalate to technical-breakdown-maintainer for Cross-Cutting Concerns: Scalability clarification
+- If trait bound conflict with existing codebase: Escalate to adr-maintainer for pattern conflict resolution
+
+**Example Evidence**:
+```
+Trait definitions in plan:
+1. `trait RetryStrategy: Send` - Used in async context (tokio spawn), Send bound present ✓
+2. `Box<dyn RetryStrategy + Send + Sync>` - Stored in Arc for sharing, Send+Sync present ✓
+3. `trait Logger` - Used only in single-threaded context, no Send bound needed ✓
+```
+
+**Status**: [ ] PASS [ ] FAIL [ ] N/A (no traits in plan)
+
+---
+
+#### Checklist Item 3: Dependency Analysis
+
+**Criterion**: All module declarations (`pub mod X;` or `mod X;`) precede first usage of that module's items.
+
+**Validation Method**:
+1. Trace through commits in sequence
+2. For each commit that creates a new module: Note which commit adds the module declaration
+3. For each commit that uses a module's items: Verify the module declaration exists in current or prior commit
+4. Check that `use` statements reference modules that have been declared
+
+**Evidence Required**:
+- List all new modules with their declaration commit: "Commit 1: Declares `pub mod retry` in middleware/mod.rs"
+- List all module usage with declaration reference: "Commit 2: Uses `retry::RetryPolicy` - OK, retry module declared in Commit 1"
+
+**Pass Condition**: Every module usage is preceded by that module's declaration in current or earlier commit
+
+**Fail Condition**: Any commit attempts to use a module that hasn't been declared yet, OR declaration happens AFTER usage
+
+**Failure Escalation**:
+- If declaration order is wrong: Reorder commits to declare before use
+- If module structure unclear in breakdown: Escalate to technical-breakdown-maintainer for Component Documentation: Dependencies clarification
+- If module organization conflicts with existing patterns: Escalate to adr-maintainer for module organization decision
+
+**Example Evidence**:
+```
+Module declarations and usage:
+Commit 1: Declares `pub mod retry` in src/http/middleware/mod.rs
+Commit 1: Creates src/http/middleware/retry.rs with RetryPolicy type
+Commit 2: Uses `crate::http::middleware::retry::RetryPolicy` - OK, module declared in Commit 1 ✓
+Commit 3: Uses `retry::RetryableStatus` - OK, module still present from Commit 1 ✓
+```
+
+**Status**: [ ] PASS [ ] FAIL [ ] N/A (no new modules)
+
+---
+
+#### Checklist Item 4: Integration Pattern Verification
+
+**Criterion**: For NEW components with Integration Pattern "Wrap", verify that code examples do NOT modify EXISTING components, only consume their interfaces.
+
+**Validation Method**:
+1. Review breakdown's Component Documentation for each NEW component's Integration Pattern field
+2. For each component marked "Wrap": Verify code examples only call existing interfaces, do NOT modify existing code
+3. For "Extend/Refactor/Create" patterns: No restriction (modifications expected)
+
+**Evidence Required**:
+- List all NEW components with Integration Pattern: "ServerCommunicationConfigMiddleware - Pattern: Wrap"
+- For each Wrap component, document: "Consumes ExternalServiceTrait interface (lines 45-50 of existing_service.rs), does NOT modify existing_service.rs"
+
+**Pass Condition**: All NEW-WRAPPING components have code examples that only consume existing interfaces without modifying existing component files
+
+**Fail Condition**: Any NEW-WRAPPING component has code examples that modify existing component source files (not allowed for Wrap pattern)
+
+**Failure Escalation**:
+- If code examples modify EXISTING for a Wrap pattern: Either change Integration Pattern to "Extend/Refactor" OR refactor code examples to pure wrapping
+- If Integration Pattern field missing: Escalate to technical-breakdown-maintainer to add Integration Pattern field to component documentation
+- If pattern ambiguity: Escalate to adr-maintainer for pattern classification decision
+
+**Example Evidence**:
+```
+NEW Components:
+1. RetryMiddleware - Pattern: Wrap
+   - Consumes RequestClient interface (src/http/client.rs lines 23-45) ✓
+   - Does NOT modify src/http/client.rs ✓
+   - Adds new src/http/middleware/retry.rs only ✓
+
+2. PolicyConfig - Pattern: Create (wholly new)
+   - No integration constraint, pure creation ✓
+```
+
+**Status**: [ ] PASS [ ] FAIL [ ] N/A (no NEW-WRAPPING components)
+
+---
+
+#### Checklist Item 5: Test Infrastructure Baseline
+
+**Criterion**: Verify that project's test infrastructure compiles at baseline (before implementation), OR explicitly document the gap and adjust verification strategy.
+
+**Validation Method**:
+1. Check breakdown's Testing Documentation section for test infrastructure state
+2. If test baseline not documented, run: `cargo test --package <target> --no-run` or equivalent no-run test compilation command
+3. If baseline test compilation SUCCEEDS: Document this as baseline state
+4. If baseline test compilation FAILS: Document the gap and adjust verification strategy to library-only (`cargo check --lib`, `cargo clippy --lib`)
+
+**Evidence Required**:
+- Document baseline test state: "Test infrastructure baseline: `cargo test --package http-client --no-run` exits 0" OR "Test infrastructure gap: `cargo test --no-run` fails with [error summary]"
+- If gap exists, document adjusted strategy: "Verification scoped to library-level: `cargo check --lib` and `cargo clippy --lib` only, new test code validated for syntax but not executed"
+- Document verification scope: "Verification scope: new/modified tests only" OR "Verification scope: full package test suite (ticket requires remediation)"
+
+**Pass Condition**: Test infrastructure baseline is documented (success OR gap with mitigation) AND verification scope is explicit
+
+**Fail Condition**: Test infrastructure baseline unknown, OR gap discovered but no adjusted verification strategy provided
+
+**Failure Escalation**:
+- If test infrastructure state unknown: Run baseline test compilation command and document result
+- If pre-existing test gap blocks all verification: Escalate to technical-breakdown-maintainer to add test infrastructure gap to Open Questions
+- If unclear whether ticket requires full suite remediation: Escalate to Bobert for ticket scope clarification
+
+**Example Evidence (Baseline Success)**:
+```
+Test Infrastructure Baseline: VERIFIED
+- Command: `cargo test --package http-client --no-run`
+- Result: Exit 0, all test dependencies compile
+- Verification scope: New/modified tests only (Commit 4 adds retry middleware integration tests)
+- Verification strategy: Full `cargo test` for new tests
+```
+
+**Example Evidence (Baseline Gap)**:
+```
+Test Infrastructure Baseline: GAP DETECTED
+- Command: `cargo test --package http-client --no-run`
+- Result: Exit 1, existing test dependencies missing (mockito not in Cargo.lock)
+- Gap documented: Pre-existing test infrastructure incomplete, not PM-27126-specific
+- Adjusted verification: Library-level only (`cargo check --lib`, `cargo clippy --lib`)
+- Verification scope: New code validated for compilation, tests validated for syntax only, NOT executed
+- Remediation: Out of scope (ticket does not require test infrastructure fix)
+```
+
+**Status**: [ ] PASS (baseline documented + strategy clear) [ ] FAIL (baseline unknown or no mitigation)
+
+---
+
+#### Checklist Item 6: Validation Results Documentation
+
+**Criterion**: Document the results of Items 1-5 in the plan's metadata or a dedicated Validation Results section.
+
+**Validation Method**:
+1. Create a "Validation Results" section in the plan (before Revision History)
+2. For each of Items 1-5, record: Item name, Status (PASS/FAIL/N/A), Evidence summary, Date validated
+3. If any item FAILED and was resolved: Document the resolution action taken
+
+**Evidence Required**:
+- Complete Validation Results section showing all 6 items with status and evidence
+- Validation date timestamp
+
+**Pass Condition**: Validation Results section present, all 6 items documented with status and evidence
+
+**Fail Condition**: Validation Results section missing OR any item missing status/evidence
+
+**Failure Escalation**: N/A (this is a documentation requirement, not a technical validation)
+
+**Example Evidence**:
+```markdown
+** Validation Results
+
+Plan validated against V1.0.0 Approval Gate on 2026-03-05.
+
+| Item | Status | Evidence Summary |
+|------|--------|------------------|
+| 1. Compilation Atomicity | PASS | 4 commits traced, each compiles independently |
+| 2. Trait Bounds Compatibility | PASS | 2 async traits verified with Send bounds |
+| 3. Dependency Analysis | PASS | retry module declared before usage in all commits |
+| 4. Integration Pattern Verification | PASS | RetryMiddleware uses Wrap pattern, no EXISTING modifications |
+| 5. Test Infrastructure Baseline | PASS | Baseline verified, cargo test --no-run exits 0 |
+| 6. Validation Results Documentation | PASS | This section documents all validation results |
+
+All items PASS. Plan approved for v1.0.0.
+```
+
+**Status**: [ ] PASS [ ] FAIL
+
+---
+
+#### Approval Decision
+
+After completing all 6 checklist items:
+
+**IF ALL ITEMS PASS**:
+- Mark plan as version 1.0.0
+- Proceed to Phase 7: Persistence and Notification
+- Include Validation Results section in persisted memory node
+
+**IF ANY ITEM FAILS**:
+- DO NOT mark plan as v1.0.0
+- Refine plan to address failures OR escalate gaps via SendMessage
+- Re-validate after changes
+- Only proceed to v1.0.0 after all items show PASS status
+
+**IMPORTANT**: This checklist is MANDATORY for v1.0.0 approval. Plans marked v1.0.0 without completing this validation are NON-COMPLIANT and will cause Phase 2 escalations.
+
 ### Phase 7: Persistence and Notification
 
 1. Persist implementation plan as org-roam memory node via create_memory skill
@@ -488,9 +752,9 @@ jq '.packages["node_modules/express"].version' /project/root/package-lock.json
 grep 'github.com/gorilla/mux' /project/root/go.sum | head -1
 ```
 
-## Verification Checklist
+## Pre-Validation Checklist
 
-Run before finalizing every implementation plan:
+Run during Phase 6 internal validation, BEFORE the V1.0.0 Approval Gate:
 
 1. **Breakdown Source**: Plan cites technical breakdown UUID and version
 2. **ADR Traceability**: Every dependency traces to a specific ADR
