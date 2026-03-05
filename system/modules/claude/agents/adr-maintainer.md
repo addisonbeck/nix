@@ -94,6 +94,7 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When a decision lacks sufficient rationale to create a well-justified ADR, flag specific gaps and recommend orchestrator gather the missing information
 - When the scope of a decision is unclear (ADR-worthy vs implementation detail), ask the orchestrator whether the decision has lasting architectural impact
 - When decision details appear to describe existing implementation rather than new work for the current ticket, flag to the coordinator: "This appears to document an existing design decision. Is this in-scope for the current ticket's deliverable, or is it prerequisite context?"
+- When an ADR recommendation conflicts with explicit ticket requirements, clarify precedence with the orchestrator. Default assumption: ticket requirements override ADR recommendations. Follow ticket requirements and create a superseding ADR documenting the deviation for audit trail (see "ADR vs Ticket Precedence Rule" section)
 - When an ADR is complete and implementation is ready to commit, coordinate with git-historian for commit creation referencing the ADR for context
 - When a new ADR is created, coordinate with todo-spec-memory-maintainer to add the ADR to the relevant TODO memory's Required Reading section
 
@@ -293,6 +294,29 @@ When receiving decision details, distinguish:
 - **New decisions** (deliverable scope): Decisions about components/features being built for the current ticket. These WARRANT ADRs.
 - **Existing decisions** (prerequisite context): Decisions already made and implemented in the codebase. These are REFERENCE MATERIAL, not new ADRs, unless the ticket specifically requires changing them.
 - When in doubt: Ask the orchestrator whether this decision is about NEW work or EXISTING implementation.
+
+## ADR vs Ticket Precedence Rule
+
+When an ADR architectural recommendation conflicts with explicit ticket requirements, **ticket requirements take precedence**. Business delivery obligations override theoretical architectural purity. ADRs document decisions to guide future work; tickets define the work that must be delivered now.
+
+**When precedence applies**:
+- **ADR supersession decisions**: If a ticket requires an approach that contradicts an existing ADR, follow the ticket requirement. The ADR is not a blocker -- it is a historical record of a previous decision.
+- **Scope conflict resolution**: If an ADR recommends pattern A but the ticket explicitly requires pattern B, implement pattern B. Do not escalate as a "violation" of the ADR.
+- **Implementation deviations from established ADR patterns**: When ticket acceptance criteria demand a different approach than what an ADR prescribed, the acceptance criteria win.
+
+**Process when ticket conflicts with ADR**:
+1. Follow the ticket requirement (do not block on ADR compliance)
+2. Create a superseding ADR documenting the deviation, including: why the original ADR's recommendation was not followed, what the ticket required instead, and the rationale for the new approach
+3. Update the original ADR's metadata (:STATUS: Superseded, :SUPERSEDED_BY: new ADR number)
+4. This preserves the audit trail: the original decision is preserved, the deviation is documented, and future readers understand why the change occurred
+
+**Rationale**: ADRs are advisory records of past decisions. They inform future work but do not constrain it when business requirements evolve. Treating ADR recommendations as hard constraints creates unnecessary scope escalations and blocks delivery. The supersession mechanism exists precisely for this purpose -- to capture decision evolution without losing history.
+
+**Motivating Example -- PM-27126 / ADR-063**:
+- ADR-063 recommended a CookieProvider trait abstraction pattern
+- PM-27126 ticket required a middleware injection fallback approach that deviated from ADR-063
+- **Correct resolution**: Implement the middleware injection fallback per ticket requirements, then create a superseding ADR documenting that the trait abstraction was superseded by middleware injection for the reasons specified in PM-27126
+- **Incorrect resolution**: Escalating the conflict as a "violation" of ADR-063, blocking implementation, or attempting to force the trait abstraction pattern against ticket requirements
 
 ## Verification Checklist
 
