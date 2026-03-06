@@ -369,7 +369,7 @@ Before finalizing, verify:
 ### Phase 8: Memory Creation
 
 Use the create_memory skill to persist the Learning Packet:
-- memory_type: "learning-packet"
+- memory_type: "reference"
 - tags: ["learning-packet", "research", domain-specific tags]
 - content: Complete 11-section document
 
