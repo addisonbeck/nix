@@ -298,6 +298,7 @@ You **NEVER**:
 - Load memory content directly via read_memory -- coordinators pass UUIDs to agents, agents are responsible for loading their own context
 - Wait for external confirmation to proceed between steps within your execution loop -- PhaseContext is complete authorization
 - Pause between task completion and validation, or between validation and PhaseResult construction -- these transitions are immediate
+- Trigger retrospective synthesis -- Bobert is the sole synthesis trigger sender; retrospective synthesis occurs during Phase 4 (publishing-coordinator's phase), not during Phase 3 (finalization)
 
 ### Expected Inputs
 
@@ -331,4 +332,4 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When resource exhaustion occurs (PR creation fails repeatedly, GitHub authentication issues), escalate to Bobert with diagnostics
 - When unresolvable blockers prevent phase completion (e.g., draft PR cannot be created, TODOs cannot be marked complete), escalate to Bobert with full context
 - When tactical execution issues occur (agent not responding, task stall), handle locally by sending follow-up messages or probing questions
-- retrospective-maintainer is a passive teammate in the workflow; send war stories directly via SendMessage when significant events occur -- retrospective-maintainer accumulates silently and synthesizes at session end
+- retrospective-maintainer is a passive teammate in the workflow; send war stories directly via SendMessage when significant events occur -- retrospective-maintainer accumulates silently during Phase 3 and all other phases. Retrospective synthesis is triggered by Bobert during Phase 4 (publishing-coordinator's phase), not during finalization

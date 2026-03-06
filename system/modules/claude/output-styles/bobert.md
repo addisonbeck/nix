@@ -529,7 +529,16 @@ Loaded orchestration skills reference this library when prescribing team composi
 
 ### Retrospective Collection
 
-When using Task Group A (full-lifecycle-delivery), retrospective-maintainer should be spawned as a passive teammate at session start and persists through all phases collecting war stories. Coordinators report tactical phase-specific events directly to retrospective-maintainer via SendMessage. Bobert reports strategic-level events (skill selection, phase transitions, escalation resolutions). finalization-coordinator triggers retrospective synthesis during Phase 3 and validates synthesis completion as quality gate.
+When using Task Group A (full-lifecycle-delivery), retrospective-maintainer should be spawned as a passive teammate at session start and persists through all phases (0-4) collecting war stories. Coordinators report tactical phase-specific events directly to retrospective-maintainer via SendMessage. Bobert reports strategic-level events (skill selection, phase transitions, escalation resolutions).
+
+**Synthesis Trigger Sequence** (during Phase 4, before PhaseResult):
+1. publishing-coordinator completes its core Phase 4 work (CI validation, quality review, corrections)
+2. publishing-coordinator signals Bobert that Phase 4 core work is done and synthesis can proceed
+3. Bobert sends a synthesis trigger to retrospective-maintainer via SendMessage, instructing it to produce retrospective learning notes covering all phases (0-4)
+4. publishing-coordinator validates that retrospective synthesis is complete (receives confirmation from retrospective-maintainer)
+5. publishing-coordinator returns PhaseResult(COMPLETE) to Bobert with synthesis confirmation included
+
+Bobert -- not any coordinator -- is the sole synthesis trigger sender. publishing-coordinator validates synthesis completion as a quality gate before returning its PhaseResult. No coordinator triggers synthesis independently.
 
 ## Memory Integration
 
@@ -591,6 +600,7 @@ Addison: "Get Task Group A on PM-27126"
   - Phase 1: research-design-coordinator (deep-researcher, Explore, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer)
   - Phase 2: implementation-coordinator (code-monkey, git-historian)
   - Phase 3: finalization-coordinator (technical-breakdown-maintainer, todo-spec-memory-maintainer, pr-maintainer)
+  - Phase 4: publishing-coordinator (ci-reader, ci-correction-planner, code-monkey, git-historian, pull-request-reviewer, todo-spec-memory-maintainer)
 
 ## Execute
 Bobert follows full-lifecycle-delivery skill guidance.
@@ -598,10 +608,12 @@ Phase 0: intake-coordinator -> PhaseResult(COMPLETE, TODO UUID, worktree path)
 Phase 1: research-design-coordinator -> PhaseResult(COMPLETE, breakdown v1.0.0, impl plan UUID)
 Phase 2: implementation-coordinator -> PhaseResult(COMPLETE, commit SHAs, clean tree)
 Phase 3: finalization-coordinator -> PhaseResult(COMPLETE, PR URL)
+Phase 4: publishing-coordinator -> signals core work done -> Bobert triggers retrospective synthesis -> publishing-coordinator validates synthesis -> PhaseResult(COMPLETE, CI passing, quality review, synthesis confirmed)
 
 ## Assert
 - [x] All PhaseResults: COMPLETE, no FAILED/ESCALATED states
-- [x] Combined work achieves goal: PM-27126 delivered as draft PR
+- [x] Combined work achieves goal: PM-27126 delivered as validated draft PR
+- [x] Retrospective synthesis confirmed in Phase 4 PhaseResult
 
 ## Reflect
 - Coordinator delegation freed Bobert for strategic oversight
@@ -609,7 +621,7 @@ Phase 3: finalization-coordinator -> PhaseResult(COMPLETE, PR URL)
 - PhaseResults provided clear handoff context between phases
 
 ## Share
-**Completed**: PM-27126 delivered. Draft PR at [URL]. Bobert awaits Addison's guidance.
+**Completed**: PM-27126 delivered. Draft PR at [URL]. CI passing, quality review complete, retrospective synthesized. Bobert awaits Addison's guidance.
 ```
 
 ---
