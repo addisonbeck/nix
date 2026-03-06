@@ -54,7 +54,7 @@ No explicit input schema - this is an instruction playbook loaded into Bobert's 
 Task Group A produces:
 - **Phase 0 Outputs**: TODO UUID, worktree path, clarified requirements
 - **Phase 1 Outputs**: Technical breakdown UUID (v1.0.0), implementation plan UUID
-- **Phase 2 Outputs**: Commit SHAs, clean working tree confirmation, passing tests
+- **Phase 2 Outputs**: Commit SHAs, clean working tree confirmation, passing tests (new/modified tests by default; all package tests only when ticket explicitly requires full suite remediation)
 - **Phase 3 Outputs**: Draft PR URL, completed TODO, finalized technical breakdown
 
 ### Success Criteria
@@ -322,12 +322,37 @@ Coordinators return PhaseResult containing:
 3. **Two Iterative Loops**:
    - **Phase 1 Loop**: Research/design/synthesis/planning repeats until technical breakdown reaches v1.0.0 AND implementation plan is complete
    - **Phase 2 Loop**: Implementation/commit repeats until all planned functionality is committed AND working tree is clean AND tests pass
+     - **Test Passing Scope (Default)**: New/modified tests passing (tests added or modified during implementation)
+     - **Test Passing Scope (Exception)**: All package tests passing (only when ticket explicitly mandates full suite remediation with phrases like "fix all tests", "remediate test suite", "achieve 100% test pass rate")
 
-4. **Context Isolation**: Each specialist operates in own context window, activating per phase. This prevents context pollution and allows focused work.
+4. **Test Passing Criteria**: Phase 2 completion requires "tests passing" validation, with scope determined by ticket requirements:
 
-5. **Specification Bridge**: `implementation-plan-maintainer` in Phase 1 translates architecture into executable step-by-step specifications before Phase 2 begins. This bridges strategic design to tactical implementation.
+   **Default Scope - New/Modified Tests Passing**:
+   - Applies to: Tickets focused on adding features, fixing specific bugs, refactoring specific components
+   - Definition: Tests that were added or modified during the implementation must pass
+   - Validation: Run tests that the implementation plan identifies as relevant to the changes
+   - Rationale: Implementation should not break what it touches, but is not responsible for pre-existing test suite failures unrelated to the work
+   - Example commands: `cargo test <specific_test>`, `pytest tests/test_new_feature.py`, `npm test -- <test_file>`
 
-6. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
+   **Exception Scope - All Package Tests Passing**:
+   - Applies to: Tickets that explicitly mandate full test suite remediation
+   - Trigger phrases in ticket: "fix all tests", "remediate test suite", "achieve 100% test pass rate", "all tests must pass", "comprehensive test fixing"
+   - Definition: Entire project test suite must pass, including pre-existing tests unrelated to implementation
+   - Validation: Run full test suite without filters or exclusions
+   - Rationale: Ticket specifically requires test suite health as a deliverable, not just feature implementation
+   - Example commands: `cargo test --all`, `pytest`, `npm test`
+
+   **Coordinator Guidance**:
+   - implementation-coordinator examines ticket language during Phase 2 initialization to determine test scope
+   - Default scope applies unless explicit full-suite language is present in ticket
+   - When in doubt, default scope applies (new/modified tests only)
+   - PhaseResult validation must document which scope was applied and provide evidence (test output showing relevant tests passed)
+
+5. **Context Isolation**: Each specialist operates in own context window, activating per phase. This prevents context pollution and allows focused work.
+
+6. **Specification Bridge**: `implementation-plan-maintainer` in Phase 1 translates architecture into executable step-by-step specifications before Phase 2 begins. This bridges strategic design to tactical implementation.
+
+7. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
 
 ### Critical Constraints
 
@@ -487,7 +512,8 @@ These lessons distill recurring failure modes observed across multiple Task Grou
    Spawn work agents as teammates per roster specification (or notify existing agents if reused)
    Notify implementation-coordinator that roster is ready via SendMessage
    Wait for PhaseResult from implementation-coordinator
-   Validate: status == COMPLETE, commit SHAs present, working tree clean
+   Validate: status == COMPLETE, commit SHAs present, working tree clean, tests passing
+   Note: Test passing scope documented in Key Characteristics section #4 (default: new/modified tests)
    ```
 
 5. **Phase 3 Execution**:
