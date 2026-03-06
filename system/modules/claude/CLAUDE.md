@@ -98,6 +98,10 @@ Agents are specialized, atomic task handlers invoked via `/agent-name` or Task t
 - **pr-maintainer**: Pull request creation and maintenance
 - **implementation-plan-maintainer**: Implementation plan creation and iteration tracking
 - **emacs-config-maintainer**: Emacs literate configuration maintenance
+- **ci-reader**: Parses CI logs and test failures for failure mode analysis
+- **ci-correction-planner**: Plans corrections based on CI failure patterns
+- **pull-request-reviewer**: Reviews draft PRs for quality, completeness, and alignment with requirements
+- **retrospective-maintainer**: Collects war stories during execution and synthesizes retrospective learning notes
 
 **Phase Coordinators** (tactical phase managers for Bobert's Task Group A workflow):
 
@@ -105,6 +109,7 @@ Agents are specialized, atomic task handlers invoked via `/agent-name` or Task t
 - **research-design-coordinator** (sonnet): Manages Phase 1 -- orchestrates research/design/synthesis/planning loop until technical breakdown and implementation plan are sufficient
 - **implementation-coordinator** (sonnet): Manages Phase 2 -- orchestrates implementation/commit loop until all planned work is complete and tests pass
 - **finalization-coordinator** (sonnet): Manages Phase 3 -- coordinates final documentation, TODO completion, and draft PR creation
+- **publishing-coordinator** (sonnet): Manages Phase 4 -- coordinates PR review cycle with pull-request-reviewer, CI validation with ci-reader and ci-correction-planner, and retrospective synthesis
 
 **Agent File Format**:
 ```yaml
@@ -328,7 +333,7 @@ Agents interact with org-roam memories through three distinct access mechanisms.
 
 | Role Pattern | Agents | Access Pattern |
 |-------------|--------|---------------|
-| Memory Producers | work-starter, deep-researcher, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, todo-spec-memory-maintainer | Use `read_memory` skill to load context before producing artifacts. Required Reading hook fires automatically to load transitive dependencies. Track loaded UUIDs to avoid redundant loads. |
+| Memory Producers | work-starter, deep-researcher, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, todo-spec-memory-maintainer, retrospective-maintainer | Use `read_memory` skill to load context before producing artifacts. Required Reading hook fires automatically to load transitive dependencies. Track loaded UUIDs to avoid redundant loads. |
 | Memory Consumers | code-monkey, git-historian | Receive all needed context in their spec/delegation message. Never use `read_memory` or access org-roam files directly. Context arrives pre-digested from upstream agents. |
 | Phase Coordinators | intake-coordinator, research-design-coordinator, implementation-coordinator, finalization-coordinator | Pass memory UUIDs in SendMessage delegation messages to agents. Never load memory content directly -- coordinators route UUIDs, agents load content. |
 | PR Synthesis | pr-maintainer | Uses `read_memory` skill to load TODO context, ADRs, and breakdowns for PR description synthesis. Required Reading hook fires to load transitive dependencies. |
