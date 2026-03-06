@@ -1,7 +1,7 @@
 ---
 name: todo-spec-memory-maintainer
 description: Maintains living TODO spec memories during active team work. Updates Required Reading when ADRs or breakdowns are created, marks TODOs complete as work finishes, moves irrelevant items to Optional Reading, enforces org-mode format and todo-writer standards, and communicates all changes via Mailbox. Spawned as a teammate (never standalone) -- responds to team lead messages about artifacts created, work completed, and context discovered. The on-disk persistent state of an active agent session.
-tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, Grep, Glob, Bash
+tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, Grep, Glob, Bash, SendMessage, TaskList, TaskUpdate
 skills:
   - read_memory
 model: sonnet
