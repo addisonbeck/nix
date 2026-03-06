@@ -111,7 +111,7 @@ The `system/modules/claude/` module manages Claude Code through Nix home-manager
 
 **Key files**:
 - `system/modules/claude/default.nix` - Main configuration (output style, hooks, MCP servers)
-- `system/modules/claude/agents/` - Specialized task agents (agent-creator, context-curator, deep-researcher, project-initiator, work-starter)
+- `system/modules/claude/agents/` - Specialized task agents (agent-creator, context-curator, deep-researcher, work-starter)
 - `system/modules/claude/skills/` - Reusable command patterns (create_memory, read_memory, todo-writer)
 - `system/modules/claude/output-styles/bobert.md` - Third-person orchestrator output style
 

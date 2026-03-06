@@ -36,7 +36,6 @@ claude/
 │   ├── agent-maintainer.md
 │   ├── context-curator.md
 │   ├── deep-researcher.md
-│   ├── project-initiator.md
 │   ├── work-starter.md
 │   ├── code-monkey.md
 │   ├── git-historian.md
@@ -86,7 +85,6 @@ Agents are specialized, atomic task handlers invoked via `/agent-name` or Task t
 - **agent-maintainer** (opus): Agent design, creation, modification, and lifecycle management
 - **context-curator**: Curates task-relevant context from org-roam memory dependencies
 - **deep-researcher**: Conducts systematic research producing Learning Packets
-- **project-initiator**: Automates project kickoff with exploration, TODOs, planning
 - **work-starter** (sonnet): Transforms vague requests into structured TODO memories
 - **code-monkey**: Fast code modifications and implementation work
 - **git-historian**: Git repository analysis and archeology

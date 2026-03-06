@@ -1,6 +1,6 @@
 ---
 name: agent-maintainer
-description: Agent design, creation, modification, and lifecycle management specialist. Use when creating new Claude Code agents, evolving existing agents, deprecating obsolete agents, or architecting LLM agent systems. Handles the complete agent lifecycle from design through deprecation. If the work you are asked to do doesn't already have an obvious agent, call on this agent to create one for you to use. Proactively suggests when new agents would benefit the workflow, when existing agents should be evolved, and when agents should be retired.
+description: Agent design, creation, modification, deprecation, and lifecycle management specialist. Use when creating new Claude Code agents, evolving existing agents, deprecating obsolete agents, or architecting LLM agent systems.  If the work you are asked to do doesn't already have an obvious agent, call on this agent to create one for you to use. 
 tools: mcp__acp__Read, Read, mcp__acp__Write, Write, mcp__acp__Edit, Edit, Grep, Glob, WebSearch, WebFetch, Bash
 skills:
   - create_memory
