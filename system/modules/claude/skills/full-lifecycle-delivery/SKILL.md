@@ -1,17 +1,17 @@
 ---
 name: full-lifecycle-delivery
 description: |
-  Orchestration playbook for taking work from input (Jira ticket, memory stub, or prompt) through intake, research/design, implementation, and finalization to draft PR. Defines team composition (11 work agents + 4 phase coordinators), phase-by-phase workflow, PhaseContext/PhaseResult protocol, and completion criteria for full-lifecycle delivery. Use when asked to research, design, and publish a draft PR from a Jira ticket, or when prompted to use Task Group A.
+  Orchestration playbook for taking work from input (Jira ticket, memory stub, or prompt) through intake, research/design, implementation, finalization, and publishing to validated PR. Defines team composition (11 work agents + 5 phase coordinators), phase-by-phase workflow, PhaseContext/PhaseResult protocol, and completion criteria for full-lifecycle delivery. Use when asked to research, design, and publish a validated PR from a Jira ticket, or when prompted to use Task Group A.
 ---
 
 # full-lifecycle-delivery Skill
 
-This skill provides orchestration guidance for **Task Group A**, Bobert's canonical team composition for full-lifecycle work delivery. Task Group A takes work from initial input (Jira ticket, memory stub, or plain prompt) through intake, research, design, implementation, and finalization to produce a draft pull request.
+This skill provides orchestration guidance for **Task Group A**, Bobert's canonical team composition for full-lifecycle work delivery. Task Group A takes work from initial input (Jira ticket, memory stub, or plain prompt) through intake, research, design, implementation, finalization, and publishing to produce a validated pull request ready for human review.
 
 When invoked, Bobert follows this instruction playbook to:
 1. Form the team via TeamCreate
 2. For each phase: Spawn coordinator as teammate, send PhaseContext, receive roster specification, spawn work agents as teammates
-3. Execute four sequential phases (Intake → Research/Design → Implementation → Finalization)
+3. Execute five sequential phases (Intake → Research/Design → Implementation → Finalization → Publishing)
 4. Construct PhaseContext for each phase (goal, criteria, constraints - NOT roster)
 5. Coordinators specify roster needs, Bobert spawns agents, coordinators execute autonomously
 6. Validate PhaseResults before advancing to next phase
@@ -56,9 +56,10 @@ Task Group A produces:
 - **Phase 1 Outputs**: Technical breakdown UUID (v1.0.0), implementation plan UUID
 - **Phase 2 Outputs**: Commit SHAs, clean working tree confirmation, passing tests (new/modified tests by default; all package tests only when ticket explicitly requires full suite remediation)
 - **Phase 3 Outputs**: Draft PR URL, completed TODO, finalized technical breakdown
+- **Phase 4 Outputs**: CI status (passing), quality review status, correction cycle count
 
 ### Success Criteria
-All four phases complete with status: COMPLETE and required outputs present.
+All five phases complete (Phases 0-4) with status: COMPLETE and required outputs present.
 
 ### Error Conditions
 - PhaseResult with status: FAILED triggers Bobert to decide: retry, adjust, or abort
@@ -71,7 +72,7 @@ All four phases complete with status: COMPLETE and required outputs present.
 
 This is an **instruction-only skill** - no bash script implementation. Bobert loads this skill and follows the guidance.
 
-### Team Composition (11 Work Agents + 4 Phase Coordinators)
+### Team Composition (11 Work Agents + 5 Phase Coordinators)
 
 **Work Agents**:
 1. **work-starter**: Intake specialist - transforms input into structured TODO with clarified requirements
@@ -91,6 +92,7 @@ This is an **instruction-only skill** - no bash script implementation. Bobert lo
 2. **research-design-coordinator**: Manages Phase 1 tactical execution with iterative loop
 3. **implementation-coordinator**: Manages Phase 2 tactical execution with commit loop
 4. **finalization-coordinator**: Manages Phase 3 tactical execution
+5. **publishing-coordinator**: Manages Phase 4 tactical execution with CI monitoring and correction cycles
 
 ### Workflow Pattern
 
@@ -152,7 +154,23 @@ Input Source (Jira, memory stub, or prompt)
 +---------------------------------------------------------+
              |
              v
-        DRAFT PR CREATED
++---------------------------------------------------------+
+| PHASE 4: PUBLISHING                                     |
+|  Delegated to: publishing-coordinator                   |
+|  Agents: ci-reader, ci-correction-planner,              |
+|          pull-request-reviewer, code-monkey (REUSE),    |
+|          git-historian (REUSE),                         |
+|          todo-spec-memory-maintainer (REUSE)            |
+|  Bobert provides: PhaseContext with PR URL, PR number,  |
+|                   worktree path, commits                |
+|  Coordinator returns: PhaseResult with CI status,       |
+|                       quality review status             |
+|                                                          |
+|  COMPLETION: CI passing + quality review complete       |
++---------------------------------------------------------+
+             |
+             v
+    VALIDATED PR (CI PASSING + QUALITY REVIEWED)
 ```
 
 ### PhaseContext Structure
@@ -280,6 +298,16 @@ These rosters represent validated patterns from Take 8 execution. Coordinators s
 - todo-spec-memory-maintainer (REUSE from Phase 0, mark DONE)
 
 **Rationale**: Take 8 validation showed coordinator-specified rosters eliminated 12-15 minutes of reactive spawning overhead (War Story #1: Role Inversion). Phases 1-3 executed with zero reactive spawn cycles when coordinators specified rosters upfront.
+
+**Phase 4 (Publishing)**: 6 agents (4 reused from prior phases)
+- ci-reader (CI status monitoring)
+- ci-correction-planner (failure analysis and fix specs)
+- pull-request-reviewer (quality validation)
+- code-monkey (REUSE from Phase 2, correction implementation)
+- git-historian (REUSE from Phase 2, correction commits)
+- todo-spec-memory-maintainer (REUSE from Phase 0, final updates)
+
+**Rationale**: Phase 4 completes the publish-to-production journey by validating PR health through CI and quality review. Reusing code-monkey and git-historian for correction cycles leverages existing implementation infrastructure. publishing-coordinator enforces max 3 correction cycles before escalating to Bobert.
 
 ### PhaseResult Structure
 
@@ -447,9 +475,10 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 ## Environment Dependencies
 
 - **ORG_ROAM_DIR**: Required for TODO and memory creation/maintenance
-- **Required agents**: All 11 work agents + 4 phase coordinators must exist in `~/.claude/agents/`
+- **Required agents**: All 11 work agents + 5 phase coordinators (intake, research-design, implementation, finalization, publishing) must exist in `~/.claude/agents/`
 - **Required skills**: `create_memory`, `read_memory`, `todo-writer` must exist for TODO maintenance
 - **Git environment**: Worktree operations require git configuration
+- **GitHub CLI**: `gh` command required for PR operations and CI monitoring in Phase 4
 - **Jira MCP** (optional): Required if input is Jira ticket ID
 
 ## Usage & Testing Guidance
@@ -535,7 +564,22 @@ These lessons distill recurring failure modes observed across multiple Task Grou
    Validate: status == COMPLETE, PR URL present
    ```
 
-6. **Assert Phase**: Review all PhaseResults, verify deliverables, report completion to Addison
+6. **Phase 4 Execution**:
+   ```
+   PREREQUISITE: Draft PR created in Phase 3
+
+   Construct PhaseContext for Phase 4 (pass PR URL, PR number, worktree path, commits)
+   Spawn publishing-coordinator as teammate (Task tool WITH team_name)
+   Send PhaseContext to publishing-coordinator via SendMessage with roster request
+   Receive roster specification (ci-reader, ci-correction-planner, pull-request-reviewer, reuse code-monkey, reuse git-historian, reuse todo-spec-memory-maintainer)
+   Spawn work agents as teammates per roster specification (or notify existing agents if reused)
+   Notify publishing-coordinator that roster is ready via SendMessage
+   Wait for PhaseResult from publishing-coordinator
+   Validate: status == COMPLETE, ciStatus == "passing", qualityReviewStatus present
+   Note: Correction cycles (0-3) are normal; escalation only if limit exceeded
+   ```
+
+7. **Assert Phase**: Review all PhaseResults, verify deliverables, report completion to Addison
 
 ### When to Consult Addison
 

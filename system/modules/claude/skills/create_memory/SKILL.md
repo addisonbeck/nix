@@ -21,6 +21,7 @@ The JSON input must contain:
 - **tags** (array): At least one tag string
 - **aliases** (array): At least one alias string
 - **content** (string): Node content in org-mode markup
+- **subfolder** (string, optional): Subdirectory within ORG_ROAM_DIR for file creation (e.g., "adr", "todo", "technical-breakdown"). Defaults to root directory if not provided.
 
 The script validates that memory_type is one of the allowed values and returns an error if invalid.
 
@@ -33,6 +34,17 @@ The script generates a complete org-roam node with:
 Returns JSON with the generated node ID, file path, and title.
 
 ## Example usage
+
+**Basic usage (root directory)**:
 ```
 /create_memory {"title":"Implementation Notes","memory_type":"procedural","tags":["development"],"aliases":["impl notes"],"content":"* Overview\n\nImplementation details..."}
 ```
+
+**With subfolder parameter**:
+```
+/create_memory {"title":"Decision Record 1","memory_type":"semantic","tags":["adr","architecture"],"aliases":["ADR-001"],"content":"* Context\n\nArchitecture decision...","subfolder":"adr"}
+```
+
+This creates the file at `$ORG_ROAM_DIR/adr/2026-03-06-14-45-30.decision-record-1.org` instead of the root directory.
+
+**Note**: The caller is responsible for ensuring the subfolder directory exists. The script does not create directories automatically.

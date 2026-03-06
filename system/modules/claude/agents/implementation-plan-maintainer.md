@@ -622,12 +622,30 @@ NEW Components:
    - **Go**: `go test -run=^$ ./...` (compiles tests without running)
    - **Python**: `pytest --collect-only` or `python -m pytest --collect-only`
 3. If baseline test compilation SUCCEEDS: Document this as baseline state
-4. If baseline test compilation FAILS: Document the gap and adjust verification strategy to library-only compilation/linting
+4. If baseline test compilation FAILS: Execute the Gap Handling Procedure below
+
+**Gap Handling Procedure** (when baseline test compilation fails):
+1. **Classify the gap**: Confirm the failure is pre-existing (not caused by the current ticket's work). If the failure IS ticket-related, escalate to technical-breakdown-maintainer
+2. **Document as prerequisite gap**: Record the gap with the exact error summary, noting it is pre-existing and unrelated to the current ticket
+3. **Adjust top-level Verification Suite**: Replace test execution commands with library-level equivalents:
+   - **Rust**: `cargo check --lib` + `cargo clippy --lib` (replaces `cargo test`)
+   - **TypeScript/JavaScript**: `npx tsc --noEmit` + `npx eslint` (replaces `npm test`)
+   - **Go**: `go build ./...` + `go vet ./...` (replaces `go test`)
+   - **Python**: `python -m py_compile <files>` + `mypy <files>` (replaces `pytest`)
+4. **Adjust per-commit Assertion Instructions**: Update EVERY commit spec's Assertion Instructions to use library-level commands instead of test commands. This prevents code-monkey from encountering pre-existing failures during verification
+5. **Scope test coverage requirements**: New test code in commit specs is validated for syntax only, NOT executed. Mark test coverage items with "(syntax validation only -- test execution blocked by pre-existing infrastructure gap)"
+6. **Record remediation status**: "Remediation: Out of scope" unless ticket explicitly requires test infrastructure fix
+
+**Verification Scope** (default: new/modified tests only):
+- Default behavior: Verification applies to new and modified tests ONLY, not the entire package test suite. This prevents pre-existing test gaps from blocking verification of new work
+- Exception: Full package test suite verification applies ONLY when the ticket explicitly requires test suite remediation (e.g., "fix all failing tests in package X")
+- When in doubt about scope: Escalate to Bobert for ticket scope clarification before defaulting to full suite
 
 **Evidence Required**:
-- Document baseline test state with language-appropriate command
+- Document baseline test state with language-appropriate command and exit code
 - If gap exists, document adjusted strategy: "Verification scoped to library-level compilation/linting only, new test code validated for syntax but not executed"
-- Document verification scope: "Verification scope: new/modified tests only" OR "Verification scope: full package test suite (ticket requires remediation)"
+- Document verification scope explicitly: "Verification scope: new/modified tests only (default)" OR "Verification scope: full package test suite (ticket requires remediation)"
+- If gap handling was applied, confirm per-commit Assertion Instructions were adjusted
 
 **Pass Condition**: Test infrastructure baseline is documented (success OR gap with mitigation) AND verification scope is explicit
 
@@ -663,6 +681,7 @@ Test Infrastructure Baseline: GAP DETECTED
 - Result: Exit 1, existing test dependencies missing (mockito not in Cargo.lock)
 - Gap documented: Pre-existing test infrastructure incomplete, not PM-27126-specific
 - Adjusted verification: Library-level only (`cargo check --lib`, `cargo clippy --lib`)
+- Per-commit Assertion Instructions: Updated all commits to use `cargo check --lib` + `cargo clippy --lib` instead of `cargo test`
 - Verification scope: New code validated for compilation, tests validated for syntax only, NOT executed
 - Remediation: Out of scope (ticket does not require test infrastructure fix)
 ```
@@ -674,6 +693,7 @@ Test Infrastructure Baseline: GAP DETECTED
 - Result: Exit 5, pytest not installed or configured
 - Gap documented: Pre-existing test infrastructure incomplete, not ticket-specific
 - Adjusted verification: Module-level only (`python -m py_compile <files>`, `mypy <files>`)
+- Per-commit Assertion Instructions: Updated all commits to use `python -m py_compile` + `mypy` instead of `pytest`
 - Verification scope: New code validated for syntax, tests validated for syntax only, NOT executed
 - Remediation: Out of scope (ticket does not require test infrastructure setup)
 ```

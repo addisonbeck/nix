@@ -10,6 +10,7 @@ memory_type=$(echo "$input" | jq -r '.memory_type')
 tags=$(echo "$input" | jq -r '.tags | join(" ")')
 aliases=$(echo "$input" | jq -r '.aliases | map("\"" + . + "\"") | join(" ")')
 content=$(echo "$input" | jq -r '.content')
+subfolder=$(echo "$input" | jq -r '.subfolder // ""')
 
 ORG_ROAM_DIR="${ORG_ROAM_DIR:-$HOME/Library/Mobile Documents/com~apple~CloudDocs/notes/roam}"
 
@@ -28,8 +29,15 @@ timestamp=$(date "+%Y-%m-%d %H:%M")
 slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr -s ' ' '-' | tr -cd '[:alnum:]-')
 filename=$(date "+%Y-%m-%d-%H-%M-%S").$slug.org
 
+# Build file path (with optional subfolder)
+if [ -n "$subfolder" ]; then
+  filepath="$ORG_ROAM_DIR/$subfolder/$filename"
+else
+  filepath="$ORG_ROAM_DIR/$filename"
+fi
+
 # Build org file
-cat > "$ORG_ROAM_DIR/$filename" <<EOF
+cat > "$filepath" <<EOF
 :PROPERTIES:
 :ID: $id
 :ROAM_ALIASES: $aliases
@@ -49,6 +57,6 @@ echo "- [[id:$id][$title]]" >> "$INBOX_FILE"
 # Output JSON response
 jq -n \
   --arg id "$id" \
-  --arg file "$ORG_ROAM_DIR/$filename" \
+  --arg file "$filepath" \
   --arg title "$title" \
   '{id: $id, file: $file, title: $title}'
