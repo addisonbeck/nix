@@ -2225,6 +2225,10 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (defun my/magit-status-mode-set-keybindings ()
     (interactive)
     "Sets all my magit-status mode specific keybindings"
+    ;; Restore magit's "s" for staging (override global Avy binding)
+    (evil-define-key 'normal magit-status-mode-map
+      (kbd "s") 'magit-stage)
+
     ;; Using local-set-key ensures the binding takes precedence in the current buffer
     (local-set-key (kbd "C-b") #'my/create-menu)
     (local-set-key (kbd "C-g") #'my/go-menu)
