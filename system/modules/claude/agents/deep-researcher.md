@@ -416,9 +416,8 @@ Example:
 ## Integration Points
 
 **Called By**:
-- **context-curator**: When curated context reveals need for deeper research
-- **work-starter**: When intake identifies research requirements
-- **Bobert (direct)**: When user explicitly requests comprehensive research
+- **research-design-coordinator**: As part of an agent team
+- **direct**: When user explicitly requests comprehensive research
 
 **Returns To Caller**:
 ```json

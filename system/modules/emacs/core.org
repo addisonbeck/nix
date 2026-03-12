@@ -2250,7 +2250,7 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     "Restore Avy 's' binding in magit-revision-mode"
     (evil-define-key 'normal magit-revision-mode-map
 		     (kbd "s") 'avy-goto-char-timer
-		     (kbd "<tab>") 'magit-diff-visit-file-other-window))
+		     (kbd "RET") 'magit-diff-visit-file-other-window))
 #+end_src
 
 *** Gptel Mode Keymaps
