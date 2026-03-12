@@ -1,13 +1,14 @@
 ---
-name: rebase-orchestrate
+name: orchestrate-rebase
 description: |
   Orchestrates git interactive rebases programmatically through GIT_SEQUENCE_EDITOR
-  and edit+amend patterns. Supports squash, reword, drop, fixup, and reorder operations
-  without requiring stdin interaction. Handles conflicts gracefully with clear resolution paths.
+  and edit+amend patterns. Supports squash, reword, drop, fixup, edit, and reorder operations
+  without requiring stdin interaction. Edit action pauses for manual changes (file modifications,
+  commit splitting, etc.). Handles conflicts gracefully with clear resolution paths.
 allowed-tools: Bash(~/.claude/skills/rebase-orchestrate/*)
 ---
 
-# rebase-orchestrate Skill
+# orchestrate-rebase Skill
 
 Orchestrates git interactive rebases programmatically without stdin interaction. Uses GIT_SEQUENCE_EDITOR to control the rebase todo list and the edit+amend pattern for commit message rewording.
 
@@ -17,7 +18,7 @@ When invoked, pipe JSON input to the bundled rebase-orchestrate.sh script:
 echo '$ARGUMENTS' | ~/.claude/skills/rebase-orchestrate/rebase-orchestrate.sh
 ```
 
-This skill enables LLM agents to programmatically control git interactive rebases (squash, reword, drop, fixup, reorder commits) through environment variable overrides rather than stdin interaction.
+This skill enables LLM agents to programmatically control git interactive rebases (squash, reword, drop, fixup, edit, reorder commits) through environment variable overrides rather than stdin interaction. The edit action enables pausing at specific commits for arbitrary file modifications, commit splitting, or adding additional commits within the rebase workflow.
 
 ## Input Contract
 
@@ -26,8 +27,8 @@ The JSON input must contain:
 - **base_commit** (string, required): Base commit to rebase onto. Examples: "main", "HEAD~5", "abc1234"
 - **operations** (array, required): List of rebase operations, each containing:
   - **commit** (string, required): Commit hash (short or full SHA)
-  - **action** (string, required): One of: "pick", "drop", "reword", "squash", "fixup"
-  - **message** (string, optional): New commit message (required for "reword" action)
+  - **action** (string, required): One of: "pick", "drop", "reword", "squash", "fixup", "edit"
+  - **message** (string, optional): New commit message (required for "reword" action, not used for "edit")
 
 ### Validation Rules
 
@@ -35,6 +36,7 @@ The JSON input must contain:
 - All commits must exist in the current branch history
 - Actions must be valid git rebase commands
 - Reword actions must include a message field
+- Edit actions do not require a message field (user will make changes at pause)
 - Operations are applied in the order specified in the array
 
 ### Example Input
@@ -45,7 +47,7 @@ The JSON input must contain:
   "operations": [
     {"commit": "abc1234", "action": "pick"},
     {"commit": "def5678", "action": "reword", "message": "feat: improved error handling"},
-    {"commit": "ghi9012", "action": "squash"},
+    {"commit": "ghi9012", "action": "edit"},
     {"commit": "jkl3456", "action": "drop"}
   ]
 }
@@ -61,7 +63,18 @@ The JSON input must contain:
 - **commits_processed** (number): Number of commits successfully processed
 - **final_head** (string): Final HEAD commit SHA after rebase
 
-### Conflict Response
+### Paused Response (Edit or Conflict)
+
+- **status** (string): "paused"
+- **reason** (string): Why rebase is paused ("edit" or "conflict")
+- **commit** (string): Commit SHA where rebase paused
+- **action** (string): The rebase action at this pause point
+- **conflicting_files** (array, optional): List of files with conflicts (only for conflict pauses)
+- **instructions** (string): Human-readable instructions for what to do next
+- **continue_command** (string): Command to continue after making changes
+- **abort_command** (string): Command to abort the rebase
+
+### Conflict Response (Legacy - now uses Paused Response)
 
 - **status** (string): "conflict"
 - **commit** (string): Commit SHA where conflict occurred
@@ -89,14 +102,28 @@ Success:
 }
 ```
 
-Conflict:
+Paused for Edit:
 ```json
 {
-  "status": "conflict",
+  "status": "paused",
+  "reason": "edit",
+  "commit": "ghi9012",
+  "action": "edit",
+  "instructions": "Rebase paused at commit ghi9012 for editing. Make your changes (modify files, split commits, etc.), then run the continue command when ready.",
+  "continue_command": "git rebase --continue",
+  "abort_command": "git rebase --abort"
+}
+```
+
+Paused for Conflict:
+```json
+{
+  "status": "paused",
+  "reason": "conflict",
   "commit": "def5678",
   "action": "squash",
   "conflicting_files": ["src/auth.ts", "src/types.ts"],
-  "instructions": "Resolve conflicts in the listed files, then run the continue command",
+  "instructions": "Resolve conflicts in the listed files, then stage them with 'git add' and run the continue command",
   "continue_command": "git add <resolved-files> && git rebase --continue",
   "abort_command": "git rebase --abort"
 }
@@ -121,7 +148,7 @@ Bash script using GIT_SEQUENCE_EDITOR environment variable override and edit+ame
 3. **Todo list generation**: Build rebase todo list based on operations array
 4. **Sequence editor script**: Create temporary script for GIT_SEQUENCE_EDITOR
 5. **Rebase execution**: Run git rebase -i with environment overrides
-6. **Edit handling**: For reword actions, pause at edit and amend commit message
+6. **Edit handling**: For reword actions, pause at edit and amend commit message automatically; for user edit actions, return control to user
 7. **Conflict detection**: Check for REBASE_HEAD to detect conflicts
 8. **Output generation**: Return JSON status with appropriate response schema
 
@@ -142,12 +169,12 @@ The script implements the primary workflow recommended by the Learning Packet (E
 1. Generate bash script with desired todo list transformations
 2. Set `GIT_SEQUENCE_EDITOR` to script path
 3. Run `git rebase -i <base>`
-4. For reword operations, use `edit` action instead of `reword`
-5. At each `edit` pause, run `git commit --amend -m "new message"`
-6. Continue with `git rebase --continue`
+4. For reword operations, use `edit` action internally and run `git commit --amend -m "new message"` automatically
+5. For user edit operations, pause and return control to user with instructions
+6. Continue with `git rebase --continue` (automatic for reword, manual for edit)
 7. Detect conflicts via `git rev-parse --verify REBASE_HEAD`
 
-This approach avoids stdin interaction entirely while providing full control over the rebase sequence.
+This approach avoids stdin interaction entirely while providing full control over the rebase sequence. User edit actions enable arbitrary file modifications, commit splitting, or additional commits within the rebase workflow.
 
 ## Environment Dependencies
 
@@ -224,6 +251,26 @@ echo "{
 }" | ~/.claude/skills/rebase-orchestrate/rebase-orchestrate.sh
 ```
 
+Test edit action (pause for manual changes):
+```bash
+# Using the same test repository
+echo "{
+  \"base_commit\": \"HEAD~3\",
+  \"operations\": [
+    {\"commit\": \"$COMMIT1\", \"action\": \"pick\"},
+    {\"commit\": \"$COMMIT2\", \"action\": \"edit\"},
+    {\"commit\": \"$COMMIT3\", \"action\": \"pick\"}
+  ]
+}" | ~/.claude/skills/rebase-orchestrate/rebase-orchestrate.sh
+
+# Expected output: status "paused", reason "edit", with instructions to continue
+# At this point, you can:
+# - Modify files: vim file.txt && git add file.txt && git commit --amend
+# - Split commit: git reset HEAD^ && git add -p && git commit -m "part 1" && git commit -am "part 2"
+# - Add commits: echo "4" >> file.txt && git add . && git commit -m "additional change"
+# Then continue: git rebase --continue
+```
+
 ### Claude Code Invocation
 
 Basic usage (squash last 3 commits):
@@ -262,6 +309,20 @@ Drop unwanted commits:
 }
 ```
 
+Pause for manual editing:
+```
+/rebase-orchestrate {
+  "base_commit": "HEAD~3",
+  "operations": [
+    {"commit": "abc1234", "action": "pick"},
+    {"commit": "def5678", "action": "edit"},
+    {"commit": "ghi9012", "action": "pick"}
+  ]
+}
+```
+
+This will pause at commit def5678, allowing you to modify files, split the commit, or add additional commits before continuing.
+
 ### Installation
 
 ```bash
@@ -273,15 +334,32 @@ ls -la ~/.claude/skills/rebase-orchestrate/
 ~/.claude/skills/rebase-orchestrate/rebase-orchestrate.sh --version 2>/dev/null || echo "Script installed"
 ```
 
+### Edit Workflow
+
+When the skill returns a paused response with reason "edit":
+
+1. The rebase has stopped at the specified commit
+2. Make your changes:
+   - Modify files: `vim file.txt`, `git add file.txt`, `git commit --amend`
+   - Split commit: `git reset HEAD^`, stage and commit changes separately
+   - Add more commits: make changes, `git add`, `git commit`
+3. Continue the rebase: `git rebase --continue`
+4. Alternatively, abort the rebase: `git rebase --abort`
+
+The edit action enables arbitrary modifications within a commit, making it ideal for:
+- Fixing issues in a specific commit without changing its position
+- Splitting one large commit into multiple smaller commits
+- Adding forgotten changes to an existing commit
+
 ### Conflict Resolution Workflow
 
-When the skill returns a conflict response:
+When the skill returns a paused response with reason "conflict":
 
 1. Examine the conflicting files listed in the response
 2. Resolve conflicts manually using your editor or git mergetool
 3. Stage resolved files: `git add <resolved-files>`
 4. Continue the rebase: `git rebase --continue`
-5. The skill will proceed with remaining operations
+5. The rebase will proceed with remaining operations
 6. Alternatively, abort the rebase: `git rebase --abort`
 
 ### Common Patterns
@@ -325,10 +403,26 @@ When the skill returns a conflict response:
 }
 ```
 
+**Pause for file modifications** (edit specific commits):
+```json
+{
+  "base_commit": "HEAD~4",
+  "operations": [
+    {"commit": "abc1234", "action": "pick"},
+    {"commit": "def5678", "action": "edit"},
+    {"commit": "ghi9012", "action": "edit"},
+    {"commit": "jkl3456", "action": "pick"}
+  ]
+}
+```
+
+Use this to pause at specific commits for manual modifications, file changes, or commit splitting.
+
 ### Expected Outcomes
 
 - **Successful rebase**: Working tree is clean, branch history is rewritten, output shows success status
-- **Conflict**: Rebase paused at conflicting commit, output lists files needing resolution
+- **Paused for edit**: Rebase stopped at commit marked for editing, user makes changes then continues manually
+- **Paused for conflict**: Rebase stopped at conflicting commit, output lists files needing resolution
 - **Error**: No rebase started, output explains validation failure or invalid input
 
 ### Integration with Other Skills

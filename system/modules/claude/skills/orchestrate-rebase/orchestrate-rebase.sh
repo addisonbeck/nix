@@ -53,6 +53,7 @@ fi
 operations_count=$(echo "$operations_json" | jq 'length')
 reword_commits=()
 reword_messages=()
+edit_commits=()
 
 for (( i=0; i<operations_count; i++ )); do
   operation=$(echo "$operations_json" | jq -c ".[$i]")
@@ -96,6 +97,11 @@ for (( i=0; i<operations_count; i++ )); do
     reword_commits+=("$commit")
     reword_messages+=("$message")
   fi
+
+  # Store edit commits for user-facing pause detection
+  if [ "$action" = "edit" ]; then
+    edit_commits+=("$commit")
+  fi
 done
 
 # Create temporary directory for scripts with trap cleanup
@@ -104,9 +110,13 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 
 SEQ_EDITOR_SCRIPT="$TEMP_DIR/sequence-editor.sh"
 REWORD_DATA="$TEMP_DIR/reword-data.json"
+EDIT_DATA="$TEMP_DIR/edit-data.json"
 
 # Build reword data file for later use
 echo "$operations_json" | jq '[.[] | select(.action == "reword") | {commit: .commit, message: .message}]' > "$REWORD_DATA"
+
+# Build edit commits list for pause detection
+echo "$operations_json" | jq '[.[] | select(.action == "edit") | .commit]' > "$EDIT_DATA"
 
 # Create sequence editor script
 cat > "$SEQ_EDITOR_SCRIPT" <<'EDITOR_SCRIPT_EOF'
@@ -178,15 +188,17 @@ if ! GIT_EDITOR=true git rebase -i "$base_commit" 2>"$TEMP_DIR/rebase-stderr.log
     done
 
     jq -n \
-      --arg status "conflict" \
+      --arg status "paused" \
+      --arg reason "conflict" \
       --arg commit "$conflict_commit" \
       --arg action "$conflict_action" \
       --argjson files "$(echo "$conflicting_files" | jq -R . | jq -s .)" \
-      --arg instructions "Resolve conflicts in the listed files, then run the continue command" \
+      --arg instructions "Resolve conflicts in the listed files, then stage them with 'git add' and run the continue command" \
       --arg continue_cmd "git add <resolved-files> && git rebase --continue" \
       --arg abort_cmd "git rebase --abort" \
       '{
         status: $status,
+        reason: $reason,
         commit: $commit,
         action: $action,
         conflicting_files: $files,
@@ -206,18 +218,46 @@ if ! GIT_EDITOR=true git rebase -i "$base_commit" 2>"$TEMP_DIR/rebase-stderr.log
   fi
 fi
 
-# Handle edit actions (for reword operations)
+# Handle edit actions (for reword operations and user edit pauses)
 # Check if we're paused at an edit
 while git rev-parse --verify REBASE_HEAD >/dev/null 2>&1; do
   current_commit=$(git rev-parse REBASE_HEAD)
+  current_commit_short="${current_commit:0:7}"
 
-  # Find if this commit has a reword operation
-  reword_entry=$(jq -r --arg commit "$current_commit" \
-    '.[] | select(.commit == $commit or ($commit | startswith(.commit))) | .message' \
+  # Check if this is a user-facing edit action (not a reword)
+  is_user_edit=$(jq -r --arg commit "$current_commit" --arg short "$current_commit_short" \
+    'any(.[] == $commit or .[] == $short)' \
+    < "$EDIT_DATA")
+
+  if [ "$is_user_edit" = "true" ]; then
+    # This is a user edit action - return control to user
+    jq -n \
+      --arg status "paused" \
+      --arg reason "edit" \
+      --arg commit "$current_commit" \
+      --arg action "edit" \
+      --arg instructions "Rebase paused at commit $current_commit_short for editing. Make your changes (modify files, split commits, add commits, etc.), then run the continue command when ready." \
+      --arg continue_cmd "git rebase --continue" \
+      --arg abort_cmd "git rebase --abort" \
+      '{
+        status: $status,
+        reason: $reason,
+        commit: $commit,
+        action: $action,
+        instructions: $instructions,
+        continue_command: $continue_cmd,
+        abort_command: $abort_cmd
+      }'
+    exit 0
+  fi
+
+  # Check if this commit has a reword operation
+  reword_entry=$(jq -r --arg commit "$current_commit" --arg short "$current_commit_short" \
+    '.[] | select(.commit == $commit or .commit == $short or ($commit | startswith(.commit))) | .message' \
     < "$REWORD_DATA")
 
   if [ -n "$reword_entry" ] && [ "$reword_entry" != "null" ]; then
-    # This is a reword operation - amend the message
+    # This is a reword operation - amend the message automatically
     if ! git commit --amend -m "$reword_entry" 2>"$TEMP_DIR/amend-stderr.log"; then
       stderr_content=$(cat "$TEMP_DIR/amend-stderr.log" 2>/dev/null || echo "")
       jq -n \
@@ -235,16 +275,29 @@ while git rev-parse --verify REBASE_HEAD >/dev/null 2>&1; do
       conflict_commit=$(git rev-parse REBASE_HEAD)
       conflicting_files=$(git diff --name-only --diff-filter=U)
 
+      # Find which action caused the conflict
+      conflict_action="unknown"
+      for (( i=0; i<operations_count; i++ )); do
+        operation=$(echo "$operations_json" | jq -c ".[$i]")
+        commit=$(echo "$operation" | jq -r '.commit')
+        if git rev-parse "$commit" 2>/dev/null | grep -q "$(echo "$conflict_commit" | head -c 7)"; then
+          conflict_action=$(echo "$operation" | jq -r '.action')
+          break
+        fi
+      done
+
       jq -n \
-        --arg status "conflict" \
+        --arg status "paused" \
+        --arg reason "conflict" \
         --arg commit "$conflict_commit" \
-        --arg action "continuing after edit" \
+        --arg action "$conflict_action" \
         --argjson files "$(echo "$conflicting_files" | jq -R . | jq -s .)" \
-        --arg instructions "Resolve conflicts in the listed files, then run the continue command" \
+        --arg instructions "Resolve conflicts in the listed files, then stage them with 'git add' and run the continue command" \
         --arg continue_cmd "git add <resolved-files> && git rebase --continue" \
         --arg abort_cmd "git rebase --abort" \
         '{
           status: $status,
+          reason: $reason,
           commit: $commit,
           action: $action,
           conflicting_files: $files,
