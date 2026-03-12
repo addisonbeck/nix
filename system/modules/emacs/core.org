@@ -189,122 +189,122 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 
 * Vterm Configuration
 #+begin_src emacs-lisp
-(with-eval-after-load 'vterm
-  (require 'evil-collection-vterm)
-  (evil-collection-vterm-setup)
-	(setq vterm-min-window-width 40)
+  (with-eval-after-load 'vterm
+    (require 'evil-collection-vterm)
+    (evil-collection-vterm-setup)
+    (setq vterm-min-window-width 40)
 
-  ;; Dynamic Window Width Adaptation
-  ;; Automatically resize vterm terminals based on active window dimensions.
-  ;; Supports simultaneous laptop/phone usage where the same buffer displays
-  ;; at different widths depending on which device has focus.
+    ;; Dynamic Window Width Adaptation
+    ;; Automatically resize vterm terminals based on active window dimensions.
+    ;; Supports simultaneous laptop/phone usage where the same buffer displays
+    ;; at different widths depending on which device has focus.
 
-  ;; Buffer-local state for resize tracking
-  (defvar-local my/vterm--resize-timer nil
-    "Buffer-local timer for debounced vterm resizing.")
+    ;; Buffer-local state for resize tracking
+    (defvar-local my/vterm--resize-timer nil
+      "Buffer-local timer for debounced vterm resizing.")
 
-  (defvar-local my/vterm--last-width nil
-    "Last width this vterm buffer was resized to.")
+    (defvar-local my/vterm--last-width nil
+      "Last width this vterm buffer was resized to.")
 
-  ;; Custom process resize function (Prong 1)
-  (defun my/vterm--adjust-process-window-size (process windows)
-    "Resize vterm using selected window dimensions instead of smallest.
-Replaces default vterm behavior which uses the smallest window.
-PROCESS is the vterm process. WINDOWS is list of windows showing buffer."
-    (unless vterm-copy-mode
-      (let* ((selected (selected-window))
-             (target (if (memq selected windows) selected (car windows)))
-             (width (when target
-                      (max (- (window-max-chars-per-line target)
-                              (vterm--get-margin-width))
-                           vterm-min-window-width)))
-             (height (when target
-                       (with-selected-window target
-                         (floor (window-screen-lines)))))
-             (inhibit-read-only t))
-        (when (and (processp process)
-                   (process-live-p process)
-                   width height
-                   (> width 0)
-                   (> height 0))
-          (vterm--set-size vterm--term height width)
-          (setq my/vterm--last-width width)
-          (cons width height)))))
+    ;; Custom process resize function (Prong 1)
+    (defun my/vterm--adjust-process-window-size (process windows)
+      "Resize vterm using selected window dimensions instead of smallest.
+	Replaces default vterm behavior which uses the smallest window.
+	PROCESS is the vterm process. WINDOWS is list of windows showing buffer."
+      (unless vterm-copy-mode
+	(let* ((selected (selected-window))
+	       (target (if (memq selected windows) selected (car windows)))
+	       (width (when target
+			(max (- (window-max-chars-per-line target)
+				(vterm--get-margin-width))
+			     vterm-min-window-width)))
+	       (height (when target
+			 (with-selected-window target
+			   (floor (window-screen-lines)))))
+	       (inhibit-read-only t))
+	  (when (and (processp process)
+		     (process-live-p process)
+		     width height
+		     (> width 0)
+		     (> height 0))
+	    (vterm--set-size vterm--term height width)
+	    (setq my/vterm--last-width width)
+	    (cons width height)))))
 
-  ;; Debounced resize function
-  (defun my/vterm--resize-to-window (window)
-    "Resize vterm buffer in WINDOW to match window dimensions.
-Includes 5-column threshold to prevent noise from minor adjustments."
-    (when (and (eq window (selected-window))
-               (eq major-mode 'vterm-mode))
-      (let* ((target-width (max (- (window-max-chars-per-line window)
-                                   (vterm--get-margin-width))
-                                vterm-min-window-width))
-             (width-diff (abs (- target-width (or my/vterm--last-width 0)))))
-        ;; Only resize if width differs by >= 5 columns (filters noise)
-        (when (>= width-diff 5)
-          (let ((process (get-buffer-process (current-buffer))))
-            (when (and process (process-live-p process))
-              (window--adjust-process-windows)))))))
+    ;; Debounced resize function
+    (defun my/vterm--resize-to-window (window)
+      "Resize vterm buffer in WINDOW to match window dimensions.
+	Includes 5-column threshold to prevent noise from minor adjustments."
+      (when (and (eq window (selected-window))
+		 (eq major-mode 'vterm-mode))
+	(let* ((target-width (max (- (window-max-chars-per-line window)
+				     (vterm--get-margin-width))
+				  vterm-min-window-width))
+	       (width-diff (abs (- target-width (or my/vterm--last-width 0)))))
+	  ;; Only resize if width differs by >= 5 columns (filters noise)
+	  (when (>= width-diff 5)
+	    (let ((process (get-buffer-process (current-buffer))))
+	      (when (and process (process-live-p process))
+		(window--adjust-process-windows)))))))
 
-  ;; Selection change hook (Prong 2)
-  (defun my/vterm--on-window-selection-change (window)
-    "Trigger debounced resize when vterm window is selected.
-WINDOW is the window that was selected/deselected."
-    (when (eq window (selected-window))
-      (with-current-buffer (window-buffer window)
-        (when (eq major-mode 'vterm-mode)
-          ;; Cancel existing timer
-          (when (timerp my/vterm--resize-timer)
-            (cancel-timer my/vterm--resize-timer))
-          ;; Schedule new resize after 0.1s
-          (setq my/vterm--resize-timer
-                (run-with-timer 0.1 nil
-                                #'my/vterm--resize-to-window
-                                window))))))
+    ;; Selection change hook (Prong 2)
+    (defun my/vterm--on-window-selection-change (window)
+      "Trigger debounced resize when vterm window is selected.
+	WINDOW is the window that was selected/deselected."
+      (when (eq window (selected-window))
+	(with-current-buffer (window-buffer window)
+	  (when (eq major-mode 'vterm-mode)
+	    ;; Cancel existing timer
+	    (when (timerp my/vterm--resize-timer)
+	      (cancel-timer my/vterm--resize-timer))
+	    ;; Schedule new resize after 0.1s
+	    (setq my/vterm--resize-timer
+		  (run-with-timer 0.1 nil
+				  #'my/vterm--resize-to-window
+				  window))))))
 
-  ;; Hook registration
-  (defun my/vterm--setup-dynamic-resize ()
-    "Set up dynamic resize for current vterm buffer."
-    ;; Replace per-process adjust-window-size-function property
-    (let ((process (get-buffer-process (current-buffer))))
-      (when process
-        (process-put process 'adjust-window-size-function
-                     #'my/vterm--adjust-process-window-size)))
-    ;; Add buffer-local selection change hook
-    (add-hook 'window-selection-change-functions
-              #'my/vterm--on-window-selection-change nil t))
+    ;; Hook registration
+    (defun my/vterm--setup-dynamic-resize ()
+      "Set up dynamic resize for current vterm buffer."
+      ;; Replace per-process adjust-window-size-function property
+      (let ((process (get-buffer-process (current-buffer))))
+	(when process
+	  (process-put process 'adjust-window-size-function
+		       #'my/vterm--adjust-process-window-size)))
+      ;; Add buffer-local selection change hook
+      (add-hook 'window-selection-change-functions
+		#'my/vterm--on-window-selection-change nil t))
 
-  ;; Register setup function in vterm-mode-hook
-  (add-hook 'vterm-mode-hook #'my/vterm--setup-dynamic-resize)
+    ;; Register setup function in vterm-mode-hook
+    (add-hook 'vterm-mode-hook #'my/vterm--setup-dynamic-resize)
 
-  ;; Enable with-editor for gh CLI integration
-  (add-hook 'vterm-mode-hook #'with-editor-export-editor)
+    ;; Enable with-editor for gh CLI integration
+    (add-hook 'vterm-mode-hook #'with-editor-export-editor)
 
-  ;; Pass shift+up and shift+down directly to the terminal.
-  ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
-  ;; shift variants must be added explicitly for terminal apps that need them.
-  (evil-define-key 'insert vterm-mode-map
-	     (kbd "<S-up>")   #'vterm--self-insert
-	     (kbd "<S-down>") #'vterm--self-insert)
-  (evil-define-key 'normal vterm-mode-map
-	     (kbd "<S-up>")   #'vterm--self-insert
-	     (kbd "<S-down>") #'vterm--self-insert)
+    ;; Pass shift+up and shift+down directly to the terminal.
+    ;; vterm-mode-map only binds unmodified arrows to vterm--self-insert;
+    ;; shift variants must be added explicitly for terminal apps that need them.
+    (evil-define-key 'insert vterm-mode-map
+		     (kbd "<S-up>")   #'vterm--self-insert
+		     (kbd "<S-down>") #'vterm--self-insert)
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "<S-up>")   #'vterm--self-insert
+		     (kbd "<S-down>") #'vterm--self-insert)
 
-  ;; Restore custom projectile keybindings
-  (evil-define-key 'normal vterm-mode-map
-	     (kbd "C-p") 'projectile-switch-project
-	     (kbd "C-f") 'projectile-find-file)
+    ;; Restore custom projectile keybindings
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "C-p") 'projectile-switch-project
+		     (kbd "C-f") 'projectile-find-file)
 
-  ;; F1 for vterm copy mode (useful on mobile over SSH)
-  (evil-define-key 'normal vterm-mode-map
-	     (kbd "<f1>") 'vterm-copy-mode))
+    ;; F1 for vterm copy mode (useful on mobile over SSH)
+    (evil-define-key 'normal vterm-mode-map
+		     (kbd "<f1>") 'vterm-copy-mode))
 
-;; Vterm mood hook
-(defun vterm-mode-init ()
-  "Function to run on vterm mode init"
-  (my/toggle-olivetti))
-(add-hook 'vterm-mode-hook #'vterm-mode-init)
+  ;; Vterm mood hook
+  (defun vterm-mode-init ()
+    "Function to run on vterm mode init"
+    (my/toggle-olivetti))
+  (add-hook 'vterm-mode-hook #'vterm-mode-init)
 #+end_src
 
 * Mobile Mode for Phone/SSH Usage
@@ -667,8 +667,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp
   (defun my/projectile-run-command-in-selected-project (command)
     "Use `projectile-switch-project` to select a project, then run COMMAND
-  in that project's root using `vterm` in a project-named buffer.
-  Interactively, prompt for COMMAND using `shell-command-history`."
+	  in that project's root using `vterm` in a project-named buffer.
+	  Interactively, prompt for COMMAND using `shell-command-history`."
     (interactive (list (read-string "Command: " nil 'shell-command-history)))
     (require 'projectile)
     (let* ((cmd command)
@@ -846,8 +846,8 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+begin_src emacs-lisp
   (defun my/nix/rebuild (system)
     "Rebuild my nix config for the specified SYSTEM.
-    If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
-    runs 'nix-collect-garbage' and then the rebuild."
+	    If SYSTEM is 'homelab', runs rebuild over SSH as root using ~/.ssh/me identity,
+	    runs 'nix-collect-garbage' and then the rebuild."
     (interactive
      (list (completing-read "System to rebuild: " 
 			    '("air" "bw" "homelab")
@@ -1323,7 +1323,7 @@ I use this space to write a bunch of custom commands for interacting with projec
   ;; Always start with 'A A' behavior (show all articles)
   (add-hook 'gnus-select-group-hook 'gnus-group-list-all-groups)
 
-	;;; Main Select Method (Primary Account)
+		;;; Main Select Method (Primary Account)
   (setq gnus-select-method
 	'(nnimap "primary-account"
 		 (nnimap-address "box.addisonbeck.com")
@@ -1333,7 +1333,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp 
-    ;;; OAuth2 setup for Gmail
+	  ;;; OAuth2 setup for Gmail
   (defun get-gmail-oauth2-token ()
     "Get OAuth2 access token for Gmail."
     (let* ((auth-info (nth 0 (auth-source-search :host "oauth2.googleapis.com" 
@@ -1380,7 +1380,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 	(when token
 	  (concat "user=" user "\001auth=Bearer " token "\001\001")))))
 
-    ;;; Secondary Accounts
+	  ;;; Secondary Accounts
   (add-to-list 'gnus-secondary-select-methods
 	       '(nnimap "work-gmail"
 			(nnimap-address "imap.gmail.com")
@@ -1390,7 +1390,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 			(nnmail-expiry-target "nnimap+work-gmail:[Gmail]/Trash")
 			(nnmail-expiry-wait immediate)))
 
-    ;;; Add more accounts as needed
+	  ;;; Add more accounts as needed
   ;;(add-to-list 'gnus-secondary-select-methods
   ;;'(nnimap "personal"
   ;;(nnimap-address "imap.personal.com")
@@ -1399,7 +1399,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-    ;;; SMTP configuration with account selection
+	  ;;; SMTP configuration with account selection
   (require 'smtpmail-multi)
 
   ;; Define email accounts
@@ -1426,7 +1426,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp 
-    ;;; Posting Styles - automatically set From, signature, etc. based on context
+	  ;;; Posting Styles - automatically set From, signature, etc. based on context
   (setq gnus-posting-styles
 	'((".*" ;; Default style
 	   (name "Addison Beck")
@@ -1445,7 +1445,7 @@ I use this space to write a bunch of custom commands for interacting with projec
 #+end_src
 
 #+begin_src emacs-lisp
-    ;;; Gmail-specific settings
+	  ;;; Gmail-specific settings
   (setq gnus-parameters
 	'(("work-gmail"
 	   (display . all)
@@ -1673,40 +1673,40 @@ This cool and lame at the same time
 *** Go Menu Definition
 
 #+begin_src emacs-lisp
-(transient-define-prefix my/inbox-menu ()
-		   "Transient menu for getting to my inboxes"
-		   ["Submenu Actions"
-		    ("i" "Inbox" my/open-inbox)
-		    ("m" "Mobile Inbox" my/open-mobile-inbox)
-		    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
-		    ("b" "Bobert Inbox" my/open-boberts-inbox)])
-;; does this kick off a full rebuild?
+  (transient-define-prefix my/inbox-menu ()
+			   "Transient menu for getting to my inboxes"
+			   ["Submenu Actions"
+			    ("i" "Inbox" my/open-inbox)
+			    ("m" "Mobile Inbox" my/open-mobile-inbox)
+			    ("h" "Handwritten Inbox" my/open-handwritten-inbox)
+			    ("b" "Bobert Inbox" my/open-boberts-inbox)])
+  ;; does this kick off a full rebuild?
 
-;; Define a submenu for "Go To Link"
-(transient-define-prefix my/go-to-link-menu ()
-		   "Go to link submenu."
-		   ["Go To Link"
-		    ("g" "Follow link in same window" org-open-at-point)
-		    ("h" "Force open in current window" org-force-open-current-window)])
+  ;; Define a submenu for "Go To Link"
+  (transient-define-prefix my/go-to-link-menu ()
+			   "Go to link submenu."
+			   ["Go To Link"
+			    ("g" "Follow link in same window" org-open-at-point)
+			    ("h" "Force open in current window" org-force-open-current-window)])
 
-(transient-define-prefix my/go-menu ()
-		   "Transient menu for navigating key files."
-		   ["Go To"
-		    ("i" "Inboxes" my/inbox-menu)
-		    ("e" "Emacs Config" my/open-emacs-config)
-		    ("g" "Follow link" my/go-to-link-menu)
-		    ("p" "Prompts" my/open-prompts)
-		    ("b" "Budget" my/open-budget)
-		    ("m" "Magit" my/projectile-magit-status)
-		    ("r" "Elfreed" elfeed)
-		    ("l" "Log" my/open-log)])
+  (transient-define-prefix my/go-menu ()
+			   "Transient menu for navigating key files."
+			   ["Go To"
+			    ("i" "Inboxes" my/inbox-menu)
+			    ("e" "Emacs Config" my/open-emacs-config)
+			    ("g" "Follow link" my/go-to-link-menu)
+			    ("p" "Prompts" my/open-prompts)
+			    ("b" "Budget" my/open-budget)
+			    ("m" "Magit" my/projectile-magit-status)
+			    ("r" "Elfreed" elfeed)
+			    ("l" "Log" my/open-log)])
 #+end_src
 
 ** The "Insert" Menu
 #+begin_src emacs-lisp
   (defun my/insert-org-heading-with-timestamp (level text)
     "Insert an org heading with specified text at the specified level.
-    Level should be 1-6, defaults to 1. Text defaults to current timestamp."
+	    Level should be 1-6, defaults to 1. Text defaults to current timestamp."
     (interactive (let ((timestamp (format-time-string "[%Y-%m-%d %H:%M]")))
 		   (list (read-number "Heading level (1-6): " 1)
 			 (completing-read "Heading text: " 
@@ -1720,7 +1720,7 @@ This cool and lame at the same time
 
   (defun my/insert-org-block (block-type &optional language)
     "Insert an org block of specified type and position cursor inside.
-    For src blocks, optionally prompts for language."
+	    For src blocks, optionally prompts for language."
     (interactive 
      (let* ((block-type (completing-read "Block type: " 
 					 '("src" "quote" "example" "verse" "center" 
@@ -1785,13 +1785,13 @@ This cool and lame at the same time
     (interactive)
     (require 'org)
     (let* ((pdf-dir (expand-file-name "~/notes/roam/marked-up-pdfs/"))
-           (file (read-file-name "PDF: " pdf-dir nil t))
-           (link (org-link-make-string
-                  (concat "file:" (file-truename file))
-                  (file-name-nondirectory file))))
+	   (file (read-file-name "PDF: " pdf-dir nil t))
+	   (link (org-link-make-string
+		  (concat "file:" (file-truename file))
+		  (file-name-nondirectory file))))
       (if (derived-mode-p 'vterm-mode)
-          (vterm-send-string link)
-        (insert link))))
+	  (vterm-send-string link)
+	(insert link))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1865,11 +1865,11 @@ It would be cool if this also had some kind of interactive starting directory / 
   (defun my/create-claude-code-buffer ()
     "Create a vterm buffer and launch Claude Code with user-selected project and description.
 
-  Prompts for:
-  1. Project directory (via projectile completion)
-  2. Freeform description
+	  Prompts for:
+	  1. Project directory (via projectile completion)
+	  2. Freeform description
 
-  Buffer is named: claude-[sanitized-project]-[sanitized-description]"
+	  Buffer is named: claude-[sanitized-project]-[sanitized-description]"
     (interactive)
     (require 'projectile)
     (let* ((sanitize (lambda (str)
@@ -1969,7 +1969,7 @@ It would be cool if this also had some kind of interactive starting directory / 
 
   (defun my/open-compilation-file-in-other-window ()
     "open the current compilation match in another window.
-      creates a new window if needed or reuses an existing one."
+	      creates a new window if needed or reuses an existing one."
     (interactive)
     (let ((window-count (length (window-list))))
       (condition-case err
@@ -2249,7 +2249,8 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (interactive)
     "Restore Avy 's' binding in magit-revision-mode"
     (evil-define-key 'normal magit-revision-mode-map
-      (kbd "s") 'avy-goto-char-timer))
+		     (kbd "s") 'avy-goto-char-timer
+		     (kbd "<tab>") 'magit-diff-visit-file-other-window))
 #+end_src
 
 *** Gptel Mode Keymaps
@@ -2319,6 +2320,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   ;; Local Variables:
   ;; byte-compile-warnings: (not free-vars)
   ;; End:
-			  ;;; init.el ends here
+				  ;;; init.el ends here
 #+end_src
 
