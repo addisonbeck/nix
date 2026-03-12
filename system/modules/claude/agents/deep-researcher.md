@@ -425,7 +425,15 @@ Example:
   "id": "[memory UUID]",
   "file_path": "[absolute file path]",
   "title": "[Learning Packet title]",
-  "summary": "[brief summary for caller context]"
+  "summary": "[brief summary for caller context]",
+  "confidence_overall": "[High|Moderate|Low|Very Low]",
+  "key_findings": [
+    {"finding": "[brief statement]", "confidence": "[level]"},
+    ...
+  ],
+  "research_gaps": ["[gap 1]", "[gap 2]", ...],
+  "sources_consulted": [number],
+  "research_hours_estimated": [number]
 }
 ```
 
