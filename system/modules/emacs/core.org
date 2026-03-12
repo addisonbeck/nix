@@ -2225,10 +2225,6 @@ Using evil-mode based mappings don't work on the agenda, for same reason
   (defun my/magit-status-mode-set-keybindings ()
     (interactive)
     "Sets all my magit-status mode specific keybindings"
-    ;; Restore magit's "s" for staging (override global Avy binding)
-    (evil-define-key 'normal magit-status-mode-map
-      (kbd "s") 'magit-stage)
-
     ;; Using local-set-key ensures the binding takes precedence in the current buffer
     (local-set-key (kbd "C-b") #'my/create-menu)
     (local-set-key (kbd "C-g") #'my/go-menu)
@@ -2244,6 +2240,16 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 		     (kbd "C-x") #'my/execute-menu
 		     (kbd "C-b") #'my/create-menu)
     )
+#+end_src
+
+*** Magit Revision Keymaps
+
+#+begin_src emacs-lisp
+  (defun my/magit-revision-mode-set-keybindings ()
+    (interactive)
+    "Restore Avy 's' binding in magit-revision-mode"
+    (evil-define-key 'normal magit-revision-mode-map
+      (kbd "s") 'avy-goto-char-timer))
 #+end_src
 
 *** Gptel Mode Keymaps
@@ -2289,6 +2295,15 @@ Using evil-mode based mappings don't work on the agenda, for same reason
     (my/magit-status-mode-set-keybindings)
     (my/toggle-olivetti))
   (add-hook 'magit-status-mode-hook #'magit-status-mode-init)
+#+end_src
+
+** Magit Revision Mode
+
+#+begin_src emacs-lisp
+  (defun magit-revision-mode-init ()
+    "Function to run on magit revision mode init"
+    (my/magit-revision-mode-set-keybindings))
+  (add-hook 'magit-revision-mode-hook #'magit-revision-mode-init)
 #+end_src
 
 * Final Function Advice
