@@ -1655,7 +1655,9 @@ This cool and lame at the same time
     "Select a project via Projectile, then open Magit in that project."
     (interactive)
     (require 'projectile)
-    (let ((projectile-switch-project-action #'magit-status))
+    (let ((projectile-switch-project-action
+           (lambda ()
+             (magit-status (projectile-project-root)))))
       (projectile-switch-project)))
 #+end_src
 
@@ -1878,20 +1880,21 @@ It would be cool if this also had some kind of interactive starting directory / 
 			(replace-regexp-in-string
 			 "[^a-zA-Z0-9-]" "-"
 			 (downcase str)))))
-	   (project-dir (projectile-completing-read
-			 "Select project directory: "
-			 (projectile-relevant-known-projects)))
 	   (description (read-string "Enter buffer description: "))
-	   (project-name (funcall sanitize
-				  (file-name-nondirectory
-				   (directory-file-name project-dir))))
 	   (desc-sanitized (funcall sanitize description))
-	   (buf-name (format "claude-%s-%s" project-name desc-sanitized))
-	   (default-directory project-dir))
-      (vterm buf-name)
-      (switch-to-buffer buf-name)
-      (vterm-send-string "claude --dangerously-skip-permissions")
-      (vterm-send-return)))
+	   (projectile-switch-project-action
+	    (lambda ()
+	      (let* ((project-dir (projectile-project-root))
+		     (project-name (funcall sanitize
+					    (file-name-nondirectory
+					     (directory-file-name project-dir))))
+		     (buf-name (format "claude-%s-%s" project-name desc-sanitized))
+		     (default-directory project-dir))
+		(vterm buf-name)
+		(switch-to-buffer buf-name)
+		(vterm-send-string "claude --dangerously-skip-permissions")
+		(vterm-send-return)))))
+      (projectile-switch-project)))
 #+end_src
 
 #+begin_src emacs-lisp
