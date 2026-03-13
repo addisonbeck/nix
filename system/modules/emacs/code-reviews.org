@@ -557,7 +557,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
 			     ("r" "Review PR (terminal view)" my/pr-review-start)
 			     ("d" "View diff (delta)" my/pr-diff)
 			     ("f" "Browse files" my/pr-files)
-			     ("c" "View comments" my/pr-comments)]
+			     ("c" "View comments" my/pr-comments)
+			     ("b" "Open in browser" my/pr-open-in-browser)]
 			    ["Actions"
 			     ("a" "Add comment" my/pr-add-comment)
 			     ("s" "Submit review" my/pr-submit-review)
@@ -658,6 +659,15 @@ that are prepended to the command as inline shell environment variables."
       (my/pr-review-in-vterm pr-number
 			     (format "gh pr view %s --comments" pr-url)
 			     '("GH_PAGER="))))
+
+  (defun my/pr-open-in-browser ()
+    "Open PR in default web browser."
+    (interactive)
+    (let* ((ctx (my/pr-detect-context))
+           (pr-url (plist-get ctx :pr-url)))
+      (if pr-url
+          (browse-url pr-url)
+        (user-error "No PR URL found"))))
 #+end_src
 
 **** Actions Workflows
