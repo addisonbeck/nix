@@ -467,9 +467,6 @@
   (with-eval-after-load 'transient
     (transient-append-suffix 'my/go-menu "l"
       '("z" "PR Review" my/pr-review-from-org-entry)))
-
-  (add-to-list 'browse-url-default-handlers
-	       '(pr-review-url-parse . pr-review-open-url))
 #+end_src
 
 
