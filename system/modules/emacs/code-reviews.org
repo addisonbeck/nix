@@ -560,7 +560,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
 			     ("c" "View comments" my/pr-comments)]
 			    ["Actions"
 			     ("a" "Add comment" my/pr-add-comment)
-			     ("s" "Submit review" my/pr-submit-review)]
+			     ("s" "Submit review" my/pr-submit-review)
+			     ("m" "Merge PR" my/pr-merge)]
 			    ["Status"
 			     ("i" "Check CI status" my/pr-checks)
 			     ("h" "View review history (gh-dash)" my/pr-review-history)]])
@@ -679,6 +680,15 @@ that are prepended to the command as inline shell environment variables."
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
 			     (format "gh pr review %s" pr-url))))
+
+  (defun my/pr-merge ()
+    "Merge PR using gh CLI interactive flow."
+    (interactive)
+    (let* ((ctx (my/pr-detect-context))
+           (pr-number (plist-get ctx :pr-number))
+           (pr-url (or (plist-get ctx :pr-url) pr-number)))
+      (my/pr-review-in-vterm pr-number
+                             (format "gh pr merge %s" pr-url))))
 #+end_src
 
 **** Status Workflows
