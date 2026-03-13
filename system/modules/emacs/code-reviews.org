@@ -152,45 +152,6 @@
 		      :aliases '()
 		      :content "")))
 
-  ;; Create separate .pr-review file for workflow
-  (condition-case review-file-err
-      (let* ((memory-file (plist-get memory-result :file))
-	     (memory-dir (file-name-directory memory-file))
-	     (hyphenated-title (replace-regexp-in-string
-				"[^a-z0-9]+" "-" 
-				(downcase .title)))
-	     (review-filename (format "code-review-%s.pr-review" 
-				      hyphenated-title))
-	     (review-filepath (expand-file-name review-filename memory-dir))
-	     (review-content (concat ":PROPERTIES:\n"
-				     ":PR_PATH: " (prin1-to-string pr-path) "\n"
-				     ":CURRENT_SHOW_LEVEL: 3\n"
-				     ":SELECTED_COMMITS: nil\n" 
-				     ":SELECTED_COMMIT_BASE: nil\n"
-				     ":SELECTED_COMMIT_HEAD: nil\n"
-				     ":END:\n"))
-	     (conversation-initial-memory-result 
-	      (my/create-memory
-	       :title (concat "Conversation: Intake: " pr-title "")
-	       :memory-type 'episodic
-	       :tags '("conversation codereview intake")
-	       :aliases '()  
-	       :content ""))
-	     (conversation-quiz-memory-result 
-	      (my/create-memory
-	       :title (concat "Conversation: Quiz: " pr-title "")
-	       :memory-type 'episodic
-	       :tags '("conversation codereview quiz")
-	       :aliases '()  
-	       :content "")))
-
-	;; Create the .pr-review file
-	(with-temp-file review-filepath
-	  (insert review-content))
-
-	;; Create some conversation nodes
-
-	;; Add link to review file in the memory
 	(with-current-buffer (find-file-noselect memory-file)
 	  (goto-char (point-max))
 	  (insert (concat "* TODO CR: " pr-title "\n"
