@@ -1,10 +1,11 @@
 {...}: {
+  programs.delta = {
+    enable = true;
+    enableGitIntegrations = true;
+  };
   programs.git = {
     enable = true;
-    delta = {
-      enable = true;
-    };
-    extraConfig = {
+    settings = {
       pull.rebase = true;
       column.ui = "auto";
       branch.sort = "-committerdate";

@@ -39,9 +39,9 @@ review-dependency-update expects Bobert to identify from Addison's request:
 - **pr_number** (integer, required): GitHub PR number to review
 - **repository_context** (string, optional): Path to repository [default: current working directory from git context]
 - **create_learning_packet** (string, optional): When to create Learning Packet
-  - `"always"`: Create for every review (maximum archival)
+  - `"always"`: Create for every review (maximum archival) (default)
   - `"major"`: Only for major version updates (X.0.0 changes)
-  - `"significant"`: When breaking changes or security issues are found (default)
+  - `"significant"`: When breaking changes or security issues are found
   - `"never"`: Skip Learning Packet creation (usage summary and recommendation only)
 - **exploration_thoroughness** (string, optional): Depth of codebase usage analysis
   - `"basic"`: Import statements and direct usage only
