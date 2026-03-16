@@ -8,6 +8,12 @@
 (setq org-directory my-notes-directory)
 #+end_src
 
+** Persistent Cache
+
+#+begin_src emacs-lisp
+(setq org-persist-directory (expand-file-name "org-persist/" user-emacs-directory))
+#+end_src
+
 ** Basic Org Settings
 
 *** Display Settings

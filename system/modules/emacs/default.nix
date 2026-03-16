@@ -19,8 +19,6 @@
       cp ${./core.org} core.org
       cp ${./frame-management.org} frame-management.org
       cp ${./theme.org} theme.org
-      cp ${./gptel.org} gptel.org
-      cp ${./memory-tools.org} memory-tools.org
       cp ${./code-reviews.org} code-reviews.org
       cp ${./emacs-everywhere.org} emacs-everywhere.org
       cp ${./text.org} text.org
@@ -28,10 +26,6 @@
       cp ${./binwarden.org} binwarden.org
       cp ${./org.org} org.org
       cp ${./files.org} files.org
-      cp ${./gptel-file-tools.org} gptel-file-tools.org
-      cp ${./gptel-execute-elisp-tools.org} gptel-execute-elisp-tools.org
-      #cp ./gptel-approval-queue-tools.org gptel-approval-queue-tools.org
-      cp ${./gptel-shell-command-tools.org} gptel-shell-command-tools.org
       cp ${./sending-stuff-to-my-kindle.org} sending-stuff-to-my-kindle.org
       cp ${./org-present.org} org-present.org
       cp ${./olivetti.org} olivetti.org
@@ -132,18 +126,6 @@ in {
       config = tangledInit;
       defaultInitFile = true;
       alwaysEnsure = true;
-      /*
-      Here's how to override one of these, if I ever need that again.
-
-         (gptel.overrideAttrs (old: {
-           src = pkgs.fetchFromGitHub {
-             owner = "karthink";
-             repo = "gptel";
-             rev = "229f7c689c67f993c0bb68052ef0f365b165dcd3";
-             sha256 = pkgs.lib.fakeSha256;
-           };
-         }))
-      */
       extraEmacsPackages = epkgs:
         with epkgs; [
           use-package
@@ -164,7 +146,6 @@ in {
           treesit-grammars.with-all-grammars
           yaml-mode
           nix-mode
-          gptel
           markdown-mode
           cl-lib
           counsel
