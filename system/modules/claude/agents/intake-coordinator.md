@@ -114,7 +114,7 @@ Execute tactical coordination loop:
 Before constructing PhaseResult, validate ALL criteria:
 
 1. **Task Status Verification**: work-starter: completed, worktree-manager: completed (via TaskList)
-2. **Deliverable Existence**: TODO memory exists, worktree exists (via Bash: ls, cat)
+2. **Deliverable Existence**: TODO memory exists, worktree exists (via Bash: ls, cat), gap analysis memory exists (via `cat <gap-analysis-file-path>` — verifies file is readable and non-empty)
 3. **Quality Metrics**: No quality thresholds for intake
 4. **No Unresolved Blockers**: No tasks blocked or in error
 5. **Integration Validation**: TODO UUID accessible, worktree path valid
@@ -143,6 +143,8 @@ Construct PhaseResult and return to Bobert:
     "todoMemoryUUID": "<UUID from work-starter>",
     "worktreePath": "<path from worktree-manager>",
     "identifiedGaps": ["<gaps from work-starter>"],
+    "gapAnalysisMemoryUUID": "<UUID from work-starter>",
+    "gapAnalysisQuestionCount": 3,
     "todoMaintainerActive": true
   },
   "validationResults": {
@@ -298,7 +300,7 @@ If PhaseContext is incomplete or prerequisites are not met, intake-coordinator v
 
 The user and other agents expect intake-coordinator to produce:
 
-- **PhaseResult JSON**: Structured result containing phaseId, status (COMPLETE/ESCALATED/FAILED), outputs (todoMemoryUUID, worktreePath, identifiedGaps, todoMaintainerActive), validationResults, and metrics
+- **PhaseResult JSON**: Structured result containing phaseId, status (COMPLETE/ESCALATED/FAILED), outputs (todoMemoryUUID, worktreePath, identifiedGaps, gapAnalysisMemoryUUID, gapAnalysisQuestionCount, todoMaintainerActive), validationResults, and metrics
 - **Observable Aggregate State**: Status, progress, agentHealth, validation, and blockers available for Bobert monitoring queries
 - **Completion signal**: phaseComplete signal sent to Bobert via SendMessage when all validation passes
 

@@ -52,7 +52,7 @@ No explicit input schema - this is an instruction playbook loaded into Bobert's 
 ## Output Contract
 
 Task Group A produces:
-- **Phase 0 Outputs**: TODO UUID, worktree path, clarified requirements
+- **Phase 0 Outputs**: TODO UUID, worktree path, clarified requirements, gap analysis memory UUID, gap analysis question count
 - **Phase 1 Outputs**: Technical breakdown UUID (v1.0.0), implementation plan UUID
 - **Phase 2 Outputs**: Commit SHAs, clean working tree confirmation, passing tests (new/modified tests by default; all package tests only when ticket explicitly requires full suite remediation)
 - **Phase 3 Outputs**: Draft PR URL, completed TODO, finalized technical breakdown
@@ -190,7 +190,19 @@ Bobert constructs PhaseContext for each phase containing:
     "timeBox": "Expected duration"
   },
   "prerequisites": {
-    "input": "Data or context from prior phases or initial input"
+    "todoMemoryUUID": "UUID from prior phase",
+    "gapAnalysisMemoryUUID": "UUID from Phase 0 gap analysis",
+    "answeredGaps": [
+      {"id": "Q1", "summary": "...", "answer": "Addison's answer text"}
+    ],
+    "resolutionQuestions": [
+      {
+        "id": "Q2",
+        "summary": "...",
+        "question": "Full question text",
+        "requiredOutput": "Documented recommendation with rationale"
+      }
+    ]
   },
   "scopeAnchor": {
     "ticketRequirement": "What the ticket specifically asks to be BUILT/CHANGED/ADDED",
@@ -514,12 +526,47 @@ These lessons distill recurring failure modes observed across multiple Task Grou
    Notify intake-coordinator that roster is ready via SendMessage
    Wait for PhaseResult from intake-coordinator
    Validate: status == COMPLETE, TODO UUID present, worktree path present
+   Validate: gapAnalysisMemoryUUID present in PhaseResult
+   Validate: gapAnalysisQuestionCount present in PhaseResult
    Scope check: TODO memory's scope aligns with ticket requirement (scopeAnchor)
    ```
 
+**GAP ANALYSIS GATE** (between Phase 0 and Phase 1):
+
+1. Read `gapAnalysisQuestionCount` from Phase 0 PhaseResult
+2. If `gapAnalysisQuestionCount == 0` (no gaps found):
+   - Proceed to Phase 1 without pausing
+   - Pass `gapAnalysisMemoryUUID` in Phase 1 PhaseContext prerequisites
+   - `answeredGaps: []` and `resolutionQuestions: []` in PhaseContext
+
+3. If `gapAnalysisQuestionCount > 0`:
+   a. Present to Addison:
+      ```
+      Phase 0 complete. work-starter identified [N] question(s) that need your input before research begins.
+
+      Please review and fill in your answers:
+        [absolute file path from Phase 0 PhaseResult]
+
+      For each question, fill in the Answer field and set Resolution to one of:
+        ANSWERED            — you provided a direct answer
+        DEFERRED_TO_RESEARCH — you want Phase 1 to figure it out
+        ACCEPTED_DEFAULT    — you accept Bobert's suggested default
+
+      Reply "done" when finished.
+      ```
+   b. PAUSE: Wait for Addison to reply "done"
+   c. Load gap analysis memory: `read_memory(gapAnalysisMemoryUUID)`
+   d. Parse each question's Resolution field:
+      - `ANSWERED`             → add to `answeredGaps` for Phase 1 PhaseContext
+      - `DEFERRED_TO_RESEARCH` → add to `resolutionQuestions` for Phase 1 PhaseContext
+      - `ACCEPTED_DEFAULT` or blank → document as assumption in Phase 1 PhaseContext constraints; do NOT add to resolutionQuestions
+   e. Instruct todo-spec-memory-maintainer (already active from Phase 0) via SendMessage:
+      "Update the TODO memory [todoMemoryUUID] to include Addison's gap analysis answers as constraints. [pass answeredGaps content]"
+   f. Proceed to Phase 1
+
 3. **Phase 1 Execution**:
    ```
-   Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0 + scopeAnchor)
+   Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0 + scopeAnchor + gapAnalysisMemoryUUID + answeredGaps + resolutionQuestions)
    Spawn research-design-coordinator as teammate (Task tool WITH team_name)
    Send PhaseContext to research-design-coordinator via SendMessage with roster request
    Receive roster specification (deep-researcher, Explore, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer, reuse todo-spec-memory-maintainer)
@@ -584,6 +631,7 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 ### When to Consult Addison
 
 Bobert should consult Addison (not proceed autonomously) when:
+- **Gap analysis review**: Phase 0 produced a gap analysis with questions. Bobert presents the file path to Addison and waits for "done" before constructing Phase 1 PhaseContext (this is the Gap Analysis Gate, not an escalation — it is expected behavior, not an error condition).
 - **Scope ambiguity in initial input**: Cannot determine clear work boundaries from Jira ticket or prompt
 - **Scope misalignment detected**: Coordinator reports deliverables describe existing implementation rather than new work required by ticket
 - **"Implementation complete + open ticket" contradiction**: Research indicates work is already done but ticket remains open

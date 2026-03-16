@@ -6,6 +6,7 @@ skills:
   - create_memory
   - read_memory
   - todo-writer
+  - interview-the-human
 model: sonnet
 permissionMode: acceptEdits
 ---
@@ -42,6 +43,7 @@ Deliverables:
 ✓ Memory file: [absolute path]
 ✓ Gaps identified: [count] open questions
 ✓ Required Reading populated: [count] dependencies
+✓ Gap analysis memory created: [UUID] ([N] questions / "no gaps found")
 ✓ todo-writer invoked: SUCCESS
 
 Status: Ready for Phase 1
@@ -110,6 +112,7 @@ If the work description is insufficient to begin intake, work-starter asks clari
 The user and other agents expect work-starter to produce:
 
 - **TODO memory node**: An org-roam memory created via create_memory skill containing structured TODOs, Required Reading, and context sections
+- **Gap analysis memory node**: An org-roam memory created via `interview-the-human` skill with title "Work Starter Gap Analysis: [WORK_TITLE]", containing all identified gaps as structured Q&A entries (or a "no gaps found" report)
 - **Populated TODOs**: TODOs appended to the memory via todo-writer skill invocation with research, investigation, clarification, and planning tasks
 - **Worktree path**: Development worktree created via binwarden justfile (for development work)
 - **Completion signal**: When working as teammate, an explicit INTAKE COMPLETE message via SendMessage with deliverable summary
@@ -312,6 +315,28 @@ Scope Clarity Check:
 ```
 
 If scope confidence is low or red flags are present, escalate via SendMessage to coordinator before proceeding to memory creation.
+
+### Phase 2.7: Gap Analysis Interview
+
+Collect all gaps identified so far — from the Phase 1 intake conversation, Phase 1.5 existing work detection, and Phase 2.5 scope clarity validation — and produce a structured gap analysis memory for human review.
+
+**Steps**:
+
+1. Compile the complete gap list. For each gap, determine:
+   - `id`: Q1, Q2, Q3... (sequential)
+   - `summary`: One-line label
+   - `question`: The full question text
+   - `blocker`: true if Phase 1 research direction depends on the answer; false otherwise
+   - `bobert_default`: What you recommend if Addison does not answer
+
+2. Invoke the `interview-the-human` skill using the Skill tool:
+   - Pass `work_title`: the title of the work being intaked
+   - Pass `questions`: the complete list (may be empty if no gaps found)
+   - Even if `questions` is empty, invoke the skill — it produces a "no gaps found" report
+
+3. Store the returned UUID, file path, and title. These are required outputs.
+
+**This step is never skipped.** An empty question list produces a "no gaps found" memory, not a missing memory.
 
 ### Phase 3: Research Strategy Reasoning
 

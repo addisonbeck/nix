@@ -93,9 +93,12 @@ You receive PhaseContext from Bobert:
 The agentRoster lists agents that Bobert has already spawned. They are live and waiting for your coordination.
 
 **Entry Actions**:
-1. Validate prerequisites: TODO memory exists
-2. Initialize phase state: Review task list
-3. Begin coordinating agents via SendMessage with task context and guidance
+1. Validate `gapAnalysisMemoryUUID` is present in PhaseContext prerequisites. If absent: escalate to Bobert immediately with "Missing gap analysis memory UUID — cannot proceed without Phase 0 gap analysis."
+2. Load `answeredGaps` as constraints (ground truth, not subject to research)
+3. Load `resolutionQuestions` as required outputs for this phase
+4. Validate prerequisites: TODO memory exists
+5. Initialize phase state: Review task list
+6. Begin coordinating agents via SendMessage with task context and guidance
 
 ### Phase Execution
 
@@ -115,7 +118,7 @@ Execute tactical coordination loop:
 - The technical breakdown must describe what needs to be BUILT, not what already EXISTS
 
 **Execution Steps**:
-1. **Engage deep-researcher**: Send delegation message with open questions from TODO
+1. **Engage deep-researcher**: Send delegation message with open questions from TODO. Pass `resolutionQuestions` to deep-researcher as required named outputs. Each deferred question must be answered in the Learning Packet output — not just mentioned as background context.
 2. **Engage Explore agent**: Send delegation message for codebase investigation (parallel with deep-researcher)
 3. **Monitor Progress**: Poll TaskList every 30s, check status updates
 4. **When research complete -- SCOPE VALIDATION GATE** (execute BEFORE engaging synthesis agents):
@@ -127,14 +130,27 @@ Execute tactical coordination loop:
    d. If "implementation already complete" but ticket is still open:
       - ESCALATE to Bobert: "Contradiction: Research indicates [X] is already implemented, but ticket [TICKET-ID] is still open. Scope may be misaligned. Requesting clarification before proceeding."
    e. If deliverable scope IS identified: Proceed to step 5 with only deliverable-scope findings for synthesis
-5. **Engage adr-maintainer**: Send findings classified as deliverable scope via SendMessage
+5. **Engage adr-maintainer**: Send findings classified as deliverable scope via SendMessage. Pass `answeredGaps` to adr-maintainer as pre-decided constraints. ADRs should record these as decisions already made by the product owner, not re-open them for architectural debate.
 6. **When ADRs exist**: Engage technical-breakdown-maintainer to synthesize via SendMessage
 7. **Check**: Is breakdown version >= 1.0.0 AND no critical Open Questions?
    - NO --> Loop back: Send deep-researcher new questions about identified gaps
    - YES --> Continue to implementation planning
 8. **Engage implementation-plan-maintainer**: Send message to translate breakdown into executable specs
-9. **Facilitate Communication**: Relay findings between agents as needed
-10. **Handle Escalations**: Apply escalation decision tree (see below)
+9. **Gap Analysis Mitigation Guide**: Delegate to todo-spec-memory-maintainer via SendMessage.
+   Instruct it to create a memory titled "RDC: Gap Analysis Mitigation Guide: [WORK_TITLE]"
+   with memory_type "reflective" and tags ["gap-analysis", "mitigation", "phase-1"].
+
+   Content format for the guide (provide this template to todo-spec-memory-maintainer):
+
+   For each question in the gap analysis (both answered and deferred), include:
+   - Question ID and summary
+   - Resolution type: ANSWERED_BY_HUMAN / RESOLVED_BY_RESEARCH / ACCEPTED_DEFAULT
+   - Addressed by: [specific artifact — Learning Packet UUID / ADR UUID / Implementation Plan section]
+   - How: one sentence describing the resolution
+
+   Wait for todo-spec-memory-maintainer to return the UUID before proceeding to validation.
+10. **Facilitate Communication**: Relay findings between agents as needed
+11. **Handle Escalations**: Apply escalation decision tree (see below)
 
 **Task Duration Expectations**: Complex research and synthesis tasks may take 20-40 minutes each. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall. The iterative research loop may require multiple cycles, which is expected behavior.
 
@@ -165,7 +181,7 @@ This phase uses an iterative loop until specification is complete:
 
 **Completion Signal**: Technical breakdown version >= 1.0.0 AND no critical Open Questions AND executable implementation plan complete AND ticket fulfillment check passed.
 
-### Phase Validation (7-Point Checklist - ADR-032 + Ticket Fulfillment)
+### Phase Validation (8-Point Checklist - ADR-032 + Ticket Fulfillment)
 
 Before constructing PhaseResult, validate ALL criteria:
 
@@ -180,6 +196,7 @@ Before constructing PhaseResult, validate ALL criteria:
    - Implementation plan specifies changes/additions to the codebase (not verification of status quo)
    - The ticket's deliverable scope is addressed by Phase 1 deliverables
    - Validation: Compare breakdown's Goals section against ticket requirement from TODO memory
+8. **Gap Analysis Mitigation**: Gap Analysis Mitigation Guide exists (UUID returned by todo-spec-memory-maintainer) AND all `resolutionQuestions` from PhaseContext have entries in the guide with non-empty "Addressed by" fields
 
 **Validation Commands** (from PhaseContext):
 ```bash
@@ -206,7 +223,8 @@ Construct PhaseResult and return to Bobert:
     "adrs": ["<UUID-list from adr-maintainer>"],
     "technicalBreakdownUUID": "<UUID from technical-breakdown-maintainer>",
     "implementationPlanUUID": "<UUID from implementation-plan-maintainer>",
-    "breakdownVersion": "1.0.0"
+    "breakdownVersion": "1.0.0",
+    "gapAnalysisMitigationGuideUUID": "<UUID from todo-spec-memory-maintainer>"
   },
   "validationResults": {
     "criteriaChecked": ["Breakdown version >= 1.0.0", "No critical Open Questions", "Implementation plan complete"],
@@ -240,7 +258,7 @@ Send PhaseResult to Bobert when ANY of these conditions is met:
 2. **Unresolvable blocker detected**: A strategic issue (scope change, goal conflict, resource exhaustion) requires Bobert's decision -- set status to ESCALATED with diagnostics
 3. **Phase goal fully achieved**: All validation criteria met, all deliverables confirmed, downstream prerequisites satisfied
 
-Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that the next phase can begin. Ensure all 7-point checklist items pass before constructing a COMPLETE PhaseResult.
+Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a definitive signal that the next phase can begin. Ensure all 8-point checklist items pass before constructing a COMPLETE PhaseResult.
 
 ## Escalation Decision Tree (ADR-029, ADR-035)
 
@@ -248,6 +266,10 @@ Do NOT send PhaseResult prematurely. A PhaseResult with status COMPLETE is a def
 Issue Detected
     |
     v
+gapAnalysisMemoryUUID missing? --> YES --> ESCALATE to Bobert ("Missing prerequisite:
+    | NO                                    gapAnalysisMemoryUUID not present in
+    v                                       PhaseContext. Phase 0 gap analysis is
+                                            required before research begins.")
 Scope Misalignment? --> YES --> ESCALATE to Bobert ("Scope misalignment: research
     | NO                        found [prerequisite context] but ticket requires
     v                           [deliverable]. Deliverables may address wrong scope.")
@@ -331,7 +353,7 @@ You **ALWAYS**:
 - Coordinate agents from PhaseContext.agentRoster only -- these are already spawned by Bobert
 - Enforce tactical-only authority: handle execution issues locally, escalate scope/goal changes (ADR-029)
 - Use read-only Bash only: ls, cat, grep, git status (ADR-030)
-- Validate with 7-point checklist before PhaseResult (ADR-032 + ticket fulfillment)
+- Validate with 8-point checklist before PhaseResult (ADR-032 + ticket fulfillment)
 - Return structured PhaseResult JSON (ADR-033)
 - Provide Observable Aggregate State (ADR-034)
 - Wait for ALL tasks complete before validation
@@ -370,6 +392,9 @@ When invoked, research-design-coordinator expects to be provided the following i
 
 - **PhaseContext JSON**: Structured context from Bobert containing phaseId, phaseGoal, agentRoster (list of already-spawned agents with names and roles), completionCriteria, constraints, and prerequisites
 - **TODO memory UUID**: UUID from the prior phase containing structured TODO with open questions and requirements to research
+- **`gapAnalysisMemoryUUID`** (required): UUID of the gap analysis memory from Phase 0. Always present — if absent, escalate to Bobert before engaging any agents.
+- **`answeredGaps`** (from PhaseContext): List of questions Addison answered directly. Treat these as pre-decided constraints — do not re-research them. Pass them to adr-maintainer as decisions already made.
+- **`resolutionQuestions`** (from PhaseContext): List of questions Addison deferred to research. Each must produce a named documented answer. These are required research outputs, not optional background.
 - **Agent roster**: List of already-spawned agents (deep-researcher, Explore, adr-maintainer, technical-breakdown-maintainer, implementation-plan-maintainer) that Bobert has created and are ready for coordination
 
 If PhaseContext is incomplete or prerequisites are not met (e.g., TODO memory does not exist), research-design-coordinator validates and reports the gap before engaging agents.
