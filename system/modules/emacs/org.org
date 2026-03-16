@@ -525,6 +525,8 @@ Don't show DONE items in the agenda
   (org-super-agenda-mode))
 
 (setq warning-suppress-types '((org-element)))
+(setq org-element-use-cache nil)
+(add-hook 'org-mode-hook (lambda () (setq-local tab-width 8)))
 
 (defun my/inherit-meeting-times ()
   "Set SCHEDULED property on meeting note TODOs based on parent timestamp."
