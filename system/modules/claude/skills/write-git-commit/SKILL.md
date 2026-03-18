@@ -410,28 +410,22 @@ Does this accurately capture the change? Reply "yes" to commit, or provide feedb
 
 #### Phase 7: Execution
 
-Stage all uncommitted changes and execute commit:
+Pipe the commit message to the execute-commit.sh script. This script handles staging, committing, and verification as a subprocess — which is required because direct `git commit` tool calls are blocked by a PreToolUse hook that enforces use of this skill.
 
 ```bash
-# Stage all uncommitted changes
-git add -A
-
-# Create the commit
-git commit --no-gpg-sign -m "$(cat <<'EOF'
+cat <<'EOF' | ~/.claude/skills/write-git-commit/execute-commit.sh
 <type>(<scope>): <subject>
 
 <body>
 
 <trailers>
 EOF
-)"
 ```
 
 Important:
-- First run `git add -A` to stage all uncommitted changes (both tracked modifications and untracked files)
-- Then execute commit command
-- Always use HEREDOC format for commit message to handle multi-line bodies correctly
-- Always include `--no-gpg-sign` flag (repository convention)
+- Always use this script — never call `git commit` directly (it will be denied by the PreToolUse gate hook)
+- The script runs `git add -A`, `git commit --no-gpg-sign`, and `git show HEAD` internally
+- Always use HEREDOC format when piping the message to handle multi-line bodies correctly
 - Capture stderr in case of commit hook failures
 
 If staging or commit fails:
@@ -443,13 +437,7 @@ If staging or commit fails:
 
 #### Phase 8: Verification
 
-After successful commit, verify by running:
-
-```bash
-git show HEAD
-```
-
-Present commit details to user:
+The execute-commit.sh script automatically runs `git show HEAD` as its final step. Present the output to the user:
 - Commit hash
 - Author and date
 - Full commit message

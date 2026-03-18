@@ -56,6 +56,21 @@ in {
 
         PreToolUse = [
           {
+            matcher = "Bash";
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/git_commit_gate_hook.sh";
+                statusMessage = "Checking git commit gate...";
+              }
+              {
+                type = "command";
+                command = "~/.claude/hooks/org_roam_bash_protection_hook.sh";
+                statusMessage = "Checking org-roam Bash protection...";
+              }
+            ];
+          }
+          {
             matcher = "Write";
             hooks = [
               {

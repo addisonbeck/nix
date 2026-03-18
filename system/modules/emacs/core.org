@@ -2297,6 +2297,96 @@ Using evil-mode based mappings don't work on the agenda, for same reason
 #+begin_src emacs-lisp
   (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 #+end_src
+* Create Memory
+#+begin_src emacs-lisp
+(defun my/create-memory-interactive ()
+  "Interactively create a memory node via `my/create-memory' and open the file."
+  (interactive)
+  (let* ((title (read-string "Memory Title: "))
+         (memory-type
+          (intern (completing-read
+                   "Memory Type (episodic/semantic/procedural/associative/working/reflective/reference): "
+                   '(episodic semantic procedural associative working reflective reference)
+                   nil t)))
+         (tags
+          (split-string
+           (read-string "Tags (comma-separated): ") "," t "[ \t\n\r]+"))
+         (aliases
+          (split-string
+           (read-string "Aliases (comma-separated): ") "," t "[ \t\n\r]+"))
+         (content (read-string "Content (org syntax, at least one backlink): "))
+         (res (my/create-memory
+               :title title
+               :memory-type memory-type
+               :tags tags
+               :aliases aliases
+               :content content)))
+    (find-file (plist-get res :file))))
+#+end_src
+
+#+begin_src emacs-lisp
+(require 'cl-lib)
+
+(cl-defun my/create-memory (&key title memory-type tags aliases content)
+  "Create an org-roam node with validated metadata."
+  (let ((valid-types
+         '(episodic semantic procedural associative working reflective reference)))
+    ;; 1) TITLE: non-empty string
+    (unless (and (stringp title) (> (length (string-trim title)) 0))
+      (error "create-memory error: TITLE must be a non-empty string"))
+    ;; 2) MEMORY-TYPE: must be one of valid-types
+    (unless (memq memory-type valid-types)
+      (error "create-memory error: MEMORY-TYPE must be one of %S" valid-types))
+    ;; 3) CONTENT: must be a string
+    (unless (stringp content)
+      (error "create-memory error: CONTENT must be a string"))
+
+    (require 'org-id)
+    ;; All bindings in one let* so filepath is in scope for the org-roam calls:
+    (let* ((slug     (downcase
+                      (replace-regexp-in-string
+                       "[^a-z0-9]+" "-"
+                       (string-trim title))))
+           (id (org-id-new))
+           (filename (format "%s.%s.org" (format-time-string "%Y-%m-%d-%H-%M-%S") slug))
+           (filepath (expand-file-name filename org-roam-directory))
+           (lowercased-tags (mapcar #'downcase tags))
+           (filetags (mapconcat
+                       #'identity
+                       (cons (symbol-name memory-type) lowercased-tags)
+                       " "))
+           (props    `(("ID"            . ,id)
+
+                       ("ROAM_ALIASES"  . ,(when aliases
+                                             (concat "\""
+                                                     (mapconcat #'identity aliases "\" \"")
+                                                     "\"")))
+                       ("CREATED"       . ,(format-time-string "<%Y-%m-%d %H:%M>"))
+                       ("LAST_MODIFIED" . ,(format-time-string "<%Y-%m-%d %H:%M>")))))
+      ;; 1) Create the node object (does not write file yet)
+      (org-roam-node-create
+       :id         id
+       :title      title
+       :file       filepath
+       :aliases    aliases
+       :properties props)
+      ;; 2) Write out the file with front-matter + content
+      (with-temp-file filepath
+        (insert ":PROPERTIES:\n")
+        (dolist (prop props)
+          (insert (format ":%s: %s\n" (car prop) (cdr prop))))
+        (insert ":END:\n")
+        (insert (format "#+TITLE: %s\n" title))
+        (insert (format "#+FILETAGS: %s\n" filetags))
+        (insert "\n" content "\n"))
+      ;; 3) Sync to the database
+      (org-roam-db-sync)
+      ;; Return metadata for callers and also message
+      (let ((ret (list :id id :file filepath :title title)))
+        (message "create-memory: Node \"%s\" created at %s. Node ID: %s"
+                 title filepath id)
+        ret))))
+#+end_src
 * Provide Init
 
 #+begin_src emacs-lisp

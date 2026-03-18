@@ -6,7 +6,7 @@ description: |
 
 # full-lifecycle-delivery Skill
 
-This skill provides orchestration guidance for **Task Group A**, Bobert's canonical team composition for full-lifecycle work delivery. Task Group A takes work from initial input (Jira ticket, memory stub, or plain prompt) through intake, research, design, implementation, finalization, and publishing to produce a validated pull request ready for human review.
+This skill provides orchestration guidance for full-lifecycle work delivery. A phased team takes work from initial input (Jira ticket, memory stub, or plain prompt) through intake, research, design, implementation, finalization, and publishing to produce a validated pull request ready for human review.
 
 When invoked, Bobert follows this instruction playbook to:
 1. Form the team via TeamCreate
@@ -18,22 +18,6 @@ When invoked, Bobert follows this instruction playbook to:
 7. Maintain continuous TODO updates throughout all phases
 
 **Critical**: ALL agents (coordinators + work agents) MUST be spawned as teammates in the same team to ensure consistent message infrastructure.
-
-## Purpose & When to Use
-
-Use Task Group A when:
-- **Jira Ticket Work**: Taking a ticket from assignment through to draft PR
-- **Full-Lifecycle Delivery**: Work requires intake, research, design, implementation, and finalization
-- **Multi-Phase Workflow**: Task spans discovery → planning → execution → delivery
-- **Team Coordination**: Work benefits from specialized agents handling distinct phases
-- **Context Isolation**: Each specialist benefits from focused context window for their phase
-
-Do NOT use Task Group A when:
-- **Single-phase work**: Task is just implementation (use code-monkey directly)
-- **Research-only**: No implementation needed (use deep-researcher)
-- **Quick modifications**: Under 30 minutes of work (direct delegation more appropriate)
-
-This is Addison's most common workflow pattern for substantive work.
 
 ## Input Contract
 
@@ -52,7 +36,7 @@ No explicit input schema - this is an instruction playbook loaded into Bobert's 
 ## Output Contract
 
 Task Group A produces:
-- **Phase 0 Outputs**: TODO UUID, worktree path, clarified requirements, gap analysis memory UUID, gap analysis question count
+- **Phase 0 Outputs**: TODO UUID, worktree path, clarified requirements, gap analysis memory UUID, work scope memory uuid 
 - **Phase 1 Outputs**: Technical breakdown UUID (v1.0.0), implementation plan UUID
 - **Phase 2 Outputs**: Commit SHAs, clean working tree confirmation, passing tests (new/modified tests by default; all package tests only when ticket explicitly requires full suite remediation)
 - **Phase 3 Outputs**: Draft PR URL, completed TODO, finalized technical breakdown
@@ -72,22 +56,19 @@ All five phases complete (Phases 0-4) with status: COMPLETE and required outputs
 
 This is an **instruction-only skill** - no bash script implementation. Bobert loads this skill and follows the guidance.
 
-### Team Composition (11 Work Agents + 5 Phase Coordinators)
+### Team Composition (2 direct reports + 5 phase coordinators with their own roster)
 
 **Work Agents**:
-1. **work-starter**: Intake specialist - transforms input into structured TODO with clarified requirements
-2. **worktree-manager**: Worktree lifecycle management - creates and validates isolated work environment
-3. **todo-spec-memory-maintainer**: Continuous TODO maintenance - active in ALL phases, keeps TODO current
-4. **deep-researcher**: Domain research - investigates best practices, patterns, and external knowledge
-5. **Explore**: Codebase investigation - discovers existing patterns, dependencies, and constraints
-6. **adr-maintainer**: Architecture decisions - documents significant design choices
-7. **implementation-plan-maintainer**: Executable specifications - translates architecture into step-by-step implementation guide
-8. **technical-breakdown-maintainer**: Context synthesis - maintains living technical documentation
-9. **code-monkey**: Implementation - fast code modifications following specification
-10. **git-historian**: Commit creation - analyzes diffs and creates conventional commits
-11. **pr-maintainer**: Draft PR creation - generates PR title, body, and test plan
+
+Two agents are spawned right away in this workflow, and report directly to the orchestrating agent.
+
+1. **todo-spec-memory-maintainer**: Continuous TODO maintenance - active in ALL phases, keeps TODO current
+2. **retrospective-maintainer**: Maintains war stories from the team and synthesizes a retro doc when work ends
 
 **Phase Coordinators**:
+
+These agents report to the orchestrating agent but coordinate their own sets of agents. The orchestrating agent spawns a coordinator at the beginning of a phase, the coordinator instructs the orchestrating agent on its expected roster, the orchestrating agent spawns those subagents with information about peers and their coordinator, then the coordinating agent takes over as a phase lead.
+
 1. **intake-coordinator**: Manages Phase 0 tactical execution (spawn, track, validate)
 2. **research-design-coordinator**: Manages Phase 1 tactical execution with iterative loop
 3. **implementation-coordinator**: Manages Phase 2 tactical execution with commit loop
@@ -282,45 +263,6 @@ Coordinator:
   - Validates work products against completion criteria
 - Does NOT wait for additional authorization (PhaseContext + roster = complete authorization)
 
-#### Typical Rosters (Reference from TODO #6 Work)
-
-These rosters represent validated patterns from Take 8 execution. Coordinators should use these as defaults and justify variations.
-
-**Phase 0 (Intake)**: 3 agents
-- work-starter (ticket intake, TODO creation, worktree setup, debris cleanup)
-- worktree-manager (worktree lifecycle)
-- todo-spec-memory-maintainer (TODO population)
-
-**Phase 1 (Research/Design)**: 5 agents (6 with reuse)
-- deep-researcher (domain investigation)
-- explore-agent (codebase reconnaissance)
-- adr-maintainer (design decisions)
-- technical-breakdown-maintainer (synthesis)
-- implementation-plan-maintainer (execution specs)
-- todo-spec-memory-maintainer (REUSE from Phase 0)
-
-**Phase 2 (Implementation)**: 2 agents (3 with reuse)
-- code-monkey (implementation)
-- git-historian (atomic commits)
-- todo-spec-memory-maintainer (REUSE from Phase 0)
-
-**Phase 3 (Finalization)**: 3 agents (all reused from prior phases)
-- technical-breakdown-maintainer (REUSE from Phase 1, finalization)
-- pr-maintainer (draft PR creation)
-- todo-spec-memory-maintainer (REUSE from Phase 0, mark DONE)
-
-**Rationale**: Take 8 validation showed coordinator-specified rosters eliminated 12-15 minutes of reactive spawning overhead (War Story #1: Role Inversion). Phases 1-3 executed with zero reactive spawn cycles when coordinators specified rosters upfront.
-
-**Phase 4 (Publishing)**: 6 agents (4 reused from prior phases)
-- ci-reader (CI status monitoring)
-- ci-correction-planner (failure analysis and fix specs)
-- pull-request-reviewer (quality validation)
-- code-monkey (REUSE from Phase 2, correction implementation)
-- git-historian (REUSE from Phase 2, correction commits)
-- todo-spec-memory-maintainer (REUSE from Phase 0, final updates)
-
-**Rationale**: Phase 4 completes the publish-to-production journey by validating PR health through CI and quality review. Reusing code-monkey and git-historian for correction cycles leverages existing implementation infrastructure. publishing-coordinator enforces max 3 correction cycles before escalating to Bobert.
-
 ### PhaseResult Structure
 
 Coordinators return PhaseResult containing:
@@ -355,17 +297,19 @@ Coordinators return PhaseResult containing:
 
 ### Key Characteristics
 
-1. **Coordinator-Managed Phases**: Coordinators handle tactical execution (spawning, tracking, validation). Bobert retains strategic authority (composition, transitions, escalations).
+1. **Coordinator-Managed Phases**: Coordinators and direct reports handle tactical execution (spawning, tracking, validation). Bobert retains strategic authority (composition, transitions, escalations).
 
-2. **Continuous TODO Maintenance**: `todo-spec-memory-maintainer` is active throughout ALL phases, keeping the TODO current with discoveries, decisions, and progress.
+2. **Continuous TODO Maintenance**: `todo-spec-memory-maintainer` reports to the orchestrating agent, sitting outside the phase workflow. This agent is active throughout ALL phases, keeping the TODO current with discoveries, decisions, and progress. This agent should be spawned right away, before work begins with coordinators. Coordinators should be encouraged to read the memory maintained by `todo-spec-memory-maintainer` using the the read_memory. This document serves as the our primary reference point for the work.
 
-3. **Two Iterative Loops**:
+3. **Continuous retro Maintenance**: `retrospective-maintainer` reports to the orchestrating agent, sitting outside the phase workflow. This agent is active throughout ALL phases, keeping the TODO current with discoveries, decisions, and progress. This agent should be spawned right away, before work begins with coordinators. Coordinators should be encouraged to send war stories to this agent during their work cycles.
+
+4. **Two Iterative Loops**:
    - **Phase 1 Loop**: Research/design/synthesis/planning repeats until technical breakdown reaches v1.0.0 AND implementation plan is complete
    - **Phase 2 Loop**: Implementation/commit repeats until all planned functionality is committed AND working tree is clean AND tests pass
      - **Test Passing Scope (Default)**: New/modified tests passing (tests added or modified during implementation)
      - **Test Passing Scope (Exception)**: All package tests passing (only when ticket explicitly mandates full suite remediation with phrases like "fix all tests", "remediate test suite", "achieve 100% test pass rate")
 
-4. **Test Passing Criteria**: Phase 2 completion requires "tests passing" validation, with scope determined by ticket requirements:
+5. **Test Passing Criteria**: Phase 2 completion requires "tests passing" validation, with scope determined by ticket requirements:
 
    **Default Scope - New/Modified Tests Passing**:
    - Applies to: Tickets focused on adding features, fixing specific bugs, refactoring specific components
@@ -388,15 +332,15 @@ Coordinators return PhaseResult containing:
    - When in doubt, default scope applies (new/modified tests only)
    - PhaseResult validation must document which scope was applied and provide evidence (test output showing relevant tests passed)
 
-5. **Context Isolation**: Each specialist operates in own context window, activating per phase. This prevents context pollution and allows focused work.
+6. **Context Isolation**: Each specialist operates in own context window, activating per phase. This prevents context pollution and allows focused work.
 
-6. **Specification Bridge**: `implementation-plan-maintainer` in Phase 1 translates architecture into executable step-by-step specifications before Phase 2 begins. This bridges strategic design to tactical implementation.
+7. **Specification Bridge**: `implementation-plan-maintainer` in Phase 1 translates architecture into executable step-by-step specifications before Phase 2 begins. This bridges strategic design to tactical implementation.
 
-7. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
+8. **Input Source Flexibility**: `work-starter` adapts intake to handle Jira tickets, memory stubs, or plain prompts uniformly.
 
 ### Critical Constraints
 
-These constraints are non-negotiable and prevent catastrophic failures in Task Group A execution:
+These constraints are non-negotiable and prevent catastrophic failures in execution:
 
 1. **Spawn Mechanism Consistency (Critical)**
 
@@ -422,50 +366,11 @@ These constraints are non-negotiable and prevent catastrophic failures in Task G
 
    **Take 9 Lesson**: Inconsistent spawn mechanism (coordinators as subagents, work agents as teammates) caused complete message infrastructure failure. This constraint prevents recurrence.
 
-### Operational Lessons
-
-These lessons distill recurring failure modes observed across multiple Task Group A executions. Each lesson identifies where the capability lives in the agent ecosystem and provides a specific Bobert action directive to prevent recurrence.
-
-1. **Build Verification is a Phase 2 Gate**
-
-   `code-monkey` includes a Phase 4.5 Build Verification Gate that executes project-wide health checks (cargo check, cargo clippy, cargo fmt --check, cargo test) when the implementation plan includes a `## Build Verification Commands` section. Build verification failures block commit creation -- code-monkey will not proceed to git-historian until all verification commands pass. This capability lives in `code-monkey` (Phase 4.5: Build Verification Gate).
-
-   **Bobert action**: When constructing Phase 2 PhaseContext, verify that the implementation plan passed from Phase 1 includes a `## Build Verification Commands` section. If missing for projects with a build system, flag to `implementation-plan-maintainer` before starting Phase 2 -- build verification cannot gate what it cannot see.
-
-2. **Formatting Checks are Part of CI Simulation**
-
-   `git-historian` discovers project-specific formatters by scanning configuration files (flake.nix, Cargo.toml, package.json, pyproject.toml) and executes formatting checks in check/dry-run mode as Phase 5C before every commit. Formatting failures block commit creation. In pipeline mode, git-historian reports violations to the coordinating agent and recommends delegating the fix to code-monkey. This capability lives in `git-historian` (Phase 5B: Formatter Discovery, Phase 5C: Formatting Check Execution).
-
-   **Bobert action**: Do not treat formatting failures as surprising -- they are expected CI simulation behavior. When `implementation-coordinator` reports CI simulation FAIL with formatting violations, this is the system working correctly. Ensure the remediation loop (code-monkey fix -> git-historian retry) executes before escalating. Only escalate after 2 failed formatting fix-and-retry cycles.
-
-3. **CI Simulation Validates Phase 2 Completion**
-
-   `implementation-coordinator` synthesizes CI simulation status by probing both `code-monkey` (for build verification results) and `git-historian` (for formatting check results) via SendMessage. The coordinator does not re-run checks itself -- it extracts outcomes from the agents that already ran them. CI simulation status (PASS/FAIL/NOT_APPLICABLE) is a Phase 2 completion gate: if FAIL, the coordinator must not construct a PhaseResult with status COMPLETE. This capability lives in `implementation-coordinator` (Phase Validation 7-Point Checklist, item #7: CI Simulation Validation).
-
-   **Bobert action**: When reviewing Phase 2 PhaseResults, verify that `validation.criteriaChecked` includes CI simulation entries. If the PhaseResult reports COMPLETE but omits CI simulation criteria, reject it and instruct `implementation-coordinator` to complete the 7-point checklist before returning.
-
-4. **Debris Cleanup is a Phase 0 Prerequisite**
-
-   `work-starter` includes a Phase 1.5 that detects existing related work (WIP branches, stale worktrees, orphaned branches) and cleans test debris from previous sessions. Debris cleanup MUST complete before worktree creation -- stale worktrees, orphaned branches, and lock files from previous sessions cause worktree creation failures and wasted iterations. This capability lives in `work-starter` (Phase 1.5: Existing Work Detection and Test Debris Cleanup).
-
-   **Bobert action**: When constructing Phase 0 PhaseContext, include an explicit constraint that `work-starter` must complete debris cleanup before `worktree-manager` creates new worktrees. If Phase 0 PhaseResult reports worktree creation failures, investigate whether debris cleanup was skipped or incomplete before retrying.
-
-5. **Memory UUIDs Route Through Coordinators**
-
-   Phase coordinators pass memory UUIDs in SendMessage delegation messages to downstream agents -- they never load memory content directly. Agents that need memory content use `read_memory` to load it themselves, which triggers the Required Reading hook to load transitive dependencies. Mismatching this pattern causes context loss (coordinator loads content agents need) or wasted tokens (agents load content coordinators already summarized). This capability is documented in the Memory Access Patterns section of `/Users/me/nix/system/modules/claude/CLAUDE.md`.
-
-   **Bobert action**: When constructing PhaseContext, include memory UUIDs (TODO UUID, breakdown UUID, implementation plan UUID) as string references, not as loaded content. Verify that coordinator delegation messages pass UUIDs for agents to load, not pre-digested content summaries. If a coordinator reports context issues, check whether UUID routing was followed correctly.
-
-6. **Coordinators Execute Autonomously After PhaseContext**
-
-   Once Bobert delegates a phase to a coordinator via Task tool with a complete PhaseContext, the coordinator manages all tactical execution autonomously: spawning agents from the roster, distributing tasks, monitoring progress, validating completion, and returning a structured PhaseResult. Bobert does not intervene during phase execution unless the coordinator escalates. Premature Bobert intervention disrupts coordinator autonomy and creates conflicting instructions. This pattern is the core Strategic vs Tactical Separation (see next section).
-
-   **Bobert action**: After delegating to a coordinator, wait for the PhaseResult. Do not send additional messages to the coordinator or its agents during execution. If a phase takes longer than expected, wait for the coordinator's completion signal or escalation -- implementation tasks may take 20-40 minutes per chunk, and multiple implementation/commit cycles are expected behavior. Only intervene when a PhaseResult is returned with status FAILED or BLOCKED.
-
 ### Strategic vs Tactical Separation
 
 **Bobert Retains (Strategic)**:
 - Which coordinator to use for each phase (intake, research-design, implementation, finalization)
+- A subset of direct reports (todo-spec-memory-maintainer, retro-maintainer)
 - Whether to advance to next phase (phase transition authorization)
 - How to handle coordinator escalations (scope changes, goal conflicts)
 - Whether to abort, retry, or adjust after FAILED PhaseResults
@@ -484,33 +389,7 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 - Coordinators escalate when typical roster proves insufficient (unexpected complexity)
 - Coordinators DO NOT escalate for tactical decisions (which agent to assign task, how to sequence work)
 
-## Environment Dependencies
-
-- **ORG_ROAM_DIR**: Required for TODO and memory creation/maintenance
-- **Required agents**: All 11 work agents + 5 phase coordinators (intake, research-design, implementation, finalization, publishing) must exist in `~/.claude/agents/`
-- **Required skills**: `create_memory`, `read_memory`, `todo-writer` must exist for TODO maintenance
-- **Git environment**: Worktree operations require git configuration
-- **GitHub CLI**: `gh` command required for PR operations and CI monitoring in Phase 4
-- **Jira MCP** (optional): Required if input is Jira ticket ID
-
 ## Usage & Testing Guidance
-
-### Invocation Pattern
-
-**From Addison to Bobert**:
-```
-"Get Task Group A on this: TICKET-123"
-```
-
-**From Addison with variation**:
-```
-"Get Task Group A-Lite on this: implement caching for the API client"
-```
-
-**From Addison with memory stub**:
-```
-"Get Task Group A on this: ABC12345-DEF6-7890-GHIJ-KLMNOPQRSTUV"
-```
 
 ### Bobert's Execution Steps
 
@@ -519,9 +398,11 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 2. **Phase 0 Execution**:
    ```
    Construct PhaseContext for Phase 0 (include scopeAnchor from Plan phase)
+   Spaw retrospective-maintainer as teammate, instruct to remain on standby
+   Spaw todo-spec-memory-maintainer as teammate, instruct to remain on standby
    Spawn intake-coordinator as teammate (Task tool WITH team_name="task-group-a-{ticket}")
    Send PhaseContext to intake-coordinator via SendMessage with roster request
-   Receive roster specification from intake-coordinator (work-starter, worktree-manager, todo-spec-memory-maintainer)
+   Receive roster specification from intake-coordinator (work-starter, worktree-manager)
    Spawn work agents as teammates per roster specification
    Notify intake-coordinator that roster is ready via SendMessage
    Wait for PhaseResult from intake-coordinator
@@ -534,35 +415,27 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 **GAP ANALYSIS GATE** (between Phase 0 and Phase 1):
 
 1. Read `gapAnalysisQuestionCount` from Phase 0 PhaseResult
-2. If `gapAnalysisQuestionCount == 0` (no gaps found):
-   - Proceed to Phase 1 without pausing
-   - Pass `gapAnalysisMemoryUUID` in Phase 1 PhaseContext prerequisites
-   - `answeredGaps: []` and `resolutionQuestions: []` in PhaseContext
+2. Present to Addison:
+```
+Phase 0 complete. work-starter identified [N] question(s) that need your input before research begins.
 
-3. If `gapAnalysisQuestionCount > 0`:
-   a. Present to Addison:
-      ```
-      Phase 0 complete. work-starter identified [N] question(s) that need your input before research begins.
+Please review and fill in your answers:
+[absolute file path from Phase 0 PhaseResult]
 
-      Please review and fill in your answers:
-        [absolute file path from Phase 0 PhaseResult]
+For each question, fill in the Answer field and set Resolution to one of:
+ANSWERED            — you provided a direct answer
+DEFERRED_TO_RESEARCH — you want Phase 1 to figure it out
+ACCEPTED_DEFAULT    — you accept Bobert's suggested default
 
-      For each question, fill in the Answer field and set Resolution to one of:
-        ANSWERED            — you provided a direct answer
-        DEFERRED_TO_RESEARCH — you want Phase 1 to figure it out
-        ACCEPTED_DEFAULT    — you accept Bobert's suggested default
-
-      Reply "done" when finished.
-      ```
-   b. PAUSE: Wait for Addison to reply "done"
-   c. Load gap analysis memory: `read_memory(gapAnalysisMemoryUUID)`
-   d. Parse each question's Resolution field:
+Reply "done" when finished.
+```
+3. PAUSE: Wait for Addison to reply "done"
+4. Load gap analysis memory: `read_memory(gapAnalysisMemoryUUID)`
+5. Parse each question's Resolution field:
       - `ANSWERED`             → add to `answeredGaps` for Phase 1 PhaseContext
       - `DEFERRED_TO_RESEARCH` → add to `resolutionQuestions` for Phase 1 PhaseContext
       - `ACCEPTED_DEFAULT` or blank → document as assumption in Phase 1 PhaseContext constraints; do NOT add to resolutionQuestions
-   e. Instruct todo-spec-memory-maintainer (already active from Phase 0) via SendMessage:
-      "Update the TODO memory [todoMemoryUUID] to include Addison's gap analysis answers as constraints. [pass answeredGaps content]"
-   f. Proceed to Phase 1
+6. Proceed to Phase 1
 
 3. **Phase 1 Execution**:
    ```
@@ -583,12 +456,13 @@ These lessons distill recurring failure modes observed across multiple Task Grou
    ```
    Construct PhaseContext for Phase 2 (pass impl plan UUID, worktree path)
    Spawn implementation-coordinator as teammate (Task tool WITH team_name)
-   Send PhaseContext to implementation-coordinator via SendMessage with roster request
+   Send PhaseContext to implementation-coordinator via SendMessage with roster request. Include instructions for the coordinator to use read_memory to read our current context, and to use todo-spec-memory maintainer to start creating TODOS for its roster.
    Receive roster specification (code-monkey, git-historian, reuse todo-spec-memory-maintainer)
    Spawn work agents as teammates per roster specification (or notify existing agents if reused)
    Notify implementation-coordinator that roster is ready via SendMessage
    Wait for PhaseResult from implementation-coordinator
    Validate: status == COMPLETE, commit SHAs present, working tree clean, tests passing
+   Have todo-spec-memory-maintainer add all documents created in phase 2 to Required Reading (ADRs, technical breakdown, implementation plan).
    Note: Test passing scope documented in Key Characteristics section #4 (default: new/modified tests)
    ```
 
@@ -603,7 +477,7 @@ These lessons distill recurring failure modes observed across multiple Task Grou
 
    Construct PhaseContext for Phase 3 (pass commits, worktree path, branchPushed: true)
    Spawn finalization-coordinator as teammate (Task tool WITH team_name)
-   Send PhaseContext to finalization-coordinator via SendMessage with roster request
+   Send PhaseContext to finalization-coordinator via SendMessage with roster request Include instructions for the coordinator to use read_memory to read our current context, and use todo-spec-memory maintainer to start creating TODOs for its roster.
    Receive roster specification (reuse technical-breakdown-maintainer, pr-maintainer, reuse todo-spec-memory-maintainer)
    Spawn work agents as teammates per roster specification (or notify existing agents if reused)
    Notify finalization-coordinator that roster is ready via SendMessage
@@ -611,7 +485,7 @@ These lessons distill recurring failure modes observed across multiple Task Grou
    Validate: status == COMPLETE, PR URL present
    ```
 
-6. **Phase 4 Execution**:
+6. **Phase 4 Exection**:
    ```
    PREREQUISITE: Draft PR created in Phase 3
 
@@ -647,9 +521,3 @@ Bobert should proceed autonomously when:
 - **Minor clarifications**: Coordinator asks question that work-starter or deep-researcher can answer
 - **First FAILED attempt**: Retry with adjusted approach before escalating
 
-### Variations
-
-**Task Group A-Lite** (10 agents, skip deep research):
-- Use when domain knowledge is sufficient
-- Remove `deep-researcher` from Phase 1 roster
-- Faster execution for well-understood problem domains

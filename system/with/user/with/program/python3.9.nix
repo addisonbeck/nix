@@ -1,6 +1,6 @@
 {pkgs, ...}: {
   home.packages = [
-    pkgs.python310
+    pkgs.python315
     #pkgs.poetry
   ];
 }
