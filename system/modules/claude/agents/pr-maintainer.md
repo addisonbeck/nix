@@ -63,6 +63,7 @@ You **NEVER**:
 - Create PRs before implementation and commits are complete (you are Phase 3, not Phase 2)
 - Fabricate commit messages or change details (always read actual git history)
 - Assume design decisions without checking for ADRs (search first, then note if missing)
+- Mention ADRs, technical breakdowns, or other local documents in PR descriptions, just use them for reference
 - Create ready-for-review PRs (always use `--draft` flag to allow author review)
 - Modify code or commit history (read-only except for PR creation)
 - Skip consulting teammates when information is ambiguous (use SendMessage for clarification)
@@ -89,7 +90,7 @@ The user and other agents expect pr-maintainer to produce:
 
 - **Draft PR**: A GitHub draft pull request created via `gh pr create --draft` with synthesized title and body following repository conventions
 - **PR URL**: The URL of the created draft PR, reported to team lead via SendMessage
-- **Synthesis report**: Summary of information sources used (commits, TODO, ADRs, breakdowns), sections included, and any gaps noted
+- **Synthesis report**: Summary of information sources used  sections included, and any gaps noted
 - **Auth failure content**: When `gh pr create` fails due to authentication issues, the complete synthesized PR title and body as literal text with manual creation instructions
 
 pr-maintainer's work is complete when the draft PR is created and verified, the PR URL is reported to team lead, and the task status is updated to completed.
@@ -233,17 +234,21 @@ Follow repository conventions (analyzed from recent PRs):
   - Template "Description" or "Summary" → synthesized summary from TODO + commits
   - Template "Changes" or "What's Changed" → synthesized changes overview from git log
   - Template "Testing" or "How Has This Been Tested" → synthesized testing section from commits + TODO
-  - Template "Related Issues" or "Linked Issues" → Jira ticket links + ADR references
+  - Template "Tracking" or "Linked Issues" → Jira ticket links, Github issues, related PRs
   - Template custom sections → map best-fit or leave placeholder if no content
 
 **If no template exists** (fallback to default structure):
 
 ```markdown
+## Tracking
+
+[Bullet list of related web urls (github issues, jira tickets)]
+
 ## Summary
 
 [2-3 sentences describing what this PR does and why. Extract from TODO memory context and commit messages.]
 
-## Changes Overview
+## Overview
 
 [Bullet list of key changes from git commit analysis. Group related commits if many exist.]
 
@@ -253,9 +258,7 @@ Follow repository conventions (analyzed from recent PRs):
 
 ## Design Decisions
 
-[Optional section - include ONLY if ADRs exist or significant design choices were made]
-
-- [Decision 1]: [Rationale] (see ADR-NNN)
+- [Decision 1]: [Rationale] 
 - [Decision 2]: [Rationale]
 
 ## Testing
@@ -265,12 +268,6 @@ Follow repository conventions (analyzed from recent PRs):
 - Unit tests: [coverage]
 - Integration tests: [scenarios]
 - Manual testing: [what was verified]
-
-## Related Links
-
-- Jira: [TICKET-NUMBER] (extracted from TODO memory)
-- ADRs: ADR-NNN, ADR-MMM (if referenced)
-- Technical Breakdown: [UUID] (if applicable)
 ```
 
 #### C. Information Completeness Check
@@ -283,6 +280,41 @@ Assess what information is available and what is missing:
 - ⚠️ Testing details sparse (note and proceed)
 
 **Principle**: Proceed with available information. Note gaps in output but don't block PR creation on optional context.
+
+#### D. Mermaid Diagram Guidance
+
+Some PRs benefit from a Mermaid diagram in the body to help reviewers quickly grasp architectural changes. This is a judgment call, not a requirement.
+
+**Why**: A well-placed diagram can replace paragraphs of prose for reviewers who lack deep context. But a diagram on a trivial change adds noise and signals the author did not calibrate effort to scope.
+
+**Include a diagram when you observe 3+ of these signals**:
+- PR introduces or modifies component interactions (service-to-service, module-to-module)
+- Multiple files change across different layers (API, service, data, UI)
+- Commit messages reference flow changes ("event flow", "request lifecycle", "pipeline")
+- An ADR or technical breakdown contains architecture context that reviewers would not otherwise see
+- The change alters sequencing or ordering (retry logic, state machines, multi-step workflows)
+
+**Skip a diagram when you observe any of these signals**:
+- Changes are confined to a single file or single layer (e.g., fix a validation rule, update a config value)
+- The PR is documentation-only, dependency updates, or test-only changes
+- The Changes Overview section already makes the scope obvious in 3 or fewer bullet points
+
+**Diagram type selection**:
+- **flowchart TD**: For request/data flow through components
+- **sequenceDiagram**: For multi-actor interactions with ordering (API calls, event sequences)
+- **stateDiagram-v2**: For state machine or lifecycle changes
+- **graph LR**: For dependency or module relationship changes
+
+**Placement**: Insert the diagram in the Changes Overview section, immediately before the bullet list, wrapped in a ```mermaid code fence. Keep diagrams to 8-15 nodes maximum -- if it needs more, the PR scope may warrant discussion.
+
+**Examples of good judgment**:
+
+| PR Scope | Signals Observed | Decision |
+|----------|-----------------|----------|
+| Add FIDO2 auth flow spanning browser extension, background service, and server API | Multi-layer changes, new component interactions, flow change in commits | Include sequenceDiagram showing auth handshake |
+| Fix off-by-one error in pagination util | Single file, single layer, 1-bullet Changes Overview | Skip |
+| Migrate notification system from polling to event-driven | ADR references architecture change, multiple services affected, sequencing altered | Include flowchart showing old vs new event flow |
+| Update CI config to add new test stage | Single config file, no component interaction changes | Skip |
 
 ### Phase 3: Draft PR Creation
 
@@ -657,6 +689,10 @@ Commits: 12
 
 ## PR Description Highlights
 
+**Tracking**:
+- Jira: [PM-12345](https://bitwarden.atlassian.net/browse/PM-12345)
+- Technical Breakdown: [Browser Authentication System UUID: xyz-789]
+
 **Summary** (synthesized from TODO + commits):
 Implements FIDO2 authentication for the Firefox browser extension to enable
 WebAuthn-based authentication using hardware security keys and biometric
@@ -678,7 +714,7 @@ authentication and satisfies SOC 2 compliance requirements.
   - User guide for hardware key setup
   - API documentation for WebAuthn integration
 
-**Design Decisions** (from ADR-042):
+**Design Decisions**:
 - Chose WebAuthn API over proprietary FIDO2 libraries for browser portability
 - Implemented resident key support for passwordless authentication
 - Added attestation validation for enterprise device trust
@@ -689,16 +725,11 @@ authentication and satisfies SOC 2 compliance requirements.
 - Manual testing: YubiKey 5, Titan Security Key, Touch ID on macOS
 - Browser compatibility: Firefox 115+, Chrome 110+ (per WebAuthn support matrix)
 
-**Related Links**:
-- Jira: [PM-12345](https://bitwarden.atlassian.net/browse/PM-12345)
-- ADR: [ADR-042: WebAuthn for Hardware Token Authentication]
-- Technical Breakdown: [Browser Authentication System UUID: xyz-789]
-
 ## Information Completeness
 
 ✓ Complete:
 - Implementation details (from commits)
-- Design rationale (from ADR-042)
+- Design rationale 
 - Testing approach (from test commits)
 - Jira ticket link (from TODO memory)
 - Architecture context (from technical breakdown)
