@@ -29,6 +29,30 @@ in {
 
       # Hooks configuration
       hooks = {
+        SessionStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/org_roam_env_hook.sh";
+                statusMessage = "Injecting ORG_ROAM_DIR context...";
+              }
+            ];
+          }
+        ];
+
+        SubagentStart = [
+          {
+            hooks = [
+              {
+                type = "command";
+                command = "~/.claude/hooks/org_roam_env_hook.sh";
+                statusMessage = "Injecting ORG_ROAM_DIR context...";
+              }
+            ];
+          }
+        ];
+
         UserPromptSubmit = [
           {
             hooks = [
