@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # execute-commit.sh — final execution step for the write-git-commit skill
 #
-# Receives a fully-formed commit message on stdin, stages all uncommitted
-# changes, creates the commit, and verifies it with git show HEAD.
+# Receives a fully-formed commit message on stdin, creates the commit, and
+# verifies it with git show HEAD.
+#
+# IMPORTANT: Staging is NOT done by this script. The caller must explicitly
+# stage files (e.g., git add path/to/file) before invoking this script.
 #
 # Usage:
 #   cat <<'EOF' | ~/.claude/skills/write-git-commit/execute-commit.sh
@@ -22,8 +25,6 @@ if [ -z "$commit_message" ]; then
   echo "Error: no commit message on stdin" >&2
   exit 1
 fi
-
-git add -A
 
 git commit --no-gpg-sign -m "$commit_message"
 

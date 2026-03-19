@@ -116,13 +116,13 @@ This is an **instruction-only skill** that provides a complete behavioral framew
 4. **Message Generation**: Construct conventional commit message following 50/72 rule and imperative mood
 5. **Pre-Commit Verification**: Execute pre-commit hooks and formatting checks
 6. **Message Presentation**: Show generated message to user (proceed directly without approval-seeking)
-7. **Execution**: Stage all uncommitted changes with `git add -A` and commit with `--no-gpg-sign`
+7. **Execution**: Caller stages files explicitly BEFORE invoking this script. The script only wraps `git commit`.
 8. **Verification**: Confirm commit creation with `git show HEAD`
 
 ### Key Patterns
 
 - **Error handling**: BLOCK on missing "why", no changes, or secrets detected
-- **Staging strategy**: Always `git add -A` to stage all uncommitted changes before committing
+- **Staging strategy**: Callers MUST stage files explicitly (e.g., `git add path/to/file`) before invoking execute-commit.sh. The script does NOT stage — it only commits what is already staged.
 - **Git flags**: Always use `--no-gpg-sign` (repository convention)
 - **HEREDOC format**: Use HEREDOC for multi-line commit messages to handle bodies correctly
 - **Style matching**: Reference recent `git log` to match local commit conventions
@@ -410,7 +410,13 @@ Does this accurately capture the change? Reply "yes" to commit, or provide feedb
 
 #### Phase 7: Execution
 
-Pipe the commit message to the execute-commit.sh script. This script handles staging, committing, and verification as a subprocess — which is required because direct `git commit` tool calls are blocked by a PreToolUse hook that enforces use of this skill.
+Pipe the commit message to the execute-commit.sh script. This script handles committing and verification as a subprocess — which is required because direct `git commit` tool calls are blocked by a PreToolUse hook that enforces use of this skill.
+
+Before piping to the script, stage the specific files for this commit explicitly:
+
+```bash
+git add path/to/file1 path/to/file2
+```
 
 ```bash
 cat <<'EOF' | ~/.claude/skills/write-git-commit/execute-commit.sh
@@ -424,13 +430,12 @@ EOF
 
 Important:
 - Always use this script — never call `git commit` directly (it will be denied by the PreToolUse gate hook)
-- The script runs `git add -A`, `git commit --no-gpg-sign`, and `git show HEAD` internally
+- The script runs `git commit --no-gpg-sign` and `git show HEAD` internally — staging is NOT done by the script
 - Always use HEREDOC format when piping the message to handle multi-line bodies correctly
 - Capture stderr in case of commit hook failures
 
-If staging or commit fails:
+If commit fails:
 - Report error to user
-- If `git add -A` failed, explain what went wrong (merge conflicts, permission issues)
 - If pre-commit hook failed, explain what needs to be fixed
 - Do NOT attempt to fix files yourself (read-only constraint)
 - Suggest user fix issue and re-invoke
