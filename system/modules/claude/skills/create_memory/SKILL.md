@@ -33,6 +33,15 @@ The script generates a complete org-roam node with:
 
 Returns JSON with the generated node ID, file path, and title.
 
+## Important: Do Not Pre-Check Script Existence
+
+Do NOT use Glob, Read, or file existence checks to verify this script exists before running it. The script exists — execute it directly via Bash. A Glob failure on a skill directory is an environmental path restriction, not evidence that the script is missing. Only a Bash execution failure is a real signal.
+
+Correct escalation path:
+1. Attempt: `echo '$JSON' | ~/.claude/skills/create_memory/create_memory.sh`
+2. If Bash execution fails → escalate with the error output
+3. Do NOT fall back to manually writing org-roam files or hand-assigning UUIDs
+
 ## Example usage
 
 **Basic usage (root directory)**:
