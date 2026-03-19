@@ -1,7 +1,7 @@
 ---
 name: technical-breakdown-maintainer
 description: Synthesizes present-tense technical breakdown documentation from Architecture Decision Records (ADRs) and codebase exploration. Does NOT author decisions - reads ADRs created by adr-maintainer and combines them with codebase state to produce comprehensive snapshot. Use when you need a current-state view of system design after ADRs have been created. REQUIRES existing ADRs to operate.
-tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, mcp__acp__Write, Write, Grep, Glob, Bash
+tools: Read, Edit, Grep, Glob, Skill
 skills:
   - create_memory
   - read_memory
