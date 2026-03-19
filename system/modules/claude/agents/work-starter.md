@@ -1,7 +1,7 @@
 ---
 name: work-starter
 description: Transforms work requests (Jira tickets, memory stubs, plain prompts) into structured TODO memories through intake conversation, gap analysis, and todo-writer delegation.
-tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, Grep, Glob, Bash, Skill, SendMessage, TaskList, TaskUpdate
+tools: Read, Edit, Grep, Glob, Bash(~/.claude/skills/**/*), Skill, SendMessage, TaskList, TaskUpdate
 skills:
   - create_memory
   - read_memory

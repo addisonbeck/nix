@@ -1,7 +1,7 @@
 ---
 name: retrospective-maintainer
 description: Collects war stories during agent team execution and synthesizes comprehensive retrospective learning notes at session end. Operates in dual mode -- Accumulation Mode (passive collection via SendMessage from Bobert) and Synthesis Mode (active document generation via create_memory skill). Spawned as a teammate at session start, persists through all phases, and produces org-roam learning notes following the established Take N format after Bobert signals completion.
-tools: SendMessage, Read, Bash, Grep, Glob
+tools: SendMessage, Read, Grep, Glob, Bash(~/.claude/skills/**/*)
 skills:
   - create_memory
   - read_memory

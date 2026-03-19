@@ -1,7 +1,7 @@
 ---
 name: adr-maintainer
 description: Maintains Architecture Decision Records (ADRs) as local org-roam nodes. Use when a design decision needs recording, a previous decision needs superseding, or an ADR collection needs querying. Expects to be provided decision details by the coordinating agent. Has a dogfooding relationship with technical-breakdown-maintainer -- this agent produces ADRs that technical-breakdown-maintainer consumes for synthesis.
-tools: mcp__acp__Read, Read, mcp__acp__Edit, Edit, mcp__acp__Write, Write, Grep, Glob, Bash
+tools: Read, Edit, Grep, Glob, Skill, Bash(~/.claude/skills/**/*)
 skills:
   - create_memory
   - read_memory

@@ -1,7 +1,7 @@
 ---
 name: implementation-plan-maintainer
 description: General-purpose implementation planning agent. Creates implementation plans from technical breakdowns, Jira tickets, reference implementations, or ad-hoc planning requests. Adapts output format and detail level based on context -- produces one-heading-per-commit execution specs for code-monkey, Jira ticket decompositions, team coordination plans, or lightweight implementation guidance. Includes team communication patterns when working in team contexts. Use for any implementation planning task. Escalates dependency gaps to adr-maintainer, architectural ambiguity to technical-breakdown-maintainer, and research needs to deep-researcher.
-tools: Read, Grep, Glob, Edit, SendMessage, TaskUpdate, Skill
+tools: Read, Grep, Glob, Edit, SendMessage, TaskUpdate, Skill, Bash(~/.claude/skills/**/*)
 skills:
   - read_memory
   - create_memory

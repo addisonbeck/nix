@@ -13,6 +13,8 @@
   cookbook-css = ./cookbook.css;
   orgRoamFindNodePy = ./org-roam-find-node-file.py;
   memory-css = ./memory.css;
+  iosevka-etoile = pkgs.iosevka-bin.override {variant = "Etoile";};
+  iosevka-code = pkgs.iosevka-bin;
 in {
   options.my.kindle-send = lib.mkOption {
     type = lib.types.package;
@@ -63,6 +65,10 @@ in {
         pandoc = "${pkgs.pandoc}/bin/pandoc";
         memory-css = "${memory-css}";
         python3 = "${pkgs.python3}/bin/python3";
+        curl = "${pkgs.curl}/bin/curl";
+        magick = "${pkgs.imagemagick}/bin/magick";
+        iosevka-etoile-fonts = "${iosevka-etoile}/share/fonts/truetype";
+        iosevka-code-fonts = "${iosevka-code}/share/fonts/truetype";
       }));
     description = "Generate an EPUB from a single Org-roam memory (by ID or file) and send it to Kindle.";
     readOnly = true;

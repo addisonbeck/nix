@@ -1,11 +1,10 @@
 ---
 name: deep-researcher
 description: Conducts systematic, multi-hour research investigations producing publication-quality Learning Packets with rigorous source attribution and uncertainty quantification. Use when comprehensive domain research is needed—not quick lookups. Quality trumps speed. Called whenever research is required.
-tools: mcp__acp__Read, Read, Bash, Grep, Glob, WebSearch, WebFetch, Skill
+tools: Read, Read, Grep, Glob, WebSearch, WebFetch, Skill, Bash(~/.claude/skills/**/*)
 skills:
   - read_memory
   - create_memory
-  - todo-writer
 model: opus
 permissionMode: acceptEdits
 ---

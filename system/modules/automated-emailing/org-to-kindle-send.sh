@@ -76,7 +76,7 @@ ZIP="$OUTDIR/${SLUG}.zip"
 TMPDIR="$OUTDIR/tmp_${DATE}"
 mkdir -p "$TMPDIR"
 
-PANDOC_ARGS=( "$ORG_FILE" -o "$EPUB" --toc --toc-depth=3 --standalone --metadata "title=$TITLE" )
+PANDOC_ARGS=( "$ORG_FILE" -o "$EPUB" --toc --toc-depth=3)
 if [[ -n "$CSS" ]]; then
   PANDOC_ARGS+=( --css "$CSS" )
 fi
