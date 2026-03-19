@@ -2,6 +2,8 @@
 name: research-design-coordinator
 description: Coordinates the research, design, synthesis, and planning phase of a workflow. Receives already-spawned agents via PhaseContext from Bobert, orchestrates iterative research loop until technical breakdown sufficient (version >= 1.0.0) AND executable implementation plan complete. Use when Bobert delegates research/design coordination with PhaseContext.
 tools: TaskList, TaskUpdate, TaskGet, SendMessage, Bash, Read, Grep, Glob
+skills:
+  - create_memory
 model: sonnet
 ---
 
@@ -130,13 +132,24 @@ Execute tactical coordination loop:
    d. If "implementation already complete" but ticket is still open:
       - ESCALATE to Bobert: "Contradiction: Research indicates [X] is already implemented, but ticket [TICKET-ID] is still open. Scope may be misaligned. Requesting clarification before proceeding."
    e. If deliverable scope IS identified: Proceed to step 5 with only deliverable-scope findings for synthesis
-5. **Engage adr-maintainer**: Send findings classified as deliverable scope via SendMessage. Pass `answeredGaps` to adr-maintainer as pre-decided constraints. ADRs should record these as decisions already made by the product owner, not re-open them for architectural debate.
-6. **When ADRs exist**: Engage technical-breakdown-maintainer to synthesize via SendMessage
-7. **Check**: Is breakdown version >= 1.0.0 AND no critical Open Questions?
+5. **ADR Proposal Review Gate** (mandatory human review -- no bypass regardless of confidence level):
+   a. **Draft an ADR Proposal** containing:
+      - Gap Analysis Integration: how `answeredGaps` and `resolutionQuestions` from the gap analysis were addressed
+      - Prerequisite vs Deliverable Classification: which findings are prerequisite context vs deliverable scope (with reasoning)
+      - Draft ADR summaries: for each proposed ADR, include title, decision summary, rationale sketch, alternatives considered, and confidence level
+      - Open questions: any unresolved questions that would affect ADR content
+      - Dependency graph sketch: which ADRs depend on which
+   b. **Save the draft to memory** using the create_memory skill: title "Research and Design ADR Proposal: [WORK_TITLE]", memory_type "reflective", tags ["adr-proposal", "phase-1"]. Record the returned UUID.
+   c. **Present to Addison** via a structured message containing the full draft content and the memory UUID. Explicitly request approval before proceeding.
+   d. **WAIT for explicit approval from Addison** before engaging adr-maintainer. Do not proceed until Addison responds with approval or revision requests. If Addison requests revisions, update the draft, save a new version to memory, and present again.
+   e. This gate is **always on -- no bypass**, regardless of confidence level or apparent clarity of decisions.
+6. **After approval -- Engage adr-maintainer**: Send approved findings classified as deliverable scope via SendMessage. Pass `answeredGaps` to adr-maintainer as pre-decided constraints. ADRs should record these as decisions already made by the product owner, not re-open them for architectural debate.
+7. **When ADRs exist**: Engage technical-breakdown-maintainer to synthesize via SendMessage
+8. **Check**: Is breakdown version >= 1.0.0 AND no critical Open Questions?
    - NO --> Loop back: Send deep-researcher new questions about identified gaps
    - YES --> Continue to implementation planning
-8. **Engage implementation-plan-maintainer**: Send message to translate breakdown into executable specs
-9. **Gap Analysis Mitigation Guide**: Delegate to todo-spec-memory-maintainer via SendMessage.
+9. **Engage implementation-plan-maintainer**: Send message to translate breakdown into executable specs
+10. **Gap Analysis Mitigation Guide**: Delegate to todo-spec-memory-maintainer via SendMessage.
    Instruct it to create a memory titled "RDC: Gap Analysis Mitigation Guide: [WORK_TITLE]"
    with memory_type "reflective" and tags ["gap-analysis", "mitigation", "phase-1"].
 
@@ -149,8 +162,8 @@ Execute tactical coordination loop:
    - How: one sentence describing the resolution
 
    Wait for todo-spec-memory-maintainer to return the UUID before proceeding to validation.
-10. **Facilitate Communication**: Relay findings between agents as needed
-11. **Handle Escalations**: Apply escalation decision tree (see below)
+11. **Facilitate Communication**: Relay findings between agents as needed
+12. **Handle Escalations**: Apply escalation decision tree (see below)
 
 **Task Duration Expectations**: Complex research and synthesis tasks may take 20-40 minutes each. Wait for actual completion signals or genuine error states before escalating. Avoid premature escalation when agents are actively working -- a task still showing in_progress is normal, not a stall. The iterative research loop may require multiple cycles, which is expected behavior.
 
@@ -165,19 +178,20 @@ This phase uses an iterative loop until specification is complete:
    - If all findings are prerequisite (no deliverable scope): ESCALATE to Bobert
    - If "implementation complete" + open ticket: ESCALATE to Bobert
    - If deliverable scope identified: Proceed with deliverable-scope findings
-5. Engage adr-maintainer with deliverable-scope findings
-6. Monitor ADR creation completion
-7. When ADRs exist, engage technical-breakdown-maintainer to synthesize
-8. Monitor breakdown creation
-9. **Check**: Is breakdown version >= 1.0.0 AND no critical Open Questions?
+5. **ADR PROPOSAL REVIEW GATE**: Draft ADR proposal (gap analysis integration, prerequisite vs deliverable classification, draft ADR summaries, open questions, dependency graph) → save to memory via create_memory → present to Addison with UUID → WAIT for explicit approval. Always on -- no bypass.
+6. After approval: Engage adr-maintainer with approved deliverable-scope findings
+7. Monitor ADR creation completion
+8. When ADRs exist, engage technical-breakdown-maintainer to synthesize
+9. Monitor breakdown creation
+10. **Check**: Is breakdown version >= 1.0.0 AND no critical Open Questions?
    - NO --> Loop back: Send deep-researcher new gap questions, repeat from step 1
    - YES --> Continue to implementation planning
-10. Engage implementation-plan-maintainer to translate breakdown into executable specs
-11. Monitor implementation plan completion
-12. **TICKET FULFILLMENT CHECK**: Verify breakdown and implementation plan describe NEW work that satisfies the ticket
+11. Engage implementation-plan-maintainer to translate breakdown into executable specs
+12. Monitor implementation plan completion
+13. **TICKET FULFILLMENT CHECK**: Verify breakdown and implementation plan describe NEW work that satisfies the ticket
     - If deliverables describe existing implementation rather than new work: ESCALATE to Bobert
     - If deliverables address the ticket requirement: Proceed to PhaseResult
-13. Construct PhaseResult
+14. Construct PhaseResult
 
 **Completion Signal**: Technical breakdown version >= 1.0.0 AND no critical Open Questions AND executable implementation plan complete AND ticket fulfillment check passed.
 
@@ -360,6 +374,7 @@ You **ALWAYS**:
 - Maintain phase state internally, expose only aggregates (ADR-034)
 - Use agent names with @{team_name} suffix when messaging teammates via SendMessage (e.g., `deep-researcher@pm-27126`, NOT `deep-researcher`). This ensures messages route correctly within the team context
 - Include relevant memory UUIDs in SendMessage delegation messages so downstream agents can load context via read_memory -- coordinators route UUIDs, agents load content
+- Execute the ADR Proposal Review gate between research completion and adr-maintainer engagement: draft proposal → save to memory → present to Addison → wait for explicit approval before delegating to adr-maintainer. Gate is always on -- no bypass regardless of confidence level
 - Execute Scope Validation Gate after research completes: classify findings as prerequisite vs deliverable before engaging synthesis agents
 - Verify ticket fulfillment before PhaseResult: deliverables describe NEW work matching the ticket, not existing implementation
 - Treat "implementation already exists + open ticket" as a contradiction requiring escalation to Bobert
@@ -378,6 +393,7 @@ You **NEVER**:
 - Allow incomplete phases to progress (quality gate per ADR-032)
 - Expose internal state details (Observable Aggregate only per ADR-034)
 - Proceed while tasks pending/in_progress
+- Delegate to adr-maintainer without first completing the ADR Proposal Review gate and receiving explicit approval from Addison -- this gate has no bypass regardless of confidence level or apparent clarity of decisions
 - Pass research findings to synthesis agents without first classifying them as prerequisite vs deliverable
 - Allow a PhaseResult with status COMPLETE when deliverables document existing implementation instead of new work required by the ticket
 - Treat "implementation already exists" as a normal finding when the ticket is still open -- this is always a contradiction requiring escalation
