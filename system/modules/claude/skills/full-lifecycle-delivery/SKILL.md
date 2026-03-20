@@ -305,9 +305,7 @@ Coordinators return PhaseResult containing:
 
 4. **Two Iterative Loops**:
    - **Phase 1 Loop**: Research/design/synthesis/planning repeats until technical breakdown reaches v1.0.0 AND implementation plan is complete
-   - **Phase 2 Loop**: Implementation/commit repeats until all planned functionality is committed AND working tree is clean AND tests pass
-     - **Test Passing Scope (Default)**: New/modified tests passing (tests added or modified during implementation)
-     - **Test Passing Scope (Exception)**: All package tests passing (only when ticket explicitly mandates full suite remediation with phrases like "fix all tests", "remediate test suite", "achieve 100% test pass rate")
+   - **Phase 2 Loop**: Implementation/commit repeats until all planned functionality is committed AND working tree is clean AND tests pass (see item 5 for test scope details)
 
 5. **Test Passing Criteria**: Phase 2 completion requires "tests passing" validation, with scope determined by ticket requirements:
 
@@ -353,8 +351,8 @@ These constraints are non-negotiable and prevent catastrophic failures in execut
    - WITHOUT team_name: Spawns agent as pure subagent with no team communication infrastructure
 
    **Bobert Action**:
-   - Phase 0-3: Spawn ALL coordinators using `Task tool WITH team_name`
-   - Phase 0-3: Spawn ALL work agents using `Task tool WITH team_name`
+   - Phase 0-4: Spawn ALL coordinators using `Task tool WITH team_name`
+   - Phase 0-4: Spawn ALL work agents using `Task tool WITH team_name`
    - NEVER spawn coordinators as pure subagents (Task without team_name)
    - VERIFY all agents have team communication tools before delegation begins
 
@@ -412,32 +410,32 @@ These constraints are non-negotiable and prevent catastrophic failures in execut
    Scope check: TODO memory's scope aligns with ticket requirement (scopeAnchor)
    ```
 
-**GAP ANALYSIS GATE** (between Phase 0 and Phase 1):
+3. **Gap Analysis Gate** (between Phase 0 and Phase 1):
 
-1. Read `gapAnalysisQuestionCount` from Phase 0 PhaseResult
-2. Present to Addison:
-```
-Phase 0 complete. work-starter identified [N] question(s) that need your input before research begins.
+   1. Read `gapAnalysisQuestionCount` from Phase 0 PhaseResult
+   2. Present to Addison:
+   ```
+   Phase 0 complete. work-starter identified [N] question(s) that need your input before research begins.
 
-Please review and fill in your answers:
-[absolute file path from Phase 0 PhaseResult]
+   Please review and fill in your answers:
+   [absolute file path from Phase 0 PhaseResult]
 
-For each question, fill in the Answer field and set Resolution to one of:
-ANSWERED            — you provided a direct answer
-DEFERRED_TO_RESEARCH — you want Phase 1 to figure it out
-ACCEPTED_DEFAULT    — you accept Bobert's suggested default
+   For each question, fill in the Answer field and set Resolution to one of:
+   ANSWERED            — you provided a direct answer
+   DEFERRED_TO_RESEARCH — you want Phase 1 to figure it out
+   ACCEPTED_DEFAULT    — you accept Bobert's suggested default
 
-Reply "done" when finished.
-```
-3. PAUSE: Wait for Addison to reply "done"
-4. Load gap analysis memory: `read_memory(gapAnalysisMemoryUUID)`
-5. Parse each question's Resolution field:
-      - `ANSWERED`             → add to `answeredGaps` for Phase 1 PhaseContext
-      - `DEFERRED_TO_RESEARCH` → add to `resolutionQuestions` for Phase 1 PhaseContext
-      - `ACCEPTED_DEFAULT` or blank → document as assumption in Phase 1 PhaseContext constraints; do NOT add to resolutionQuestions
-6. Proceed to Phase 1
+   Reply "done" when finished.
+   ```
+   3. PAUSE: Wait for Addison to reply "done"
+   4. Load gap analysis memory: `read_memory(gapAnalysisMemoryUUID)`
+   5. Parse each question's Resolution field:
+         - `ANSWERED`             → add to `answeredGaps` for Phase 1 PhaseContext
+         - `DEFERRED_TO_RESEARCH` → add to `resolutionQuestions` for Phase 1 PhaseContext
+         - `ACCEPTED_DEFAULT` or blank → document as assumption in Phase 1 PhaseContext constraints; do NOT add to resolutionQuestions
+   6. Proceed to Phase 1
 
-3. **Phase 1 Execution**:
+4. **Phase 1 Execution**:
    ```
    Construct PhaseContext for Phase 1 (pass TODO UUID from Phase 0 + scopeAnchor + gapAnalysisMemoryUUID + answeredGaps + resolutionQuestions)
    Spawn research-design-coordinator as teammate (Task tool WITH team_name)
@@ -452,7 +450,7 @@ Reply "done" when finished.
    If scopeValidation fails: Do NOT advance to Phase 2 -- investigate scope misalignment
    ```
 
-4. **Phase 2 Execution**:
+5. **Phase 2 Execution**:
    ```
    Construct PhaseContext for Phase 2 (pass impl plan UUID, worktree path)
    Spawn implementation-coordinator as teammate (Task tool WITH team_name)
@@ -463,10 +461,10 @@ Reply "done" when finished.
    Wait for PhaseResult from implementation-coordinator
    Validate: status == COMPLETE, commit SHAs present, working tree clean, tests passing
    Have todo-spec-memory-maintainer add all documents created in phase 2 to Required Reading (ADRs, technical breakdown, implementation plan).
-   Note: Test passing scope documented in Key Characteristics section #4 (default: new/modified tests)
+   Note: Test passing scope documented in Key Characteristics section #5 (default: new/modified tests)
    ```
 
-5. **Phase 3 Execution**:
+6. **Phase 3 Execution**:
    ```
    PREREQUISITE: Branch must be pushed to remote before finalization begins
    - Validate: git ls-remote origin <branch>
@@ -485,7 +483,7 @@ Reply "done" when finished.
    Validate: status == COMPLETE, PR URL present
    ```
 
-6. **Phase 4 Exection**:
+7. **Phase 4 Execution**:
    ```
    PREREQUISITE: Draft PR created in Phase 3
 
@@ -500,7 +498,7 @@ Reply "done" when finished.
    Note: Correction cycles (0-3) are normal; escalation only if limit exceeded
    ```
 
-7. **Assert Phase**: Review all PhaseResults, verify deliverables, report completion to Addison
+8. **Assert Phase**: Review all PhaseResults, verify deliverables, report completion to Addison
 
 ### When to Consult Addison
 
