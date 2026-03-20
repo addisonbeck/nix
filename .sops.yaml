@@ -29,7 +29,7 @@ creation_rules:
       - *admin_tertiary_gpg
 
   # Homelab + Bw Host
-  - path_regex: secrets/(.*automated-emailing.*).yaml$
+  - path_regex: secrets/(.*automated-emailing.*|.*nasa-token*).yaml$
     key_groups:
     - age:
       - *host_homelab

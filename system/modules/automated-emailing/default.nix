@@ -13,8 +13,6 @@
   cookbook-css = ./cookbook.css;
   orgRoamFindNodePy = ./org-roam-find-node-file.py;
   memory-css = ./memory.css;
-  iosevka-etoile = pkgs.iosevka-bin.override {variant = "Etoile";};
-  iosevka-code = pkgs.iosevka-bin;
 in {
   options.my.kindle-send = lib.mkOption {
     type = lib.types.package;
@@ -54,6 +52,21 @@ in {
     description = "Generates an epub from my org roam cookbook and sends it to my kindle";
     readOnly = true;
   };
+  options.my.org-to-kindle-send = lib.mkOption {
+    type = lib.types.package;
+    default =
+      pkgs.writeShellScriptBin "org-to-kindle-send"
+      (builtins.readFile (pkgs.replaceVars ./org-to-kindle-send.sh {
+        bash = "${pkgs.bash}/bin/bash";
+        python3 = "${pkgs.python3}/bin/python3";
+        org-roam-find-node-file = "${orgRoamFindNodePy}";
+        kindle-send = "${config.my.kindle-send}/bin/kindle-send";
+        pandoc = "${pkgs.pandoc}/bin/pandoc";
+        memory-css = "${memory-css}";
+      }));
+    description = "Send an arbitrary Org-roam node to Kindle as an EPUB.";
+    readOnly = true;
+  };
   options.my.memory-to-kindle-generate = lib.mkOption {
     type = lib.types.package;
     default =
@@ -67,8 +80,7 @@ in {
         python3 = "${pkgs.python3}/bin/python3";
         curl = "${pkgs.curl}/bin/curl";
         magick = "${pkgs.imagemagick}/bin/magick";
-        iosevka-etoile-fonts = "${iosevka-etoile}/share/fonts/truetype";
-        iosevka-code-fonts = "${iosevka-code}/share/fonts/truetype";
+        nasa-token-path = "${config.sops.secrets.nasa-token.path}";
       }));
     description = "Generate an EPUB from a single Org-roam memory (by ID or file) and send it to Kindle.";
     readOnly = true;
@@ -83,6 +95,7 @@ in {
         config.my.wikipedia-to-kindle-generate
         config.my.cookbook-to-kindle-generate
         config.my.memory-to-kindle-generate
+        config.my.org-to-kindle-send
       ]
       ++ lib.optionals (!isDarwin) [
         pkgs.calibre

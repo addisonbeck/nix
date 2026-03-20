@@ -10,6 +10,7 @@
     ./modules/automated-emailing
     ./modules/yubikey
     ./modules/secrets/automated-emailing.nix
+    ./modules/secrets/nasa-token.nix
   ];
 
   # This is required for the automated-emailing module to work on mac, but

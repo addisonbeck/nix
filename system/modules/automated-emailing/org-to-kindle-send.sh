@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RESOLVER="@resolver@"
+PYTHON3="@python3@"
+ORG_ROAM_FIND_NODE_FILE="@org-roam-find-node-file@"
 PANDOC="@pandoc@"
 KINDLE_SEND="@kindle-send@"
 BASH="@bash@"
+MEMORY_CSS="@memory-css@"
 
 usage() {
   cat <<EOF
@@ -38,9 +40,11 @@ fi
 
 # Resolve the org file path
 if [[ -n "$ID" ]]; then
-  ORG_FILE="$("$RESOLVER" --id "$ID")"
+  ORG_FILE="$("$PYTHON3" "$ORG_ROAM_FIND_NODE_FILE" "$ID" 2>/dev/null)"
 else
-  ORG_FILE="$("$RESOLVER" --file "$FILE")"
+  RAW="$FILE"
+  if [[ "$RAW" == file:* ]]; then RAW="${RAW#file:}"; fi
+  ORG_FILE="$RAW"
 fi
 
 if [[ -z "${ORG_FILE:-}" || ! -f "$ORG_FILE" ]]; then
@@ -59,7 +63,6 @@ derive_title() {
 }
 
 safe_slug() {
-  # crude slug for filenames
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g;s/^-+|-+$//g'
 }
 
@@ -76,12 +79,20 @@ ZIP="$OUTDIR/${SLUG}.zip"
 TMPDIR="$OUTDIR/tmp_${DATE}"
 mkdir -p "$TMPDIR"
 
-PANDOC_ARGS=( "$ORG_FILE" -o "$EPUB" --toc --toc-depth=3)
-if [[ -n "$CSS" ]]; then
-  PANDOC_ARGS+=( --css "$CSS" )
-fi
+METADATA_FILE="$TMPDIR/metadata.yaml"
+printf -- '---\ntitle: "%s"\n...\n' "${TITLE//\"/\\\"}" > "$METADATA_FILE"
 
-"$PANDOC" "${PANDOC_ARGS[@]}"
+CSS="${CSS:-$MEMORY_CSS}"
+
+"$PANDOC" "$ORG_FILE" -o "$EPUB" \
+  --from=org \
+  --to=epub3 \
+  --toc \
+  --toc-depth=3 \
+  --standalone \
+  --highlight-style=monochrome \
+  --metadata-file "$METADATA_FILE" \
+  --css="$CSS"
 
 if [[ -z "$SUBJECT" ]]; then
   SUBJECT="Org: ${TITLE} (${DATE})"
