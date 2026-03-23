@@ -13,21 +13,10 @@ echo "==> Installing packages..."
 pkg install -y \
   openssh \
   autossh \
-  tmux \
   curl \
   git \
-  vim \
-  python \
   termux-tools \
-  termux-api \
-  ripgrep \
-  fd \
-  fzf \
-  bat \
-  delta \
-  rsync \
-  age \
-  jq
+  termux-api
 
 echo "==> Requesting storage permission..."
 termux-setup-storage || true
@@ -51,21 +40,6 @@ Host bw
   RequestTTY yes
 SSHEOF
 chmod 600 "$HOME_DIR/.ssh/config"
-
-echo "==> Writing tmux config (copy to bw after setup)..."
-cat > "$HOME_DIR/.tmux.conf" << 'TMUXEOF'
-# Terminal color passthrough for Gruvbox in emacsclient -t
-set -g default-terminal "tmux-256color"
-set -ga terminal-overrides ",xterm-256color:Tc"
-
-# Critical for Evil mode - eliminate ESC delay
-set -sg escape-time 10
-
-# No status bar - reduces e-ink redraws, everything happens inside Emacs
-set -g status off
-
-set -g history-limit 50000
-TMUXEOF
 
 echo "==> Writing Termux properties (extra-keys, display)..."
 cat > "$HOME_DIR/.termux/termux.properties" << 'PROPEOF'
@@ -127,27 +101,20 @@ curl -fLo "$HOME_DIR/.termux/font.ttf" \
 
 echo "==> Writing connection scripts..."
 
-# Standard: SSH + tmux auto-attach
 cat > "$BIN_DIR/bw" << 'BWEOF'
 #!/data/data/com.termux/files/usr/bin/bash
-SESSION="emacs"
 termux-wake-lock 2>/dev/null || true
-exec ssh -t bw "tmux has-session -t $SESSION 2>/dev/null \
-  && tmux attach -t $SESSION \
-  || tmux new-session -s $SESSION 'emacsclient -t -a \"emacs -nw\"'"
+exec ssh -t bw 'emacsclient -t -a "emacs -nw"'
 BWEOF
 chmod +x "$BIN_DIR/bw"
 
-# Auto-reconnect: autossh restarts connection on drop
+# Auto-reconnect variant: autossh restarts the connection on drop
 cat > "$BIN_DIR/bw-persist" << 'BWPEOF'
 #!/data/data/com.termux/files/usr/bin/bash
-SESSION="emacs"
 termux-wake-lock 2>/dev/null || true
 export AUTOSSH_POLL=30
 export AUTOSSH_GATETIME=0
-exec autossh -M 0 -t bw "tmux has-session -t $SESSION 2>/dev/null \
-  && tmux attach -t $SESSION \
-  || tmux new-session -s $SESSION 'emacsclient -t -a \"emacs -nw\"'"
+exec autossh -M 0 -t bw 'emacsclient -t -a "emacs -nw"'
 BWPEOF
 chmod +x "$BIN_DIR/bw-persist"
 
@@ -178,12 +145,11 @@ echo "==> Done!"
 echo ""
 echo "    Next steps:"
 echo "    1. Add SSH key to bw (see above) if newly generated"
-echo "    2. Copy tmux config to bw:  scp ~/.tmux.conf bw:~/.tmux.conf"
-echo "    3. In Boox Settings > Apps > Termux:"
+echo "    2. In Boox Settings > Apps > Termux:"
 echo "         - Refresh mode: Speed (or Smooth on firmware V4.1+)"
 echo "         - Bold Font: on"
 echo "         - Full refresh every 5 pages"
 echo "         - Battery: Unrestricted (prevents Doze killing SSH)"
-echo "    4. Run 'bw' (standard) or 'bw-persist' (auto-reconnect)"
-echo "    5. Install Termux:Widget from F-Droid for home screen shortcuts"
+echo "    3. Run 'bw' (standard) or 'bw-persist' (auto-reconnect)"
+echo "    4. Install Termux:Widget from F-Droid for home screen shortcuts"
 echo ""
