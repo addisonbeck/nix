@@ -73,4 +73,17 @@
 (advice-add 'my/toggle-theme :after 'my/update-olivetti-fringe-face)
 (advice-add 'my/toggle-olivetti :before 'my/update-olivetti-fringe-face)
 (advice-add 'my/enable-olivetti :before 'my/update-olivetti-fringe-face)
+
+(defun my/sync-delta-theme ()
+  "Sync delta theme with current emacs theme via DELTA_FEATURES env var."
+  (let ((features (if (eq my/current-theme 'gruvbox-light-hard)
+                      "gruvbox-light"
+                    "gruvbox-dark")))
+    (setenv "DELTA_FEATURES" features)
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (when (derived-mode-p 'vterm-mode)
+          (vterm-send-string
+           (format "export DELTA_FEATURES='%s'\n" features)))))))
+(advice-add 'my/toggle-theme :after #'my/sync-delta-theme)
 #+end_src

@@ -80,4 +80,14 @@
     (compile (format "sudo memory-to-kindle-generate %s"
                      (shell-quote-argument (file-truename buffer-file-name)))
              t)))
+
+(defun my/current-org-file-to-epub ()
+  "Export the current Org file as an EPUB and drop it into ~/notes/epubs."
+  (interactive)
+  (unless buffer-file-name (user-error "Not visiting a file"))
+  (when (buffer-modified-p) (save-buffer))
+  (let ((compilation-buffer-name-function (lambda (_mode) "*org-to-epub*")))
+    (compile (format "memory-to-epub-file %s"
+                     (shell-quote-argument (file-truename buffer-file-name)))
+             t)))
 #+end_src

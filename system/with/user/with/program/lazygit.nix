@@ -3,7 +3,7 @@
   #programs.lazygit.settings.pager = "${pkgs.delta}/bin/delta --dark --paging=never";
   programs.lazygit.settings = {
     git.paging.colorArg = "always";
-    git.paging.pager = "${pkgs.delta}/bin/delta --dark --paging=never";
+    git.paging.pager = "${pkgs.delta}/bin/delta --paging=never";
     gui.portraitMode = "auto";
     customCommands = [
       {

@@ -27,6 +27,22 @@ in {
         pr = "";
       };
 
+      includeGitInstructions = false;
+      prefersReducedMotion = true;
+
+      spinnerVerbs = {
+        mode = "replace";
+        verbs = [
+          "Predicting the next word"
+          "Guessing"
+          "Hallucinating"
+          "Pooping tokens"
+          "Pretending to understand"
+          "Making shit up"
+          "Don't forget to take a break"
+        ];
+      };
+
       # Hooks configuration
       hooks = {
         SessionStart = [

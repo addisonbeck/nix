@@ -1,8 +1,20 @@
 {
   pkgs,
+  lib,
   config,
   ...
 }: let
+  orgRoamFindNodePy = ../automated-emailing/org-roam-find-node-file.py;
+  memory-css = ../automated-emailing/memory.css;
+  memory-to-epub-file = pkgs.writeShellScriptBin "memory-to-epub-file" (builtins.readFile (pkgs.replaceVars ./memory-to-epub-file.sh {
+    org-roam-find-node-file = "${orgRoamFindNodePy}";
+    pandoc = "${pkgs.pandoc}/bin/pandoc";
+    memory-css = "${memory-css}";
+    python3 = "${pkgs.python3}/bin/python3";
+    curl = "${pkgs.curl}/bin/curl";
+    magick = "${pkgs.imagemagick}/bin/magick";
+    nasa-token-path = lib.optionalString (config.sops.secrets ? nasa-token) config.sops.secrets.nasa-token.path;
+  }));
   tangledInit =
     pkgs.runCommand "init.el" {
       nativeBuildInputs = [(pkgs.emacs.pkgs.withPackages (epkgs: [epkgs.org]))];
@@ -228,6 +240,7 @@ in {
     (iosevka-bin.override {variant = "Aile";})
     (iosevka-bin.override {variant = "Etoile";})
     emacsclient-wrapper
+    memory-to-epub-file
     mermaid-cli
     puppeteer-cli-with-chrome
     mpv-unwrapped

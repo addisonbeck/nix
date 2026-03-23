@@ -3,28 +3,31 @@
   pkgs,
   lib,
   ...
-}: {
+}:
+{
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowBroken = true;
-  environment.shells = [pkgs.fish];
+  environment.shells = [ pkgs.fish ];
   programs.fish.enable = true;
-  users.knownUsers = ["me"];
+  users.knownUsers = [ "me" ];
 
-  users.users.me =
-    {
-      shell = pkgs.fish;
-    }
-    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-      uid = 502;
-      name = "me";
-      home = "/Users/me";
-      createHome = true;
-    }
-    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-      users.users.me.isNormalUser = true;
-      users.users.me.initialPassword = "me";
-      users.users.me.extraGroups = ["wheel" "docker"];
-    };
+  users.users.me = {
+    shell = pkgs.fish;
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+    uid = 502;
+    name = "me";
+    home = "/Users/me";
+    createHome = true;
+  }
+  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+    users.users.me.isNormalUser = true;
+    users.users.me.initialPassword = "me";
+    users.users.me.extraGroups = [
+      "wheel"
+      "docker"
+    ];
+  };
 
   home-manager.users.me = {
     # Workaround for https://github.com/Mic92/sops-nix/issues/890
@@ -133,9 +136,11 @@
       pkgs.spotify
       pkgs.binaryen
       pkgs.poppler
+      pkgs.syncthing-macos
+      pkgs.git-crypt
     ];
 
-    home.sessionPath = [];
+    home.sessionPath = [ ];
     home.sessionVariables = {
       EDITOR = "emacsclient -r";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";
@@ -145,6 +150,7 @@
     };
     home.file.".ssh/authorized_keys".text = ''
       ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDNpUr2VpDB4sRMr6p5Pa+Wq7168eN6icFiTv6zp9w7S me@phone
+      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHCjXK+oL1Z0z4m9Vijkylxeltrt/J0ijhohHI7Ohwnp me@bw
     '';
     home.stateVersion = "24.05";
     home.enableNixpkgsReleaseCheck = false;

@@ -883,7 +883,7 @@ Don't show DONE items in the agenda
 
 ** Org to epub
 #+begin_src emacs-lisp :tangle no
-(defun my-org-roam-to-epub ()
+(defun my-org-roam-to-epub-old ()
   "Convert current Org-roam file and its linked Roam ID files into a single EPUB using Pandoc."
   (interactive)
   (unless (and buffer-file-name (featurep 'org-roam))

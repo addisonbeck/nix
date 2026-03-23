@@ -2,6 +2,21 @@
   programs.delta = {
     enable = true;
     enableGitIntegration = true;
+    options = {
+      navigate = true;
+      line-numbers = true;
+      features = "gruvbox-dark";
+
+      gruvbox-dark = {
+        syntax-theme = "gruvbox-dark";
+        dark = true;
+      };
+
+      gruvbox-light = {
+        syntax-theme = "gruvbox-light";
+        light = true;
+      };
+    };
   };
   programs.git = {
     enable = true;
