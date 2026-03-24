@@ -1286,3 +1286,151 @@ Refiled entries become top-level headings in the target file."
   (transient-append-suffix 'my/refile-menu "r"
     '("l" "Today's Log" my/refile-log-to-date-node)))
 #+end_src
+
+* Bobert Agenda Watcher
+
+Loop 2 implementation: polls bobert-work-agenda.org every 120 seconds for TODO items,
+dispatches each to Claude Code via vterm, and transitions state via process sentinel.
+State machine: TODO -> IN_PROGRESS -> DONE (clean exit) | TODO (error exit).
+See ADR-015 (Emacs timer), ADR-016 (state machine).
+
+#+begin_src emacs-lisp
+  (defvar my/agenda-watcher-timer nil
+    "Timer object for the Bobert agenda watcher loop. Stored to allow cancellation.")
+
+  (defvar my/agenda-file
+    (expand-file-name "agenda/bobert-work-agenda.org"
+                      my-notes-directory)
+    "Absolute path to bobert-work-agenda.org.")
+
+  (defun my/agenda--get-todo-items ()
+    "Return a list of (marker . heading-text) for all TODO-state items in the agenda file."
+    (let ((results '()))
+      (with-current-buffer (find-file-noselect my/agenda-file)
+        (org-with-wide-buffer
+         (goto-char (point-min))
+         (while (re-search-forward org-heading-regexp nil t)
+           (when (string= (org-get-todo-state) "TODO")
+             (push (cons (point-marker) (org-get-heading t t t t))
+                   results)))))
+      (nreverse results)))
+
+  (defun my/agenda--set-todo-state (marker state)
+    "Set the TODO state of the heading at MARKER to STATE."
+    (with-current-buffer (marker-buffer marker)
+      (goto-char marker)
+      (org-todo state)
+      (save-buffer)))
+
+  (defun my/agenda--mark-in-progress (marker)
+    "Transition item at MARKER from TODO to IN_PROGRESS."
+    (my/agenda--set-todo-state marker "IN_PROGRESS"))
+
+  (defun my/agenda--buf-name-for-marker (marker)
+    "Return the vterm buffer name used for the item at MARKER."
+    (with-current-buffer (marker-buffer marker)
+      (goto-char marker)
+      (let ((id (org-entry-get nil "ID")))
+        (format "claude-todo-%s" (or id (number-to-string (marker-position marker)))))))
+
+  (defun my/agenda--mark-todo-done (buf-name)
+    "Find the agenda item whose vterm buffer is BUF-NAME and mark it DONE."
+    (with-current-buffer (find-file-noselect my/agenda-file)
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (while (re-search-forward org-heading-regexp nil t)
+         (when (string= (org-get-todo-state) "IN_PROGRESS")
+           (let* ((id (org-entry-get nil "ID"))
+                  (expected-buf (format "claude-todo-%s" (or id ""))))
+             (when (string= expected-buf buf-name)
+               (org-todo "DONE")
+               (save-buffer))))))))
+
+  (defun my/agenda--reset-todo-to-todo (buf-name)
+    "Find the agenda item whose vterm buffer is BUF-NAME and reset it to TODO."
+    (with-current-buffer (find-file-noselect my/agenda-file)
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (while (re-search-forward org-heading-regexp nil t)
+         (when (string= (org-get-todo-state) "IN_PROGRESS")
+           (let* ((id (org-entry-get nil "ID"))
+                  (expected-buf (format "claude-todo-%s" (or id ""))))
+             (when (string= expected-buf buf-name)
+               (org-todo "TODO")
+               (save-buffer))))))))
+
+  (defun my/agenda--watch-buffer-for-completion (process event)
+    "Process sentinel for vterm buffers spawned by my/spawn-claude-for-todo.
+  On clean exit (finished), marks the corresponding agenda item DONE.
+  On any other event (error, signal), resets the item to TODO for retry."
+    (let ((buf-name (buffer-name (process-buffer process))))
+      (cond
+       ((string= event "finished\n")
+        (message "[agenda-watcher] %s: finished cleanly, marking DONE" buf-name)
+        (my/agenda--mark-todo-done buf-name))
+       (t
+        (message "[agenda-watcher] %s: exited with event %s, resetting to TODO" buf-name event)
+        (my/agenda--reset-todo-to-todo buf-name)))))
+
+  (defun my/spawn-claude-for-todo (marker heading)
+    "Create a vterm buffer for the todo item at MARKER with HEADING text and launch Claude."
+    (let* ((buf-name (my/agenda--buf-name-for-marker marker))
+           (task-description (format "Work on this task: %s" heading)))
+      (unless (get-buffer buf-name)
+        (with-current-buffer (vterm buf-name)
+          (vterm-send-string
+           (format "claude --dangerously-skip-permissions -p %s"
+                   (shell-quote-argument task-description)))
+          (vterm-send-return)
+          (when-let ((proc (get-buffer-process (current-buffer))))
+            (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))))))
+
+  (defun my/agenda-watcher ()
+    "Poll bobert-work-agenda.org for TODO items and dispatch each to Claude via vterm.
+  Only dispatches items in TODO state. Transitions item to IN_PROGRESS before spawning."
+    (condition-case err
+        (let ((items (my/agenda--get-todo-items)))
+          (dolist (item items)
+            (let ((marker (car item))
+                  (heading (cdr item)))
+              (my/agenda--mark-in-progress marker)
+              (my/spawn-claude-for-todo marker heading))))
+      (error
+       (message "[agenda-watcher] error during watcher run: %s" (error-message-string err)))))
+
+  (defun my/start-agenda-loop ()
+    "Start the Bobert agenda watcher loop, firing every 120 seconds.
+  Idempotent: cancels any existing timer before starting a new one."
+    (interactive)
+    (when my/agenda-watcher-timer
+      (cancel-timer my/agenda-watcher-timer))
+    (setq my/agenda-watcher-timer
+          (run-with-timer 0 120 #'my/agenda-watcher))
+    (message "[agenda-watcher] loop started (120s interval)"))
+
+  (defun my/stop-agenda-loop ()
+    "Stop the Bobert agenda watcher loop."
+    (interactive)
+    (when my/agenda-watcher-timer
+      (cancel-timer my/agenda-watcher-timer)
+      (setq my/agenda-watcher-timer nil)
+      (message "[agenda-watcher] loop stopped")))
+
+  ;; Startup orphan recovery: on Emacs init, find any IN_PROGRESS items in the
+  ;; agenda file that have no live vterm buffer and reset them to TODO.
+  ;; This handles items left IN_PROGRESS by a previous Emacs daemon session crash.
+  (add-hook 'after-init-hook
+            (lambda ()
+              (when (file-exists-p my/agenda-file)
+                (with-current-buffer (find-file-noselect my/agenda-file)
+                  (org-with-wide-buffer
+                   (goto-char (point-min))
+                   (while (re-search-forward org-heading-regexp nil t)
+                     (when (string= (org-get-todo-state) "IN_PROGRESS")
+                       (let* ((id (org-entry-get nil "ID"))
+                              (buf-name (format "claude-todo-%s" (or id ""))))
+                         (unless (get-buffer buf-name)
+                           (org-todo "TODO")
+                           (save-buffer)
+                           (message "[agenda-watcher] orphan recovery: reset %s to TODO" buf-name))))))))))
+#+end_src
