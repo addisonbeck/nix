@@ -49,7 +49,7 @@
           BOBERT_INBOX = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-inbox.org";
           BOBERT_AGENDA = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-agenda.org";
           HOME = "/Users/me";
-          PATH = "/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
+          PATH = "/Users/me/.nix-profile/bin:/run/current-system/sw/bin:/usr/local/bin:/usr/bin:/bin";
         };
         StandardOutPath = "/Users/me/.local/log/inbox-loop/launchd-stdout.log";
         StandardErrorPath = "/Users/me/.local/log/inbox-loop/launchd-stderr.log";
