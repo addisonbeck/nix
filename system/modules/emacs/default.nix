@@ -71,22 +71,38 @@
 
   # Improved emacsclient wrapper that properly handles frame reuse
   emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
+    SOCKET="$HOME/.emacs.d/server/server"
+    EMACS_BIN="$HOME/Applications/Emacs.app/Contents/MacOS/Emacs"
     # First, ensure the daemon is running
-    ${config.programs.emacs.finalPackage}/bin/emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
+    ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1 || {
       echo "Starting Emacs daemon..."
-      ${config.programs.emacs.finalPackage}/bin/emacs --daemon
+      "$EMACS_BIN" --daemon="$SOCKET"
     }
 
     # Check if a visible frame exists (excluding terminal/daemon frames)
-    FRAME_EXISTS=$(${config.programs.emacs.finalPackage}/bin/emacsclient -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
+    FRAME_EXISTS=$(${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e '(cl-some (lambda (f) (and (frame-visible-p f) (display-graphic-p f))) (frame-list))' 2>/dev/null)
 
     if [ "$FRAME_EXISTS" = "t" ]; then
       # Frame exists, just focus it
-      ${config.programs.emacs.finalPackage}/bin/emacsclient -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))" $@
+      ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -n -e "(select-frame-set-input-focus (car (filtered-frame-list (lambda (f) (and (frame-visible-p f) (display-graphic-p f))))))" $@
     else
       # No frame exists, create one and focus it
-      ${config.programs.emacs.finalPackage}/bin/emacsclient -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))' $@
+      ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -c -n -a "" -e '(progn (dashboard-refresh-buffer) (select-frame-set-input-focus (selected-frame)))' $@
     fi
+  '';
+
+  emacsclient-mobile-wrapper = pkgs.writeShellScriptBin "em" ''
+    SOCKET="$HOME/.emacs.d/server/server"
+    EMACS_BIN="$HOME/Applications/Emacs.app/Contents/MacOS/Emacs"
+    ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1 || {
+      echo "Starting Emacs daemon..."
+      "$EMACS_BIN" --daemon="$SOCKET"
+      # Wait until the daemon is ready
+      while ! ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1; do
+          sleep 0.5
+      done
+    }
+    ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -t -a "" -e "(dashboard-open)"
   '';
   puppeteer-cli-with-chrome = pkgs.puppeteer-cli.override {
     # chromium doesn't work on mac from nixpkgs
@@ -240,6 +256,7 @@ in {
     (iosevka-bin.override {variant = "Aile";})
     (iosevka-bin.override {variant = "Etoile";})
     emacsclient-wrapper
+    emacsclient-mobile-wrapper
     memory-to-epub-file
     mermaid-cli
     puppeteer-cli-with-chrome
@@ -268,12 +285,29 @@ in {
     source = tangledInit;
   };
 
+  # Copy Emacs.app to a stable path so macOS TCC grants persist across rebuilds.
+  # TCC tracks FDA by binary path; Nix store paths change every build, revoking access.
+  # By keeping Emacs.app at ~/Applications/Emacs.app, the path is stable.
+  home.activation.copyEmacsApp = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    app_src="${config.programs.emacs.finalPackage}/Applications/Emacs.app"
+    app_dest="$HOME/Applications/Emacs.app"
+    if [ -d "$app_src" ]; then
+      $DRY_RUN_CMD mkdir -p "$HOME/Applications"
+      if [ -d "$app_dest" ]; then
+        $DRY_RUN_CMD chmod -R u+w "$app_dest"
+        $DRY_RUN_CMD rm -rf "$app_dest"
+      fi
+      $DRY_RUN_CMD cp -r "$app_src" "$app_dest"
+      $DRY_RUN_CMD chmod -R u+w "$app_dest"
+    fi
+  '';
+
   launchd.agents.emacs-daemon = {
     enable = true;
     config = {
       Label = "org.gnu.emacs.daemon";
       ProgramArguments = [
-        "${config.programs.emacs.finalPackage}/bin/emacs"
+        "${config.home.homeDirectory}/Applications/Emacs.app/Contents/MacOS/Emacs"
         "--daemon"
       ];
       KeepAlive = false;

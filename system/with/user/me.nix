@@ -2,6 +2,7 @@
   inputs,
   pkgs,
   lib,
+  config,
   ...
 }: {
   nixpkgs.config.allowUnfree = true;
@@ -125,13 +126,6 @@
     sops.age.keyFile = "/Users/me/.config/sops/age/keys.txt";
 
     home.packages = [
-      (pkgs.writeShellScriptBin "em" ''
-        emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
-          echo "Starting Emacs daemon..."
-          emacs --daemon
-        }
-        emacsclient -t -e "(dashboard-open)"
-      '')
       #pkgs.packwiz
       pkgs.ripgrep
       pkgs.uv

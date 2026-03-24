@@ -399,6 +399,7 @@ Mobile mode provides better ergonomics when using Emacs over SSH on mobile devic
 * Server Configuration
 #+begin_src emacs-lisp
   (require 'server)
+  (setq server-socket-dir (expand-file-name "server" user-emacs-directory))
   (unless (server-running-p)
     (server-start))
 #+end_src
@@ -2367,14 +2368,26 @@ Using evil-mode based mappings don't work on the agenda, for same reason
                  title filepath id)
         ret))))
 #+end_src
+* Daemon Management
+
+#+begin_src emacs-lisp
+  (defun my/kill-daemon ()
+    "Save all buffers and kill the running Emacs daemon."
+    (interactive)
+    (save-some-buffers t)
+    (server-force-delete)
+    (kill-emacs))
+#+end_src
+
 * Provide Init
 
 #+begin_src emacs-lisp
-  (provide 'init)
+(provide 'init)
 
-  ;; Local Variables:
-  ;; byte-compile-warnings: (not free-vars)
-  ;; End:
-				  ;;; init.el ends here
+;; minor change
+;; Local Variables:
+;; byte-compile-warnings: (not free-vars)
+;; End:
+			  ;;; init.el ends here
 #+end_src
 
