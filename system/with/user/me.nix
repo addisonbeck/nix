@@ -46,6 +46,7 @@
       ./with/program/bash.nix
       ./with/program/git.nix
       ./with/program/direnv.nix
+      ./with/service/inbox-loop.nix
       #./with/service/autoclone.nix
       #{ services.autoclone.enable = true; }
       #./with/development-environment/notes
