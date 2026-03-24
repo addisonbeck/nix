@@ -1395,7 +1395,15 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
                                      (shell-quote-argument task-body)))
           (vterm-send-return)
           (when-let ((proc (get-buffer-process (current-buffer))))
-            (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))))))
+            (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))
+          ;; At 1.5s: navigate bypass-permissions dialog to "Yes" and confirm.
+          ;; The task body is already on the command line so no further injection needed.
+          (run-with-timer 1.5 nil
+                          (lambda ()
+                            (when-let ((buf (get-buffer buf-name)))
+                              (with-current-buffer buf
+                                (vterm-send-key "<down>")
+                                (vterm-send-return)))))))))
 
   (defun my/agenda-watcher ()
     "Poll bobert-work-agenda.org for TODO items and dispatch each to Claude via vterm.
