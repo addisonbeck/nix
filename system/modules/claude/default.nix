@@ -20,7 +20,7 @@ in {
       env = {
         ORG_ROAM_DIR = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam";
         CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1";
-        BOBERT_INBOX = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam/bobert-work-inbox.org";
+        BOBERT_INBOX = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-inbox.org";
         BOBERT_AGENDA = "/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-agenda.org";
       };
 
