@@ -126,7 +126,11 @@
 
     home.packages = [
       (pkgs.writeShellScriptBin "em" ''
-        emacsclient -t -a "" -e "(dashboard-open)"
+        emacsclient -e "(+ 1 1)" >/dev/null 2>&1 || {
+          echo "Starting Emacs daemon..."
+          emacs --daemon
+        }
+        emacsclient -t -e "(dashboard-open)"
       '')
       #pkgs.packwiz
       pkgs.ripgrep

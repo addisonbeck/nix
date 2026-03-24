@@ -104,7 +104,7 @@ echo "==> Writing connection scripts..."
 cat > "$BIN_DIR/bw" << 'BWEOF'
 #!/data/data/com.termux/files/usr/bin/bash
 termux-wake-lock 2>/dev/null || true
-exec ssh -t bw 'emacsclient -t -a "" -e "(dashboard-open)"'
+exec ssh -t bw 'em'
 BWEOF
 chmod +x "$BIN_DIR/bw"
 
@@ -114,7 +114,7 @@ cat > "$BIN_DIR/bw-persist" << 'BWPEOF'
 termux-wake-lock 2>/dev/null || true
 export AUTOSSH_POLL=30
 export AUTOSSH_GATETIME=0
-exec autossh -M 0 -t bw 'emacsclient -t -a "" -e "(dashboard-open)"'
+exec autossh -M 0 -t bw 'em'
 BWPEOF
 chmod +x "$BIN_DIR/bw-persist"
 
