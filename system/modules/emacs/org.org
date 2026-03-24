@@ -1373,17 +1373,35 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
         (my/agenda--reset-todo-to-todo buf-name)))))
 
   (defun my/spawn-claude-for-todo (marker heading)
-    "Create a vterm buffer for the todo item at MARKER with HEADING text and launch Claude."
+    "Create an interactive vterm buffer for the TODO at MARKER and launch Claude.
+  Starts Claude interactively (no --print), cds to PROJECT_DIR first if set,
+  then sends the task description as the opening message after a short delay."
     (let* ((buf-name (my/agenda--buf-name-for-marker marker))
-           (task-description (format "Work on this task: %s" heading)))
+           (project-dir (with-current-buffer (marker-buffer marker)
+                          (goto-char marker)
+                          (org-entry-get nil "PROJECT_DIR")))
+           (task-body (with-current-buffer (marker-buffer marker)
+                        (goto-char marker)
+                        (let ((content (org-get-entry)))
+                          (if (string-empty-p (string-trim content))
+                              heading
+                            (concat heading "\n\n" (string-trim content)))))))
       (unless (get-buffer buf-name)
         (with-current-buffer (vterm buf-name)
-          (vterm-send-string
-           (format "claude --dangerously-skip-permissions -p %s"
-                   (shell-quote-argument task-description)))
+          (when (and project-dir (not (string-empty-p project-dir)))
+            (vterm-send-string (format "cd %s" (shell-quote-argument project-dir)))
+            (vterm-send-return))
+          (vterm-send-string "claude --dangerously-skip-permissions")
           (vterm-send-return)
           (when-let ((proc (get-buffer-process (current-buffer))))
-            (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))))))
+            (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))
+          ;; Send the task as the opening message after Claude has started
+          (run-with-timer 3 nil
+                          (lambda ()
+                            (when-let ((buf (get-buffer buf-name)))
+                              (with-current-buffer buf
+                                (vterm-send-string task-body)
+                                (vterm-send-return)))))))))
 
   (defun my/agenda-watcher ()
     "Poll bobert-work-agenda.org for TODO items and dispatch each to Claude via vterm.
