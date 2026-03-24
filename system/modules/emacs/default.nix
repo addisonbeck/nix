@@ -72,11 +72,11 @@
   # Improved emacsclient wrapper that properly handles frame reuse
   emacsclient-wrapper = pkgs.writeShellScriptBin "ec" ''
     SOCKET="$HOME/.emacs.d/server/server"
-    EMACS_BIN="$HOME/Applications/Emacs.app/Contents/MacOS/Emacs"
     # First, ensure the daemon is running
     ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1 || {
-      echo "Starting Emacs daemon..."
-      "$EMACS_BIN" --daemon="$SOCKET"
+      echo "Starting Emacs daemon via launchctl..."
+      /bin/launchctl kickstart -k gui/$(id -u)/org.gnu.emacs.daemon
+      sleep 2
     }
 
     # Check if a visible frame exists (excluding terminal/daemon frames)
@@ -93,11 +93,9 @@
 
   emacsclient-mobile-wrapper = pkgs.writeShellScriptBin "em" ''
     SOCKET="$HOME/.emacs.d/server/server"
-    EMACS_BIN="$HOME/Applications/Emacs.app/Contents/MacOS/Emacs"
     ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1 || {
-      echo "Starting Emacs daemon..."
-      "$EMACS_BIN" --daemon="$SOCKET"
-      # Wait until the daemon is ready
+      echo "Starting Emacs daemon via launchctl..."
+      /bin/launchctl kickstart -k gui/$(id -u)/org.gnu.emacs.daemon
       while ! ${config.programs.emacs.finalPackage}/bin/emacsclient --socket-name="$SOCKET" -e "(+ 1 1)" >/dev/null 2>&1; do
           sleep 0.5
       done
@@ -308,7 +306,7 @@ in {
       Label = "org.gnu.emacs.daemon";
       ProgramArguments = [
         "${config.home.homeDirectory}/Applications/Emacs.app/Contents/MacOS/Emacs"
-        "--daemon"
+        "--daemon=${config.home.homeDirectory}/.emacs.d/server/server"
       ];
       KeepAlive = false;
       RunAtLoad = true;
