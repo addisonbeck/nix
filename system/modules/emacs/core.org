@@ -140,7 +140,7 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 	      "Memory"
 	      "Search org-roam memory"
 	      (lambda (&rest _) (org-roam-node-find)))
-	     (,(nerd-icons-octicon "nf-oct-git-branch" :height 1.2 :v-adjust 0.0)
+	     (,(nerd-icons-octicon "nf-oct-git_branch" :height 1.2 :v-adjust 0.0)
 	      "Magit"
 	      "Open project in Magit"
 	      (lambda (&rest _) (my/projectile-magit-status))))
@@ -1992,15 +1992,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 ** General
 
 #+begin_src emacs-lisp
-  (define-prefix-command 'my-custom-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a") 'my-custom-prefix)
-  (which-key-add-key-based-replacements "C-a" "my commands")
-
-  ;; create "go" prefix map
-  (define-prefix-command 'my-go-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a g") 'my-go-prefix)
-  (which-key-add-key-based-replacements "C-a g" "go")
-
   (defun my/open-compilation-file-in-other-window ()
     "open the current compilation match in another window.
 	      creates a new window if needed or reuses an existing one."
@@ -2023,50 +2014,6 @@ It would be cool if this also had some kind of interactive starting directory / 
 	;; catch any errors silently
 	(error (message "no valid location found at point")))))
 
-  (evil-define-key 'normal 'global (kbd "C-a g f") 'my/open-compilation-file-in-other-window)
-  (which-key-add-key-based-replacements "C-a g f" "go to file")
-
-  (evil-define-key 'normal 'global (kbd "C-a g d") 'lsp-find-definition)
-  (which-key-add-key-based-replacements "C-a g d" "go to definition")
-  (which-key-add-key-based-replacements "C-a g e" "emacs config")
-
-  (define-prefix-command 'my-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c") 'my-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c" "compile")
-
-  (define-prefix-command 'my-nix-compile-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a c n") 'my-nix-compile-prefix)
-  (which-key-add-key-based-replacements "C-a c n" "nix")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n r") 'my/nix-rebuild)
-  (which-key-add-key-based-replacements "C-a c n r" "rebuild")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n f") 'my/nix-format)
-  (which-key-add-key-based-replacements "C-a c n f" "format")
-
-  (evil-define-key 'normal 'global (kbd "C-a c n c") 'my/nix-commit)
-  (which-key-add-key-based-replacements "C-a c n c" "commit")
-
-  ;; create "find" prefix map
-  (define-prefix-command 'my-find-prefix)
-  (evil-define-key 'normal 'global (kbd "C-a f") 'my-find-prefix)
-  (which-key-add-key-based-replacements "C-a f" "find")
-
-  (evil-define-key 'normal 'global (kbd "C-a f g") 'projectile-ripgrep)
-  (which-key-add-key-based-replacements "C-a f g" "ripgrep")
-
-  (evil-define-key 'normal 'global (kbd "C-a f p") 'projectile-switch-project)
-  (which-key-add-key-based-replacements "C-a f p" "project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f f") 'find-file)
-  (which-key-add-key-based-replacements "C-a f f" "file in directory")
-
-  (evil-define-key 'normal 'global (kbd "C-a f F") 'projectile-find-file)
-  (which-key-add-key-based-replacements "C-a f F" "file in project")
-
-  (evil-define-key 'normal 'global (kbd "C-a f b") 'consult-buffer)
-  (which-key-add-key-based-replacements "C-a f b" "find an open buffer")
-
   (evil-define-key 'normal 'global (kbd "U") 'undo-redo)
 
   (evil-define-key 'normal 'global (kbd "D") 'kill-buffer)
@@ -2078,6 +2025,8 @@ It would be cool if this also had some kind of interactive starting directory / 
   (evil-define-key 'normal 'global (kbd "<f6>") 'my/toggle-theme)
   (with-eval-after-load 'org-agenda
     (define-key org-agenda-mode-map (kbd "<f6>") 'my/toggle-theme))
+
+  (evil-define-key 'normal 'global (kbd "C-a") 'delete-other-windows)
 
   (evil-define-key 'normal 'global (kbd "C-z") 'magit-status)
 

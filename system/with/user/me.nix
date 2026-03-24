@@ -3,31 +3,31 @@
   pkgs,
   lib,
   ...
-}:
-{
+}: {
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.allowBroken = true;
-  environment.shells = [ pkgs.fish ];
+  environment.shells = [pkgs.fish];
   programs.fish.enable = true;
-  users.knownUsers = [ "me" ];
+  users.knownUsers = ["me"];
 
-  users.users.me = {
-    shell = pkgs.fish;
-  }
-  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
-    uid = 502;
-    name = "me";
-    home = "/Users/me";
-    createHome = true;
-  }
-  // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-    users.users.me.isNormalUser = true;
-    users.users.me.initialPassword = "me";
-    users.users.me.extraGroups = [
-      "wheel"
-      "docker"
-    ];
-  };
+  users.users.me =
+    {
+      shell = pkgs.fish;
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isDarwin {
+      uid = 502;
+      name = "me";
+      home = "/Users/me";
+      createHome = true;
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      users.users.me.isNormalUser = true;
+      users.users.me.initialPassword = "me";
+      users.users.me.extraGroups = [
+        "wheel"
+        "docker"
+      ];
+    };
 
   home-manager.users.me = {
     # Workaround for https://github.com/Mic92/sops-nix/issues/890
@@ -125,6 +125,9 @@
     sops.age.keyFile = "/Users/me/.config/sops/age/keys.txt";
 
     home.packages = [
+      (pkgs.writeShellScriptBin "em" ''
+        emacsclient -t -a "" -e "(dashboard-open)"
+      '')
       #pkgs.packwiz
       pkgs.ripgrep
       pkgs.uv
@@ -140,7 +143,7 @@
       pkgs.git-crypt
     ];
 
-    home.sessionPath = [ ];
+    home.sessionPath = [];
     home.sessionVariables = {
       EDITOR = "emacsclient -r";
       NVIM_LISTEN_ADDRESS = "/tmp/nvimsocket";

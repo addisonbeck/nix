@@ -46,7 +46,7 @@ cat > "$HOME_DIR/.termux/termux.properties" << 'PROPEOF'
 # Extra keys: Emacs-optimized with popup macros (swipe up = chord)
 extra-keys = [[ \
   {key: ESC, popup: {macro: "CTRL g", display: "C-g"}}, \
-  {key: CTRL, popup: {macro: "CTRL x", display: "C-x"}}, \
+  {key: CTRL, popup: {macro: "CTRL a", display: "C-a"}}, \
   {key: ALT, popup: {macro: "CTRL c", display: "C-c"}}, \
   {key: TAB, popup: {macro: "ALT x", display: "M-x"}}, \
   '~', \
@@ -104,7 +104,7 @@ echo "==> Writing connection scripts..."
 cat > "$BIN_DIR/bw" << 'BWEOF'
 #!/data/data/com.termux/files/usr/bin/bash
 termux-wake-lock 2>/dev/null || true
-exec ssh -t bw 'emacsclient -t -a "emacs -nw" -e "(dashboard-open)"'
+exec ssh -t bw 'emacsclient -t -a "" -e "(dashboard-open)"'
 BWEOF
 chmod +x "$BIN_DIR/bw"
 
@@ -114,7 +114,7 @@ cat > "$BIN_DIR/bw-persist" << 'BWPEOF'
 termux-wake-lock 2>/dev/null || true
 export AUTOSSH_POLL=30
 export AUTOSSH_GATETIME=0
-exec autossh -M 0 -t bw 'emacsclient -t -a "emacs -nw" -e "(dashboard-open)"'
+exec autossh -M 0 -t bw 'emacsclient -t -a "" -e "(dashboard-open)"'
 BWPEOF
 chmod +x "$BIN_DIR/bw-persist"
 
