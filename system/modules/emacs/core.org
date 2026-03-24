@@ -123,17 +123,9 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
     :config
     (dashboard-setup-startup-hook)
     (setq dashboard-center-content t
-	  dashboard-items '((recents . 5)
-			    (projects . 5)
-			    (bookmarks . 5))
-	  dashboard-set-heading-icons t
-	  dashboard-set-file-icons t
-	  dashboard-show-shortcuts t
+	  dashboard-items nil
 	  dashboard-set-footer t
 	  dashboard-footer-messages (my/extract-quotes-from-org-files))
-    (setq dashboard-heading-icons '((recents   . "nf-oct-history")
-				    (bookmarks . "nf-oct-bookmark")
-				    (projects  . "nf-oct-project")))
     (setq dashboard-navigator-buttons
 	  `(;; Row 1: Navigation
 	    ((,(nerd-icons-octicon "nf-oct-stack" :height 1.2 :v-adjust 0.0)
@@ -171,8 +163,6 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 	    dashboard-insert-banner-title
 	    dashboard-insert-newline
 	    dashboard-insert-navigator
-	    dashboard-insert-newline
-	    dashboard-insert-items
 	    dashboard-insert-newline
 	    dashboard-insert-footer)))
 #+end_src
