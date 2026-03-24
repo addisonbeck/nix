@@ -20,8 +20,14 @@
 
           echo "[$(date -Iseconds)] inbox-loop: starting" >> "$LOG_FILE"
 
-          # Pre-check: skip if inbox file does not exist or has no TODO headings
-          if [ ! -f "$INBOX" ] || ! grep -q "^\* TODO" "$INBOX" 2>/dev/null; then
+          # Pre-check: skip if inbox file does not exist or has no unprocessed headings
+          if [ ! -f "$INBOX" ]; then
+            echo "[$(date -Iseconds)] inbox-loop: inbox file not found, skipping" >> "$LOG_FILE"
+            exit 0
+          fi
+
+          # Any top-level heading without :PROCESSED: t is fair game
+          if ! grep -q "^\* " "$INBOX" 2>/dev/null || ! grep -v ":PROCESSED: t" "$INBOX" | grep -q "^\* "; then
             echo "[$(date -Iseconds)] inbox-loop: no unprocessed items, skipping" >> "$LOG_FILE"
             exit 0
           fi
@@ -30,9 +36,8 @@
 
           claude --print \
             --dangerously-skip-permissions \
-            --allowedTools "Read,Write,Bash" \
-            --model claude-haiku-4-5-20251001 \
-            -p "Process the inbox: read $INBOX for unprocessed TODO items and append them to $AGENDA" \
+            --agent inbox-processor \
+            -p "Process unprocessed inbox items from $INBOX and append structured TODOs to $AGENDA" \
             2>> "$LOG_FILE"
 
           echo "[$(date -Iseconds)] inbox-loop: done" >> "$LOG_FILE"
