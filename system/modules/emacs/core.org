@@ -133,7 +133,48 @@ Sets the main directory for Org files, stored in iCloud for sync across devices.
 	  dashboard-footer-messages (my/extract-quotes-from-org-files))
     (setq dashboard-heading-icons '((recents   . "nf-oct-history")
 				    (bookmarks . "nf-oct-bookmark")
-				    (projects  . "nf-oct-project"))))
+				    (projects  . "nf-oct-project")))
+    (setq dashboard-navigator-buttons
+	  `(;; Row 1: Navigation
+	    ((,(nerd-icons-octicon "nf-oct-stack" :height 1.2 :v-adjust 0.0)
+	      "Buffers"
+	      "Switch buffer"
+	      (lambda (&rest _) (consult-buffer)))
+	     (,(nerd-icons-octicon "nf-oct-search" :height 1.2 :v-adjust 0.0)
+	      "Find File"
+	      "Find file in project"
+	      (lambda (&rest _) (projectile-find-file)))
+	     (,(nerd-icons-octicon "nf-oct-database" :height 1.2 :v-adjust 0.0)
+	      "Memory"
+	      "Search org-roam memory"
+	      (lambda (&rest _) (org-roam-node-find)))
+	     (,(nerd-icons-octicon "nf-oct-git-branch" :height 1.2 :v-adjust 0.0)
+	      "Magit"
+	      "Open project in Magit"
+	      (lambda (&rest _) (my/projectile-magit-status))))
+	    ;; Row 2: Actions
+	    ((,(nerd-icons-octicon "nf-oct-copilot" :height 1.2 :v-adjust 0.0)
+	      "Claude"
+	      "Create Claude Code buffer"
+	      (lambda (&rest _) (my/create-claude-code-buffer)))
+	     (,(nerd-icons-octicon "nf-oct-calendar" :height 1.2 :v-adjust 0.0)
+	      "Agenda"
+	      "Open org-agenda"
+	      (lambda (&rest _) (org-agenda)))
+	     (,(nerd-icons-octicon "nf-oct-pencil" :height 1.2 :v-adjust 0.0)
+	      "Capture"
+	      "Org capture"
+	      (lambda (&rest _) (org-capture))))))
+    (setq dashboard-startupify-list
+	  '(dashboard-insert-banner
+	    dashboard-insert-newline
+	    dashboard-insert-banner-title
+	    dashboard-insert-newline
+	    dashboard-insert-navigator
+	    dashboard-insert-newline
+	    dashboard-insert-items
+	    dashboard-insert-newline
+	    dashboard-insert-footer)))
 #+end_src
 
 * Evil Mode Configuration
