@@ -118,6 +118,17 @@ Don't show DONE items in the agenda
   (setq org-agenda-skip-timestamp-if-done t)
 #+end_src
 
+*** Keyword Sequence
+
+Defines the three-state TODO state machine for the Bobert agent dispatch loop.
+State transitions: TODO -> IN_PROGRESS (watcher spawns Claude) -> DONE (clean exit) | TODO (error exit).
+See ADR-016.
+
+#+begin_src emacs-lisp
+  (setq org-todo-keywords
+        '((sequence "TODO" "IN_PROGRESS" "|" "DONE")))
+#+end_src
+
 ** Font Configuration
 #+begin_src emacs-lisp
   (add-hook 'markdown-mode-hook (lambda ()
@@ -211,7 +222,9 @@ Don't show DONE items in the agenda
         (expand-file-name "reminders.org" my-notes-directory)
         (expand-file-name "meal-plan.org" my-notes-directory)
         (expand-file-name "contacts.org" my-notes-directory)
-        (expand-file-name "code-reviews.org" my-notes-directory)))
+        (expand-file-name "code-reviews.org" my-notes-directory)
+        (expand-file-name "agenda/bobert-work-inbox.org" my-notes-directory)
+        (expand-file-name "agenda/bobert-work-agenda.org" my-notes-directory)))
 
 (defun my/set-org-agenda-files ()
   "Set org-agenda-files to a minimal, fixed set."
