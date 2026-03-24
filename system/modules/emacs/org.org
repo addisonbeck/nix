@@ -1396,14 +1396,15 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
           (vterm-send-return)
           (when-let ((proc (get-buffer-process (current-buffer))))
             (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))
-          ;; At 1.5s: navigate bypass-permissions dialog to "Yes" and confirm.
+          ;; At 3s: navigate bypass-permissions dialog to "Yes" and confirm.
+          ;; Uses process-send-string with raw escape sequences (\e[B = down arrow)
+          ;; rather than vterm-send-key, which is unreliable inside timers.
           ;; The task body is already on the command line so no further injection needed.
-          (run-with-timer 1.5 nil
+          (run-with-timer 3 nil
                           (lambda ()
-                            (when-let ((buf (get-buffer buf-name)))
-                              (with-current-buffer buf
-                                (vterm-send-key "<down>")
-                                (vterm-send-return)))))))))
+                            (when-let* ((buf (get-buffer buf-name))
+                                        (proc (get-buffer-process buf)))
+                              (process-send-string proc "\e[B\r"))))))))
 
   (defun my/agenda-watcher ()
     "Poll bobert-work-agenda.org for TODO items and dispatch each to Claude via vterm.
