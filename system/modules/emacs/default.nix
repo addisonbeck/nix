@@ -222,6 +222,7 @@ in {
           mini-frame
           org-roam
           org-roam-ui
+          org-roam-ql
           pkgs.aspell
           pkgs.aspellDicts.en
           emacs-everywhere
