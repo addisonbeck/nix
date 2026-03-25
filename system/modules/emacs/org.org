@@ -1455,21 +1455,21 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
       (setq my/agenda-watcher-timer nil)
       (message "[agenda-watcher] loop stopped")))
 
-  ;; Startup orphan recovery: on Emacs init, find any IN_PROGRESS items in the
-  ;; agenda file that have no live vterm buffer and reset them to TODO.
-  ;; This handles items left IN_PROGRESS by a previous Emacs daemon session crash.
-  (add-hook 'after-init-hook
-            (lambda ()
-              (when (file-exists-p my/agenda-file)
-                (with-current-buffer (find-file-noselect my/agenda-file)
-                  (org-with-wide-buffer
-                   (goto-char (point-min))
-                   (while (re-search-forward org-heading-regexp nil t)
-                     (when (string= (org-get-todo-state) "IN_PROGRESS")
-                       (let* ((id (org-entry-get nil "ID"))
-                              (buf-name (format "claude-todo-%s" (or id ""))))
-                         (unless (get-buffer buf-name)
-                           (org-todo "TODO")
-                           (save-buffer)
-                           (message "[agenda-watcher] orphan recovery: reset %s to TODO" buf-name))))))))))
+  ;; Startup orphan recovery disabled: was resetting IN_PROGRESS items to TODO on
+  ;; every Emacs restart, preventing the watcher from ever seeing items in TODO state.
+  ;; (add-hook 'after-init-hook
+  ;;           (lambda ()
+  ;;             (when (file-exists-p my/agenda-file)
+  ;;               (with-current-buffer (find-file-noselect my/agenda-file)
+  ;;                 (org-with-wide-buffer
+  ;;                  (goto-char (point-min))
+  ;;                  (while (re-search-forward org-heading-regexp nil t)
+  ;;                    (when (string= (org-get-todo-state) "IN_PROGRESS")
+  ;;                      (let* ((id (org-entry-get nil "ID"))
+  ;;                             (buf-name (format "claude-todo-%s" (or id ""))))
+  ;;                        (unless (get-buffer buf-name)
+  ;;                          (org-todo "TODO")
+  ;;                          (save-buffer)
+  ;;                          (message "[agenda-watcher] orphan recovery: reset %s to TODO" buf-name)))))))))))
+
 #+end_src
