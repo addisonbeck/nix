@@ -941,6 +941,42 @@ See ADR-016.
                        (lambda (_) "*pandoc-epub*"))))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/org-agenda-to-epub (&optional arg)
+  "Export the org-agenda to an EPUB saved in ~/notes/epubs.
+Without a prefix, exports today's daily agenda.
+With \\[universal-argument], exports a 7-day weekly view."
+  (interactive "P")
+  (require 'org-agenda)
+  (let* ((weekly (consp arg))
+         (ndays (if weekly 7 1))
+         (date-str (format-time-string "%Y-%m-%d"))
+         (title (if weekly
+                    (format "Weekly Agenda — %s" date-str)
+                  (format "Daily Agenda — %s" date-str)))
+         (tmp-org (make-temp-file "agenda-" nil ".org")))
+    (save-window-excursion
+      (let ((org-agenda-window-setup 'current-window)
+            (org-agenda-sticky nil))
+        (org-agenda-list nil nil ndays)
+        (let ((lines (split-string
+                      (buffer-substring-no-properties (point-min) (point-max))
+                      "\n")))
+          (with-temp-file tmp-org
+            (insert "#+TITLE: " title "\n\n")
+            (dolist (line lines)
+              (cond
+               ;; Date headers like "Wednesday  25 March 2026"
+               ((string-match-p "\\`[A-Z][a-z]+ +[0-9]" line)
+                (insert "\n* " (string-trim line) "\n"))
+               ;; Non-blank content → list items
+               ((string-match-p "[^ \t]" line)
+                (insert "  - " (string-trim line) "\n"))
+               (t (insert "\n"))))))))
+    (let ((compilation-buffer-name-function (lambda (_mode) "*agenda-to-epub*")))
+      (compile (format "memory-to-epub-file %s" (shell-quote-argument tmp-org)) t))))
+#+end_src
+
 * Org Clock
 #+begin_src emacs-lisp
 ;; Don't persist clocks from conversation files
