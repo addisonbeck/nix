@@ -972,6 +972,63 @@ With \\[universal-argument], exports the 7-day weekly view (agenda command \"w\"
       (compile (format "memory-to-epub-file %s" (shell-quote-argument tmp-org)) t))))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/org-agenda-to-pdf (&optional arg)
+  "Export the org-agenda to a print-ready PDF saved in ~/notes/epubs.
+Without a prefix, exports the daily dashboard (agenda command \"d\").
+With \\[universal-argument], exports the 7-day weekly view (command \"w\").
+Renders with white background and colored text suitable for stylus annotation."
+  (interactive "P")
+  (require 'org-agenda)
+  (require 'htmlize)
+  (let* ((weekly (consp arg))
+         (cmd-key (if weekly "w" "d"))
+         (date-str (format-time-string "%Y-%m-%d"))
+         (slug (format "agenda-%s%s" (if weekly "week-" "") date-str))
+         (pdf-file (expand-file-name (concat slug ".pdf")
+                                     (expand-file-name "~/notes/pdfs")))
+         (tmp-html (make-temp-file "agenda-pdf-" nil ".html"))
+         (htmlize-output-type 'css)
+         (org-agenda-export-html-style
+          (concat
+           "<style>\n"
+           "  body { background: white; margin: 0; padding: 0;\n"
+           "         font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; }\n"
+           "  pre  { margin: 0; padding: 1.5em 2em; white-space: pre-wrap;\n"
+           "         word-break: break-word; font-family: inherit;\n"
+           "         font-size: 13px; line-height: 1.85;\n"
+           "         background: white; color: #282828; }\n"
+           "  .default                     { color: #282828; }\n"
+           "  .org-agenda-date-today       { color: #d65d0e; font-weight: bold; font-size: 1.1em; }\n"
+           "  .org-agenda-date             { color: #458588; font-weight: bold; }\n"
+           "  .org-agenda-structure        { color: #689d6a; font-weight: bold; }\n"
+           "  .org-super-agenda-header     { color: #7c6f64; font-weight: bold; }\n"
+           "  .org-todo                    { color: #cc241d; font-weight: bold; }\n"
+           "  .org-done                    { color: #928374; }\n"
+           "  .org-priority                { color: #b57614; font-weight: bold; }\n"
+           "  .org-scheduled-today         { color: #076678; font-weight: bold; }\n"
+           "  .org-scheduled               { color: #458588; }\n"
+           "  .org-scheduled-previously    { color: #9d0006; }\n"
+           "  .org-upcoming-deadline       { color: #b57614; }\n"
+           "  .org-tag                     { color: #427b58; font-size: 0.9em; }\n"
+           "  .org-time-grid               { color: #bdae93; }\n"
+           "  .org-agenda-dimmed-todo-face { color: #928374; }\n"
+           "  @page { size: Letter; margin: 2cm; }\n"
+           "</style>")))
+    (save-window-excursion
+      (let ((org-agenda-window-setup 'current-window)
+            (org-agenda-sticky nil))
+        (org-agenda nil cmd-key)
+        (org-agenda-write tmp-html nil t)))
+    (make-directory (file-name-directory pdf-file) t)
+    (let ((compilation-buffer-name-function (lambda (_mode) "*agenda-to-pdf*")))
+      (compile
+       (format "google-chrome --headless --no-sandbox --print-to-pdf=%s --print-to-pdf-no-header %s"
+               (shell-quote-argument pdf-file)
+               (shell-quote-argument (concat "file://" tmp-html)))
+       t))))
+#+end_src
+
 * Org Clock
 #+begin_src emacs-lisp
 ;; Don't persist clocks from conversation files
