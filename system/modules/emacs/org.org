@@ -998,10 +998,13 @@ See ADR-016.
 ** Org Roam QL Configuration
 #+begin_src emacs-lisp
   (use-package org-roam-ql
-    :after org-roam
-    :bind
-    (:map org-roam-mode-map
-          ("v" . org-roam-ql-buffer-dispatch)))
+    :after org-roam)
+#+end_src
+
+#+begin_src emacs-lisp
+  (with-eval-after-load 'transient
+    (transient-append-suffix 'my/search-menu "n"
+      '("q" "Query Roam" org-roam-ql-search)))
 #+end_src
 
 * Org Mode Keymaps
