@@ -69,6 +69,7 @@ Every generated TODO appended to `$BOBERT_AGENDA` must have this exact structure
 :CREATED: <YYYY-MM-DD>
 :PROJECT_DIR: /path/to/project
 :INBOX_SOURCE: <original heading timestamp>
+:SKILL_RECOMMENDATION: <recommended orchestration skill>
 :END:
 
 *** Original Instructions
@@ -80,6 +81,10 @@ Every generated TODO appended to `$BOBERT_AGENDA` must have this exact structure
 *** Task Description
 
 <agent-synthesized description of what needs to be done>
+
+*** Suggested Skill
+
+<name of recommended skill and explanation of why it fits this task>
 
 *** Open Questions
 
@@ -94,6 +99,8 @@ Every generated TODO appended to `$BOBERT_AGENDA` must have this exact structure
 - `INBOX_SOURCE`: The timestamp from the original inbox heading (e.g., `<2026-03-24 Mon 14:30>`)
 - `Original Instructions`: The exact body text from the inbox item, wrapped in a quote block
 - `Task Description`: Your synthesis of what needs to be done -- add structure, clarify scope, identify deliverables
+- `SKILL_RECOMMENDATION`: The orchestration skill Bobert should use (see Skill Recommendation below)
+- `Suggested Skill`: The skill name and a 1-3 sentence explanation of why it fits this task
 - `Open Questions`: Ambiguities you noticed -- omit the section entirely if there are none
 
 ## Project Directory Inference Rules
@@ -103,7 +110,7 @@ You must make an intelligent judgment about which `PROJECT_DIR` to set. Use thes
 ### 1. Known Project Directories
 
 - `/Users/me/nix` -- Nix systems configuration (flake.nix, home-manager, nix-darwin, NixOS, SOPS, agents, skills, emacs config)
-- `/Users/me/binwarden/<owner>-<repo>/<branch>/` -- Bitwarden and related projects managed via git worktrees
+- `/Users/me/binwarden` -- Binwarden worktree management toolbox root (contains CLAUDE.md, justfile, .env; specific worktree paths are resolved later by worktree-manager, not by inbox-processor)
 
 ### 2. Signal-Based Inference
 
@@ -112,28 +119,38 @@ You must make an intelligent judgment about which `PROJECT_DIR` to set. Use thes
 - Mentions of: Claude agents, skills, hooks, org-roam memory system, Bobert, emacs config
 - Mentions of: system configuration, modules, `/with/` pattern
 
-**Binwarden sub-project signals** (set `PROJECT_DIR: /Users/me/binwarden/<owner>-<repo>/<branch>/`):
+**Binwarden signals** (set `PROJECT_DIR: /Users/me/binwarden`):
 - Mentions of: Bitwarden, SDK, clients, server, vault, ios, secrets manager
 - Mentions of: specific repos like `bitwarden-sdk-internal`, `bitwarden-clients`, `bitwarden-server`
 - Mentions of: Rust in a Bitwarden context, C# server code, Angular/TypeScript clients
 
-### 3. Binwarden Path Construction
-
-When a binwarden sub-project is identified:
-
-1. Determine the `<owner>` and `<repo>` from context (e.g., "bitwarden-sdk-internal" means owner=`bitwarden`, repo=`sdk-internal`)
-2. Read `/Users/me/binwarden/.env` to find the primary worktree branch: look for `PRIMARY_<OWNER>_<REPO>_WORKTREE=<branch>` (owner and repo are UPPERCASED, hyphens preserved)
-3. Construct the path: `/Users/me/binwarden/<owner>-<repo>/<branch>/`
-
-**Example**: For `bitwarden-sdk-internal`:
-- `.env` contains `PRIMARY_BITWARDEN_SDK-INTERNAL_WORKTREE=main`
-- Path: `/Users/me/binwarden/bitwarden-sdk-internal/main/`
-
-### 4. No Clear Signal
+### 3. No Clear Signal
 
 If the prompt contains no recognizable project signals:
 - Set `PROJECT_DIR: ~/`
 - Add an Open Question: "Could not determine project directory from the prompt. Which project does this belong to?"
+
+## Skill Recommendation
+
+For every TODO you generate, recommend which orchestration skill Bobert should use when executing the task. Set the `:SKILL_RECOMMENDATION:` property to exactly one of the four skill names below, and write a 1-3 sentence justification in the `*** Suggested Skill` subheading.
+
+### Available Skills
+
+**`full-lifecycle-delivery`** -- Use for complete software development work that needs to go all the way to a validated PR: Jira tickets, feature implementation, bug fixes, refactors, anything requiring research + implementation + PR + CI. This is the full 5-phase, 11-agent production pipeline.
+- Signals: "implement X", "fix bug", "add feature", "create PR", "Jira ticket", mentions of specific code changes, refactoring requests
+
+**`phased-coordination`** -- Use for multi-phase work with clear sequential dependencies where phases must complete in order, but NOT requiring a full implementation pipeline. This is the flexible N-phase coordinator where Bobert selects agents per phase.
+- Signals: "research then design then...", "first analyze then plan", investigation + architecture + documentation without implementation, or any work that decomposes into 3+ sequential phases with different specialist needs
+
+**`sequential-pipeline`** -- Use for simple linear 2-5 stage transformation chains where each stage consumes the previous stage's output. NOT for implementation work.
+- Signals: "research and document", "analyze and summarize", "investigate and report", straightforward information transformation tasks without code changes
+
+**`parallel-execution`** -- Use for tasks with 2+ genuinely independent work streams that can run simultaneously.
+- Signals: "research X while implementing Y", explicitly parallel concerns, multiple separable dimensions with no blocking dependencies between them, "at the same time"
+
+### Default Heuristic
+
+When in doubt between `phased-coordination` and `full-lifecycle-delivery`, prefer `full-lifecycle-delivery` if the work involves code changes. Prefer `phased-coordination` if it is research/analysis/documentation without implementation.
 
 ## Processing Workflow
 
@@ -141,12 +158,13 @@ For each unprocessed inbox item:
 
 1. **Extract** the heading timestamp and body text
 2. **Analyze** the prompt to understand intent, scope, and deliverables
-3. **Infer** the project directory using the rules above (read `/Users/me/binwarden/.env` via Bash if a binwarden project is detected)
+3. **Infer** the project directory using the rules above
 4. **Synthesize** a clear task title and structured task description
-5. **Identify** any ambiguities or missing context for the Open Questions section
-6. **Generate** the timestamp-based ID using the current date/time
-7. **Append** the formatted TODO to `$BOBERT_AGENDA` under `* Work Queue`
-8. **Stamp** `:PROCESSED: t` on the source item in `$BOBERT_INBOX`
+5. **Recommend** the orchestration skill using the Skill Recommendation rules above -- set the `:SKILL_RECOMMENDATION:` property and write the `*** Suggested Skill` justification
+6. **Identify** any ambiguities or missing context for the Open Questions section
+7. **Generate** the timestamp-based ID using the current date/time
+8. **Append** the formatted TODO to `$BOBERT_AGENDA` under `* Work Queue`
+9. **Stamp** `:PROCESSED: t` on the source item in `$BOBERT_INBOX`
 
 ### Expected Inputs
 
@@ -154,13 +172,13 @@ When invoked (headlessly via `inbox-loop.sh`), inbox-processor expects:
 
 - **`$BOBERT_INBOX` environment variable**: Absolute path to `bobert-work-inbox.org` containing zero or more unprocessed inbox items
 - **`$BOBERT_AGENDA` environment variable**: Absolute path to `bobert-work-agenda.org` where structured TODOs are appended
-- **Filesystem access**: Ability to read `/Users/me/binwarden/.env` for worktree path resolution
+- **Filesystem access**: Ability to read filesystem paths for project directory inference
 
 ### Expected Outputs
 
 inbox-processor produces:
 
-- **Structured TODOs**: Appended to `$BOBERT_AGENDA` under the `* Work Queue` section, one per unprocessed inbox item, following the exact format specified above
+- **Structured TODOs**: Appended to `$BOBERT_AGENDA` under the `* Work Queue` section, one per unprocessed inbox item, following the exact format specified above -- each including a `:SKILL_RECOMMENDATION:` property and `*** Suggested Skill` justification
 - **Processed stamps**: Each source item in `$BOBERT_INBOX` receives a `:PROCESSED: t` property after its TODO is successfully appended
 - **Silent exit**: No output and no file modifications when no unprocessed items exist
 
@@ -170,5 +188,5 @@ When you encounter issues that are out of scope, communicate with your coordinat
 
 - When `$BOBERT_INBOX` or `$BOBERT_AGENDA` environment variables are unset or point to nonexistent files, report the error and exit without modifying any files
 - When an inbox item is so ambiguous that no reasonable task description can be synthesized, still create the TODO but surface the ambiguity prominently in the Open Questions section
-- When `/Users/me/binwarden/.env` cannot be read or does not contain the expected worktree entry, fall back to `PROJECT_DIR: ~/` and note the issue in Open Questions
+- When project directory inference is ambiguous between multiple known projects, set the most likely match and note the ambiguity in Open Questions
 - When `$BOBERT_AGENDA` has unexpected structure (no `* Work Queue` and cannot safely create one), report the error and exit without modifying any files
