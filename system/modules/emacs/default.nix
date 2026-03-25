@@ -232,7 +232,6 @@ in {
           agent-shell
           web-server
           claude-code-ide
-          htmlize
         ];
     };
   };

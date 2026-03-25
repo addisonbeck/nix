@@ -948,30 +948,28 @@ Without a prefix, exports the daily dashboard (agenda command \"d\").
 With \\[universal-argument], exports the 7-day weekly view (agenda command \"w\")."
   (interactive "P")
   (require 'org-agenda)
-  (require 'htmlize)
   (let* ((weekly (consp arg))
          (cmd-key (if weekly "w" "d"))
          (date-str (format-time-string "%Y-%m-%d"))
          (title (if weekly
                     (format "Weekly Agenda — %s" date-str)
                   (format "Daily Agenda — %s" date-str)))
-         (slug (format "agenda-%s%s" (if weekly "week-" "") date-str))
-         (epub-dir (expand-file-name "~/notes/epubs"))
-         (epub-file (expand-file-name (concat slug ".epub") epub-dir))
-         (tmp-html (make-temp-file "agenda-" nil ".html")))
+         (tmp-org (make-temp-file "agenda-" nil ".org")))
     (save-window-excursion
       (let ((org-agenda-window-setup 'current-window)
             (org-agenda-sticky nil))
         (org-agenda nil cmd-key)
-        (org-agenda-write tmp-html nil t)))
-    (make-directory epub-dir t)
+        (org-agenda-write tmp-org nil t)))
+    ;; Prepend #+TITLE: so memory-to-epub-file can find a title;
+    ;; org-agenda-write emits bare subtrees with no file header.
+    (let ((subtrees (with-temp-buffer
+                      (insert-file-contents tmp-org)
+                      (buffer-string))))
+      (with-temp-file tmp-org
+        (insert "#+TITLE: " title "\n\n")
+        (insert subtrees)))
     (let ((compilation-buffer-name-function (lambda (_mode) "*agenda-to-epub*")))
-      (compile
-       (format "pandoc %s -o %s --from=html --to=epub3 --metadata title=%s --toc --standalone"
-               (shell-quote-argument tmp-html)
-               (shell-quote-argument epub-file)
-               (shell-quote-argument title))
-       t))))
+      (compile (format "memory-to-epub-file %s" (shell-quote-argument tmp-org)) t))))
 #+end_src
 
 * Org Clock
@@ -1048,7 +1046,11 @@ With \\[universal-argument], exports the 7-day weekly view (agenda command \"w\"
     "Sets all my org mode specific keybindings"
     (evil-define-key 'operator org-mode-map (kbd "is") 'evil-inner-org-src-block)
     (evil-define-key 'normal org-mode-map (kbd "<backtab>") 'org-cycle-global)
-    (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block))
+    (evil-define-key 'operator org-mode-map (kbd "as") 'evil-a-org-src-block)
+    ;; Terminal/SSH fixes: C-i (TAB) is stolen by evil-jump-forward over SSH,
+    ;; and C-<return> can't be transmitted by terminals.
+    (evil-define-key 'normal org-mode-map (kbd "TAB") 'org-cycle)
+    (evil-define-key '(normal insert) org-mode-map (kbd "C-k") #'my/insert-menu))
 #+end_src
 
 * Org Agenda Keymaps
