@@ -26,8 +26,8 @@
             exit 0
           fi
 
-          # Any top-level heading without :PROCESSED: t is fair game
-          if ! grep -q "^\* " "$INBOX" 2>/dev/null || ! grep -v ":PROCESSED: t" "$INBOX" | grep -q "^\* "; then
+          # Any heading without :PROCESSED: t is fair game
+          if ! grep -q "^\** " "$INBOX" 2>/dev/null || ! grep -v ":PROCESSED: t" "$INBOX" | grep -q "^\** "; then
             echo "[$(date -Iseconds)] inbox-loop: no unprocessed items, skipping" >> "$LOG_FILE"
             exit 0
           fi
