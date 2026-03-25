@@ -944,37 +944,34 @@ See ADR-016.
 #+begin_src emacs-lisp
 (defun my/org-agenda-to-epub (&optional arg)
   "Export the org-agenda to an EPUB saved in ~/notes/epubs.
-Without a prefix, exports today's daily agenda.
-With \\[universal-argument], exports a 7-day weekly view."
+Without a prefix, exports the daily dashboard (agenda command \"d\").
+With \\[universal-argument], exports the 7-day weekly view (agenda command \"w\")."
   (interactive "P")
   (require 'org-agenda)
+  (require 'htmlize)
   (let* ((weekly (consp arg))
-         (ndays (if weekly 7 1))
+         (cmd-key (if weekly "w" "d"))
          (date-str (format-time-string "%Y-%m-%d"))
          (title (if weekly
                     (format "Weekly Agenda — %s" date-str)
                   (format "Daily Agenda — %s" date-str)))
-         (tmp-org (make-temp-file "agenda-" nil ".org")))
+         (slug (format "agenda-%s%s" (if weekly "week-" "") date-str))
+         (epub-dir (expand-file-name "~/notes/epubs"))
+         (epub-file (expand-file-name (concat slug ".epub") epub-dir))
+         (tmp-html (make-temp-file "agenda-" nil ".html")))
     (save-window-excursion
       (let ((org-agenda-window-setup 'current-window)
             (org-agenda-sticky nil))
-        (org-agenda-list nil nil ndays)
-        (let ((lines (split-string
-                      (buffer-substring-no-properties (point-min) (point-max))
-                      "\n")))
-          (with-temp-file tmp-org
-            (insert "#+TITLE: " title "\n\n")
-            (dolist (line lines)
-              (cond
-               ;; Date headers like "Wednesday  25 March 2026"
-               ((string-match-p "\\`[A-Z][a-z]+ +[0-9]" line)
-                (insert "\n* " (string-trim line) "\n"))
-               ;; Non-blank content → list items
-               ((string-match-p "[^ \t]" line)
-                (insert "  - " (string-trim line) "\n"))
-               (t (insert "\n"))))))))
+        (org-agenda nil cmd-key)
+        (org-agenda-write tmp-html nil t)))
+    (make-directory epub-dir t)
     (let ((compilation-buffer-name-function (lambda (_mode) "*agenda-to-epub*")))
-      (compile (format "memory-to-epub-file %s" (shell-quote-argument tmp-org)) t))))
+      (compile
+       (format "pandoc %s -o %s --from=html --to=epub3 --metadata title=%s --toc --standalone"
+               (shell-quote-argument tmp-html)
+               (shell-quote-argument epub-file)
+               (shell-quote-argument title))
+       t))))
 #+end_src
 
 * Org Clock
