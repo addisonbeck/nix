@@ -175,14 +175,3 @@ ul, ol {
 }
 li { margin: 0.3em 0; }
 
-/* --- E-ink / monochrome display --- */
-@media (monochrome) {
-  body { background: transparent; color: #000; }
-  pre { background: transparent; border-color: currentColor; }
-  section.titlepage .date { color: currentColor; }
-  blockquote { color: currentColor; border-left-color: currentColor; }
-  code span.va { color: #000; font-weight: bold; }
-  code span.st { color: #000; text-decoration: line-through; }
-  code span.dt { color: #000; font-style: italic; }
-  code span.kw { color: #000; }
-}
