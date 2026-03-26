@@ -9,19 +9,19 @@
   font-family: "Iosevka";
   font-style: normal;
   font-weight: normal;
-  src: url("Iosevka-Regular.ttf");
+  src: url("../fonts/Iosevka-Regular.ttf");
 }
 @font-face {
   font-family: "Iosevka";
   font-style: normal;
   font-weight: bold;
-  src: url("Iosevka-Bold.ttf");
+  src: url("../fonts/Iosevka-Bold.ttf");
 }
 @font-face {
   font-family: "Iosevka";
   font-style: italic;
   font-weight: normal;
-  src: url("Iosevka-Italic.ttf");
+  src: url("../fonts/Iosevka-Italic.ttf");
 }
 
 /* --- Base --- */
@@ -130,34 +130,24 @@ pre code {
 
 /* ===========================
    Diff Syntax Highlighting
-   Classes emitted by pandoc --highlight-style=monochrome
+   Classes emitted by pandoc --highlight-style=pygments
    for fenced diff blocks:
 
-     .va  added lines     (starting with +)
-     .st  removed lines   (starting with -)
-     .dt  chunk headers   (@@ -n,m +n,m @@) and +++ new-file headers
-     .kw  old-file header (--- a/file)
+     code span.va  added lines     (starting with +)
+     code span.st  removed lines   (starting with -)
+     code span.dt  chunk headers   (@@ -n,m +n,m @@) and +++ new-file headers
+     code span.kw  old-file header (--- a/file)
      no span = context lines
+
+   Uses 'code span.*' to match pandoc's inline highlight CSS specificity.
+   Pandoc merges custom CSS after its own base styles, so these win by
+   cascade order without needing !important.
    =========================== */
 
-span.va {
-  font-weight: bold;
-}
-
-span.st {
-  font-style: italic;
-  opacity: 0.7;
-}
-
-span.dt {
-  font-style: italic;
-  opacity: 0.6;
-}
-
-span.kw {
-  font-weight: bold;
-  opacity: 0.6;
-}
+code span.va { color: #1a7f37; font-weight: bold; }  /* added lines - green */
+code span.st { color: #cf222e; }                      /* removed lines - red */
+code span.dt { color: #6e7781; font-style: italic; }  /* chunk headers - muted */
+code span.kw { color: #6e7781; }                      /* file headers - muted */
 
 /* --- Misc prose elements --- */
 a {
@@ -191,8 +181,8 @@ li { margin: 0.3em 0; }
   pre { background: transparent; border-color: currentColor; }
   section.titlepage .date { color: currentColor; }
   blockquote { color: currentColor; border-left-color: currentColor; }
-  span.va { font-weight: bold; font-style: normal; opacity: 1; }
-  span.st { text-decoration: line-through; font-style: normal; opacity: 1; }
-  span.dt { font-style: italic; opacity: 1; }
-  span.kw { font-weight: bold; opacity: 1; }
+  code span.va { color: #000; font-weight: bold; }
+  code span.st { color: #000; text-decoration: line-through; }
+  code span.dt { color: #000; font-style: italic; }
+  code span.kw { color: #000; }
 }

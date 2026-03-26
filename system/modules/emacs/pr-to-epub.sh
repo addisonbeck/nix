@@ -92,7 +92,7 @@ echo "Generating EPUB..."
   --to=epub3 \
   --output="$EPUB" \
   --css="@pr-review-css@" \
-  --highlight-style=monochrome \
+  --highlight-style=pygments \
   --epub-embed-font="@iosevka-regular@" \
   --epub-embed-font="@iosevka-bold@" \
   --epub-embed-font="@iosevka-italic@" \
