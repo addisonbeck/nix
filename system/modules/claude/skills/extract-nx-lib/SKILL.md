@@ -140,6 +140,8 @@ npx nx show project <name>
 grep "@bitwarden/<name>" tsconfig.base.json
 ```
 
+**tsconfig.base.json alphabetical ordering**: The generator appends the new `@bitwarden/<name>` path entry at the end of the `paths` object rather than inserting it in alphabetical order. After confirming the entry exists, move it to its correct alphabetical position within `paths`. For example, an entry for `@bitwarden/scheduling` belongs between other `@bitwarden/s...` entries — not at the bottom of the file.
+
 **Critical**: `node_modules` must be installed before running the generator. In git worktrees, `node_modules` is NOT automatically shared. If a fresh worktree is being used, run `npm ci` before the generator.
 
 ### Pre-existing Nx Project Graph Issue
@@ -279,6 +281,7 @@ Each chunk is a separate commit.
 2. If `ProjectsWithNoNameError` appears, create prerequisite commit first (add `scripts/` to `.nxignore`), then re-run generator
 3. Verify: `npx nx show project <name>` and `grep "@bitwarden/<name>" tsconfig.base.json`
 4. Check CODEOWNERS placement: `tail -5 .github/CODEOWNERS` — the generator always appends the new entry at the bottom of the file, after all existing sections. Relocate the entry to the owning team's section (e.g., for platform libs, immediately after `libs/state-test-utils @bitwarden/team-platform-dev`)
+4a. Fix `tsconfig.base.json` alphabetical ordering: the generator appends the `@bitwarden/<name>` entry to the end of the `paths` object. Move it to its correct alphabetical position within `paths` before committing.
 5. Populate `libs/<name>/src/index.ts` with the extracted class/function
 6. **Update deep import paths in moved files** (TS6059 rootDir prevention): If any source file being moved into `libs/<name>/` imports a service via a deep `@bitwarden/common` path that is actually in its own leaf lib, update that import to use the leaf-lib package directly. Example: `from '@bitwarden/common/platform/abstractions/log.service'` → `from '@bitwarden/logging'`. Failure to do this causes TS6059 rootDir violations at build time.
 7. Move spec file to `libs/<name>/src/` and update import paths in spec (applying the same deep-path rule)
@@ -314,7 +317,7 @@ PR description should make clear:
 - [ ] Re-export shim present at original location
 - [ ] At least one consumer updated
 - [ ] No orphaned spec files in `libs/common/`
-- [ ] `tsconfig.base.json` path alias added
+- [ ] `tsconfig.base.json` path alias added and in correct alphabetical position within `paths`
 - [ ] CODEOWNERS entry added by generator
 
 ## Environment Dependencies
@@ -384,6 +387,7 @@ ls ~/.claude/skills/extract-nx-lib/
 | Consumer still has broken import | Shim placed at wrong path | Verify shim path matches consumer's import path exactly |
 | TS6059 rootDir violation after move | Moved file uses deep `@bitwarden/common` path to reach a service now in its own leaf lib | Update the import to use the leaf-lib package directly (e.g., `@bitwarden/logging`) in Chunk 1 before committing |
 | CODEOWNERS entry at bottom of file | Nx generator always appends to end of file | After generator runs, relocate entry to the owning team's section in CODEOWNERS |
+| `tsconfig.base.json` path entry out of alphabetical order | Nx generator appends rather than inserts alphabetically | After generator runs, move the new `@bitwarden/<name>` entry to its correct position within the `paths` object |
 | Orphaned spec in libs/common/ | Spec not deleted after move | Delete original spec in wire commit |
 | Windows CI failure | Pre-existing main branch instability | Triage as pre-existing, proceed to quality review |
 | Chromatic still pending | Long-running UI check | Expected behavior, does not block quality review |
