@@ -1,4 +1,8 @@
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   bobertOutputStyle = ./output-styles/bobert.md;
 in {
   # Install Claude Code package
@@ -177,4 +181,52 @@ in {
       };
     };
   };
+
+  # Symlink ai-plugins local clone into ~/.claude/ for live development.
+  # Uses activation (not home.file) so edits to the clone are reflected immediately
+  # without rebuilding. Handles agents, skills, and commands across all plugins.
+  home.activation.aiPluginsSymlinks = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    AI_PLUGINS_ROOT="/Users/me/binwarden/bitwarden-ai-plugins/main"
+    CLAUDE_DIR="$HOME/.claude"
+
+    if [ -d "$AI_PLUGINS_ROOT/plugins" ]; then
+      for plugin_dir in "$AI_PLUGINS_ROOT/plugins"/*/; do
+        # Agents: symlink each AGENT.md as a flat <agent-name>.md file
+        if [ -d "$plugin_dir/agents" ]; then
+          $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR/agents"
+          for agent_dir in "$plugin_dir/agents"/*/; do
+            [ -d "$agent_dir" ] || continue
+            agent_name=$(basename "$agent_dir")
+            agent_file="$agent_dir/AGENT.md"
+            if [ -f "$agent_file" ]; then
+              $DRY_RUN_CMD ln -sfn "$agent_file" "$CLAUDE_DIR/agents/$agent_name.md"
+            fi
+          done
+        fi
+
+        # Skills: symlink each skill subdirectory directly
+        if [ -d "$plugin_dir/skills" ]; then
+          $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR/skills"
+          for skill_dir in "$plugin_dir/skills"/*/; do
+            [ -d "$skill_dir" ] || continue
+            skill_name=$(basename "$skill_dir")
+            $DRY_RUN_CMD ln -sfn "$skill_dir" "$CLAUDE_DIR/skills/$skill_name"
+          done
+        fi
+
+        # Commands: symlink each <cmd-name>/<cmd-name>.md as a flat <cmd-name>.md file
+        if [ -d "$plugin_dir/commands" ]; then
+          $DRY_RUN_CMD mkdir -p "$CLAUDE_DIR/commands"
+          for cmd_dir in "$plugin_dir/commands"/*/; do
+            [ -d "$cmd_dir" ] || continue
+            cmd_name=$(basename "$cmd_dir")
+            cmd_file="$cmd_dir/$cmd_name.md"
+            if [ -f "$cmd_file" ]; then
+              $DRY_RUN_CMD ln -sfn "$cmd_file" "$CLAUDE_DIR/commands/$cmd_name.md"
+            fi
+          done
+        fi
+      done
+    fi
+  '';
 }
