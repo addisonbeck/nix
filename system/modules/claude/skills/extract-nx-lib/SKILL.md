@@ -301,6 +301,15 @@ Each chunk is a separate commit.
 
 **Standard finalization applies.** pr-maintainer MUST read `PULL_REQUEST_TEMPLATE.md` before creating the PR.
 
+**README authoring (before PR is created)**: The `basic-lib` generator produces a stub README containing only the library name, owner, and a one-liner. Replace it with a developer-facing README before opening the PR. The README should cover:
+
+1. **What problem the library solves** — why this concept warranted its own lib, what it replaces or wraps
+2. **Key abstractions exported** — the primary class(es), function(s), or type(s) and their conceptual role; no inline code examples or detailed API tables
+3. **Platform extension patterns** (if applicable) — how platform-specific subclasses or implementations extend the base abstraction
+4. **Backward-compat shims** — note any re-export shims placed at the original file path and what they preserve
+
+Style should match other lib READMEs in the monorepo (prose-oriented, concise, written for an engineer exploring the source tree — not a tutorial).
+
 PR description should make clear:
 - What was extracted and why (the extraction motivation — leaf lib goal)
 - That the change is purely structural (no behavior changes)
@@ -319,6 +328,7 @@ PR description should make clear:
 - [ ] No orphaned spec files in `libs/common/`
 - [ ] `tsconfig.base.json` path alias added and in correct alphabetical position within `paths`
 - [ ] CODEOWNERS entry added by generator
+- [ ] README replaces generator stub: covers problem statement, key abstractions, platform extension patterns (if any), and backward-compat shims; no inline code examples or API tables
 
 ## Environment Dependencies
 
