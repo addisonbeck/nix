@@ -6,6 +6,16 @@
 }: let
   orgRoamFindNodePy = ../automated-emailing/org-roam-find-node-file.py;
   memory-css = ../automated-emailing/memory.css;
+  pr-review-css = ./pr-review.css;
+  pr-to-epub = pkgs.writeShellScriptBin "pr-to-epub" (builtins.readFile (pkgs.replaceVars ./pr-to-epub.sh {
+    pandoc = "${pkgs.pandoc}/bin/pandoc";
+    gh = "${pkgs.gh}/bin/gh";
+    jq = "${pkgs.jq}/bin/jq";
+    pr-review-css = "${pr-review-css}";
+    iosevka-regular = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Regular.ttf";
+    iosevka-bold = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Bold.ttf";
+    iosevka-italic = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Italic.ttf";
+  }));
   memory-to-epub-file = pkgs.writeShellScriptBin "memory-to-epub-file" (builtins.readFile (pkgs.replaceVars ./memory-to-epub-file.sh {
     org-roam-find-node-file = "${orgRoamFindNodePy}";
     pandoc = "${pkgs.pandoc}/bin/pandoc";
@@ -258,6 +268,7 @@ in {
     emacsclient-wrapper
     emacsclient-mobile-wrapper
     memory-to-epub-file
+    pr-to-epub
     mermaid-cli
     puppeteer-cli-with-chrome
     mpv-unwrapped

@@ -478,7 +478,8 @@ Returns plist with :pr-number, :pr-url, :repo keys."
 			     ("d" "View diff (delta)" my/pr-diff)
 			     ("f" "Browse files" my/pr-files)
 			     ("c" "View comments" my/pr-comments)
-			     ("b" "Open in browser" my/pr-open-in-browser)]
+			     ("b" "Open in browser" my/pr-open-in-browser)
+		     ("e" "Save as epub" my/pr-save-as-epub)]
 			    ["Actions"
 			     ("a" "Add comment" my/pr-add-comment)
 			     ("s" "Submit review" my/pr-submit-review)
@@ -619,6 +620,36 @@ that are prepended to the command as inline shell environment variables."
            (pr-url (or (plist-get ctx :pr-url) pr-number)))
       (my/pr-review-in-vterm pr-number
                              (format "gh pr merge %s" pr-url))))
+#+end_src
+
+**** Export Workflows
+
+#+begin_src emacs-lisp :tangle code-reviews.el
+  (defun my/pr-save-as-epub ()
+    "Export the current PR as an EPUB to ~/notes/epubs using pr-to-epub."
+    (interactive)
+    (let* ((ctx (my/pr-detect-context))
+           (pr-url (plist-get ctx :pr-url))
+           (pr-number (plist-get ctx :pr-number)))
+      (unless pr-url
+        (user-error "No PR URL found"))
+      (let* ((buf-name (format "*PR-EPUB-%s*" pr-number))
+             (output-dir (expand-file-name "~/notes/epubs/")))
+        (make-directory output-dir t)
+        (message "Generating EPUB for PR %s..." pr-number)
+        (let ((proc (start-process-shell-command
+                     buf-name buf-name
+                     (concat "pr-to-epub " (shell-quote-argument pr-url)))))
+          (set-process-sentinel
+           proc
+           (lambda (p _event)
+             (when (eq (process-status p) 'exit)
+               (if (= (process-exit-status p) 0)
+                   (message "PR EPUB saved to ~/notes/epubs/")
+                 (progn
+                   (pop-to-buffer buf-name)
+                   (message "EPUB generation failed — see buffer %s" buf-name))))))
+          (display-buffer buf-name '(display-buffer-at-bottom . ((window-height . 0.2))))))))
 #+end_src
 
 **** Status Workflows

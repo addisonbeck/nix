@@ -1,0 +1,198 @@
+/* ===========================
+   PR Review EPUB Stylesheet
+   Optimized for code diffs and PR descriptions.
+   Uses Iosevka for monospace content.
+   =========================== */
+
+/* --- Font embedding --- */
+@font-face {
+  font-family: "Iosevka";
+  font-style: normal;
+  font-weight: normal;
+  src: url("Iosevka-Regular.ttf");
+}
+@font-face {
+  font-family: "Iosevka";
+  font-style: normal;
+  font-weight: bold;
+  src: url("Iosevka-Bold.ttf");
+}
+@font-face {
+  font-family: "Iosevka";
+  font-style: italic;
+  font-weight: normal;
+  src: url("Iosevka-Italic.ttf");
+}
+
+/* --- Base --- */
+body {
+  font-size: 1em;
+  line-height: 1.55;
+  color: #1a1a1a;
+  background: #fff;
+  text-align: left;
+  widows: 2;
+  orphans: 2;
+}
+
+/* --- Headings --- */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  page-break-after: avoid;
+  line-height: 1.2;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+h1 {
+  font-size: 1.8em;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 0.2em;
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.35em;
+  border-bottom: 1px solid #999;
+  padding-bottom: 0.15em;
+}
+h3 { font-size: 1.12em; }
+h4 { font-size: 1em; font-style: italic; }
+
+p { margin: 0.7em 0; }
+
+/* --- Title page --- */
+section.titlepage {
+  text-align: center;
+  margin-top: 12%;
+}
+section.titlepage h1.title {
+  border-bottom: none;
+  font-size: 2em;
+  margin-bottom: 0.3em;
+}
+section.titlepage .subtitle {
+  font-size: 1.1em;
+  font-style: italic;
+}
+section.titlepage .author {
+  margin-top: 2em;
+  font-size: 1.05em;
+}
+section.titlepage .date {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 0.5em;
+}
+
+/* --- Tables (used for PR overview metadata) --- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.92em;
+  table-layout: fixed;
+}
+td, th {
+  border: 1px solid #ccc;
+  padding: 0.4em 0.7em;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+td:first-child { width: 30%; font-weight: bold; }
+th { font-weight: bold; }
+
+/* --- Inline code --- */
+code {
+  font-family: "Iosevka", "Courier New", monospace;
+  font-size: 0.84em;
+  font-variant-ligatures: none;
+}
+
+/* --- Code blocks (pre) --- */
+pre {
+  font-family: "Iosevka", "Courier New", monospace;
+  font-size: 0.76em;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  padding: 0.85em 1em;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  page-break-inside: avoid;
+  margin: 1em 0;
+}
+
+pre code {
+  font-size: 1em;
+  border: none;
+  padding: 0;
+}
+
+/* ===========================
+   Diff Syntax Highlighting
+   Classes emitted by pandoc --highlight-style=monochrome
+   for fenced diff blocks:
+
+     .va  added lines     (starting with +)
+     .st  removed lines   (starting with -)
+     .dt  chunk headers   (@@ -n,m +n,m @@) and +++ new-file headers
+     .kw  old-file header (--- a/file)
+     no span = context lines
+   =========================== */
+
+span.va {
+  font-weight: bold;
+}
+
+span.st {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+span.dt {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+span.kw {
+  font-weight: bold;
+  opacity: 0.6;
+}
+
+/* --- Misc prose elements --- */
+a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+blockquote {
+  border-left: 3px solid #999;
+  margin: 1em 0;
+  padding-left: 1em;
+  font-style: italic;
+  color: #444;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2em 0;
+}
+
+ul, ol {
+  margin: 0.7em 0;
+  padding-left: 1.5em;
+}
+li { margin: 0.3em 0; }
+
+/* --- E-ink / monochrome display --- */
+@media (monochrome) {
+  body { background: transparent; color: #000; }
+  pre { background: transparent; border-color: currentColor; }
+  section.titlepage .date { color: currentColor; }
+  blockquote { color: currentColor; border-left-color: currentColor; }
+  span.va { font-weight: bold; font-style: normal; opacity: 1; }
+  span.st { text-decoration: line-through; font-style: normal; opacity: 1; }
+  span.dt { font-style: italic; opacity: 1; }
+  span.kw { font-weight: bold; opacity: 1; }
+}
