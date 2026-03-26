@@ -1826,6 +1826,22 @@ This cool and lame at the same time
       (if (derived-mode-p 'vterm-mode)
 	  (vterm-send-string link)
 	(insert link))))
+
+  (defun my/insert-org-link-to-notes ()
+    "Select a file from the notes directory and insert an org link at point."
+    (interactive)
+    (require 'org)
+    (let* ((notes-dir (expand-file-name (my/get-project-path "notes")))
+	   (files (directory-files-recursively notes-dir ""))
+	   (relative (mapcar (lambda (f) (file-relative-name f notes-dir)) files))
+	   (selected (completing-read "Note: " relative nil t))
+	   (abs (expand-file-name selected notes-dir))
+	   (link (org-link-make-string
+		  (concat "file:" (file-truename abs))
+		  (file-name-nondirectory abs))))
+      (if (derived-mode-p 'vterm-mode)
+	  (vterm-send-string link)
+	(insert link))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -1837,6 +1853,7 @@ This cool and lame at the same time
 			    ("b" "Org Block" my/insert-org-block)
 			    ("p" "Projectile File" my/projectile-insert-org-link-to-file)
 			    ("f" "PDF Link" my/insert-org-link-to-pdf)
+			    ("n" "Notes Link" my/insert-org-link-to-notes)
 			    ("m" "Memory Link" org-roam-node-insert)])
 #+end_src
 
@@ -1863,10 +1880,14 @@ This cool and lame at the same time
 
 #+begin_src emacs-lisp
   (defun my/search-notes ()
-    "Run projectile ripgrep search in the notes directory."
+    "Recursively find a file in the notes directory with fuzzy completion."
     (interactive)
-    (let ((default-directory (my/get-project-path "notes")))
-      (projectile-find-file)))
+    (let* ((notes-dir (expand-file-name (my/get-project-path "notes")))
+	   (files (directory-files-recursively notes-dir ""))
+	   (relative (mapcar (lambda (f) (file-relative-name f notes-dir)) files))
+	   (selected (completing-read "Note: " relative nil t))
+	   (abs (expand-file-name selected notes-dir)))
+      (find-file abs)))
 
   (transient-define-prefix my/search-menu ()
 			   "Transient menu for searching around the buffer(s), project, and filesystem."

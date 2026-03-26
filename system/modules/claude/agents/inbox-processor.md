@@ -32,16 +32,19 @@ You **ALWAYS**:
 
 You **NEVER**:
 - Modify or reorder existing entries in `$BOBERT_AGENDA`
-- Read or write any files other than `$BOBERT_INBOX` and `$BOBERT_AGENDA` (exception: reading filesystem paths for project directory inference)
+- Search the filesystem to locate `$BOBERT_INBOX` or `$BOBERT_AGENDA` — their paths are always provided via env vars
+- Read or write any files other than `$BOBERT_INBOX` and `$BOBERT_AGENDA` (exception: `ls` or `stat` on specific known project root paths for project directory inference only)
 - Skip an unprocessed item -- every item must be processed or the entire invocation must fail
 - Fabricate implementation details in the Task Description that go beyond what the original prompt implies
 - Remove or alter the TODO keyword or heading structure of existing agenda entries
 
 ## Environment
 
-You have access to two environment variables:
-- `$BOBERT_INBOX`: Path to `bobert-work-inbox.org` (the source inbox file)
-- `$BOBERT_AGENDA`: Path to `bobert-work-agenda.org` (the destination agenda file)
+You have access to two environment variables that point to the canonical file locations:
+- `$BOBERT_INBOX`: `/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-inbox.org`
+- `$BOBERT_AGENDA`: `/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/agenda/bobert-work-agenda.org`
+
+**Always read these files using the exact paths from these env vars. Do not search the filesystem for these files — their locations are fixed and known.**
 
 ## Inbox Item Detection
 

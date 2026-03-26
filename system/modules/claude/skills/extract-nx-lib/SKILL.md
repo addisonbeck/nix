@@ -51,7 +51,7 @@ The full-lifecycle-delivery PhaseContext/PhaseResult protocol, roster request/re
 When the extraction candidate is NOT already specified, direct explore-agent to find it using these criteria:
 
 **What makes a good leaf candidate** (all criteria should be met):
-1. **Zero or near-zero external `@bitwarden/*` imports** — only imports from npm packages or TypeScript builtins. This is the most important criterion.
+1. **Zero or near-zero problematic `@bitwarden/*` imports** — only imports from npm packages, TypeScript builtins, or `@bitwarden/*` libs whose Nx executor is a standard TypeScript executor (e.g., `@nx/js:tsc`). This is the most important criterion. To classify any `@bitwarden/*` import found in the candidate file, look up that lib's `project.json` build target: if it uses `run-script` or a shell script executor, the lib has complex build tooling and is not a clean, portable leaf lib — treat it as a blocker. If it uses a standard TypeScript executor (or the `basic-lib` pattern), the lib compiles cleanly and is an acceptable peer dependency — it becomes a `peerDependency` in the new lib's `package.json` and should be documented in an ADR.
 2. **Small surface area** — typically < 100 lines, ideally < 50.
 3. **Single well-defined concept** — a class, a utility, a type. Not a grab-bag.
 4. **Stable, rarely-changing code** — the extraction itself won't conflict with ongoing work.
@@ -240,7 +240,7 @@ Addison's standard response is "Defer all gap analysis items to research, accept
 
 **explore-agent** must answer all four of these questions before adr-maintainer records decisions:
 
-1. **Zero import validation**: Does the candidate file import from any `@bitwarden/*` packages? (Check with `head -20 <file>`)
+1. **Import classification**: Does the candidate file import from any `@bitwarden/*` packages? (Check with `head -20 <file>`) If so, classify each import by looking up the imported lib's `project.json` build target executor: if the build target uses `run-script` or a shell script executor, the lib has complex build tooling and cannot be cleanly depended upon — treat it as a blocker. If the build target uses a standard TypeScript executor (e.g., `@nx/js:tsc`) or the `basic-lib` pattern, the lib is a clean leaf lib and is an acceptable peer dependency — document it for the ADR. Command to check: `cat libs/<imported-lib-dirname>/project.json | grep -A3 '"build"'`.
 2. **Consumer count**: How many consumers use this file? (Check with `grep -r "from.*<path>" libs/ --include="*.ts" -l`)
 3. **Barrel export check**: Is this file re-exported through an `index.ts`? (Critical — determines shim strategy)
 4. **CODEOWNERS lookup**: Which team owns the source directory? (Check `.github/CODEOWNERS`)
@@ -250,10 +250,11 @@ Addison's standard response is "Defer all gap analysis items to research, accept
 ls libs/ | grep -v common | grep -v platform | grep -v key-management
 ```
 
-**adr-maintainer** records THREE decisions:
+**adr-maintainer** records THREE decisions (four if peer deps exist):
 - ADR 1: Library name rationale (why `<name>` over alternatives)
 - ADR 2: Team ownership (which team, evidence from CODEOWNERS)
 - ADR 3: Import strategy (shim vs barrel update, based on barrel export check)
+- ADR 4 (if applicable): Peer leaf-lib dependency — which already-extracted lib is imported, why it is acceptable as a `peerDependency`, and the package.json change required
 
 **technical-breakdown-maintainer** produces v1.0.0 breakdown covering:
 - Candidate validation results (import scan, consumer count, barrel check)
@@ -277,10 +278,12 @@ Each chunk is a separate commit.
 1. Run the generator: `npx nx generate @bitwarden/nx-plugin:basic-lib <name> --description="..." --team=<team> --directory=libs`
 2. If `ProjectsWithNoNameError` appears, create prerequisite commit first (add `scripts/` to `.nxignore`), then re-run generator
 3. Verify: `npx nx show project <name>` and `grep "@bitwarden/<name>" tsconfig.base.json`
-4. Populate `libs/<name>/src/index.ts` with the extracted class/function
-5. Move spec file to `libs/<name>/src/` and update import paths in spec
-6. Delete the original source file from `libs/common/`
-7. Commit: `feat(<name>): scaffold @bitwarden/<name> leaf lib`
+4. Check CODEOWNERS placement: `tail -5 .github/CODEOWNERS` — the generator always appends the new entry at the bottom of the file, after all existing sections. Relocate the entry to the owning team's section (e.g., for platform libs, immediately after `libs/state-test-utils @bitwarden/team-platform-dev`)
+5. Populate `libs/<name>/src/index.ts` with the extracted class/function
+6. **Update deep import paths in moved files** (TS6059 rootDir prevention): If any source file being moved into `libs/<name>/` imports a service via a deep `@bitwarden/common` path that is actually in its own leaf lib, update that import to use the leaf-lib package directly. Example: `from '@bitwarden/common/platform/abstractions/log.service'` → `from '@bitwarden/logging'`. Failure to do this causes TS6059 rootDir violations at build time.
+7. Move spec file to `libs/<name>/src/` and update import paths in spec (applying the same deep-path rule)
+8. Delete the original source file from `libs/common/`
+9. Commit: `feat(<name>): scaffold @bitwarden/<name> leaf lib`
 
 **Chunk 2 — Wire**:
 1. Add re-export shim at original file path (if not barrel-exported)
@@ -379,6 +382,8 @@ ls ~/.claude/skills/extract-nx-lib/
 | Generator fails with missing deps | `node_modules` not installed in worktree | Run `npm ci` before generator |
 | `npx nx show project <name>` not found | Generator didn't run cleanly | Check generator output for errors, re-run |
 | Consumer still has broken import | Shim placed at wrong path | Verify shim path matches consumer's import path exactly |
+| TS6059 rootDir violation after move | Moved file uses deep `@bitwarden/common` path to reach a service now in its own leaf lib | Update the import to use the leaf-lib package directly (e.g., `@bitwarden/logging`) in Chunk 1 before committing |
+| CODEOWNERS entry at bottom of file | Nx generator always appends to end of file | After generator runs, relocate entry to the owning team's section in CODEOWNERS |
 | Orphaned spec in libs/common/ | Spec not deleted after move | Delete original spec in wire commit |
 | Windows CI failure | Pre-existing main branch instability | Triage as pre-existing, proceed to quality review |
 | Chromatic still pending | Long-running UI check | Expected behavior, does not block quality review |
@@ -395,4 +400,4 @@ ls ~/.claude/skills/extract-nx-lib/
 
 ---
 
-This skill encodes the complete extraction workflow for bitwarden-clients Nx leaf library creation. It specializes full-lifecycle-delivery with extraction-specific candidate validation, naming conventions, generator usage, commit strategy, and CI triage guidance. All hard-won patterns from the RangeWithDefault extraction session are encoded here.
+This skill encodes the complete extraction workflow for bitwarden-clients Nx leaf library creation. It specializes full-lifecycle-delivery with extraction-specific candidate validation, naming conventions, generator usage, commit strategy, and CI triage guidance. Hard-won patterns from both the RangeWithDefault and scheduling extraction sessions are encoded here.

@@ -26,8 +26,17 @@
             exit 0
           fi
 
-          # Any heading without :PROCESSED: t is fair game
-          if ! grep -q "^\** " "$INBOX" 2>/dev/null || ! grep -v ":PROCESSED: t" "$INBOX" | grep -q "^\** "; then
+          # Check for unprocessed level-2 headings (** ...) that lack :PROCESSED: t in their properties drawer.
+          # grep-based approaches fail because heading lines never contain :PROCESSED: t themselves --
+          # the marker lives on a separate line inside the :PROPERTIES: drawer. awk tracks per-item state.
+          if awk '
+            /^\*\* / {
+              if (in_item && !processed) { exit 1 }
+              in_item = 1; processed = 0
+            }
+            /^:PROCESSED: t/ { processed = 1 }
+            END { if (in_item && !processed) { exit 1 } }
+          ' "$INBOX"; then
             echo "[$(date -Iseconds)] inbox-loop: no unprocessed items, skipping" >> "$LOG_FILE"
             exit 0
           fi
