@@ -15,14 +15,14 @@ trap 'rm -rf "$WORKDIR"' EXIT
 
 echo "Fetching PR metadata..."
 PR_JSON=$(@gh@ pr view "$PR_URL" \
-  --json title,body,author,state,number,headRefName,baseRefName,createdAt,repository,additions,deletions,changedFiles)
+  --json title,body,author,state,number,headRefName,baseRefName,createdAt,headRepository,headRepositoryOwner,additions,deletions,changedFiles)
 
 TITLE=$(@jq@ -r '.title' <<< "$PR_JSON")
 BODY=$(@jq@ -r '.body // ""' <<< "$PR_JSON")
 AUTHOR=$(@jq@ -r '.author.login' <<< "$PR_JSON")
 STATE=$(@jq@ -r '.state' <<< "$PR_JSON")
 NUMBER=$(@jq@ -r '.number' <<< "$PR_JSON")
-REPO=$(@jq@ -r '.repository.nameWithOwner' <<< "$PR_JSON")
+REPO=$(@jq@ -r '.headRepositoryOwner.login + "/" + .headRepository.name' <<< "$PR_JSON")
 HEAD=$(@jq@ -r '.headRefName' <<< "$PR_JSON")
 BASE=$(@jq@ -r '.baseRefName' <<< "$PR_JSON")
 ADDITIONS=$(@jq@ -r '.additions' <<< "$PR_JSON")
