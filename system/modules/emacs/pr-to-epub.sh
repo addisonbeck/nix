@@ -81,9 +81,26 @@ MD_FILE="${WORKDIR}/pr.md"
   printf '%s\n\n' "$FILES_MD"
 
   printf '## Diff\n\n'
-  printf '~~~~{.diff}\n'
-  printf '%s\n' "$DIFF"
-  printf '~~~~\n'
+  printf '%s\n' "$DIFF" > "${WORKDIR}/pr.diff"
+  awk '
+    BEGIN { inblock = 0; found = 0 }
+    /^diff --git / {
+      found = 1
+      if (inblock) { print "~~~~\n" }
+      filename = $4
+      sub(/^b\//, "", filename)
+      print "### `" filename "`\n"
+      print "~~~~{.diff}"
+      inblock = 1
+      print
+      next
+    }
+    { if (inblock) print }
+    END {
+      if (inblock) print "~~~~"
+      if (!found) print "*diff unavailable*"
+    }
+  ' "${WORKDIR}/pr.diff"
 } > "$MD_FILE"
 
 echo "Generating EPUB..."
