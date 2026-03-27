@@ -8,7 +8,7 @@ description: |
 
 This skill provides orchestration guidance for extracting a leaf library from the bitwarden-clients Nx monorepo. A leaf library is a small, self-contained domain with zero or near-zero dependencies on other `@bitwarden/*` packages — it sits at the bottom of the dependency graph.
 
-When invoked, Bobert follows this instruction playbook to coordinate intake, research/design, implementation, finalization, and publishing phases using the full-lifecycle-delivery team pattern, augmented with extraction-specific guidance for each phase.
+When invoked, the agent follows this instruction playbook to coordinate intake, research/design, implementation, finalization, and publishing phases using the full-lifecycle-delivery team pattern, augmented with extraction-specific guidance for each phase.
 
 **Critical domain knowledge**: This skill encodes hard-won patterns from the RangeWithDefault extraction session. Every section below reflects decisions and gotchas discovered doing this work. Treat them as authoritative.
 
@@ -191,9 +191,11 @@ The implementation plan should target this commit structure (phase 2, code-monke
 
 When moving a `.ts` file to the new lib:
 - Move the corresponding `.spec.ts` file too
-- The spec must import from the new public API (`@bitwarden/<name>`) not from a relative path
 - Delete the original spec from `libs/common/` — do NOT leave orphaned test files
-- Update any import paths in the spec that reference the old location
+- Update import paths in the spec using these two rules:
+  1. **Sibling files within `libs/<name>/src/`**: use relative imports (e.g., `./scheduled-task-name.enum`). The spec lives inside the library, so files in the same `src/` directory must be referenced relatively — not through the library's own barrel (`@bitwarden/<name>`). The barrel is for external consumers.
+  2. **External leaf-lib dependencies**: use the leaf-lib package name (e.g., `@bitwarden/logging`), not a deep `@bitwarden/common` path. Apply the same deep-path rule as the source file (see step 6 above).
+- Never use `@bitwarden/<name>` inside the library's own spec files — that is a barrel import from within the library itself, which is wrong.
 
 ### What Must NOT Change
 
@@ -284,7 +286,7 @@ Each chunk is a separate commit.
 4a. Fix `tsconfig.base.json` alphabetical ordering: the generator appends the `@bitwarden/<name>` entry to the end of the `paths` object. Move it to its correct alphabetical position within `paths` before committing.
 5. Populate `libs/<name>/src/index.ts` with the extracted class/function
 6. **Update deep import paths in moved files** (TS6059 rootDir prevention): If any source file being moved into `libs/<name>/` imports a service via a deep `@bitwarden/common` path that is actually in its own leaf lib, update that import to use the leaf-lib package directly. Example: `from '@bitwarden/common/platform/abstractions/log.service'` → `from '@bitwarden/logging'`. Failure to do this causes TS6059 rootDir violations at build time.
-7. Move spec file to `libs/<name>/src/` and update import paths in spec (applying the same deep-path rule)
+7. Move spec file to `libs/<name>/src/` and update its import paths with two distinct rules: (a) for files in the same `libs/<name>/src/` directory, use relative imports (`./filename`) — never the library's own barrel `@bitwarden/<name>`; (b) for external leaf-lib dependencies (e.g., `LogService` from `@bitwarden/logging`), use the leaf-lib package name, not the deep `@bitwarden/common` path. Apply rule (b) the same way as step 6 above.
 8. Delete the original source file from `libs/common/`
 9. Commit: `feat(<name>): scaffold @bitwarden/<name> leaf lib`
 
@@ -399,6 +401,7 @@ ls ~/.claude/skills/extract-nx-lib/
 | CODEOWNERS entry at bottom of file | Nx generator always appends to end of file | After generator runs, relocate entry to the owning team's section in CODEOWNERS |
 | `tsconfig.base.json` path entry out of alphabetical order | Nx generator appends rather than inserts alphabetically | After generator runs, move the new `@bitwarden/<name>` entry to its correct position within the `paths` object |
 | Orphaned spec in libs/common/ | Spec not deleted after move | Delete original spec in wire commit |
+| Spec imports from `@bitwarden/<name>` (own barrel) | Spec treated the library's barrel as its import source | Use relative imports (`./filename`) for sibling files within `libs/<name>/src/` — the barrel is for external consumers only |
 | Windows CI failure | Pre-existing main branch instability | Triage as pre-existing, proceed to quality review |
 | Chromatic still pending | Long-running UI check | Expected behavior, does not block quality review |
 
@@ -410,6 +413,7 @@ ls ~/.claude/skills/extract-nx-lib/
 - **Updating ALL consumers in the PR**: Update ONE consumer to prove viability; the shim handles the rest
 - **Running generator without node_modules**: Fails silently or with cryptic errors — always `npm ci` first in a fresh worktree
 - **Skipping barrel export check**: Wrong shim strategy breaks consumers — always run the check before implementation
+- **Using `@bitwarden/<name>` inside the library's own spec files**: The barrel is for external consumers. A spec in `libs/<name>/src/` must use relative imports for sibling files in that directory — importing from the library's own barrel is wrong and will draw review nits
 - **Adding correction commits for pre-existing Windows failures**: Wastes effort, pollutes commit history
 
 ---
