@@ -120,13 +120,12 @@ Don't show DONE items in the agenda
 
 *** Keyword Sequence
 
-Defines the three-state TODO state machine for the Bobert agent dispatch loop.
-State transitions: TODO -> IN_PROGRESS (watcher spawns Claude) -> DONE (clean exit) | TODO (error exit).
-See ADR-016.
+Global default for all org files. =bobert-work-agenda.org= overrides this locally with a
+three-state machine (TODO → IN_PROGRESS → DONE) via a per-file =#+TODO:= directive.
 
 #+begin_src emacs-lisp
   (setq org-todo-keywords
-        '((sequence "TODO" "IN_PROGRESS" "|" "DONE")))
+        '((sequence "TODO" "|" "DONE")))
 #+end_src
 
 ** Font Configuration
