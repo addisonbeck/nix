@@ -58,6 +58,12 @@ system/
     ├── emacs/               # Literate Emacs configuration in org-mode
     ├── secrets/             # SOPS secret definitions
     └── automated-emailing/  # Custom modules
+bobert/
+├── flake.nix                # Standalone Claude Code wrapper flake
+├── agents/                  # Specialized task agents
+├── skills/                  # Reusable command patterns
+├── hooks/                   # Workflow hook scripts
+└── output-styles/           # Claude output style definitions
 ```
 
 ### Core Patterns
@@ -107,39 +113,48 @@ nix build .#nixosConfigurations.linux-testing-vm.config.system.build.vm
 
 ### Working with Claude Code Configuration
 
-The `system/modules/claude/` module manages Claude Code through Nix home-manager. This includes output styles, specialized agents, skills, workflow hooks, and MCP server integrations.
+Claude Code configuration lives in the standalone `bobert/` flake at the repo root. It owns agents, skills, hooks, output-styles, and settings. The wrapper syncs everything to `~/.claude/` and execs `claude` on each invocation.
 
 **Key files**:
-- `system/modules/claude/default.nix` - Main configuration (output style, hooks, MCP servers)
-- `system/modules/claude/agents/` - Specialized task agents (agent-creator, context-curator, deep-researcher, work-starter)
-- `system/modules/claude/skills/` - Reusable command patterns (create_memory, read_memory, todo-writer)
-- `system/modules/claude/output-styles/bobert.md` - Third-person orchestrator output style
+- `bobert/flake.nix` - Settings (output style, env vars, hooks, MCP servers) and wrapper script
+- `bobert/agents/` - Specialized task agents
+- `bobert/skills/` - Reusable command patterns (create_memory, read_memory, todo-writer)
+- `bobert/hooks/` - Workflow hook scripts
+- `bobert/output-styles/bobert.md` - Third-person orchestrator output style
+
+**Running bobert**:
+```bash
+# Run directly (syncs config then opens Claude session)
+nix run /Users/me/nix/bobert
+
+# Shell aliases (available after system rebuild)
+bobert
+claude
+```
 
 **Configuration updates**:
 ```bash
-# Edit configuration
-vim system/modules/claude/default.nix
+# Edit settings (output style, hooks, MCP servers, env vars)
+vim bobert/flake.nix
 
-# Rebuild to activate
-nix develop .#building --command rebuild <hostname>
+# Add/edit agents or skills
+vim bobert/agents/my-agent.md
+vim bobert/skills/my-skill/SKILL.md
 
-# Verify installation
-ls ~/.claude/agents/
-cat ~/.claude/config.json
+# Changes take effect on next nix run invocation (no rebuild needed)
+nix run /Users/me/nix/bobert
 ```
 
 **Adding agents/skills**:
-- Create agent: `agents/new-agent.md` with YAML frontmatter defining tools, skills, model
-- Create skill: `skills/new-skill/SKILL.md` + `new-skill.sh` bash implementation
-- Rebuild system to copy to `~/.claude/`
+- Create agent: `bobert/agents/new-agent.md` with YAML frontmatter defining tools, skills, model
+- Create skill: `bobert/skills/new-skill/SKILL.md` + `new-skill.sh` bash implementation
+- No rebuild required — bobert syncs from the local flake on every invocation
 
 **Important integrations**:
-- Org-roam knowledge base via `ORG_ROAM_DIR` environment variable
+- Org-roam knowledge base via `ORG_ROAM_DIR` environment variable (set in `bobert/flake.nix` settings.env)
 - Required Reading hook automatically loads memory dependencies
 - Agent reminder hook promotes specialized agent usage
 - MCP servers for Atlassian (Jira) and GitHub
-
-See `system/modules/claude/CLAUDE.md` for complete documentation.
 
 ### Formatting
 
