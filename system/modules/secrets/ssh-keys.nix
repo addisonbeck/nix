@@ -68,6 +68,11 @@
         identityFile = config.sops.secrets."primary-ssh-key".path;
         forwardAgent = false;
       };
+      "box" = {
+        hostname = "box";
+        user = "root";
+        identityFile = config.sops.secrets."primary-ssh-key".path;
+      };
     };
   };
 
