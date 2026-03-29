@@ -171,7 +171,8 @@
         name = "bobert";
         runtimeInputs = [pkgs.rsync];
         text = ''
-          CLAUDE_DIR="$HOME/.claude"
+          CLAUDE_DIR="$HOME/.bobert"
+          export CLAUDE_CONFIG_DIR="$HOME/.bobert"
           DATA="${bobertData}"
 
           for subdir in agents skills hooks output-styles; do
