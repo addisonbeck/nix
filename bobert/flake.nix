@@ -184,6 +184,7 @@
 
           SETTINGS_DEST="$CLAUDE_DIR/settings.json"
           if ! diff -q "$DATA/settings.json" "$SETTINGS_DEST" > /dev/null 2>&1; then
+            rm -f "$SETTINGS_DEST"
             cp "$DATA/settings.json" "$SETTINGS_DEST"
           fi
 
