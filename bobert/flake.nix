@@ -10,7 +10,10 @@
     forAllSystems = fn: nixpkgs.lib.genAttrs supportedSystems fn;
 
     perSystem = system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
       settings = {
         outputStyle = "Bobert";
@@ -190,7 +193,7 @@
 
           find "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/skills" -name "*.sh" -exec chmod +x {} \;
 
-          exec claude "$@"
+          exec ${pkgs.claude-code}/bin/claude "$@"
         '';
       };
     in {
