@@ -1,11 +1,10 @@
 # Bobert
 
-> *"I am Bobert. I am a robot. I am here to assist you."*
-> — Bobert, The Amazing World of Gumball
-
 Bobert is a standalone Nix flake that wraps [Claude Code](https://claude.ai/code) with a managed configuration: agents, skills, hooks, output styles, and settings — all version-controlled and synced to `~/.claude/` on every invocation.
 
-Named after the earnest, precise, deeply literal robot from *The Amazing World of Gumball*, who was engineered to be a perfect assistant and takes every task with complete seriousness. A fitting namesake.
+Named after [Bobert 6B](https://theamazingworldofgumball.fandom.com/wiki/Bobert_6B) from *The Amazing World of Gumball* — a high-tech robot who attends Elmore Junior High, calculates everything into a mathematical formula, and follows all instructions as literally as possible. He's the smartest student in the school and deeply values his friendships, though he struggles to process human emotions and necessities. Asked to quantify his feelings, he once offered: *"Emotion equals X over Y plus a square root of a hypotenuse."*
+
+A fitting namesake for an AI assistant wrapper.
 
 ---
 
