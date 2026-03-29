@@ -3,9 +3,17 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    org-roam-ui-lite = {
+      url = "github:tani/org-roam-ui-lite";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = {nixpkgs, ...}: let
+  outputs = {
+    nixpkgs,
+    org-roam-ui-lite,
+    ...
+  }: let
     supportedSystems = ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"];
     forAllSystems = fn: nixpkgs.lib.genAttrs supportedSystems fn;
 
