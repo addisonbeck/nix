@@ -221,6 +221,18 @@
         '';
       };
 
+      bobert-view = pkgs.writeShellApplication {
+        name = "bobert-view";
+        text = ''
+          DB="''${BOBERT_ORG_ROAM_DB:-$HOME/.bobert/org-roam.db}"
+          if [ ! -f "$DB" ]; then
+            echo "Error: org-roam database not found at $DB. Run bobert-with-emacs first to sync." >&2
+            exit 1
+          fi
+          exec ${org-roam-ui-lite.packages.${system}.serve}/bin/org-roam-ui-lite-serve -d "$DB"
+        '';
+      };
+
       bobert = pkgs.writeShellApplication {
         name = "bobert";
         runtimeInputs = [pkgs.rsync];
@@ -253,13 +265,17 @@
       };
     in {
       packages = {
-        inherit bobert bobert-with-emacs;
+        inherit bobert bobert-with-emacs bobert-view;
         default = bobert;
       };
       apps = {
         bobert-with-emacs = {
           type = "app";
           program = "${bobert-with-emacs}/bin/bobert-with-emacs";
+        };
+        bobert-view = {
+          type = "app";
+          program = "${bobert-view}/bin/bobert-view";
         };
         default = {
           type = "app";
