@@ -171,11 +171,11 @@
           CLAUDE_DIR="$HOME/.claude"
           DATA="${bobertData}"
 
-          mkdir -p \
-            "$CLAUDE_DIR/agents" \
-            "$CLAUDE_DIR/skills" \
-            "$CLAUDE_DIR/hooks" \
-            "$CLAUDE_DIR/output-styles"
+          for subdir in agents skills hooks output-styles; do
+            target="$CLAUDE_DIR/$subdir"
+            [ -e "$target" ] && [ ! -d "$target" ] && rm -f "$target"
+            mkdir -p "$target"
+          done
 
           rsync --archive --delete "$DATA/agents/" "$CLAUDE_DIR/agents/"
           rsync --archive --delete "$DATA/skills/" "$CLAUDE_DIR/skills/"
