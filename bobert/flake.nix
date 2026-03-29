@@ -175,6 +175,52 @@
         cp ${settingsFile} $out/settings.json
       '';
 
+      bobertEmacs = (pkgs.emacsPackagesFor pkgs.emacs-nox).emacsWithPackages (epkgs: [
+        epkgs.org-roam
+        epkgs.org-roam-ql
+      ]);
+
+      bobert-with-emacs = pkgs.writeShellApplication {
+        name = "bobert-with-emacs";
+        runtimeInputs = [pkgs.rsync];
+        text = ''
+          CLAUDE_DIR="$HOME/.bobert"
+          export CLAUDE_CONFIG_DIR="$HOME/.bobert"
+          export BOBERT_EMACS="${bobertEmacs}/bin/emacs"
+          export BOBERT_ORG_ROAM_DB="''${BOBERT_ORG_ROAM_DB:-$HOME/.bobert/org-roam.db}"
+          DATA="${bobertData}"
+
+          for subdir in agents skills hooks output-styles; do
+            target="$CLAUDE_DIR/$subdir"
+            [ -e "$target" ] && [ ! -d "$target" ] && rm -f "$target"
+            mkdir -p "$target"
+          done
+
+          rsync --archive --delete "$DATA/agents/" "$CLAUDE_DIR/agents/"
+          rsync --archive --delete "$DATA/skills/" "$CLAUDE_DIR/skills/"
+          rsync --archive --delete "$DATA/hooks/" "$CLAUDE_DIR/hooks/"
+          rsync --archive --delete "$DATA/output-styles/" "$CLAUDE_DIR/output-styles/"
+
+          SETTINGS_DEST="$CLAUDE_DIR/settings.json"
+          if ! diff -q "$DATA/settings.json" "$SETTINGS_DEST" > /dev/null 2>&1; then
+            rm -f "$SETTINGS_DEST"
+            cp "$DATA/settings.json" "$SETTINGS_DEST"
+          fi
+
+          find "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/skills" -name "*.sh" -exec chmod +x {} \;
+
+          mkdir -p "$(dirname "$BOBERT_ORG_ROAM_DB")"
+          "$BOBERT_EMACS" -Q --batch --eval \
+            "(progn \
+               (require 'org-roam) \
+               (setq org-roam-directory \"$ORG_ROAM_DIR\") \
+               (setq org-roam-db-location \"$BOBERT_ORG_ROAM_DB\") \
+               (org-roam-db-sync))"
+
+          exec ${pkgs.claude-code}/bin/claude "$@"
+        '';
+      };
+
       bobert = pkgs.writeShellApplication {
         name = "bobert";
         runtimeInputs = [pkgs.rsync];
@@ -207,10 +253,14 @@
       };
     in {
       packages = {
-        inherit bobert;
+        inherit bobert bobert-with-emacs;
         default = bobert;
       };
       apps = {
+        bobert-with-emacs = {
+          type = "app";
+          program = "${bobert-with-emacs}/bin/bobert-with-emacs";
+        };
         default = {
           type = "app";
           program = "${bobert}/bin/bobert";
