@@ -30,4 +30,9 @@
     fish_add_path --move --prepend --path ${makeBinSearchPath profiles}
     set fish_user_paths $fish_user_paths
   '';
+
+  programs.fish.shellAliases = {
+    bobert = "nix run /Users/me/nix/bobert --";
+    claude = "nix run /Users/me/nix/bobert --";
+  };
 }
