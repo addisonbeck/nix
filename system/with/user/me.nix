@@ -115,7 +115,6 @@
       # This is actually just chrome beacuse chromium doensn't build on nix darwin
       # I need chrome installed via nix for mermaid's cli
       ./with/program/ungoogled-chromium.nix
-      ../../modules/claude
     ];
 
     #sops.gnupg.sshKeyPaths = [ "/Users/me/.ssh/primary-ssh-key" ];
@@ -140,6 +139,7 @@
       pkgs.poppler
       pkgs.syncthing-macos
       pkgs.git-crypt
+      pkgs.claude-code-acp
     ];
 
     home.sessionPath = [];
