@@ -1,12 +1,12 @@
 # Bobert
 
-Bobert is a standalone Nix flake that wraps [Claude Code](https://claude.ai/code) with a managed configuration: agents, skills, hooks, output styles, and settings — all version-controlled and synced to `~/.claude/` on every invocation.
-
-Named after [Bobert 6B](https://theamazingworldofgumball.fandom.com/wiki/Bobert_6B) from *The Amazing World of Gumball* — a high-tech robot who attends Elmore Junior High, calculates everything into a mathematical formula, and follows all instructions as literally as possible. He's the smartest student in the school and deeply values his friendships, though he struggles to process human emotions and necessities. Asked to quantify his feelings, he once offered: *"Emotion equals X over Y plus a square root of a hypotenuse."*
-
-A fitting namesake for an AI assistant wrapper.
+> Emotion equals X over Y plus a square root of a hypotenuse
+> -- Bobert 6B
 
 ---
+
+Bobert is a standalone Nix flake that wraps [Claude Code](https://claude.ai/code) with a managed configuration: agents, skills, hooks, output styles, and settings — all version-controlled and synced to `~/.claude/` on every invocation.
+
 
 ## Usage
 
