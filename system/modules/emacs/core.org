@@ -1894,7 +1894,7 @@ This cool and lame at the same time
 			   ["Search"
 			    ("s" "Line" consult-line)
 			    ("b" "Buffer" consult-buffer)
-			    ("f" "Find" consult-find)
+			    ("f" "Find" find-file)
 			    ("o" "Org Heading" consult-org-heading)
 			    ("m" "Memory" org-roam-node-find)
 			    ("j" "Jira" jira-search-issues-advanced)
