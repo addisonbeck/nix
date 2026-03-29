@@ -3,7 +3,9 @@
 > Emotion equals X over Y plus a square root of a hypotenuse
 > -- Bobert 6B
 
----
+<img width="300" height="168" alt="image" src="https://github.com/user-attachments/assets/180df460-b6de-4e97-8c32-be546cedd045" />
+
+## Overview
 
 Bobert is a standalone Nix flake that wraps [Claude Code](https://claude.ai/code) with a managed configuration: agents, skills, hooks, output styles, and settings — all version-controlled and synced to `~/.claude/` on every invocation.
 
