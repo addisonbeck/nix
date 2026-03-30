@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     org-roam-ui-lite = {
-      url = "github:addisonbeck/org-roam-ui-lite/physics-params";
+      url = "git+file:///Users/me/binwarden/addisonbeck-org-roam-ui-lite/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -175,7 +175,9 @@
         cp ${settingsFile} $out/settings.json
       '';
 
-      bobertEmacs = (pkgs.emacsPackagesFor pkgs.emacs-nox).emacsWithPackages (epkgs: [
+      emacsNoxNoMail = pkgs.emacs-nox.override {withMailutils = false;};
+
+      bobertEmacs = (pkgs.emacsPackagesFor emacsNoxNoMail).emacsWithPackages (epkgs: [
         epkgs.org-roam
         epkgs.org-roam-ql
       ]);
@@ -187,7 +189,6 @@
           CLAUDE_DIR="$HOME/.bobert"
           export CLAUDE_CONFIG_DIR="$HOME/.bobert"
           export BOBERT_EMACS="${bobertEmacs}/bin/emacs"
-          export BOBERT_ORG_ROAM_DB="''${BOBERT_ORG_ROAM_DB:-$HOME/.bobert/org-roam.db}"
           DATA="${bobertData}"
 
           for subdir in agents skills hooks output-styles; do
@@ -209,27 +210,71 @@
 
           find "$CLAUDE_DIR/hooks" "$CLAUDE_DIR/skills" -name "*.sh" -exec chmod +x {} \;
 
-          mkdir -p "$(dirname "$BOBERT_ORG_ROAM_DB")"
-          "$BOBERT_EMACS" -Q --batch --eval \
-            "(progn \
-               (require 'org-roam) \
-               (setq org-roam-directory \"$ORG_ROAM_DIR\") \
-               (setq org-roam-db-location \"$BOBERT_ORG_ROAM_DB\") \
-               (org-roam-db-sync))"
+          # Use the host DB if it exists (always current, no sync needed).
+          # Fall back to the bobert-specific DB, creating it via sync if absent.
+          if [ -z "''${BOBERT_ORG_ROAM_DB:-}" ]; then
+            if [ -f "$HOME/.emacs.d/org-roam.db" ]; then
+              export BOBERT_ORG_ROAM_DB="$HOME/.emacs.d/org-roam.db"
+            else
+              export BOBERT_ORG_ROAM_DB="$HOME/.bobert/org-roam.db"
+            fi
+          fi
+
+          if [ ! -f "$BOBERT_ORG_ROAM_DB" ]; then
+            echo "bobert-with-emacs: no org-roam database found, syncing from ${settings.env.ORG_ROAM_DIR}..." >&2
+            mkdir -p "$(dirname "$BOBERT_ORG_ROAM_DB")"
+            "$BOBERT_EMACS" -Q --batch --eval \
+              "(progn \
+                 (require 'org-roam) \
+                 (setq org-roam-directory \"${settings.env.ORG_ROAM_DIR}\") \
+                 (setq org-roam-db-location \"$BOBERT_ORG_ROAM_DB\") \
+                 (org-roam-db-sync))"
+          fi
 
           exec ${pkgs.claude-code}/bin/claude "$@"
         '';
       };
 
+      # Upstream serve script hardcodes serve.js but the bundle ships serve.mjs.
+      # The frontend also uses baseUrl:"./" which some browsers resolve as /.api/…
+      # instead of /api/…, causing 404s. Patch both issues at build time.
+      patchedBundle = pkgs.runCommand "org-roam-ui-lite-bundle-patched" {} ''
+        origServe="${org-roam-ui-lite.packages.${system}.serve}/bin/org-roam-ui-lite-serve"
+        bundlePath=$(grep -oE '/nix/store/[a-z0-9]+-org-roam-ui-lite-bundle[^/]*' "$origServe" | head -1)
+
+        cp -rL "$bundlePath" "$out"
+        chmod -R u+w "$out"
+
+        # Fix baseUrl from "./" to "/" so the browser requests /api/… (absolute),
+        # not ./api/… (relative), which resolves incorrectly in some browsers.
+        for f in "$out/frontend/dist/assets"/index-*.js; do
+          sed 's|baseUrl:"./"|baseUrl:"/"|g' "$f" > "$f.tmp"
+          mv "$f.tmp" "$f"
+        done
+      '';
+
+      fixedServe = pkgs.runCommand "org-roam-ui-lite-serve-fixed" {} ''
+        mkdir -p $out/bin
+        origServe="${org-roam-ui-lite.packages.${system}.serve}/bin/org-roam-ui-lite-serve"
+        origBundle=$(grep -oE '/nix/store/[a-z0-9]+-org-roam-ui-lite-bundle[^/]*' "$origServe" | head -1)
+
+        sed \
+          -e 's|serve\.js|serve.mjs|g' \
+          -e "s|$origBundle|${patchedBundle}|g" \
+          "$origServe" \
+          > $out/bin/org-roam-ui-lite-serve
+        chmod +x $out/bin/org-roam-ui-lite-serve
+      '';
+
       bobert-view = pkgs.writeShellApplication {
         name = "bobert-view";
         text = ''
-          DB="''${BOBERT_ORG_ROAM_DB:-$HOME/.bobert/org-roam.db}"
+          DB="''${BOBERT_ORG_ROAM_DB:-$HOME/.emacs.d/org-roam.db}"
           if [ ! -f "$DB" ]; then
-            echo "Error: org-roam database not found at $DB. Run bobert-with-emacs first to sync." >&2
+            echo "Error: org-roam database not found at $DB" >&2
             exit 1
           fi
-          exec ${org-roam-ui-lite.packages.${system}.serve}/bin/org-roam-ui-lite-serve -d "$DB"
+          exec ${fixedServe}/bin/org-roam-ui-lite-serve -d "$DB"
         '';
       };
 
