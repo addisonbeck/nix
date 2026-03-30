@@ -1,97 +1,101 @@
 ---
 name: navigate-memory
 description: |
-  Queries the org-roam knowledge base by communicating with the running Emacs daemon
-  via emacsclient. Supports four interaction layers: connectivity checks, node lookup
-  by ID or title, org-roam-ql predicate filtering, and graph aggregation queries.
-  Use when an agent needs to search, filter, or traverse the org-roam node graph
-  without modifying any content.
+  Queries the org-roam knowledge base. Supports two execution paths: batch mode
+  (when BOBERT_EMACS is set — running inside bobert-with-emacs) and daemon mode
+  (when BOBERT_EMACS is not set — running inside standard bobert). Supports four
+  interaction layers: connectivity checks, node lookup by ID or title,
+  org-roam-ql predicate filtering, and graph aggregation queries. Use when an
+  agent needs to search, filter, or traverse the org-roam node graph without
+  modifying any content.
 ---
 
 # navigate-memory Skill
 
-When invoked, this skill provides instructions and ready-to-run `emacsclient` commands
-for querying the org-roam knowledge base through the running Emacs daemon. All queries
-are read-only — this skill never modifies nodes, never calls `org-roam-db-update-file`,
-and never writes files.
+When invoked, this skill provides instructions and the `navigate-memory.sh` helper
+script for querying the org-roam knowledge base. All queries are read-only — this
+skill never modifies nodes, never calls `org-roam-db-update-file`, and never writes
+files.
 
-**When to use**: An agent needs to search for nodes by tag, title, or backlink
-relationship; traverse the node graph; or compute graph metrics such as most-linked
-nodes. All queries go through the live daemon so the org-roam database is always
-current.
+**When to use**: Search for nodes by tag, title, or backlink relationship; traverse
+the node graph; compute graph metrics such as most-linked nodes.
 
-**When NOT to use**: Creating or updating nodes (use `create_memory`), reading a single
-known node by UUID (use `read_memory`), or when the Emacs daemon is confirmed not
-running and no fallback exists.
+**When NOT to use**: Creating or updating nodes (use `create_memory`), reading a
+single known node by UUID (use `read_memory`).
 
-## Critical: Socket Path
+## Execution Paths
 
-The Emacs daemon uses a non-default socket path set in the user config:
+navigate-memory operates in two modes detected automatically by `navigate-memory.sh`:
+
+### Batch Mode (bobert-with-emacs)
+
+Active when `BOBERT_EMACS` is set. Uses the bundled `emacs-nox` binary (Nix store
+path) with `-Q --batch` to query the isolated org-roam database at
+`BOBERT_ORG_ROAM_DB` (~/.bobert/org-roam.db). No running Emacs daemon required.
+
+### Daemon Mode (standard bobert)
+
+Active when `BOBERT_EMACS` is not set. Queries via `emacsclient` connecting to the
+running host Emacs daemon. Requires the daemon to be active and org-roam loaded.
+
+### Direct emacsclient (daemon mode only)
+
+For interactive or complex multi-step daemon-mode queries, agents may call
+`emacsclient` directly. Always use the non-default socket path:
+
+```bash
+emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "..."
+```
+
+## Critical: Socket Path (Daemon Mode)
+
+The Emacs daemon uses a non-default socket path:
 
 ```elisp
 (setq server-socket-dir (expand-file-name "server" user-emacs-directory))
 ```
 
 The socket lives at `~/.emacs.d/server/server`. Plain `emacsclient` without
-`--socket-name` looks in `/tmp/emacs$(id -u)/` and silently fails with a confusing
-error. **Every `emacsclient` call must use:**
+`--socket-name` looks in `/tmp/emacs$(id -u)/` and silently fails. **Every direct
+`emacsclient` call must use:**
 
 ```bash
 emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "..."
 ```
 
-The `ec` wrapper at `~/.nix-profile/bin/ec` also knows this path and can be used to
-confirm the daemon is alive before running queries.
-
 ## Input Contract
 
-This is an instruction-only skill. There is no JSON input schema. Agents read the
-query patterns documented below and execute `emacsclient` commands directly via the
-Bash tool.
+Pass an elisp expression string as `$1` to `navigate-memory.sh`. The script handles
+path initialization (sets `org-roam-directory` and `org-roam-db-location`) before
+executing the query.
 
-The relevant environment context is:
-
-- **ORG_ROAM_DIR**: `/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam`
-- **Org-roam DB**: `~/.emacs.d/org-roam.db`
-- **Socket**: `~/.emacs.d/server/server`
+Environment variables:
+- **BOBERT_EMACS**: Nix store path to bundled emacs binary; presence triggers batch mode
+- **BOBERT_ORG_ROAM_DB**: Path to isolated org-roam database (batch mode); defaults to `~/.bobert/org-roam.db`
+- **ORG_ROAM_DIR**: Path to org-roam notes directory (set in bobert env block)
 
 ## Output Contract
 
-All queries return human-readable strings from the Emacs process (printed to stdout by
-`emacsclient --eval`). Results are not JSON — they are elisp-formatted strings, lists,
-or multi-line text. Agents must parse the output as plain text.
-
-Error responses from `emacsclient` appear on stderr and typically read:
-
-```
-/usr/bin/emacsclient: can't find socket; have you started the server?
-```
-
-If that occurs, the daemon is not running. Stop and report the error rather than
-attempting fallback file reads.
+All queries return human-readable strings from the Emacs process printed to stdout.
+Results are not JSON — they are elisp-formatted strings, lists, or multi-line text.
+Agents must parse output as plain text.
 
 ## Implementation Architecture
 
-Instruction-only skill. No bash helper script. Agents execute `emacsclient` commands
-directly using the Bash tool with the exact invocations shown in the four layers below.
+Two-file skill: `SKILL.md` (this file) + `navigate-memory.sh` (detection and routing).
 
 ### Key Implementation Rules
 
-1. **Always check connectivity first** (Layer 1) before attempting any query.
-2. **Always use `--socket-name="$HOME/.emacs.d/server/server"`** — never bare `emacsclient`.
-3. **Use org-roam-ql predicates** (Layer 3) for tag, todo, and backlink filtering —
-   do not reinvent these with raw SQL.
-4. **Use elisp-side accumulation** (Layer 4) for aggregates — never attempt EmacSQL
-   `(funcall count ...)` syntax inside `:select` vectors (it throws `Wrong type
-   argument: symbolp`).
-5. **Apply the tags fallback** whenever reading tags from a node — `org-roam-node-tags`
-   returns nil for nodes using the `ROAM_TAGS` property instead of `#+filetags:`.
-6. **Prefer structured output** — format results as `"title | tags:... | metric:..."`
-   strings joined with `\n` so results are easy to parse line by line.
+1. **Use `navigate-memory.sh`** for all queries — it handles detection automatically.
+2. **In daemon mode direct calls, always use `--socket-name="$HOME/.emacs.d/server/server"`**.
+3. **Use org-roam-ql predicates** (Layer 3) for tag, todo, and backlink filtering.
+4. **Use elisp-side accumulation** (Layer 4) for aggregates — never use EmacSQL
+   `(funcall count ...)` inside `:select` vectors (throws `Wrong type argument: symbolp`).
+5. **Apply the tags fallback** whenever reading tags — `org-roam-node-tags` returns nil
+   for nodes using `ROAM_TAGS` property instead of `#+filetags:`.
+6. **Prefer structured output** — format as `"title | tags:... | metric:..."` strings.
 
 ### Tags Fallback Pattern
-
-Always use this pattern when displaying or filtering on tags:
 
 ```elisp
 (or (org-roam-node-tags node)
@@ -113,13 +117,14 @@ Always use this pattern when displaying or filtering on tags:
 
 ## Layer 1 — Connectivity Check
 
-Run this before any query to confirm the daemon is alive and packages are loaded.
+**Batch mode**: Not needed — navigate-memory.sh validates the DB file exists before querying.
+
+**Daemon mode**: Run before any query to confirm the daemon is alive.
 
 ```bash
 # Check daemon is alive and org-roam is loaded
 emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(featurep 'org-roam)"
 # Expected: t
-# On failure: error about missing socket — daemon is not running
 
 # Check whether org-roam-ql is already loaded
 emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(featurep 'org-roam-ql)"
@@ -130,87 +135,71 @@ emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(require 'org-r
 # Expected: org-roam-ql
 ```
 
-If the connectivity check fails, do not proceed with queries. Report the failure and
-stop.
+If the connectivity check fails, do not proceed. Report the failure and stop.
 
 ## Layer 2 — Node Lookup by ID or Title
 
-Direct access to a specific node using the org-roam node API.
-
 ```bash
-# Find a node by exact title (returns first match — title, id, file, tags)
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let ((node (seq-find (lambda (n) (string= (org-roam-node-title n) \"Bobert\"))
+# Find a node by exact title
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
+(let ((node (seq-find (lambda (n) (string= (org-roam-node-title n) "Bobert"))
                       (org-roam-node-list))))
   (when node
-    (format \"id:%s file:%s tags:%s\"
+    (format "id:%s file:%s tags:%s"
             (org-roam-node-id node)
             (file-name-nondirectory (org-roam-node-file node))
             (or (org-roam-node-tags node)
-                (alist-get \"ROAM_TAGS\" (org-roam-node-properties node) nil nil #'equal)))))"
+                (alist-get "ROAM_TAGS" (org-roam-node-properties node) nil nil (quote equal))))))'
 
 # Get full file content of a node by UUID
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let* ((node (org-roam-node-from-id \"SOME-UUID-HERE\"))
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
+(let* ((node (org-roam-node-from-id "SOME-UUID-HERE"))
        (file (org-roam-node-file node)))
   (with-temp-buffer
     (insert-file-contents file)
-    (buffer-string)))"
+    (buffer-string)))'
 
 # List all nodes — returns (title id) pairs for browsing
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
 (mapcar (lambda (n) (list (org-roam-node-title n) (org-roam-node-id n)))
-        (org-roam-node-list))"
+        (org-roam-node-list))'
 ```
 
-Replace `"SOME-UUID-HERE"` with the actual UUID. UUIDs come from `create_memory`
-output, from `* Required Reading` links in node content, or from Layer 2/3 queries.
+Replace `"SOME-UUID-HERE"` with the actual UUID.
 
 ## Layer 3 — org-roam-ql Filtering
 
-Use org-roam-ql predicates to filter nodes. This is the idiomatic high-level API for
-tag, todo, and backlink queries. Ensure `org-roam-ql` is loaded (Layer 1) before using
-these.
+**Daemon mode**: Ensure `org-roam-ql` is loaded (Layer 1) before using these.
+**Batch mode**: `org-roam-ql` is bundled but not auto-required — add `(require 'org-roam-ql)` at the start of your query expression.
 
 ```bash
 # All nodes tagged "project"
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(tags \"project\")))"
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (tags "project"))))'
 
 # Nodes with a specific TODO keyword
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(todo \"TODO\")))"
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (todo "TODO"))))'
 
 # Logical composition: tagged "reference" but NOT tagged "daily"
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(and (tags \"reference\") (not (tags \"daily\")))))"
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (and (tags "reference") (not (tags "daily"))))))'
 
-# Count result set size without pulling all titles
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(length (org-roam-ql-nodes '(and (tags \"reference\") (not (tags \"daily\")))))"
+# Nodes that link TO a specific node (backlinks)
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (backlink-to "NODE-TITLE-HERE"))))'
 
-# Nodes that link TO a specific node (backlinks — other nodes citing this one)
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(backlink-to \"NODE-TITLE-HERE\")))"
-
-# Nodes linked FROM a specific node (forward links — nodes this one cites)
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(backlink-from \"NODE-TITLE-HERE\")))"
+# Nodes linked FROM a specific node (forward links)
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (backlink-from "NODE-TITLE-HERE"))))'
 
 # Nodes matching a file path substring
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(file \"adr\")))"
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (file "adr"))))'
 
 # Nodes with a specific property value
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title
-        (org-roam-ql-nodes '(property \"MEMORY_TYPE\" \"procedural\")))"
+~/.bobert/skills/navigate-memory/navigate-memory.sh \
+  '(mapcar (function org-roam-node-title) (org-roam-ql-nodes (quote (property "MEMORY_TYPE" "procedural"))))'
 ```
 
 ### org-roam-ql Predicate Reference
@@ -231,21 +220,19 @@ emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
 
 ## Layer 4 — Graph Aggregation
 
-For metrics like "most-linked nodes", EmacSQL aggregate syntax is broken: `(funcall
-count dest)` inside `:select` vectors throws `Wrong type argument: symbolp`. Pull raw
-rows and accumulate counts in elisp instead.
+EmacSQL aggregate syntax is broken: `(funcall count dest)` inside `:select` vectors
+throws `Wrong type argument: symbolp`. Pull raw rows and accumulate counts in elisp.
 
 ### Available Link Types
 
-The `links` table contains rows with a `type` column. Known values: `"id"`, `"https"`,
-`"file"`, `"fuzzy"`, `"http"`. Use `type = "id"` to count only org-roam node-to-node
-links.
+The `links` table `type` column values: `"id"`, `"https"`, `"file"`, `"fuzzy"`, `"http"`.
+Use `type = "id"` to count only org-roam node-to-node links.
 
 ```bash
 # Top 5 most-linked nodes (highest inbound id-type link count)
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let* ((rows (org-roam-db-query [:select [dest] :from links :where (= type \"id\")]))
-       (counts (make-hash-table :test 'equal)))
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
+(let* ((rows (org-roam-db-query [:select [dest] :from links :where (= type "id")]))
+       (counts (make-hash-table :test (quote equal))))
   (dolist (row rows)
     (puthash (car row) (1+ (gethash (car row) counts 0)) counts))
   (let ((pairs nil))
@@ -255,18 +242,18 @@ emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
      (lambda (pair)
        (let* ((node (org-roam-node-from-id (car pair))))
          (if node
-             (format \"%s | tags:%s | inbound-links:%d\"
+             (format "%s | tags:%s | inbound-links:%d"
                      (org-roam-node-title node)
                      (or (org-roam-node-tags node)
-                         (alist-get \"ROAM_TAGS\" (org-roam-node-properties node) nil nil #'equal))
+                         (alist-get "ROAM_TAGS" (org-roam-node-properties node) nil nil (quote equal)))
                      (cadr pair))
-           (format \"<unknown:%s> | links:%d\" (car pair) (cadr pair)))))
-     (seq-take pairs 5) \"\n\")))"
+           (format "<unknown:%s> | links:%d" (car pair) (cadr pair)))))
+     (seq-take pairs 5) "\n")))'
 
 # Top 5 most-connected nodes (highest outbound id-type link count)
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let* ((rows (org-roam-db-query [:select [source] :from links :where (= type \"id\")]))
-       (counts (make-hash-table :test 'equal)))
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
+(let* ((rows (org-roam-db-query [:select [source] :from links :where (= type "id")]))
+       (counts (make-hash-table :test (quote equal))))
   (dolist (row rows)
     (puthash (car row) (1+ (gethash (car row) counts 0)) counts))
   (let ((pairs nil))
@@ -276,22 +263,20 @@ emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
      (lambda (pair)
        (let ((node (org-roam-node-from-id (car pair))))
          (if node
-             (format \"%s | outbound-links:%d\" (org-roam-node-title node) (cadr pair))
-           (format \"<unknown:%s> | outbound:%d\" (car pair) (cadr pair)))))
-     (seq-take pairs 5) \"\n\")))"
+             (format "%s | outbound-links:%d" (org-roam-node-title node) (cadr pair))
+           (format "<unknown:%s> | outbound:%d" (car pair) (cadr pair)))))
+     (seq-take pairs 5) "\n")))'
 ```
 
 ### Layer 4b — org-roam-ql Filter Combined with Graph Metric
 
-Filter a candidate set with org-roam-ql, then compute link counts only on that subset.
-
 ```bash
 # Among "reference" nodes, which are most linked?
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let* ((ref-nodes (org-roam-ql-nodes '(tags \"reference\")))
-       (ref-ids (mapcar #'org-roam-node-id ref-nodes))
-       (rows (org-roam-db-query [:select [dest] :from links :where (= type \"id\")]))
-       (counts (make-hash-table :test 'equal)))
+~/.bobert/skills/navigate-memory/navigate-memory.sh '
+(let* ((ref-nodes (org-roam-ql-nodes (quote (tags "reference"))))
+       (ref-ids (mapcar (function org-roam-node-id) ref-nodes))
+       (rows (org-roam-db-query [:select [dest] :from links :where (= type "id")]))
+       (counts (make-hash-table :test (quote equal))))
   (dolist (row rows)
     (when (member (car row) ref-ids)
       (puthash (car row) (1+ (gethash (car row) counts 0)) counts)))
@@ -301,8 +286,8 @@ emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
     (mapconcat
      (lambda (p)
        (let ((node (org-roam-node-from-id (car p))))
-         (format \"%s | links:%d\" (org-roam-node-title node) (cadr p))))
-     (seq-take pairs 5) \"\n\")))"
+         (format "%s | links:%d" (org-roam-node-title node) (cadr p))))
+     (seq-take pairs 5) "\n")))'
 ```
 
 ## Known Gotchas
@@ -328,88 +313,35 @@ Do NOT write:
 
 Always pull raw rows and count in elisp as shown in Layer 4.
 
-### org-roam-ql Lazy Loading
+### org-roam-ql Lazy Loading (Daemon Mode)
 
-`org-roam-ql` is loaded lazily (`:after org-roam`). If `(featurep 'org-roam-ql)`
-returns nil, call `(require 'org-roam-ql)` first (Layer 1 step 3) before using any
-`org-roam-ql-nodes` call.
+In daemon mode, `org-roam-ql` is loaded lazily (`:after org-roam`). If
+`(featurep 'org-roam-ql)` returns nil, call `(require 'org-roam-ql)` first.
 
 ### emacsclient Without Socket Silently Fails
 
 Without `--socket-name`, `emacsclient` looks in `/tmp/emacs$(id -u)/` and fails with a
-misleading error about no server. Always pass `--socket-name="$HOME/.emacs.d/server/server"`.
+misleading error. Always pass `--socket-name="$HOME/.emacs.d/server/server"`.
+
+### Batch Mode: org-roam-ql Require
+
+In batch mode, `navigate-memory.sh` wraps your query in `(progn (require 'org-roam) ...)`.
+`org-roam-ql` is bundled but NOT auto-required. For Layer 3 queries in batch mode, add
+`(require 'org-roam-ql)` at the start of the elisp expression passed to navigate-memory.sh.
 
 ## Environment Dependencies
 
-- **Socket**: `~/.emacs.d/server/server` (non-default path; always specify explicitly)
-- **ORG_ROAM_DIR**: `/Users/me/Library/Mobile Documents/com~apple~CloudDocs/notes/roam`
-- **Org-roam DB**: `~/.emacs.d/org-roam.db` (managed by org-roam; do not query with sqlite3 directly)
-- **Required packages**: `org-roam` (always loaded), `org-roam-ql` (lazy — require if needed)
-- **Required tools**: `emacsclient` (available at `~/.nix-profile/bin/emacsclient`)
-- **Platform**: macOS (darwin) — socket path uses `$HOME`, not `/tmp`
-- **Running Emacs daemon**: Must be active. Verify with `ec` wrapper or Layer 1 check.
+- **BOBERT_EMACS**: Nix store path to bundled emacs binary (set by bobert-with-emacs; absent in standard bobert)
+- **BOBERT_ORG_ROAM_DB**: Isolated org-roam database path; defaults to `~/.bobert/org-roam.db`
+- **ORG_ROAM_DIR**: Notes directory; set by bobert env block in settings.json
+- **Socket (daemon mode)**: `~/.emacs.d/server/server` (non-default; always specify explicitly)
+- **emacsclient (daemon mode)**: `~/.nix-profile/bin/emacsclient`
+- **Running daemon (daemon mode only)**: Must be active with org-roam loaded
 
-## Usage & Testing Guidance
-
-### Step 1: Confirm daemon is running
-
-```bash
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(featurep 'org-roam)"
-# Expected output: t
-```
-
-### Step 2: Load org-roam-ql if needed
-
-```bash
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(featurep 'org-roam-ql)"
-# If nil:
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "(require 'org-roam-ql)"
-```
-
-### Step 3: Run a simple title search
-
-```bash
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let ((node (seq-find (lambda (n) (string= (org-roam-node-title n) \"Bobert\"))
-                      (org-roam-node-list))))
-  (when node (org-roam-node-id node)))"
-```
-
-### Step 4: Filter by tag
-
-```bash
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(mapcar #'org-roam-node-title (org-roam-ql-nodes '(tags \"project\")))"
-```
-
-### Step 5: Find most-linked nodes
-
-```bash
-emacsclient --socket-name="$HOME/.emacs.d/server/server" --eval "
-(let* ((rows (org-roam-db-query [:select [dest] :from links :where (= type \"id\")]))
-       (counts (make-hash-table :test 'equal)))
-  (dolist (row rows) (puthash (car row) (1+ (gethash (car row) counts 0)) counts))
-  (let ((pairs nil))
-    (maphash (lambda (k v) (push (list k v) pairs)) counts)
-    (setq pairs (sort pairs (lambda (a b) (> (cadr a) (cadr b)))))
-    (mapconcat (lambda (p)
-      (let ((node (org-roam-node-from-id (car p))))
-        (if node (format \"%s | links:%d\" (org-roam-node-title node) (cadr p))
-          (format \"<unknown> | links:%d\" (cadr p)))))
-    (seq-take pairs 5) \"\n\")))"
-```
-
-### Claude Code Invocation
+## Claude Code Invocation
 
 ```
 /navigate-memory
 ```
 
-This loads the query patterns and gotcha documentation into the agent's context.
-
-### Installation
-
-```bash
-nix develop .#building --command rebuild <hostname>
-ls ~/.claude/skills/navigate-memory/
-```
+Loads query patterns and gotcha documentation into agent context.
