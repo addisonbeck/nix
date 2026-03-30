@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     org-roam-ui-lite = {
-      url = "github:tani/org-roam-ui-lite";
+      url = "github:addisonbeck/org-roam-ui-lite/physics-params";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
