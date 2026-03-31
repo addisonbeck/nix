@@ -1490,7 +1490,8 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
                               heading
                             (concat heading "\n\n" (string-trim content)))))))
       (unless (get-buffer buf-name)
-        (with-current-buffer (vterm buf-name)
+        (with-current-buffer (get-buffer-create buf-name)
+          (vterm-mode)
           (when (and project-dir (not (string-empty-p project-dir)))
             (vterm-send-string (format "cd %s" (shell-quote-argument project-dir)))
             (vterm-send-return))
@@ -1502,14 +1503,14 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
           ;; Two-phase dialog confirmation: sending \e[B and \r as one write causes
           ;; Claude to exit (the Enter arrives before the dialog finishes processing
           ;; the down arrow). Split into two timers to mimic natural keypress timing.
-          ;; At 3s: send down arrow to move selection from No to Yes.
-          ;; At 3.5s: send Enter to confirm Yes.
-          (run-with-timer 3 nil
+          ;; At 5s: send down arrow to move selection from No to Yes.
+          ;; At 5.5s: send Enter to confirm Yes.
+          (run-with-timer 5 nil
                           (lambda ()
                             (when-let* ((buf (get-buffer buf-name))
                                         (proc (get-buffer-process buf)))
                               (process-send-string proc "\e[B"))))
-          (run-with-timer 3.5 nil
+          (run-with-timer 5.5 nil
                           (lambda ()
                             (when-let* ((buf (get-buffer buf-name))
                                         (proc (get-buffer-process buf)))
