@@ -12,21 +12,69 @@ Bobert is a standalone Nix flake that wraps [Claude Code](https://claude.ai/code
 
 ## Usage
 
+### Packages
+
+There are three runnable packages:
+
+| Package | Command | Purpose |
+|---------|---------|---------|
+| `bobert` (default) | `nix run` | Standard Claude Code wrapper |
+| `bobert-with-emacs` | `nix run .#bobert-with-emacs` | Claude + Emacs/org-roam for DB-backed memory queries |
+| `bobert-view` | `nix run .#bobert-view` | Serves org-roam-ui-lite graph UI |
+
+### Local
+
 ```bash
-# Run directly
+# Default (bobert)
 nix run /Users/me/nix/bobert
 
-# With arguments
+# With Claude arguments
 nix run /Users/me/nix/bobert -- --resume
+
+# With Emacs and org-roam DB support
+nix run /Users/me/nix/bobert#bobert-with-emacs
+
+# Serve the org-roam graph viewer
+nix run /Users/me/nix/bobert#bobert-view
 
 # Via shell aliases (after system rebuild)
 bobert
 claude
 ```
 
+### Remote
+
+```bash
+# Default (bobert)
+nix run github:addisonbeck/nix?dir=bobert
+
+# With Claude arguments
+nix run github:addisonbeck/nix?dir=bobert -- --resume
+
+# Serve the org-roam graph viewer
+nix run github:addisonbeck/nix?dir=bobert#bobert-view
+```
+
+> **Note**: `bobert-with-emacs` cannot be run remotely — its `org-roam-ui-lite` input references a local path.
+
+### bobert-with-emacs
+
+Uses `~/.bobert/` as its config dir (instead of `~/.claude/`) and sets `CLAUDE_CONFIG_DIR` accordingly. It bundles Emacs with `org-roam` and `org-roam-ql` so the `navigate-memory` skill can query the org-roam database without a running Emacs daemon.
+
+On first run, if no database exists at `~/.emacs.d/org-roam.db`, it syncs one to `~/.bobert/org-roam.db` from `ORG_ROAM_DIR`.
+
+### bobert-view
+
+Serves the org-roam knowledge graph on localhost via `org-roam-ui-lite`. Reads the database from `$BOBERT_ORG_ROAM_DB` or falls back to `~/.emacs.d/org-roam.db`.
+
+```bash
+# Point at a specific DB
+BOBERT_ORG_ROAM_DB=~/.bobert/org-roam.db nix run /Users/me/nix/bobert#bobert-view
+```
+
 On each invocation, Bobert:
-1. Rsyncs `agents/`, `skills/`, `hooks/`, `output-styles/` into `~/.claude/`
-2. Writes `~/.claude/settings.json` if content has changed
+1. Rsyncs `agents/`, `skills/`, `hooks/`, `output-styles/` into `~/.bobert/`
+2. Writes `~/.bobert/settings.json` if content has changed
 3. Exec-replaces itself with `claude "$@"`
 
 ---
