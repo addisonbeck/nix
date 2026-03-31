@@ -1500,21 +1500,30 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
           (vterm-send-return)
           (when-let ((proc (get-buffer-process (current-buffer))))
             (set-process-sentinel proc #'my/agenda--watch-buffer-for-completion))
-          ;; Two-phase dialog confirmation: sending \e[B and \r as one write causes
-          ;; Claude to exit (the Enter arrives before the dialog finishes processing
-          ;; the down arrow). Split into two timers to mimic natural keypress timing.
-          ;; At 5s: send down arrow to move selection from No to Yes.
-          ;; At 5.5s: send Enter to confirm Yes.
-          (run-with-timer 5 nil
-                          (lambda ()
-                            (when-let* ((buf (get-buffer buf-name))
-                                        (proc (get-buffer-process buf)))
-                              (process-send-string proc "\e[B"))))
-          (run-with-timer 5.5 nil
-                          (lambda ()
-                            (when-let* ((buf (get-buffer buf-name))
-                                        (proc (get-buffer-process buf)))
-                              (process-send-string proc "\r"))))))))
+          ;; Poll the buffer every second until the bypass dialog appears ("Enter to
+          ;; confirm"), then send down arrow + Enter to select "Yes, I accept".
+          ;; Two-phase send: \e[B and \r must be split (sending together causes Claude
+          ;; to exit before the dialog finishes processing the down arrow).
+          ;; A 30s timeout guard cancels the poller if the dialog never appears.
+          (let* ((poll-timer (run-with-timer
+                              1 1
+                              (lambda (self)
+                                (when-let* ((buf (get-buffer buf-name))
+                                            (proc (get-buffer-process buf))
+                                            (_ (with-current-buffer buf
+                                                 (string-match-p "Enter to confirm"
+                                                                  (buffer-string)))))
+                                  (cancel-timer self)
+                                  (process-send-string proc "\e[B")
+                                  (run-with-timer 0.5 nil
+                                                  (lambda ()
+                                                    (when-let* ((buf (get-buffer buf-name))
+                                                                (proc (get-buffer-process buf)))
+                                                      (process-send-string proc "\r"))))))))
+                 (poll-timer poll-timer))
+            (run-with-timer 30 nil
+                            (lambda ()
+                              (cancel-timer poll-timer))))))))
 
   (defun my/agenda-watcher ()
     "Poll bobert-work-agenda.org for TODO items and dispatch each to Claude via vterm.
