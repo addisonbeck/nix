@@ -139,7 +139,6 @@
       pkgs.poppler
       pkgs.syncthing-macos
       pkgs.git-crypt
-      pkgs.claude-code-acp
     ];
 
     home.sessionPath = [];

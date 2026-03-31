@@ -16,6 +16,35 @@
     iosevka-bold = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Bold.ttf";
     iosevka-italic = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Italic.ttf";
   }));
+  mermaid-lua-filter = pkgs.writeText "mermaid-filter.lua" ''
+    local mmdc = "${pkgs.mermaid-cli}/bin/mmdc"
+
+    function CodeBlock(el)
+      if not el.classes:includes("mermaid") then
+        return nil
+      end
+
+      local input  = os.tmpname() .. ".mmd"
+      local output = os.tmpname() .. ".png"
+
+      local fh = assert(io.open(input, "w"))
+      fh:write(el.text)
+      fh:close()
+
+      local ok = os.execute(
+        mmdc .. " -i " .. input .. " -o " .. output .. " -b white -s 2 2>/dev/null"
+      )
+
+      os.remove(input)
+
+      if not ok then
+        io.stderr:write("[mermaid] Warning: rendering failed, keeping source block\n")
+        return nil
+      end
+
+      return pandoc.Para({ pandoc.Image({}, output) })
+    end
+  '';
   memory-to-epub-file = pkgs.writeShellScriptBin "memory-to-epub-file" (builtins.readFile (pkgs.replaceVars ./memory-to-epub-file.sh {
     org-roam-find-node-file = "${orgRoamFindNodePy}";
     pandoc = "${pkgs.pandoc}/bin/pandoc";
@@ -23,6 +52,10 @@
     python3 = "${pkgs.python3}/bin/python3";
     curl = "${pkgs.curl}/bin/curl";
     magick = "${pkgs.imagemagick}/bin/magick";
+    mermaid-lua-filter = "${mermaid-lua-filter}";
+    iosevka-regular = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Regular.ttf";
+    iosevka-bold = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Bold.ttf";
+    iosevka-italic = "${pkgs.iosevka}/share/fonts/truetype/Iosevka-Italic.ttf";
     nasa-token-path = lib.optionalString (config.sops.secrets ? nasa-token) config.sops.secrets.nasa-token.path;
   }));
   tangledInit =
@@ -239,7 +272,6 @@ in {
           #pr-review
           org-present
           org-inline-anim
-          agent-shell
           web-server
           claude-code-ide
           htmlize

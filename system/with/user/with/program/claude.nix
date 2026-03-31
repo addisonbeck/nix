@@ -1,9 +1,6 @@
 {pkgs, ...}: let
   bobertOutputStyle = ./claude-output-styles/bobert.md;
 in {
-  home.packages = [
-    pkgs.claude-code-acp
-  ];
   home.file.".claude/output-styles".source = bobertOutputStyle;
   programs.claude-code = {
     enable = true;

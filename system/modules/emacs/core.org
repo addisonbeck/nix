@@ -1546,26 +1546,6 @@ I use this space to write a bunch of custom commands for interacting with projec
   (setq magit-git-executable "/Users/me/.nix-profile/bin/git")
 #+end_src
 
-* Agent Shell
-#+begin_src emacs-lisp
-  (require 'agent-shell)
-  (setq agent-shell-anthropic-authentication
-	(agent-shell-anthropic-make-authentication :login t))
-  (setq agent-shell-preferred-agent-config (agent-shell-anthropic-make-claude-code-config))
-  (setq agent-shell-anthropic-claude-command '("claude-code-acp"))
-
-  (setq agent-shell-mcp-servers
-	'(((name . "atlassian")
-	   (type . "sse")
-	   (url . "https://mcp.atlassian.com/v1/sse")
-	   (headers . []))
-	  ((name . "github")
-	   (command . "docker")
-	   (args . ("run" "-i" "--rm" "-e" "GITHUB_PERSONAL_ACCESS_TOKEN"
-		    "ghcr.io/github/github-mcp-server"))
-	   (env . []))))
-#+end_src
-
 * Claude Code IDE
 #+begin_src emacs-lisp
   (use-package claude-code-ide

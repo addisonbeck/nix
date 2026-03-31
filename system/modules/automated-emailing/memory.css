@@ -1,53 +1,109 @@
+/* ===========================
+   Memory EPUB Stylesheet
+   Optimized for org-roam memory nodes.
+   Uses Iosevka for monospace content.
+   =========================== */
+
+/* --- Font embedding --- */
+@font-face {
+  font-family: "Iosevka";
+  font-style: normal;
+  font-weight: normal;
+  src: url("../fonts/Iosevka-Regular.ttf");
+}
+@font-face {
+  font-family: "Iosevka";
+  font-style: normal;
+  font-weight: bold;
+  src: url("../fonts/Iosevka-Bold.ttf");
+}
+@font-face {
+  font-family: "Iosevka";
+  font-style: italic;
+  font-weight: normal;
+  src: url("../fonts/Iosevka-Italic.ttf");
+}
+
+/* --- Base --- */
 body {
-  /*font-family: serif;*/
   font-size: 1em;
-  line-height: 1.5;
-  color: #222;
+  line-height: 1.55;
+  color: #1a1a1a;
   background: #fff;
-  text-align: justify;
-  -webkit-hyphens: auto;
-  hyphens: auto;
+  text-align: left;
   widows: 2;
   orphans: 2;
   font-variant-numeric: oldstyle-nums proportional-nums;
 }
 
-body *:not(pre) {
-  line-height: inherit;
-}
-
+/* --- Headings --- */
 h1, h2, h3, h4, h5, h6 {
-  /*font-family: serif;*/
   font-weight: bold;
-  color: currentColor;
-  text-align: left;
   page-break-after: avoid;
+  line-height: 1.2;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+h1 {
+  font-size: 1.8em;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 0.2em;
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid #999;
+  padding-bottom: 0.15em;
+}
+h3 { font-size: 1.2em; }
+h4 { font-size: 1.05em; font-style: italic; }
+
+p { margin: 0.7em 0; }
+
+/* --- Title page --- */
+section.titlepage {
+  text-align: center;
+  margin-top: 12%;
+}
+section.titlepage h1.title {
+  border-bottom: none;
+  font-size: 2em;
+  margin-bottom: 0.3em;
+}
+section.titlepage .subtitle {
+  font-size: 1.1em;
+  font-style: italic;
+}
+section.titlepage .author {
+  margin-top: 2em;
+  font-size: 1.05em;
+}
+section.titlepage .date {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 0.5em;
 }
 
-h1 { font-size: 2em; border-bottom: 2px solid currentColor; }
-h2 { font-size: 1.6em; border-bottom: 1px solid currentColor; }
-h3 { font-size: 1.3em; }
-h4 { font-size: 1.1em; }
-
-p { margin: 0.75em 0; }
-
-/* Title page */
-section.titlepage { text-align: center; margin-top: 15%; }
-section.titlepage h1.title { border-bottom: none; }
-section.titlepage .subtitle { font-size: 1.2em; font-style: italic; }
-section.titlepage .author { margin-top: 2em; }
-section.titlepage .date { color: currentColor; font-size: 0.9em; }
-
+/* --- Tables --- */
 table {
   width: 100%;
   border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.92em;
   table-layout: fixed;
   page-break-inside: avoid;
   font-variant-numeric: lining-nums tabular-nums;
 }
-th, td { border: 1px solid currentColor; padding: 3% 4%; }
+td, th {
+  border: 1px solid #ccc;
+  padding: 0.4em 0.7em;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
 th { font-weight: bold; }
 
+/* --- Images --- */
 img {
   display: block;
   margin: 1em auto;
@@ -57,44 +113,63 @@ img {
   page-break-inside: avoid;
 }
 
-a { color: inherit; -webkit-text-fill-color: inherit; text-decoration: underline; }
+/* --- Links --- */
+a {
+  color: inherit;
+  text-decoration: underline;
+}
 
+/* --- Blockquotes --- */
 blockquote {
-  border-left: 3px solid currentColor;
+  border-left: 3px solid #999;
   margin: 1em 0;
   padding-left: 1em;
   font-style: italic;
+  color: #444;
 }
 
-pre, code {
-  font-size: 0.82em;
-  font-variant: no-common-ligatures lining-nums;
-  line-height: 1.3;
+/* --- Inline code --- */
+code {
+  font-family: "Iosevka", "Courier New", monospace;
+  font-size: 0.84em;
+  font-variant-ligatures: none;
 }
 
-body pre, body code {
-  font-family: consolas, "Courier New", courier, monospace !important;
-}
-
-body pre {
-  line-height: 1.3 !important;
-  border: 1px solid currentColor;
-  padding: 3%;
+/* --- Code blocks (pre) --- */
+pre {
+  font-family: "Iosevka", "Courier New", monospace;
+  font-size: 0.76em;
+  line-height: 1.4;
+  border: 1px solid #ccc;
+  padding: 0.85em 1em;
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   page-break-inside: avoid;
+  margin: 1em 0;
 }
 
-pre * {
-  font-family: consolas, "Courier New", courier, monospace !important;
-  display: inline !important;
-  line-height: 1.3 !important;
+pre code {
+  font-size: 1em;
+  border: none;
+  padding: 0;
 }
 
-/* Reinforce monochrome highlight style with weight/style */
-pre .kw, pre .cf, pre .dt, pre .fu { font-weight: bold; }
-pre .co, pre .do { font-style: italic; }
+/* --- HR --- */
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2em 0;
+}
 
+/* --- Lists --- */
+ul, ol {
+  margin: 0.7em 0;
+  padding-left: 1.5em;
+}
+li { margin: 0.3em 0; }
+
+/* --- Sup / Sub --- */
 sup {
   font-size: 0.675em;
   line-height: 1.2;
@@ -106,22 +181,19 @@ sub {
   vertical-align: -20%;
 }
 
-/* Footnotes */
-section.footnotes { border-top: 1px solid currentColor; margin-top: 2em; font-size: 0.85em; }
+/* --- Footnotes --- */
+section.footnotes { border-top: 1px solid #ccc; margin-top: 2em; font-size: 0.85em; }
 section.footnotes ol { padding-left: 1.5em; }
 
-/* Definition lists */
+/* --- Definition lists --- */
 dl { margin: 0.75em 0; }
 dt { font-weight: bold; margin-top: 0.5em; }
 dd { margin-left: 1.5em; margin-top: 0.25em; }
 
-@media (monochrome) {
-  body { background: transparent; }
-  th { background: transparent; }
-}
-
+/* --- Kindle KF8 compatibility --- */
 @media amzn-kf8 {
-  body pre, body code { font-family: consolas, "Courier New", courier, monospace !important; }
-  pre * { font-family: consolas, "Courier New", courier, monospace !important; display: inline !important; }
-  pre, pre * { line-height: 1.3 !important; }
+  pre, pre code {
+    font-family: "Iosevka", "Courier New", monospace;
+    line-height: 1.4;
+  }
 }

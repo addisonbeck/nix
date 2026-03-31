@@ -55,7 +55,6 @@
     overlays = [
       #(import rust-overlay)
       emacs-overlay.overlay
-      (import ./overlays/claude-code-acp.nix)
     ];
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
     forAllSystemTypes = fn: nixpkgs.lib.genAttrs supportedSystems fn;

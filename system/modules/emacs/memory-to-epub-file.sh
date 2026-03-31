@@ -9,7 +9,6 @@ fi
 
 OUTPUT_DIR="$HOME/notes/epubs"
 mkdir -p "$OUTPUT_DIR"
-DATE=$(TZ=America/New_York date +%F-%H-%M-%S)
 TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
@@ -64,7 +63,7 @@ for _attempt in 1 2 3; do
 done
 fi
 
-@pandoc@ "$ORG_FILE" -o "$EPUB" \
+if @pandoc@ "$ORG_FILE" -o "$EPUB" \
   --from=org \
   --to=epub3 \
   --toc \
@@ -73,8 +72,20 @@ fi
   --metadata-file "$METADATA_FILE" \
   --metadata lang="en" \
   --standalone \
-  --highlight-style=monochrome \
+  --highlight-style=pygments \
+  -L @mermaid-lua-filter@ \
+  --resource-path "$(dirname "$ORG_FILE")" \
+  --epub-embed-font="@iosevka-regular@" \
+  --epub-embed-font="@iosevka-bold@" \
+  --epub-embed-font="@iosevka-italic@" \
   ${COVER:+--epub-cover-image="$COVER"} \
-  --css=@memory-css@
-
-echo "EPUB written to: $EPUB"
+  --css=@memory-css@; then
+  echo "EPUB written to: $EPUB"
+else
+  if grep -q '#+BEGIN_SRC mermaid\|```mermaid' "$ORG_FILE" 2>/dev/null; then
+    echo "Error: pandoc failed — the file contains mermaid blocks; check diagram syntax" >&2
+  else
+    echo "Error: pandoc failed" >&2
+  fi
+  exit 1
+fi

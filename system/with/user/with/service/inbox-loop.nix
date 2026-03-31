@@ -43,7 +43,7 @@
 
           echo "[$(date -Iseconds)] inbox-loop: invoking claude inbox-processor" >> "$LOG_FILE"
 
-          claude --print \
+          nix run /Users/me/nix/bobert -- --print \
             --dangerously-skip-permissions \
             --agent inbox-processor \
             -p "Process unprocessed inbox items from $INBOX and append structured TODOs to $AGENDA" \

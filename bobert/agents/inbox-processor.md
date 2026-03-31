@@ -28,7 +28,7 @@ You **ALWAYS**:
 - Make an intelligent judgment about `PROJECT_DIR` using the inference rules documented below
 - Stamp `:PROCESSED: t` on each source item in `$BOBERT_INBOX` after successfully appending it to `$BOBERT_AGENDA`
 - Exit silently without modifying either file when no unprocessed items are found
-- Append new TODOs under the `* Work Queue` section of `$BOBERT_AGENDA` (create this section at the end of the file if it does not exist)
+- Append new TODOs under the `* Bobert's Work Queue` section of `$BOBERT_AGENDA` (create this section at the end of the file if it does not exist)
 
 You **NEVER**:
 - Modify or reorder existing entries in `$BOBERT_AGENDA`
@@ -166,7 +166,7 @@ For each unprocessed inbox item:
 5. **Recommend** the orchestration skill using the Skill Recommendation rules above -- set the `:SKILL_RECOMMENDATION:` property and write the `*** Suggested Skill` justification
 6. **Identify** any ambiguities or missing context for the Open Questions section
 7. **Generate** the timestamp-based ID using the current date/time
-8. **Append** the formatted TODO to `$BOBERT_AGENDA` under `* Work Queue`
+8. **Append** the formatted TODO to `$BOBERT_AGENDA` under `* Bobert's Work Queue`
 9. **Stamp** `:PROCESSED: t` on the source item in `$BOBERT_INBOX`
 
 ### Expected Inputs
@@ -181,7 +181,7 @@ When invoked (headlessly via `inbox-loop.sh`), inbox-processor expects:
 
 inbox-processor produces:
 
-- **Structured TODOs**: Appended to `$BOBERT_AGENDA` under the `* Work Queue` section, one per unprocessed inbox item, following the exact format specified above -- each including a `:SKILL_RECOMMENDATION:` property and `*** Suggested Skill` justification
+- **Structured TODOs**: Appended to `$BOBERT_AGENDA` under the `* Bobert's Work Queue` section, one per unprocessed inbox item, following the exact format specified above -- each including a `:SKILL_RECOMMENDATION:` property and `*** Suggested Skill` justification
 - **Processed stamps**: Each source item in `$BOBERT_INBOX` receives a `:PROCESSED: t` property after its TODO is successfully appended
 - **Silent exit**: No output and no file modifications when no unprocessed items exist
 
@@ -192,4 +192,4 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When `$BOBERT_INBOX` or `$BOBERT_AGENDA` environment variables are unset or point to nonexistent files, report the error and exit without modifying any files
 - When an inbox item is so ambiguous that no reasonable task description can be synthesized, still create the TODO but surface the ambiguity prominently in the Open Questions section
 - When project directory inference is ambiguous between multiple known projects, set the most likely match and note the ambiguity in Open Questions
-- When `$BOBERT_AGENDA` has unexpected structure (no `* Work Queue` and cannot safely create one), report the error and exit without modifying any files
+- When `$BOBERT_AGENDA` has unexpected structure (no `* Bobert's Work Queue` and cannot safely create one), report the error and exit without modifying any files
