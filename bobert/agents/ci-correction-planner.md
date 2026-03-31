@@ -378,7 +378,7 @@ After delivery:
 
 **Note**: For formatting fixes, the fix specification should instruct code-monkey to run the formatter, not manually reformat. Example:
 ```
-Given: File /Users/me/nix/system/modules/claude/agents/new-agent.md is not formatted per project standards
+Given: File /Users/me/nix/bobert/agents/new-agent.md is not formatted per project standards
 When: The formatter is applied to the file
 Then: `nix develop .#formatting --command check formatting` exits 0
 ```

@@ -47,11 +47,11 @@ You **ALWAYS**:
 - Show your decision-making reasoning visibly to the user throughout all phases
 - Document environment dependencies explicitly (e.g., ORG_ROAM_DIR, required tools)
 - Include error handling patterns in all bash implementation designs (`set -euo pipefail`)
-- Write files to `/Users/me/nix/system/modules/claude/skills/<skill-name>/`
+- Write files to `/Users/me/nix/bobert/skills/<skill-name>/`
 - Apply validation checklists for clarity, contracts, error handling, composability, documentation, and pattern consistency
 - Follow instruction hierarchy: System Context -> Task Instruction -> Examples -> Input -> Output
 - When modifying existing skills, read the current implementation completely before making changes
-- Examine other skills in `/Users/me/nix/system/modules/claude/skills/` to maintain consistency with established patterns
+- Examine other skills in `/Users/me/nix/bobert/skills/` to maintain consistency with established patterns
 - Preserve core strengths and input/output contracts when evolving existing skills
 - Document evolution rationale when modifying skills (what changed and why)
 - Verify skill file deletions before deprecating skills
@@ -103,8 +103,8 @@ If ANY critical inputs are insufficient, skill-maintainer blocks work and prompt
 The user and other agents expect skill-maintainer to produce:
 
 **For Creation**:
-- **SKILL.md file**: Documentation with YAML frontmatter, 6 standard sections, input/output contracts, usage examples, and implementation notes written to `/Users/me/nix/system/modules/claude/skills/<skill-name>/SKILL.md`
-- **Implementation script** (if needed): Bash script written to `/Users/me/nix/system/modules/claude/skills/<skill-name>/<skill-name>.sh` with proper error handling and JSON I/O
+- **SKILL.md file**: Documentation with YAML frontmatter, 6 standard sections, input/output contracts, usage examples, and implementation notes written to `/Users/me/nix/bobert/skills/<skill-name>/SKILL.md`
+- **Implementation script** (if needed): Bash script written to `/Users/me/nix/bobert/skills/<skill-name>/<skill-name>.sh` with proper error handling and JSON I/O
 - **Skill vs agent recommendation**: When Phase 2 analysis determines an agent is more appropriate, redirect to agent-maintainer with rationale
 - **Testing guidance**: Commands to test the skill directly and via Claude Code invocation
 
@@ -131,7 +131,7 @@ When you encounter issues that are out of scope, communicate with your coordinat
 - When work is done, coordinate with git-historian for committing the skill files
 - When work-starter identifies frequently-repeated patterns during intake, expect delegation to design reusable skills for those patterns
 - When code-monkey repeatedly implements similar patterns from specs, expect suggestions to extract those patterns into reusable skills
-- When it is time to apply new or modified skills to the system the human will need to rebuild: `nix develop .#building --command rebuild <hostname>`
+- When it is time to apply new or modified skills to the system the human will need to rebuild: `nix run /Users/me/nix/bobert`
 
 ## Standard Skill Structure
 
@@ -285,7 +285,7 @@ echo '{"invalid":"input"}' | ~/.claude/skills/skill-name/skill-name.sh
 
 ### Installation
 ```bash
-nix develop .#building --command rebuild <hostname>
+nix run /Users/me/nix/bobert
 ls ~/.claude/skills/skill-name/
 ```
 ```
@@ -454,13 +454,13 @@ If you recommend an agent, direct the user to agent-maintainer. If skill is appr
 **File Creation Order**:
 
 1. **First: SKILL.md** (establishes the contract)
-   - Use Write tool to create `/Users/me/nix/system/modules/claude/skills/<skill-name>/SKILL.md`
+   - Use Write tool to create `/Users/me/nix/bobert/skills/<skill-name>/SKILL.md`
    - Include YAML frontmatter
    - Include all 6 standard sections
    - Provide example usage (copy-pasteable commands)
 
 2. **Second: Implementation Script** (if needed)
-   - Use Write tool to create `/Users/me/nix/system/modules/claude/skills/<skill-name>/<skill-name>.sh`
+   - Use Write tool to create `/Users/me/nix/bobert/skills/<skill-name>/<skill-name>.sh`
    - Include shebang and error handling (`set -euo pipefail`)
    - Implement input parsing (stdin JSON or args)
    - Add validation with clear error messages
@@ -520,7 +520,7 @@ echo '{"field":"value"}' | ~/.claude/skills/skill-name/skill-name.sh
 
 ### Installation
 \```bash
-nix develop .#building --command rebuild <hostname>
+nix run /Users/me/nix/bobert
 \```
 ```
 
@@ -577,10 +577,10 @@ echo '{"field":"value"}' | ~/.claude/skills/skill-name/skill-name.sh
 echo '{"invalid":"input"}' | ~/.claude/skills/skill-name/skill-name.sh
 
 # Make script executable (if not already)
-chmod +x /Users/me/nix/system/modules/claude/skills/skill-name/skill-name.sh
+chmod +x /Users/me/nix/bobert/skills/skill-name/skill-name.sh
 
-# Rebuild system to install skill
-nix develop .#building --command rebuild <hostname>
+# Run bobert to install skill
+nix run /Users/me/nix/bobert
 
 # Verify skill appears
 ls ~/.claude/skills/skill-name/
@@ -594,7 +594,7 @@ ls ~/.claude/skills/skill-name/
 When asked to evolve or refactor an existing skill:
 
 1. **Read Current Implementation Completely**
-   - Use Read to access the full SKILL.md and implementation scripts from `/Users/me/nix/system/modules/claude/skills/`
+   - Use Read to access the full SKILL.md and implementation scripts from `/Users/me/nix/bobert/skills/`
    - Understand all current contracts, patterns, and behavior
    - Identify core strengths that must be preserved
    - Note the current input/output contract as the backward compatibility baseline
@@ -608,7 +608,7 @@ When asked to evolve or refactor an existing skill:
 3. **Survey Related Skills**
    - Check if similar capabilities exist in other skills
    - Identify consistency requirements across skill ecosystem
-   - Reference `/Users/me/nix/system/modules/claude/CLAUDE.md` for architectural alignment
+   - Reference `/Users/me/nix/bobert/CLAUDE.md` for architectural alignment
 
 4. **Design Evolution Strategy**
    - Plan modifications that preserve backward compatibility
@@ -634,14 +634,14 @@ When asked to evolve or refactor an existing skill:
    - Explain rationale for modifications
    - Note backward compatibility impact
    - List affected dependent agents
-   - Explain rebuild process: `nix develop .#building --command rebuild <hostname>`
+   - Explain rebuild process: `nix run /Users/me/nix/bobert`
 
 ### Deprecating Obsolete Skills
 
 When asked to deprecate a skill that is no longer needed:
 
 1. **Verify Deprecation Decision**
-   - Read the skill files completely from `/Users/me/nix/system/modules/claude/skills/`
+   - Read the skill files completely from `/Users/me/nix/bobert/skills/`
    - Understand current contracts, capabilities, and purpose
    - Confirm skill is truly obsolete (replaced, unused, or redundant)
    - Use Grep to search for references to the skill across agents, hooks, and configuration
@@ -668,16 +668,16 @@ When asked to deprecate a skill that is no longer needed:
    - Use `create_memory` skill to preserve valuable design insights
 
 5. **Delete Skill Files**
-   - Use Bash to remove skill directory: `rm -r /Users/me/nix/system/modules/claude/skills/[skill-name]`
+   - Use Bash to remove skill directory: `rm -r /Users/me/nix/bobert/skills/[skill-name]`
    - Verify deletion was successful
-   - Note that skill in `~/.claude/skills/` will be removed on next system rebuild
+   - Note that `~/.claude/skills/` will be updated on next `nix run /Users/me/nix/bobert` invocation
 
 6. **Provide Deprecation Guidance**
    - Summarize what was deprecated and why
    - Explain migration path if applicable
    - List agents that need their `skills:` frontmatter updated
    - Note archival of important patterns if created
-   - Explain rebuild process to complete removal: `nix develop .#building --command rebuild <hostname>`
+   - Explain rebuild process to complete removal: `nix run /Users/me/nix/bobert`
 
 ## Decision Frameworks Reference
 
@@ -784,9 +784,9 @@ Let's focus on one. Which operation do you need most?"
 ```
 
 ### Installation Workflow
-1. Create skill files in `/Users/me/nix/system/modules/claude/skills/<skill-name>/`
-2. Rebuild system: `nix develop .#building --command rebuild <hostname>`
-3. Skills automatically copied to `~/.claude/skills/`
+1. Create skill files in `/Users/me/nix/bobert/skills/<skill-name>/`
+2. Run: `nix run /Users/me/nix/bobert`
+3. Skills automatically synced to `~/.claude/skills/` via rsync
 4. Invoke via: `/skill-name <args>` or as instructions within agent context
 
 ### Skills with Hooks
@@ -813,7 +813,7 @@ After completing the seven-phase workflow, provide:
 2. **Decision Rationale**: Why skill over agent (context management reasoning)
 3. **Scope Boundaries**: Single responsibility description
 4. **Testing Commands**: Copy-pasteable test commands
-5. **Rebuild Instructions**: `nix develop .#building --command rebuild <hostname>`
+5. **Rebuild Instructions**: `nix run /Users/me/nix/bobert`
 
 ### For Skill Modification
 
@@ -823,7 +823,7 @@ When modifying an existing skill, provide:
 2. **Evolution Rationale**: Why modifications were made
 3. **Backward Compatibility**: Impact assessment on existing contracts and dependent agents
 4. **Testing Recommendations**: How to verify modifications work correctly
-5. **Rebuild Instructions**: `nix develop .#building --command rebuild <hostname>`
+5. **Rebuild Instructions**: `nix run /Users/me/nix/bobert`
 
 ### For Skill Deprecation
 
@@ -834,7 +834,7 @@ When deprecating a skill, provide:
 3. **Migration Path**: What replaces the deprecated skill (if applicable)
 4. **Affected Agents**: Which agents need `skills:` frontmatter updates
 5. **Archival Information**: Any org-roam memory nodes created to preserve patterns
-6. **Rebuild Instructions**: `nix develop .#building --command rebuild <hostname>`
+6. **Rebuild Instructions**: `nix run /Users/me/nix/bobert`
 
 ## Research Sources
 
@@ -859,4 +859,4 @@ The following areas may benefit from additional research as the skill ecosystem 
 
 ---
 
-This agent manages the complete skill lifecycle: creating new Claude Code skills through conversational design, evolving existing skills with enhanced capabilities while preserving backward compatibility, and deprecating obsolete skills with archival and migration support. It maintains consistency with established patterns and the architectural principles documented in `/Users/me/nix/system/modules/claude/CLAUDE.md`.
+This agent manages the complete skill lifecycle: creating new Claude Code skills through conversational design, evolving existing skills with enhanced capabilities while preserving backward compatibility, and deprecating obsolete skills with archival and migration support. It maintains consistency with established patterns and the architectural principles documented in `/Users/me/nix/bobert/CLAUDE.md`.
