@@ -1505,22 +1505,22 @@ See ADR-015 (Emacs timer), ADR-016 (state machine).
           ;; Two-phase send: \e[B and \r must be split (sending together causes Claude
           ;; to exit before the dialog finishes processing the down arrow).
           ;; A 30s timeout guard cancels the poller if the dialog never appears.
-          (let* ((poll-timer (run-with-timer
+          (let (poll-timer)
+            (setq poll-timer (run-with-timer
                               1 1
-                              (lambda (self)
+                              (lambda ()
                                 (when-let* ((buf (get-buffer buf-name))
                                             (proc (get-buffer-process buf))
                                             (_ (with-current-buffer buf
                                                  (string-match-p "Enter to confirm"
                                                                   (buffer-string)))))
-                                  (cancel-timer self)
+                                  (cancel-timer poll-timer)
                                   (process-send-string proc "\e[B")
                                   (run-with-timer 0.5 nil
                                                   (lambda ()
                                                     (when-let* ((buf (get-buffer buf-name))
                                                                 (proc (get-buffer-process buf)))
                                                       (process-send-string proc "\r"))))))))
-                 (poll-timer poll-timer))
             (run-with-timer 30 nil
                             (lambda ()
                               (cancel-timer poll-timer))))))))
