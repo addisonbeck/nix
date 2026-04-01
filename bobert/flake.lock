@@ -57,11 +57,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1774988180,
-        "narHash": "sha256-CV0X0T67no4lKk+zMHe5UxFPJEYsarmN2/gVlin57Fw=",
+        "lastModified": 1774995038,
+        "narHash": "sha256-TeM0ZbBJxwiL2v6zUUd+24zBEcrglkyJ0iljI2n/bmg=",
         "ref": "refs/heads/physics-params",
-        "rev": "63d9540b57ff752b9501b229c60707972d025085",
-        "revCount": 448,
+        "rev": "7b9a1871f72e2e193431921bd756c2fe9f09f32b",
+        "revCount": 449,
         "type": "git",
         "url": "file:///Users/me/binwarden/addisonbeck-org-roam-ui-lite/main"
       },
