@@ -43,6 +43,7 @@ EPUB="$OUTPUT_DIR/${SLUG}.epub"
 
 # Fetch a random APOD image for the cover (skipped if no token is configured)
 COVER=""
+# shellcheck disable=SC2157
 if [[ -n "@nasa-token-path@" ]]; then
 NASA_API_KEY="$(cat @nasa-token-path@)"
 for _attempt in 1 2 3; do

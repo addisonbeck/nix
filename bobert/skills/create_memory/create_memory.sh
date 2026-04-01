@@ -16,7 +16,8 @@ ORG_ROAM_DIR="${ORG_ROAM_DIR:-$HOME/Library/Mobile Documents/com~apple~CloudDocs
 
 # Validate memory_type against allowed values
 valid_types=("episodic" "semantic" "procedural" "associative" "working" "reflective" "reference")
-if [[ ! " ${valid_types[@]} " =~ " ${memory_type} " ]]; then
+  # shellcheck disable=SC2076
+  if [[ ! " ${valid_types[*]} " =~ " ${memory_type} " ]]; then
   jq -n \
     --arg error "Invalid memory_type: '$memory_type'. Must be one of: episodic, semantic, procedural, associative, working, reflective, reference" \
     '{error: $error}' >&2

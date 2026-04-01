@@ -30,6 +30,7 @@ if [ "$targets_roam" = false ]; then
 fi
 
 # Check if command contains write-capable operations
+# shellcheck disable=SC2016
 write_pattern='(^|[[:space:]])(cp|mv|rsync|install|tee|python)[[:space:]]|sed[[:space:]]+-i|perl[[:space:]]+-i|>[[:space:]]*(\$ORG_ROAM_DIR|[^[:space:]]*\/roam\/)'
 
 if echo "$command" | grep -qE "$write_pattern"; then

@@ -9,6 +9,7 @@
     "*.tf"
     "*.envrc"
     "*.gitignore"
+    "system/with/user/with/program/neovim/commands/*.lua"
   ];
   programs = {
     alejandra.enable = true; # nix

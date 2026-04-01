@@ -125,6 +125,7 @@ ln -sf "$BIN_DIR/bw-persist" "$HOME_DIR/.shortcuts/bw-persist"
 echo "==> Ensuring ~/bin is in PATH..."
 PROFILE="$HOME_DIR/.bashrc"
 if ! grep -q 'HOME/bin' "$PROFILE" 2>/dev/null; then
+  # shellcheck disable=SC2016
   echo 'export PATH="$HOME/bin:$PATH"' >> "$PROFILE"
 fi
 

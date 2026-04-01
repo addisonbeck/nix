@@ -38,6 +38,7 @@ COMMITS_MD=$(@gh@ pr view "$PR_URL" \
   2>/dev/null) || COMMITS_MD="*(commits unavailable)*"
 
 echo "Fetching changed files..."
+# shellcheck disable=SC2016
 FILES_MD=$(@gh@ pr view "$PR_URL" \
   --json files \
   --jq '.files[] | "- `" + .path + "` (" + .status + ", +" + (.additions|tostring) + " / \u2212" + (.deletions|tostring) + ")"' \
@@ -64,8 +65,11 @@ MD_FILE="${WORKDIR}/pr.md"
 
   printf '## Overview\n\n'
   printf '|  |  |\n|:--|:--|\n'
+  # shellcheck disable=SC2016
   printf '| **Repository** | `%s` |\n' "$REPO"
+  # shellcheck disable=SC2016
   printf '| **State** | `%s` |\n' "$STATE"
+  # shellcheck disable=SC2016
   printf '| **Branch** | `%s` \u2192 `%s` |\n' "$HEAD" "$BASE"
   printf '| **Author** | @%s |\n' "$AUTHOR"
   printf '| **Created** | %s |\n' "$DATE"
